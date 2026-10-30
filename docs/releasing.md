@@ -137,6 +137,8 @@ Set once with `gh`, each at Thomas's yes ([`way-of-working.md`](way-of-working.m
   `gitleaks`. Plan 2 adds `integration`.
 - `RELEASE_PLEASE_TOKEN`, or instead "Allow GitHub Actions to create and approve pull requests"
   ([above](#while-release-please-cannot-open-its-pr)).
+- Private vulnerability reporting on ([`SECURITY.md`](../SECURITY.md)):
+  `gh api -X PUT repos/thomas3650/Ha-Spending/private-vulnerability-reporting`.
 
 Until they are set, the hooks are the only guard on `main`, and every merge names its subject ([Merging](#merging)).
 

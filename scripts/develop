@@ -58,10 +58,10 @@ set -m
   # Unset, the server serves no page at /: the page comes from Vite.
   unset HA_SPENDING_WEB_DIR
   exec npm run dev --prefix addon --workspace server
-) >local/server.log 2>&1 &
+) </dev/null >local/server.log 2>&1 &
 echo $! >"$server_pidfile"
 
-(exec npm run dev --prefix addon --workspace web) >local/web.log 2>&1 &
+(exec npm run dev --prefix addon --workspace web) </dev/null >local/web.log 2>&1 &
 echo $! >"$web_pidfile"
 
 curl -sf -o /dev/null --retry 30 --retry-delay 1 --retry-connrefused --retry-all-errors --max-time 2 \
