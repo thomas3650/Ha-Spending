@@ -51,7 +51,13 @@ CLAUDE.md  README.md  LICENSE  SECURITY.md  repository.yaml  release-please-conf
 - **TypeScript strict**, ES modules, Node 22 or newer. ESLint with typescript-eslint, as Ha-Fitness's web.
 - **Hard rules** in `CLAUDE.md`, from Ha-Fitness: never commit to `main`; the repo is public, so no token, hostname,
   IP, account name or posting from Thomas's Firefly III in any file, commit, issue or screenshot; made-up data only;
-  never bypass a hook; actions pinned to a commit SHA, least permissions per job.
+  never bypass a hook; actions pinned to a commit SHA, least permissions per job. And Thomas's (2026-10-30):
+  - **English everywhere:** code, names, comments, docs, commit messages, PR titles and issues. The only Danish is the
+    page's own texts in `web/src/i18n/da.ts` and the option labels in `addon/translations/da.yaml`.
+  - **Comments kept to a minimum:** a comment says why, only where the code cannot. No comment tells how something
+    worked before, what changed or what was tried: the history is in git and the decisions in `docs/decisions.md`.
+  - **One source per fact in the docs,** linked, never restated; a doc that no longer matches the code is changed in
+    the same PR as the code.
 
 ## 3. Reading Firefly III
 
@@ -250,18 +256,46 @@ From Ha-Fitness, trimmed to one component:
 - **Thomas's steps,** as in Ha-Fitness's `releasing.md`: the `RELEASE_PLEASE_TOKEN` secret (so CI runs on release PRs),
   and making the GHCR package public after the first image.
 
-## 10. The order of the work
+## 10. The reviewer (Thomas, 2026-10-30)
+
+A Claude Code agent, `.claude/agents/reviewer.md`, made in plan 1:
+
+- **Read only:** its tools are `Read`, `Grep` and `Glob`. It cannot edit a file, run a test or run any command; the
+  session that dispatches it hands it what to read: the spec, the plan, and for a branch a diff written to a file
+  (`git diff BASE..HEAD`), with the test and CI results as the session ran them.
+- **When:** each spec and plan before it is approved, and each branch before its PR merges. It returns **Ready** or
+  **Needs changes**, with findings as file and line, what is wrong, and why it matters, most severe first.
+- **Its focus, in this order:**
+  1. **Security and privacy:** no token, hostname, IP, account name or real posting anywhere in the public repo; the
+     token never reaches the browser, a log line or an answer; the Firefly III client sends GETs only; the server
+     answers ingress only.
+  2. **Correctness against the specs:** the money rules (every level adds up to its parent; refunds net; transfers,
+     income and the excluded main groups out; partial units, ISO weeks, averages), the rule mapping, the state and
+     the clicks of the UI spec.
+  3. **Tests:** they check behaviour through public interfaces with made-up data, can fail, are not skipped, and cover
+     what §7.1 and §7.2 list; a change in behaviour comes with a test.
+  4. **Docs:** nothing duplicated (one source per fact, linked); nothing stale (a file, option, command or behaviour
+     the docs name that no longer exists or no longer works so); a lasting decision has a `docs/decisions.md` entry.
+  5. **Comments:** only where the code cannot say why; any comment about how it worked before, what changed or what
+     was tried is a finding.
+  6. **Language:** English in code, names, comments, docs, commits and PR titles; Danish only in the two language
+     files.
+  7. **CI and releases:** actions pinned to a SHA, least permissions, the PR title's type matches the change
+     (`docs/releasing.md`).
+  8. **Simplicity:** no code or option the specs do not ask for; the template's way where it has one.
+
+## 11. The order of the work
 
 Each a plan of its own, in this order:
 
-1. **The skeleton:** the repo layout, the docs, the workflows and settings, and an add-on whose page says "Hej" through
-   ingress, released once and installed on the Yellow, so the whole path is proven before any feature.
+1. **The skeleton:** the repo layout, the docs, `CLAUDE.md` with the hard rules, the reviewer (§10), the workflows
+   and settings, and an add-on whose page says "Hej" through ingress, released once and installed on the Yellow, so the whole path is proven before any feature.
 2. **The data:** `shared/` with the money rules, the server with the Firefly III client, the cache, the fake Firefly
    III, and the integration tests against a real Firefly III in Docker (§7.2).
 3. **The page:** screens 1 to 4 of the UI spec, with the Chrome check.
 4. **The first real release**, installed and checked on the Yellow with real data.
 
-## 11. What is left to the builder
+## 12. What is left to the builder
 
 - Library versions, the exact ESLint rules, the Vite and ECharts configuration.
 - The fake Firefly III's and the integration seed's made-up data, as long as they cover §7.1 and §7.2.
