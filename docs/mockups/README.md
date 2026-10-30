@@ -24,4 +24,4 @@ One screen at a time, three variants each, one chosen. Under [`v2/`](v2/).
 
 | Screen | Chosen | Shows |
 | --- | --- | --- |
-| [1](v2/1-alt-forbrug.png) | A | All spending: key numbers, the main groups in one colour, the months with the average. Period, grouping and accounts are dropdowns: [period](v2/1-alt-forbrug-period.png) with "Vælg periode …", [grouping](v2/1-alt-forbrug-grain.png), [accounts](v2/1-alt-forbrug-konti.png) |
+| [1](v2/1-alt-forbrug.png) | E | All spending: key numbers, the main groups as a circle with each piece's name, amount and share beside it (the five largest and Øvrige), the months with the average. Period, grouping and accounts are dropdowns: [period](v2/1-alt-forbrug-period.png) with "Vælg periode …", [grouping](v2/1-alt-forbrug-grain.png), [accounts](v2/1-alt-forbrug-konti.png). Tried: [A, a list](v2/1-alt-forbrug-liste.png), [D, a circle with a list](v2/1-alt-forbrug-cirkel-liste.png) |
