@@ -1,0 +1,26 @@
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    commit-message:
+      prefix: chore
+      include: scope
+    schedule:
+      interval: monthly
+    groups:
+      github-actions:
+        patterns: ["*"]
+  - package-ecosystem: npm
+    directory: /addon
+    commit-message:
+      prefix: chore
+      include: scope
+    schedule:
+      interval: monthly
+    groups:
+      npm:
+        patterns: ["*"]
+    # Held at 6.0.x until typescript-eslint supports newer.
+    ignore:
+      - dependency-name: typescript
+        update-types: ["version-update:semver-minor", "version-update:semver-major"]
