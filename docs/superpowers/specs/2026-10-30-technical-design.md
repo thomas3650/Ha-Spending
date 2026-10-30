@@ -188,7 +188,29 @@ data shows "–" too.
   addresses, and that the client sends nothing but GETs.
 - **The page**: components with Vitest and happy-dom, by role and accessible name (UI spec §7), not by CSS selector.
 
-### 7.2 Beyond the gates
+### 7.2 Integration tests against a real Firefly III (Thomas, 2026-10-30)
+
+The fake Firefly III answers in the shapes we believe Firefly III uses; the integration tests prove them against the
+real thing.
+
+- **A real Firefly III in Docker:** the official image `fireflyiii/core`, pinned to the version on the Yellow (6.7.9
+  today), with SQLite, no other services, started by a compose file in `addon/dev/` on the Mac and in CI alike.
+- **Set up headless:** a script makes the first user and a Personal Access Token with Firefly III's own command line
+  (`php artisan` in the container), so no browser and no real login is involved. The exact commands are the plan's to
+  find and pin; the token lives only in the test run.
+- **Seeded through the API** with made-up data that covers the rules: two asset accounts; categories in several main
+  groups; the rule group `Hovedgrupper` with `category_is` → `add_tag` rules, including two rules on one category and a
+  category no rule maps; the group `Penge ind og ud` (Indskud, Opsparing); withdrawals, refunds, Indskud deposits,
+  savings withdrawals, a transfer between the two accounts, a split transaction, a posting in a foreign currency, an
+  uncategorised posting; across a new year and more than one page of results.
+- **What they check:** the server's Firefly III client and normalisation (§3) against the real answers; `/api/data`
+  for a few periods against sums worked out by hand for the seed; the rule mapping (§3.1); a refused token and an
+  unreachable Firefly III. The page is not part of them.
+- **In CI:** a job `integration` on every PR and push to `main`, a required check. Locally: `scripts/integration`.
+- **When the Yellow's Firefly III is updated,** the pinned version is bumped in the same change, so the tests run
+  against the version in use (a note in `docs/releasing.md`).
+
+### 7.3 Beyond the gates
 
 - **The fast loop:** the fake Firefly III, the server and Vite's dev server on the Mac (`scripts/develop`).
 - **The Chrome check** before a screen is called done: a screenshot of each screen and state of the UI spec at
@@ -212,7 +234,7 @@ Done by the house repo's development session, each step at Thomas's yes (the hou
 From Ha-Fitness, trimmed to one component:
 
 - **`pr-title`:** the PR title must be a Conventional Commit: `feat`, `fix`, `docs`, `test`, `chore`, `refactor`, `ci`.
-- **`ci`** on every PR and push to `main`: lint, types, tests and build per workspace; the add-on linter; the add-on
+- **`ci`** on every PR and push to `main`: lint, types, tests and build per workspace; the integration tests (§7.2); the add-on linter; the add-on
   image built per architecture without pushing, with one `addon-build` check that gates them; `actionlint`, `zizmor`
   and the link check over the docs.
 - **`release-please`:** one component (`addon/`), release type simple, the version also in `addon/config.yaml`; a
@@ -223,8 +245,8 @@ From Ha-Fitness, trimmed to one component:
 - **`gitleaks`** on every PR and push; **Dependabot** monthly for actions and npm, grouped.
 - **Architectures:** `aarch64` (the Yellow) and `amd64`, as Ha-Fitness.
 - **GitHub settings,** set once with `gh` at Thomas's yes: squash merge only, the PR title as the commit message, the
-  branch deleted after merge; `main` protected with the required checks `pr-title`, `ci`'s jobs, `addon-build` and
-  `gitleaks`.
+  branch deleted after merge; `main` protected with the required checks `pr-title`, `ci`'s jobs (`integration` among them), `addon-build`
+  and `gitleaks`.
 - **Thomas's steps,** as in Ha-Fitness's `releasing.md`: the `RELEASE_PLEASE_TOKEN` secret (so CI runs on release PRs),
   and making the GHCR package public after the first image.
 
@@ -234,13 +256,13 @@ Each a plan of its own, in this order:
 
 1. **The skeleton:** the repo layout, the docs, the workflows and settings, and an add-on whose page says "Hej" through
    ingress, released once and installed on the Yellow, so the whole path is proven before any feature.
-2. **The data:** `shared/` with the money rules, the server with the Firefly III client, the cache and the fake
-   Firefly III.
+2. **The data:** `shared/` with the money rules, the server with the Firefly III client, the cache, the fake Firefly
+   III, and the integration tests against a real Firefly III in Docker (§7.2).
 3. **The page:** screens 1 to 4 of the UI spec, with the Chrome check.
 4. **The first real release**, installed and checked on the Yellow with real data.
 
 ## 11. What is left to the builder
 
 - Library versions, the exact ESLint rules, the Vite and ECharts configuration.
-- The fake Firefly III's made-up data, as long as it covers §7.1.
+- The fake Firefly III's and the integration seed's made-up data, as long as they cover §7.1 and §7.2.
 - The add-on's icon and logo (a neutral one of our own, as HA-NortecGo's).
