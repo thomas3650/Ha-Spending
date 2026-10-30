@@ -2,6 +2,7 @@
 
 # The server bundle and the page are built once, on the build machine's platform: the output is the same for every
 # arch.
+# The node pin is bumped by hand (docs/releasing.md).
 FROM --platform=$BUILDPLATFORM node:24-alpine@sha256:8a32c8cf649a49915a66e81e7a609223c708d0adabf288ee3f4077d765542f85 AS build
 WORKDIR /build
 # Dependencies first, so a change to the source does not reinstall them.
