@@ -1,0 +1,27 @@
+{
+  "name": "ha-spending-server",
+  "version": "0.0.0",
+  "private": true,
+  "description": "The Ha-Spending add-on's server",
+  "license": "MIT",
+  "type": "module",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "build": "node build.mjs",
+    "dev": "tsx watch src/main.ts",
+    "test": "vitest run",
+    "lint": "eslint . && tsc --noEmit"
+  },
+  "dependencies": {
+    "@ha-spending/shared": "*",
+    "@hono/node-server": "2.1.5",
+    "hono": "4.13.14"
+  },
+  "devDependencies": {
+    "@types/node": "24.19.2",
+    "esbuild": "0.28.2",
+    "tsx": "4.23.15"
+  }
+}

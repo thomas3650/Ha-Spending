@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+# Install the add-on's node modules and turn on the git hooks.
+set -euo pipefail
+
+cd "$(dirname "$0")/.."
+
+npm ci --prefix addon
+git config core.hooksPath .githooks

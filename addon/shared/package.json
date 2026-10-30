@@ -1,0 +1,17 @@
+{
+  "name": "@ha-spending/shared",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Types and rules shared by the Ha-Spending server and page",
+  "license": "MIT",
+  "type": "module",
+  "engines": {
+    "node": ">=24"
+  },
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "lint": "eslint . && tsc --noEmit"
+  }
+}

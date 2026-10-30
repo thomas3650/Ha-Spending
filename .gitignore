@@ -1,0 +1,27 @@
+# Secrets
+.env
+.env.*
+*.token
+
+# Local data (never committed)
+local/
+screenshots/
+
+# Brainstorm and SDD scratch
+.superpowers/
+
+# Claude Code (personal settings)
+.claude/settings.local.json
+.claude/worktrees/
+
+# Node
+node_modules/
+
+# macOS
+.DS_Store
+
+# Build
+dist/
+
+# Logs
+*.log

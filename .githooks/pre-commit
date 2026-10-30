@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+if [ "$(git symbolic-ref --short -q HEAD || true)" = "main" ]; then
+  echo "Committing on main is not allowed - work on a branch and open a PR." >&2
+  exit 1
+fi
+
+if command -v gitleaks >/dev/null 2>&1; then
+  gitleaks git --pre-commit --staged --redact
+fi
+
+if git diff --cached --name-only --diff-filter=ACMR | grep -q '^\.github/workflows/'; then
+  uvx --from actionlint-py==1.7.12.25 actionlint
+  uvx zizmor==1.31.1 --offline .github/workflows/
+fi
