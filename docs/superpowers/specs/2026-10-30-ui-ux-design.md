@@ -1,6 +1,6 @@
 # The spending overview: UI and UX – design
 
-- **Date:** 2026-10-30 · **Status:** draft, for Thomas to approve
+- **Date:** 2026-10-30 · **Status:** approved by Thomas 2026-10-30; read by a builder agent first, its questions answered
 - **Why:** an overview of the household's spending with drill-down, the way a netbank's spending overview has it: click
   a group to see what it is made of, for any period. Thomas wants it on the computer, in Home Assistant's side menu,
   with nothing to build himself ([#1](https://github.com/thomas3650/Ha-Spending/issues/1)).
