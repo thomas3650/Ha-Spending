@@ -1,6 +1,6 @@
 <!doctype html>
-<!-- Screen 1, all spending, in light mode. Variants ?v=a to e; E (the circle
-     with names and amounts) is the one chosen; A to D stay for the record. ?open=period, grain or konti draws
+<!-- Screen 1, all spending, in light mode. Variants ?v=a to h; H (every main group in the circle,
+     names clickable) is the one chosen; the others stay for the record. ?open=period, grain or konti draws
      that dropdown open. Made-up numbers and names only. -->
 <html lang="da">
 <head>
@@ -160,7 +160,7 @@ function donutLabelled(list, W, H){
       g += `<text x="${tx}" y="${o.y + 13}" text-anchor="${an}">${kr(o.x[1])} · ${pct(o.x[1], t)}</text>`; });
   });
   g += `<text x="${cx}" y="${cy - 6}" text-anchor="middle" style="font-size:12px">Alt forbrug</text><text x="${cx}" y="${cy + 16}" text-anchor="middle" style="fill:var(--text);font-size:18px">${kr(t)}</text>`;
-  return `<svg viewBox="0 0 ${W} ${H}" width="100%">${g}</svg>`;
+  return `<svg viewBox="${V === 'f' || V === 'g' ? '-50 0 ' + (W + 100) : '0 0 ' + W} ${H}" width="100%">${g}</svg>`;
 }
 function spark(vals, W, H){
   const max = Math.max(...vals), bw = W / vals.length - 3;
@@ -188,6 +188,48 @@ if (V === 'a') {
     <div class="card"><h2>Hovedgrupper<small>${kr(total)}</small></h2>${donutLabelled(six, 520, 330)}
       <div class="foot">Klik på et stykke for at se kategorierne; Øvrige viser de små hovedgrupper.</div></div>
     <div class="card"><h2>Pr. måned<small>klik på en søjle for kun den måned</small></h2>${bars([[perMonth, '#03a9f4']], 760, 300, total/10)}</div></div>`;
+} else if (V === 'h') {
+  // H: F made easier to read: a wider card, larger text, the names in two columns in the ring's
+  // order, and each name a button like its piece (hover shown on Sommerhus).
+  const eight = ['#2a78d6', '#eb6834', '#1baf7a', '#eda100', '#e87ba4', '#008300', '#6250d6', '#e34948'];
+  const greys = ['#8a8a8a', '#a8a8a8', '#c4c4c4'];
+  const list = items.map((x, i) => [x[0], x[1], x[2], i < 8 ? eight[i] : greys[i - 8]]);
+  const HOVER = 'Sommerhus';
+  const W = 640, H = 440, cx = W/2, cy = H/2, r1 = 112, r0 = 68;
+  // Turn the ring so the six small pieces sit around nine o'clock, where their names have room.
+  const before = list.slice(0, 5).reduce((s, x) => s + x[1], 0) / total, rest = 1 - before;
+  let g = '', a = Math.PI - 2*Math.PI*(before + rest/2); const labels = [];
+  list.forEach(x => { const a1 = a + 2*Math.PI * x[1]/total, m = (a + a1)/2, on = x[0] === HOVER, dx = on ? 6*Math.cos(m) : 0, dy = on ? 6*Math.sin(m) : 0;
+    g += `<path d="${arc(cx + dx, cy + dy, r0, r1, a, a1)}" fill="${x[3]}" stroke="#fff" stroke-width="2"/>`;
+    labels.push({x, m, right: Math.cos(m) >= 0, y: cy + (r1 + 20)*Math.sin(m)}); a = a1; });
+  [true, false].forEach(side => {
+    const l = labels.filter(o => o.right === side).sort((p, q) => p.y - q.y);
+    for (let i = 1; i < l.length; i++) l[i].y = Math.max(l[i].y, l[i-1].y + 38);
+    const over = l.length ? l[l.length - 1].y - (H - 24) : 0;
+    if (over > 0) l.forEach(o => { o.y -= over; });
+    for (let i = l.length - 2; i >= 0; i--) if (l[i].y > l[i+1].y - 38) l[i].y = l[i+1].y - 38;
+    l.forEach(o => { const on = o.x[0] === HOVER, px = cx + (r1 + 4)*Math.cos(o.m), py = cy + (r1 + 4)*Math.sin(o.m), ex = cx + (side ? 1 : -1)*(r1 + 30), tx = ex + (side ? 8 : -8), an = side ? 'start' : 'end';
+      const bw = 178, bx = side ? ex + 2 : ex - 2 - bw;
+      if (on) g += `<rect x="${bx}" y="${o.y - 17}" width="${bw}" height="36" rx="8" fill="#e1f3fd"/>`;
+      g += `<polyline points="${px},${py} ${cx + (r1 + 16)*Math.cos(o.m)},${o.y} ${ex},${o.y}" fill="none" stroke="${on ? '#0277bd' : '#c4c4c4'}"/>`;
+      g += `<text x="${tx}" y="${o.y - 1}" text-anchor="${an}" style="fill:${on ? '#0277bd' : 'var(--text)'};font-size:13.5px;${on ? 'text-decoration:underline' : ''}">${o.x[0]}</text>`;
+      g += `<text x="${tx}" y="${o.y + 14}" text-anchor="${an}" style="font-size:12px">${kr(o.x[1])} · ${pct(o.x[1], total)}</text>`; });
+  });
+  g += `<text x="${cx}" y="${cy - 6}" text-anchor="middle" style="font-size:13px">Alt forbrug</text><text x="${cx}" y="${cy + 18}" text-anchor="middle" style="fill:var(--text);font-size:20px">${kr(total)}</text>`;
+  html += kpis() + `<div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px">
+    <div class="card"><h2>Hovedgrupper<small>${kr(total)}</small></h2><svg viewBox="0 0 ${W} ${H}" width="100%">${g}</svg>
+      <div class="foot">Klik på et stykke eller et navn for at gå til hovedgruppen. Musen over Sommerhus viser, hvad der kan klikkes.</div></div>
+    <div class="card"><h2>Pr. måned<small>klik på en søjle for kun den måned</small></h2>${bars([[perMonth, '#03a9f4']], 640, 420, total/10)}</div></div>`;
+} else if (V === 'f' || V === 'g') {
+  // F: every main group gets a piece: eight colours, then greys. G: eight pieces and "Mindre grupper".
+  const eight = ['#2a78d6', '#eb6834', '#1baf7a', '#eda100', '#e87ba4', '#008300', '#6250d6', '#e34948'];
+  const greys = ['#8a8a8a', '#a8a8a8', '#c4c4c4'];
+  const list = V === 'f' ? items.map((x, i) => [x[0], x[1], x[2], i < 8 ? eight[i] : greys[i - 8]])
+    : items.slice(0, 7).map((x, i) => [x[0], x[1], x[2], eight[i]]).concat([['Mindre grupper (4)', items.slice(7).reduce((a, x) => a + x[1], 0), null, '#9a9a9a']]);
+  html += kpis() + `<div style="display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:14px">
+    <div class="card"><h2>Hovedgrupper<small>${kr(total)}</small></h2>${donutLabelled(list, 520, 420)}
+      <div class="foot">${V === 'f' ? 'Alle 11 hovedgrupper: de otte største i farver, de tre mindste i grå.' : 'De syv største og "Mindre grupper", som samler de fire mindste.'}</div></div>
+    <div class="card"><h2>Pr. måned<small>klik på en søjle for kun den måned</small></h2>${bars([[perMonth, '#03a9f4']], 760, 380, total/10)}</div></div>`;
 } else if (V === 'b') {
   // B: the circle first, with its legend as the list; the months below, stacked in the same colours.
   const legend = six.map(x => `<div class="row" style="grid-template-columns:1fr 120px 44px 14px"><span><span class="dot" style="background:${x[3]}"></span>${x[0]}</span><span class="amt">${kr(x[1])}</span><span class="pc">${pct(x[1], total)}</span><span class="chev">›</span></div>`).join('');
