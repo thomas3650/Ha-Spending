@@ -1,0 +1,261 @@
+<!doctype html>
+<!-- Screen 2, a main group (Mad) after a click on its piece, in light mode.
+     Variants ?v=a, b or c; C is chosen, and D is C refined:
+     ?v=d&sel=1&view=bars or posts. Made-up numbers and names only. -->
+<html lang="da">
+<head>
+<meta charset="utf-8">
+<title>Hovedgruppe – tre udgaver</title>
+<style>
+:root{--bg:#f5f5f5;--side:#ffffff;--card:#ffffff;--line:#e3e3e3;--soft:#f0f0f0;--text:#1f1f1f;--muted:#6b6b6b;--accent:#03a9f4;--chip:#f1f1f1}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:Roboto,"Segoe UI",system-ui,sans-serif;font-size:14px}
+.app{display:flex;min-height:100vh}
+.side{width:56px;background:var(--side);border-right:1px solid var(--line);display:flex;flex-direction:column;align-items:center;padding-top:12px;gap:18px}
+.side i{display:block;width:22px;height:22px;border-radius:5px;background:#dcdcdc}
+.side i.on{background:var(--accent)}
+.main{flex:1;min-width:0}
+.top{height:56px;display:flex;align-items:center;padding:0 20px;border-bottom:1px solid var(--line);background:var(--side)}
+.top b{font-size:20px;font-weight:400}
+.page{padding:16px 20px;display:flex;flex-direction:column;gap:14px;max-width:1360px}
+.card{background:var(--card);border-radius:12px;border:1px solid var(--line);padding:16px}
+.bar-row{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between}
+.group{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.chip{padding:7px 12px;border-radius:16px;background:var(--chip);color:var(--text);font-size:13px;border:1px solid var(--line)}
+.chip.on{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
+.label{color:var(--muted);font-size:12px;margin-right:4px}
+.filters{display:flex;gap:12px;align-items:flex-start}
+.dd{position:relative}
+.sel{display:flex;flex-direction:column;min-width:190px;padding:6px 36px 6px 12px;border:1px solid #c9c9c9;border-radius:8px;background:#fff;position:relative}
+.sel small{color:var(--muted);font-size:11px}
+.sel span{font-size:14px}
+.sel:after{content:"▾";position:absolute;right:12px;top:14px;color:var(--muted)}
+.sel.open{border:2px solid var(--accent);padding:5px 35px 5px 11px}
+.sel.open small{color:var(--accent)}
+.menu{position:absolute;top:calc(100% + 4px);left:0;min-width:100%;background:#fff;border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,.16);padding:6px 0;z-index:5}
+.menu div.o{padding:9px 16px;white-space:nowrap}
+.menu div.o.on{background:#e1f3fd;color:#0277bd}
+.menu hr{border:0;border-top:1px solid var(--line);margin:6px 0}
+.menu .custom{padding:8px 16px 10px;display:flex;flex-direction:column;gap:8px}
+.menu .dates{display:flex;gap:8px}
+.menu .date{border:1px solid #c9c9c9;border-radius:6px;padding:5px 10px;display:flex;flex-direction:column;min-width:130px}
+.menu .date small{color:var(--muted);font-size:11px}
+.menu .btn{align-self:flex-end;background:var(--accent);color:#fff;border-radius:16px;padding:6px 16px;font-weight:600}
+.menu .cb{display:flex;gap:10px;align-items:center;padding:9px 16px}
+.menu .box{width:16px;height:16px;border-radius:3px;border:2px solid #8a8a8a;display:inline-flex;align-items:center;justify-content:center;font-size:11px;color:#fff}
+.menu .box.on{background:var(--accent);border-color:var(--accent)}
+.crumbs{font-size:16px;font-weight:600}
+.crumbs a{color:var(--accent);font-weight:400;text-decoration:none}
+.crumbs .sep{color:var(--muted);font-weight:400;margin:0 6px}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{color:var(--muted);font-weight:500;text-align:left;padding:8px 6px;border-bottom:1px solid var(--line)}
+td{padding:8px 6px;border-bottom:1px solid var(--soft);font-variant-numeric:tabular-nums}
+td.r,th.r{text-align:right}
+h2{margin:0 0 12px;font-size:16px;font-weight:500;display:flex;justify-content:space-between;align-items:baseline}
+h2 small{color:var(--muted);font-weight:400;font-size:13px}
+.foot{color:var(--muted);font-size:12px;margin-top:8px}
+.kpis{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+.kpi .v{font-size:26px;margin-top:4px}
+.kpi .s{color:var(--muted);font-size:12px;margin-top:2px}
+.up{color:#c62828}
+.seg{display:inline-flex;border:1px solid #c9c9c9;border-radius:8px;overflow:hidden;font-size:13px}
+.seg span{padding:6px 14px;color:var(--text)}
+.seg span.on{background:var(--accent);color:#fff;font-weight:600}
+.filter{display:inline-flex;align-items:center;gap:8px;padding:4px 6px 4px 12px;border-radius:16px;background:#e1f3fd;color:#0277bd;font-size:13px}
+.filter b{font-weight:400;width:20px;height:20px;border-radius:10px;display:inline-flex;align-items:center;justify-content:center;background:#b3e0fb}
+.row{display:grid;grid-template-columns:1fr 120px 44px 14px;gap:12px;align-items:center;padding:8px 6px;border-radius:8px}
+.row:hover{background:var(--soft)}
+.row .name{display:flex;flex-direction:column;gap:6px}
+.row .track{height:6px;background:var(--soft);border-radius:3px}
+.row .fill{display:block;height:6px;border-radius:3px;background:var(--accent)}
+.row .amt{text-align:right;font-variant-numeric:tabular-nums}
+.row .pc{text-align:right;color:var(--muted);font-size:12px;font-variant-numeric:tabular-nums}
+.row .chev{color:var(--muted)}
+.dot{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:8px;vertical-align:middle}
+.tiles{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
+.tile{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px;display:flex;flex-direction:column;gap:4px}
+.tile .n{display:flex;justify-content:space-between;color:var(--muted);font-size:13px}
+.tile .v{font-size:20px;font-variant-numeric:tabular-nums}
+.tile .d{font-size:12px;color:var(--muted)}
+svg text{fill:var(--muted);font-size:11px}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="side"><i></i><i></i><i class="on"></i><i></i><i></i><i></i></div>
+  <div class="main">
+    <div class="top"><b>Forbrug</b></div>
+    <div class="page" id="page"></div>
+  </div>
+</div>
+<script>
+const V = new URLSearchParams(location.search).get('v') || 'a';
+const kr = v => Math.round(v).toLocaleString('da-DK') + ' kr.';
+const pct = (v, t) => Math.round(100 * v / t) + ' %';
+// Checked for colour blindness on white; "Øvrige" is grey.
+const ring = ['#2a78d6', '#eb6834', '#1baf7a', '#eda100', '#e87ba4', '#9a9a9a'];
+const months = ['jan', 'feb', 'mar', 'apr', 'maj', 'jun', 'jul', 'aug', 'sep', 'okt'];
+const groups = [['Bolig', 11500], ['Mad', 9800], ['Bil', 7400], ['Fritid', 5600], ['Børn', 4300], ['Sommerhus', 2400], ['Personligt', 1900], ['Forsikring og fagforening', 1400], ['Abonnementer', 1000], ['Andet', 600], ['Transport', 500]];
+function noise(i, s){ const x = Math.sin(i*12.9898 + s*78.233)*43758.5453; return x - Math.floor(x); }
+// Per month per group; Fritid peaks in the summer.
+const series = groups.map((g, k) => months.map((m, i) => g[1] * (g[0] === 'Fritid' && (i === 6 || i === 5) ? 2.2 : 0.75 + 0.5*noise(i, k + 1))));
+const sums = series.map(s => s.reduce((a, b) => a + b, 0));
+const total = sums.reduce((a, b) => a + b, 0);
+const perMonth = months.map((m, i) => series.reduce((a, s) => a + s[i], 0));
+const items = groups.map((g, k) => [g[0], sums[k], series[k]]);
+const six = items.slice(0, 5).concat([['Øvrige', items.slice(5).reduce((a, x) => a + x[1], 0), months.map((m, i) => items.slice(5).reduce((a, x) => a + x[2][i], 0))]]).map((x, i) => [...x, ring[i]]);
+function axis(v){ return v >= 2000 ? Math.round(v/1000) + 'k' : String(Math.round(v)); }
+
+// Three dropdowns; ?open=period, grain or konti draws that one open.
+const OPEN = new URLSearchParams(location.search).get('open');
+function dd(key, label, value, menu){
+  return `<div class="dd"><div class="sel ${OPEN === key ? 'open' : ''}"><small>${label}</small><span>${value}</span></div>${OPEN === key ? `<div class="menu">${menu}</div>` : ''}</div>`;
+}
+function header(){
+  const opts = (list, on) => list.map(x => `<div class="o ${x === on ? 'on' : ''}">${x}</div>`).join('');
+  const period = opts(['Denne måned', 'Sidste måned', 'Sidste 3 måneder', 'Sidste 12 måneder', 'I år', 'Sidste år'], 'I år') +
+    `<hr><div class="o">Vælg periode …</div><div class="custom"><div class="dates"><div class="date"><small>Fra</small>01.01.2026</div><div class="date"><small>Til</small>30.10.2026</div></div><span class="btn">Vis</span></div>`;
+  const grain = opts(['Dag', 'Uge', 'Måned', 'Kvartal', 'År'], 'Måned');
+  const konti = [['Alle konti', true], ['Budgetkonto', true], ['Fælleskonto', true]].map((k, i) => `${i === 1 ? '<hr>' : ''}<div class="cb"><span class="box ${k[1] ? 'on' : ''}">${k[1] ? '✓' : ''}</span>${k[0]}</div>`).join('');
+  return `<div class="card"><div class="bar-row">
+    <div class="crumbs"><a href="#">Alt forbrug</a><span class="sep">›</span>Mad</div>
+    <div class="filters">${dd('period', 'Periode', 'I år · 1. jan – 30. okt 2026', period)}${dd('grain', 'Gruppér pr.', 'Måned', grain)}${dd('konti', 'Konti', 'Alle konti (2)', konti)}</div>
+  </div></div>`;
+}
+function kpis(){
+  const avg = total / months.length, last = perMonth[9], prev = perMonth[8], d = last - prev;
+  return `<div class="kpis">
+    <div class="card kpi"><div class="label">Forbrug i perioden</div><div class="v">${kr(total)}</div><div class="s">1. jan – 30. okt 2026</div></div>
+    <div class="card kpi"><div class="label">Gennemsnit pr. måned</div><div class="v">${kr(avg)}</div><div class="s">10 måneder</div></div>
+    <div class="card kpi"><div class="label">Oktober mod september</div><div class="v">${d >= 0 ? '+' : ''}${pct(d, prev)}</div><div class="s"><span class="${d >= 0 ? 'up' : ''}">${d >= 0 ? '▲' : '▼'} ${kr(Math.abs(d))}</span></div></div>
+  </div>`;
+}
+// Bars, one colour, or stacked when given several series with colours.
+function bars(stack, W, H, avg){
+  const n = months.length, pad = 36, gap = 14, tot = months.map((m, i) => stack.reduce((a, s) => a + s[0][i], 0));
+  const max = Math.max(...tot) * 1.1, bw = Math.min(40, (W - pad - gap*(n-1)) / n), step = (W - pad) / n;
+  let g = '';
+  for (let t = 0; t <= 4; t++){ const y = 10 + (H-40)*(1 - t/4); g += `<line x1="${pad}" x2="${W}" y1="${y}" y2="${y}" stroke="#ececec"/><text x="0" y="${y+4}">${axis(max*t/4)}</text>`; }
+  months.forEach((m, i) => { let y = 10 + (H-40); const x = pad + i*step + (step - bw)/2;
+    stack.forEach((s, k) => { const h = (H-40) * s[0][i] / max; y -= h;
+      g += `<rect x="${x}" y="${y + (k === stack.length-1 ? 0 : 1)}" width="${bw}" height="${Math.max(0, h - (k === stack.length-1 ? 0 : 2))}" ${k === stack.length-1 ? 'rx="4"' : ''} fill="${s[1]}"/>`; });
+    g += `<text x="${x + bw/2}" y="${H-12}" text-anchor="middle">${m}</text>`; });
+  if (avg) { const y = 10 + (H-40) * (1 - avg/max); g += `<line x1="${pad}" x2="${W}" y1="${y}" y2="${y}" stroke="#6b6b6b" stroke-dasharray="4 4"/><text x="${pad + 4}" y="${y-5}">gennemsnit ${kr(avg)}</text>`; }
+  return `<svg viewBox="0 0 ${W} ${H}" width="100%">${g}</svg>`;
+}
+function arc(cx, cy, r0, r1, a0, a1){
+  const p = (r, a) => `${(cx + r*Math.cos(a)).toFixed(1)} ${(cy + r*Math.sin(a)).toFixed(1)}`, l = a1 - a0 > Math.PI ? 1 : 0;
+  return `M${p(r1,a0)}A${r1} ${r1} 0 ${l} 1 ${p(r1,a1)}L${p(r0,a1)}A${r0} ${r0} 0 ${l} 0 ${p(r0,a0)}Z`;
+}
+function donut(list, S){
+  const c = S/2, r1 = S/2 - 4, r0 = r1 * 0.62, t = list.reduce((a, x) => a + x[1], 0);
+  let g = '', a = -Math.PI/2;
+  list.forEach(x => { const a1 = a + 2*Math.PI * x[1]/t; g += `<path d="${arc(c, c, r0, r1, a, a1)}" fill="${x[3]}" stroke="#fff" stroke-width="2"/>`; a = a1; });
+  g += `<text x="${c}" y="${c - 8}" text-anchor="middle" style="font-size:13px">Alt forbrug</text><text x="${c}" y="${c + 18}" text-anchor="middle" style="fill:var(--text);font-size:22px">${kr(t)}</text>`;
+  return `<svg viewBox="0 0 ${S} ${S}" width="${S}" height="${S}">${g}</svg>`;
+}
+// The circle with each piece's name and amount outside it, spread so they do not overlap.
+function donutLabelled(list, W, H){
+  const cx = W/2, cy = H/2, r1 = Math.min(H/2 - 30, 112), r0 = r1 * 0.6, t = list.reduce((a, x) => a + x[1], 0);
+  let g = '', a = -Math.PI/2; const labels = [];
+  list.forEach(x => { const a1 = a + 2*Math.PI * x[1]/t, m = (a + a1)/2;
+    const on = SEL === null || list[SEL] === x, dx = on && SEL !== null ? 8*Math.cos(m) : 0, dy = on && SEL !== null ? 8*Math.sin(m) : 0;
+    g += `<path d="${arc(cx + dx, cy + dy, r0, r1, a, a1)}" fill="${x[3]}" fill-opacity="${on ? 1 : 0.25}" stroke="#fff" stroke-width="2"/>`;
+    labels.push({x, m, right: Math.cos(m) >= 0, y: cy + (r1 + 18)*Math.sin(m)}); a = a1; });
+  [true, false].forEach(side => {
+    const l = labels.filter(o => o.right === side).sort((p, q) => p.y - q.y);
+    for (let i = 1; i < l.length; i++) l[i].y = Math.max(l[i].y, l[i-1].y + 36);
+    for (let i = l.length - 2; i >= 0; i--) if (l[i].y > l[i+1].y - 36) l[i].y = l[i+1].y - 36;
+    l.forEach(o => { const px = cx + (r1 + 4)*Math.cos(o.m), py = cy + (r1 + 4)*Math.sin(o.m), ex = cx + (side ? 1 : -1)*(r1 + 34), tx = ex + (side ? 6 : -6), an = side ? 'start' : 'end';
+      g += `<polyline points="${px},${py} ${cx + (r1 + 16)*Math.cos(o.m)},${o.y} ${ex},${o.y}" fill="none" stroke="#b5b5b5"/>`;
+      g += `<text x="${tx}" y="${o.y - 2}" text-anchor="${an}" style="fill:var(--text);font-size:13px;font-weight:${SEL !== null && list[SEL] === o.x ? 700 : 400}">${o.x[0]}</text>`;
+      g += `<text x="${tx}" y="${o.y + 13}" text-anchor="${an}">${kr(o.x[1])} · ${pct(o.x[1], t)}</text>`; });
+  });
+  g += `<text x="${cx}" y="${cy - 6}" text-anchor="middle" style="font-size:12px">${CENTRE}</text><text x="${cx}" y="${cy + 16}" text-anchor="middle" style="fill:var(--text);font-size:18px">${kr(t)}</text>`;
+  // Room for long names on either side.
+  return `<svg viewBox="-24 0 ${W + 48} ${H}" width="100%">${g}</svg>`;
+}
+function spark(vals, W, H){
+  const max = Math.max(...vals), bw = W / vals.length - 3;
+  return `<svg viewBox="0 0 ${W} ${H}" width="100%" height="${H}">${vals.map((v, i) => `<rect x="${i*(bw+3)}" y="${H - H*v/max}" width="${bw}" height="${H*v/max}" rx="2" fill="${i === vals.length-1 ? 'var(--accent)' : '#cfe3f7'}"/>`).join('')}</svg>`;
+}
+
+const CENTRE = 'Mad';
+const SEL = new URLSearchParams(location.search).has('sel') ? +new URLSearchParams(location.search).get('sel') : null;
+// Mad's categories: fixed shares of Mad's months, so the totals match screen 1.
+const mad = items[1];
+const cats = [['Dagligvarer', 0.66], ['Café og restaurant', 0.17], ['Take away', 0.09], ['Bageri', 0.05], ['Kaffe', 0.03]]
+  .map((c, k) => mad[2].map((v, i) => v * c[1] * (k === 1 && (i === 5 || i === 6) ? 1.6 : 1)))
+  // Each month's shares are scaled back to Mad's month, so the categories add up to it.
+  .map((s, k, all) => s.map((v, i) => v * mad[2][i] / all.reduce((a, x) => a + x[i], 0)))
+  .map((s, k) => [['Dagligvarer', 'Café og restaurant', 'Take away', 'Bageri', 'Kaffe'][k], s.reduce((a, b) => a + b, 0), s, ring[k]]);
+const madTotal = cats.reduce((a, c) => a + c[1], 0);
+const madMonth = months.map((m, i) => cats.reduce((a, c) => a + c[2][i], 0));
+function madKpis(){
+  const d = madMonth[9] - madMonth[8];
+  return `<div class="kpis">
+    <div class="card kpi"><div class="label">Mad i perioden</div><div class="v">${kr(madTotal)}</div><div class="s">${pct(madTotal, total)} af alt forbrug</div></div>
+    <div class="card kpi"><div class="label">Gennemsnit pr. måned</div><div class="v">${kr(madTotal / 10)}</div><div class="s">10 måneder</div></div>
+    <div class="card kpi"><div class="label">Oktober mod september</div><div class="v">${d >= 0 ? '+' : ''}${pct(d, madMonth[8])}</div><div class="s"><span class="${d >= 0 ? 'up' : ''}">${d >= 0 ? '▲' : '▼'} ${kr(Math.abs(d))}</span></div></div>
+  </div>`;
+}
+const circle = foot => `<div class="card"><h2>Kategorier<small>${kr(madTotal)}</small></h2>${donutLabelled(cats, 520, 330)}<div class="foot">${foot}</div></div>`;
+let html = header() + madKpis();
+if (V === 'a') {
+  // A: as screen 1, one level down: the categories as a circle, Mad's months in one colour.
+  html += `<div style="display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:14px">
+    ${circle('Klik på et stykke for at se kategoriens posteringer.')}
+    <div class="card"><h2>Mad pr. måned<small>klik på en søjle for kun den måned</small></h2>${bars([[madMonth, '#03a9f4']], 760, 300, madTotal/10)}</div></div>`;
+} else if (V === 'b') {
+  // B: the months split on the categories, in the circle's colours.
+  html += `<div style="display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:14px">
+    ${circle('Klik på et stykke for at se kategoriens posteringer.')}
+    <div class="card"><h2>Mad pr. måned, delt på kategorier<small>samme farver som cirklen</small></h2>${bars(cats.map(c => [c[2], c[3]]), 760, 300, madTotal/10)}</div></div>`;
+} else if (V === 'd') {
+  // D, the chosen C refined: a click on a piece filters the page to that category;
+  // the right card toggles between bars and postings. ?sel=<piece>&view=bars or posts.
+  const VIEW = new URLSearchParams(location.search).get('view') || 'bars';
+  const c = SEL === null ? null : cats[SEL];
+  const sel = c ? c[2] : madMonth, selTotal = c ? c[1] : madTotal, name = c ? c[0] : 'Mad';
+  const d = sel[9] - sel[8];
+  html = header().replace('<span class="sep">›</span>Mad', c ? `<span class="sep">›</span><a href="#">Mad</a><span class="sep">›</span>${c[0]}` : '<span class="sep">›</span>Mad') + `<div class="kpis">
+    <div class="card kpi"><div class="label">${name} i perioden</div><div class="v">${kr(selTotal)}</div><div class="s">${c ? pct(selTotal, madTotal) + ' af Mad' : pct(madTotal, total) + ' af alt forbrug'}</div></div>
+    <div class="card kpi"><div class="label">Gennemsnit pr. måned</div><div class="v">${kr(selTotal / 10)}</div><div class="s">10 måneder</div></div>
+    <div class="card kpi"><div class="label">Oktober mod september</div><div class="v">${d >= 0 ? '+' : ''}${pct(d, sel[8])}</div><div class="s"><span class="${d >= 0 ? 'up' : ''}">${d >= 0 ? '▲' : '▼'} ${kr(Math.abs(d))}</span></div></div>
+  </div>`;
+  // The postings grouped by the chosen grouping (here the month), newest first, each group
+  // with its count and sum; the two newest are open. Each open month's postings add up to its bar.
+  const monthNames = ['Januar', 'Februar', 'Marts', 'April', 'Maj', 'Juni', 'Juli', 'August', 'September', 'Oktober'];
+  const open = {9: [['26.10', 'Café', 0.18], ['19.10', 'Restaurant', 0.47], ['12.10', 'Café', 0.08], ['05.10', 'Bistro', 0.27]],
+                8: [['29.09', 'Café', 0.06], ['21.09', 'Restaurant', 0.6], ['14.09', 'Café', 0.1], ['07.09', 'Brunchsted', 0.24]]};
+  const counts = [3, 3, 4, 4, 5, 7, 8, 4, 4, 4];
+  const money = v => (-v).toLocaleString('da-DK', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+  let rows = '';
+  for (let i = 9; i >= 5; i--) {
+    rows += `<tr style="background:var(--soft)"><td><b>${open[i] ? '▾' : '▸'} ${monthNames[i]} 2026</b></td><td>${counts[i]} posteringer</td><td></td><td class="r"><b>${money(sel[i])}</b></td></tr>`;
+    if (open[i]) rows += open[i].map(s => `<tr><td style="padding-left:24px">${s[0]}.2026</td><td>${s[1]}</td><td>Konto 1</td><td class="r">${money(Math.round(sel[i] * s[2] * 100) / 100)}</td></tr>`).join('');
+  }
+  const toggle = `<span class="seg"><span class="${VIEW === 'bars' ? 'on' : ''}">Søjler</span><span class="${VIEW === 'posts' ? 'on' : ''}">Posteringer</span></span>`;
+  const filter = c ? `<span class="filter">${c[0]}<b>✕</b></span>` : '';
+  const right = VIEW === 'bars'
+    ? `${bars([[sel, c ? c[3] : '#03a9f4']], 760, 300, selTotal/10)}<div class="foot">Klik på en søjle for kun den måned.</div>`
+    : `<table><thead><tr><th>Måned / dato</th><th>Tekst</th><th>Konto</th><th class="r">Beløb</th></tr></thead><tbody>${rows}</tbody></table>
+       <div class="foot">Grupperet pr. måned, som "Gruppér pr." · <a href="#" style="color:var(--accent);text-decoration:none">Vis ældre ›</a> · klik på en måned for at folde den ud, på en postering for at åbne den i Firefly.</div>`;
+  html += `<div style="display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:14px">
+    ${circle(c ? 'Klik på det valgte stykke igen, eller på ✕, for hele Mad.' : 'Klik på et stykke for kun den kategori.')}
+    <div class="card"><h2><span style="display:flex;gap:10px;align-items:center">${VIEW === 'bars' ? name + ' pr. måned' : name + ': posteringer'}${filter}</span>${toggle}</h2>${right}</div></div>`;
+} else {
+  // C: A, with the group's newest postings below, so one click less to see them.
+  const shops = [['29.10', 'Supermarked B', 'Dagligvarer', 198], ['28.10', 'Pizzeria', 'Take away', 245], ['27.10', 'Supermarked A', 'Dagligvarer', 276], ['26.10', 'Café', 'Café og restaurant', 312], ['25.10', 'Bageri', 'Bageri', 64], ['24.10', 'Delikatesse', 'Dagligvarer', 130], ['22.10', 'Kaffebutik', 'Kaffe', 189], ['21.10', 'Slagter', 'Dagligvarer', 185], ['19.10', 'Restaurant', 'Café og restaurant', 840], ['18.10', 'Supermarked C', 'Dagligvarer', 540]];
+  const dot = c => `<span class="dot" style="background:${cats.find(x => x[0] === c)[3]}"></span>`;
+  const rows = shops.map(s => `<tr><td>${s[0]}.2026</td><td>${s[1]}</td><td>${dot(s[2])}${s[2]}</td><td>Konto ${s[2] === 'Dagligvarer' ? 2 : 1}</td><td class="r">-${s[3].toLocaleString('da-DK', {minimumFractionDigits: 2})}</td></tr>`).join('');
+  html += `<div style="display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:14px">
+    ${circle('Klik på et stykke for kun den kategori, også i posteringerne.')}
+    <div class="card"><h2>Mad pr. måned<small>klik på en søjle for kun den måned</small></h2>${bars([[madMonth, '#03a9f4']], 760, 300, madTotal/10)}</div></div>
+    <div class="card"><h2>Mad: posteringer<small>de nyeste 10 af 412 · <a href="#" style="color:var(--accent);text-decoration:none">Vis alle ›</a></small></h2>
+      <table><thead><tr><th>Dato</th><th>Tekst</th><th>Kategori</th><th>Konto</th><th class="r">Beløb</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+}
+document.getElementById('page').innerHTML = html;
+</script>
+</body>
+</html>
