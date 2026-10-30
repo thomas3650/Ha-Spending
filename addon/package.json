@@ -10,7 +10,8 @@
   },
   "workspaces": [
     "shared",
-    "server"
+    "server",
+    "web"
   ],
   "scripts": {
     "lint": "npm run lint --workspaces --if-present",
