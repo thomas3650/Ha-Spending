@@ -1,6 +1,6 @@
 <!doctype html>
-<!-- Screen 1, all spending, in light mode. Three variants, ?v=a, b or c; A is the
-     one chosen, B and C stay for the record. ?open=period, grain or konti draws
+<!-- Screen 1, all spending, in light mode. Variants ?v=a to e; E (the circle
+     with names and amounts) is the one chosen; A to D stay for the record. ?open=period, grain or konti draws
      that dropdown open. Made-up numbers and names only. -->
 <html lang="da">
 <head>
@@ -143,6 +143,25 @@ function donut(list, S){
   g += `<text x="${c}" y="${c - 8}" text-anchor="middle" style="font-size:13px">Alt forbrug</text><text x="${c}" y="${c + 18}" text-anchor="middle" style="fill:var(--text);font-size:22px">${kr(t)}</text>`;
   return `<svg viewBox="0 0 ${S} ${S}" width="${S}" height="${S}">${g}</svg>`;
 }
+// The circle with each piece's name and amount outside it, spread so they do not overlap.
+function donutLabelled(list, W, H){
+  const cx = W/2, cy = H/2, r1 = Math.min(H/2 - 30, 112), r0 = r1 * 0.6, t = list.reduce((a, x) => a + x[1], 0);
+  let g = '', a = -Math.PI/2; const labels = [];
+  list.forEach(x => { const a1 = a + 2*Math.PI * x[1]/t, m = (a + a1)/2;
+    g += `<path d="${arc(cx, cy, r0, r1, a, a1)}" fill="${x[3]}" stroke="#fff" stroke-width="2"/>`;
+    labels.push({x, m, right: Math.cos(m) >= 0, y: cy + (r1 + 18)*Math.sin(m)}); a = a1; });
+  [true, false].forEach(side => {
+    const l = labels.filter(o => o.right === side).sort((p, q) => p.y - q.y);
+    for (let i = 1; i < l.length; i++) l[i].y = Math.max(l[i].y, l[i-1].y + 36);
+    for (let i = l.length - 2; i >= 0; i--) if (l[i].y > l[i+1].y - 36) l[i].y = l[i+1].y - 36;
+    l.forEach(o => { const px = cx + (r1 + 4)*Math.cos(o.m), py = cy + (r1 + 4)*Math.sin(o.m), ex = cx + (side ? 1 : -1)*(r1 + 34), tx = ex + (side ? 6 : -6), an = side ? 'start' : 'end';
+      g += `<polyline points="${px},${py} ${cx + (r1 + 16)*Math.cos(o.m)},${o.y} ${ex},${o.y}" fill="none" stroke="#b5b5b5"/>`;
+      g += `<text x="${tx}" y="${o.y - 2}" text-anchor="${an}" style="fill:var(--text);font-size:13px">${o.x[0]}</text>`;
+      g += `<text x="${tx}" y="${o.y + 13}" text-anchor="${an}">${kr(o.x[1])} · ${pct(o.x[1], t)}</text>`; });
+  });
+  g += `<text x="${cx}" y="${cy - 6}" text-anchor="middle" style="font-size:12px">Alt forbrug</text><text x="${cx}" y="${cy + 16}" text-anchor="middle" style="fill:var(--text);font-size:18px">${kr(t)}</text>`;
+  return `<svg viewBox="0 0 ${W} ${H}" width="100%">${g}</svg>`;
+}
 function spark(vals, W, H){
   const max = Math.max(...vals), bw = W / vals.length - 3;
   return `<svg viewBox="0 0 ${W} ${H}" width="100%" height="${H}">${vals.map((v, i) => `<rect x="${i*(bw+3)}" y="${H - H*v/max}" width="${bw}" height="${H*v/max}" rx="2" fill="${i === vals.length-1 ? 'var(--accent)' : '#cfe3f7'}"/>`).join('')}</svg>`;
@@ -154,6 +173,20 @@ if (V === 'a') {
   const rows = items.map(x => `<div class="row"><span class="name">${x[0]}<span class="track"><span class="fill" style="width:${Math.round(100*x[1]/items[0][1])}%"></span></span></span><span class="amt">${kr(x[1])}</span><span class="pc">${pct(x[1], total)}</span><span class="chev">›</span></div>`).join('');
   html += kpis() + `<div style="display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:14px">
     <div class="card"><h2>Hovedgrupper<small>${kr(total)}</small></h2>${rows}<div class="foot">Klik på en hovedgruppe for at se dens kategorier.</div></div>
+    <div class="card"><h2>Pr. måned<small>klik på en søjle for kun den måned</small></h2>${bars([[perMonth, '#03a9f4']], 760, 300, total/10)}</div></div>`;
+} else if (V === 'd') {
+  // D: A with the main groups as a circle: the five largest and Øvrige, and
+  // every main group in the list below it, the rest in grey under Øvrige.
+  const row = (x, c, sub) => `<div class="row" style="${sub ? 'padding-left:26px' : ''}"><span><span class="dot" style="background:${c}"></span>${x[0]}</span><span class="amt">${kr(x[1])}</span><span class="pc">${pct(x[1], total)}</span><span class="chev">›</span></div>`;
+  const rows = six.slice(0, 5).map(x => row(x, x[3])).join('') + row(six[5], six[5][3]) + items.slice(5).map(x => row(x, '#d4d4d4', true)).join('');
+  html += kpis() + `<div style="display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:14px">
+    <div class="card"><h2>Hovedgrupper<small>${kr(total)}</small></h2><div style="display:flex;justify-content:center;margin:4px 0 12px">${donut(six, 260)}</div>${rows}<div class="foot">Klik på et stykke eller en linje for at se kategorierne.</div></div>
+    <div class="card"><h2>Pr. måned<small>klik på en søjle for kun den måned</small></h2>${bars([[perMonth, '#03a9f4']], 760, 300, total/10)}</div></div>`;
+} else if (V === 'e') {
+  // E: as D, with the names and amounts outside the circle and no list.
+  html += kpis() + `<div style="display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:14px">
+    <div class="card"><h2>Hovedgrupper<small>${kr(total)}</small></h2>${donutLabelled(six, 520, 330)}
+      <div class="foot">Klik på et stykke for at se kategorierne; Øvrige viser de små hovedgrupper.</div></div>
     <div class="card"><h2>Pr. måned<small>klik på en søjle for kun den måned</small></h2>${bars([[perMonth, '#03a9f4']], 760, 300, total/10)}</div></div>`;
 } else if (V === 'b') {
   // B: the circle first, with its legend as the list; the months below, stacked in the same colours.
