@@ -1,0 +1,74 @@
+#!/usr/bin/env bash
+# The fast loop: the add-on server on http://127.0.0.1:8099 with the ingress check off, and Vite's dev server with
+# the page on http://127.0.0.1:5173, which passes /api to the server.
+#
+#   scripts/develop        start both; stays in the foreground until stopped
+#   scripts/develop stop   stop both (from another shell)
+#
+# Both log to local/ and have pidfiles there. local/ is git-ignored: never commit it.
+set -euo pipefail
+
+cd "$(dirname "$0")/.."
+
+mkdir -p local
+server_pidfile=local/server.pid
+web_pidfile=local/web.pid
+
+# Stop the process group in a pidfile, if it still runs, and remove the pidfile. Each npm script runs in its own
+# group (set -m below), so the watcher that npm starts stops with it.
+stop_pidfile() {
+  local pidfile="$1"
+  if [ -f "$pidfile" ]; then
+    kill -TERM -- "-$(cat "$pidfile")" 2>/dev/null || true
+    rm -f "$pidfile"
+  fi
+}
+
+stop_background() {
+  stop_pidfile "$server_pidfile"
+  stop_pidfile "$web_pidfile"
+}
+
+listening() {
+  lsof -nP -iTCP:8099 -iTCP:5173 -sTCP:LISTEN >/dev/null 2>&1
+}
+
+if [ "${1:-}" = "stop" ]; then
+  stop_background
+  for _ in $(seq 30); do
+    listening || exit 0
+    sleep 1
+  done
+  echo "develop: something still listens on 8099 or 5173 after 30 s." >&2
+  exit 1
+fi
+
+if listening; then
+  echo "develop: 8099 or 5173 is in use; stop the fast loop first (scripts/develop stop)." >&2
+  exit 2
+fi
+
+trap stop_background EXIT
+trap 'exit 130' INT
+trap 'exit 143' TERM
+set -m
+
+(
+  export HA_SPENDING_DEV=1
+  # Unset, the server looks for the page in /opt/ha-spending/web, which does not exist on the Mac, so it serves
+  # no page at /: the page comes from Vite.
+  unset HA_SPENDING_WEB_DIR
+  exec npm run dev --prefix addon --workspace server
+) </dev/null >local/server.log 2>&1 &
+echo $! >"$server_pidfile"
+
+(exec npm run dev --prefix addon --workspace web) </dev/null >local/web.log 2>&1 &
+echo $! >"$web_pidfile"
+
+curl -sf -o /dev/null --retry 30 --retry-delay 1 --retry-connrefused --retry-all-errors --max-time 2 \
+  http://127.0.0.1:8099/api/health || { echo "develop: the server isn't answering; see local/server.log." >&2; exit 1; }
+curl -sf -o /dev/null --retry 30 --retry-delay 1 --retry-connrefused --retry-all-errors --max-time 2 \
+  http://127.0.0.1:5173/ || { echo "develop: Vite isn't answering; see local/web.log." >&2; exit 1; }
+echo "develop: the server (http://127.0.0.1:8099) and the page (http://127.0.0.1:5173) run; logs in local/."
+
+wait

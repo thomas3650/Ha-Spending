@@ -1,0 +1,31 @@
+name: release-please
+# Opens the add-on's release PR and, when it is merged, tags it and creates a draft release. The draft stays a
+# draft: addon-image.yml builds the image from the version bump in addon/config.yaml.
+on:
+  push:
+    branches: [main]
+
+permissions: {}
+
+defaults:
+  run:
+    shell: bash
+
+concurrency:
+  group: release-please
+  cancel-in-progress: false
+
+jobs:
+  release-please:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      # Only used if RELEASE_PLEASE_TOKEN is missing; that token has the same scopes for this repo.
+      contents: write
+      pull-requests: write
+      issues: write
+    steps:
+      - uses: googleapis/release-please-action@45996ed1f6d02564a971a2fa1b5860e934307cf7  # v5.0.0
+        with:
+          # A PAT, so CI runs on the release PRs. github.token works too, but its PRs trigger no workflows.
+          token: ${{ secrets.RELEASE_PLEASE_TOKEN || github.token }}
