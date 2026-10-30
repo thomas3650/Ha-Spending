@@ -119,7 +119,7 @@ Changing the visibility needs Thomas's OK.
 
 `RELEASE_PLEASE_TOKEN` is to be a fine-grained token for `thomas3650/Ha-Spending` only, with Contents, Pull requests
 and Issues: read and write, the scopes the `release-please` job asks of `github.token`. With it, release PRs trigger
-CI. It is not set yet.
+CI.
 
 - **Setting it (Thomas):** create the token, then run `gh secret set RELEASE_PLEASE_TOKEN -R thomas3650/Ha-Spending`
   and paste it. Its expiry date then goes into `docs/notes.md` (created then, and added to the map), so it is

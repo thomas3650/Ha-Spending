@@ -12,8 +12,8 @@ Every PR. The server and the page on the Mac, with nothing from Home Assistant.
 2. `scripts/develop`. Claude starts it with the Bash tool's `run_in_background`; it stays in the foreground until it is
    stopped. It starts, each in the background with its log and pidfile in `local/`:
    - the server (`npm run dev` in `addon/server`, which restarts on a change) on port 8099, with `HA_SPENDING_DEV=1`,
-     so the ingress check is off, and `HA_SPENDING_WEB_DIR` unset, so it serves no page at `/` (log
-     `local/server.log`);
+     so the ingress check is off, and `HA_SPENDING_WEB_DIR` unset, so it serves no page at `/`: the default web
+     directory `/opt/ha-spending/web` does not exist on the Mac (log `local/server.log`);
    - Vite's dev server with the page on `http://127.0.0.1:5173`, which passes `/api` to the server (log
      `local/web.log`).
 

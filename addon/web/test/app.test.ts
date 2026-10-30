@@ -62,4 +62,15 @@ describe("<hs-app>", () => {
     expect(getByRole(root, "heading", { level: 1, name: da.hello })).toBeTruthy();
     expect(queryByText(root, /Version/)).toBeNull();
   });
+  it("leaves the version out when the server refuses", async () => {
+    const fetch = vi.fn(async () => new Response(JSON.stringify({ status: "ok", version: "1.2.3" }), { status: 403 }));
+    vi.stubGlobal("fetch", fetch);
+    const { app, root } = await mount();
+
+    expect(fetch).toHaveBeenCalled();
+    await new Promise((resolve) => setTimeout(resolve));
+    await app.updateComplete;
+    expect(getByRole(root, "heading", { level: 1, name: da.hello })).toBeTruthy();
+    expect(queryByText(root, /Version/)).toBeNull();
+  });
 });

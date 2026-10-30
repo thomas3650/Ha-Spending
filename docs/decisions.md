@@ -77,3 +77,14 @@ to set their status to `superseded by D<n>`, or to name a part a later decision 
 - **Decision:** release-please has one component, `addon/`, tagged `vX.Y.Z`; the first release is `0.1.0`.
 - **Why:** The add-on is the only thing released; Ha-Fitness's workflows trimmed to one component.
 - **Source:** [technical spec](superpowers/specs/2026-10-30-technical-design.md) §9
+
+### D10: The page's state is in the frame's hash, for back only; a view cannot be bookmarked
+- **Date:** 2026-10-30 · **Status:** active
+- **Decision:** The page keeps its state ([UI spec](superpowers/specs/2026-10-30-ui-ux-design.md) §5) in its own
+  frame's hash, so back works; a view cannot be bookmarked. This settles the open question of the
+  [technical spec](superpowers/specs/2026-10-30-technical-design.md) §6; the bookmark promise of the UI spec §5 falls.
+- **Why:** Checked under a real Supervisor (HA 2026.10, apps dev container): setting the frame's hash leaves Home
+  Assistant's address unchanged; an outer address `/app/<slug>/<path>#<hash>` passes neither the path nor the hash
+  into the frame; back inside the frame restores the previous hash.
+- **Source:** Claude's ingress check, 2026-10-30, [skeleton plan](superpowers/plans/2026-10-30-skeleton.md) "After
+  the tasks" step 5

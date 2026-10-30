@@ -6,9 +6,9 @@ version.
 
 ## Installation
 
-1. In Home Assistant go to *Settings → Add-ons → Add-on store → ⋮ → Repositories* and add
+1. In Home Assistant go to *Settings → Apps → Install app → ⋮ → Repositories* and add
    `https://github.com/thomas3650/Ha-Spending`.
-2. Install *HA Spending* from the store and start it.
+2. Install the *HA Spending* app and start it.
 3. On the add-on's page turn on *Show in sidebar*. The page is then *Forbrug* in the sidebar. You can also open it with
    *Open web UI*.
 
