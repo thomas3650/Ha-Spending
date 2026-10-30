@@ -18,7 +18,7 @@ a category, to the single postings, or from a month that stood out to what made 
 - **Goals:** every posting is reachable; any period, grouped by day, week, month, quarter or year; new categories and
   main groups appear by themselves; the numbers on every level add up to the level above.
 - **Non-goals (v1):** budgets; changing postings, categories or rules (that stays in Firefly III); a phone layout;
-  per-receiver grouping (tried on screen 3, not chosen); income and savings (open, §8).
+  per-receiver grouping (tried on screen 3, not chosen); income and savings (later, §9); a dark theme.
 - **Anti-goals:** a number that does not add up to its parent; a category that silently drops out because no rule
   places it; anything to configure before it is useful.
 
@@ -42,8 +42,8 @@ a category, to the single postings, or from a month that stood out to what made 
 
 ### 3.1 The frame
 
-- The page sits in Home Assistant's side menu ("Forbrug") and fills the panel. Light colours (Thomas asked for light
-  mode).
+- The page sits in Home Assistant's side menu ("Forbrug") and fills the panel. **A light theme only**, also when Home
+  Assistant is dark (Thomas, 2026-10-30).
 - **The top card** on every screen: the **trail** on the left, the three **dropdowns** on the right.
   - The trail: "Alt forbrug › Mad › Café og restaurant …"; every part but the last is a link back to that level.
   - **Periode:** Denne måned, Sidste måned, Sidste 3 måneder, Sidste 12 måneder, I år, Sidste år, then "Vælg periode …"
@@ -205,12 +205,10 @@ every screen, kept in the address (§3.1).
 - On the computer, in the panel beside Home Assistant's side menu; laid out for 1280 px and wider.
 - **Claude's call:** narrower, the two halves stack (circle above, the right card below); there is no phone layout.
 
-## 9. Open
+## 9. Later
 
-- **Money in and savings:** whether the page shows only spending, or also income and savings (Indskud, Opsparing,
-  Overførsel til egen konto). Not decided; v1 shows spending only.
-- **Dark mode:** the mockups are light, as Thomas asked. Whether the page follows Home Assistant's dark theme is not
-  decided.
+- **Money in and savings:** whether the page also shows income and savings (Indskud, Opsparing, Overførsel til egen
+  konto). Thomas: "vi kan vente"; low priority, [#9](https://github.com/thomas3650/Ha-Spending/issues/9).
 
 ## 10. What is left to the builder
 
