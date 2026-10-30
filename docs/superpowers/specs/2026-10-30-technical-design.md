@@ -1,6 +1,6 @@
 # The spending overview: technical – design
 
-- **Date:** 2026-10-30 · **Status:** draft, for Thomas to approve
+- **Date:** 2026-10-30 · **Status:** approved by Thomas 2026-10-30; read by a builder agent first, its findings answered
 - **Why:** how the page in the [UI and UX spec](2026-10-30-ui-ux-design.md) is built, tested, released and installed.
   That spec decides what the page shows and does; where the two meet, it wins.
 - **Decided with Thomas** (2026-10-30, [#1](https://github.com/thomas3650/Ha-Spending/issues/1)): a small Home
