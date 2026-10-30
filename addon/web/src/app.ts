@@ -1,12 +1,14 @@
 import type { Health } from "@ha-spending/shared";
 import { css, html, LitElement, nothing } from "lit";
-import { customElement, state } from "lit/decorators.js";
 
 import { da } from "./i18n/da";
 import { theme } from "./theme";
 
-@customElement("hs-app")
 export class SpendingApp extends LitElement {
+  static override properties = {
+    version: { state: true },
+  };
+
   static override styles = [
     theme,
     css`
@@ -22,7 +24,12 @@ export class SpendingApp extends LitElement {
     `,
   ];
 
-  @state() private version: string | null = null;
+  declare version: string | null;
+
+  constructor() {
+    super();
+    this.version = null;
+  }
 
   override connectedCallback(): void {
     super.connectedCallback();
@@ -46,5 +53,13 @@ export class SpendingApp extends LitElement {
       <h1>${da.hello}</h1>
       ${this.version === null ? nothing : html`<p>${da.version(this.version)}</p>`}
     `;
+  }
+}
+
+if (!customElements.get("hs-app")) customElements.define("hs-app", SpendingApp);
+
+declare global {
+  interface HTMLElementTagNameMap {
+    "hs-app": SpendingApp;
   }
 }
