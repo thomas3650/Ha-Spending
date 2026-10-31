@@ -5,7 +5,8 @@ export interface SeedSplit {
   amount: string;
   description: string;
   source: string;
-  destination: string;
+  /** Left out on a withdrawal, it has no counterparty: Firefly III names the expense account `(no name)`. */
+  destination?: string;
   category?: string;
   foreignAmount?: string;
   foreignCurrency?: string;
@@ -23,6 +24,8 @@ export interface SeedRule {
 export interface SeedData {
   /** Asset accounts, in DKK. */
   accounts: { name: string; active: boolean }[];
+  /** Accounts no transaction names, such as a liability or an inactive expense account. */
+  otherAccounts?: { name: string; type: "expense" | "revenue" | "liabilities"; active: boolean }[];
   /** Every category, also those with no postings. */
   categories: string[];
   /** A group's rules run in array order. */
