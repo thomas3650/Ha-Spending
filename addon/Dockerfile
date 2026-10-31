@@ -10,6 +10,7 @@ COPY package.json package-lock.json tsconfig.base.json ./
 COPY shared/package.json shared/
 COPY server/package.json server/
 COPY web/package.json web/
+COPY dev/package.json dev/
 RUN npm ci
 COPY shared/ shared/
 COPY server/ server/
