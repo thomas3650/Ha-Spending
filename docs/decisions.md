@@ -295,7 +295,7 @@ to set their status to `superseded by D<n>`, or to name a part a later decision 
   session, 2026-10-31; the inbox rule and the key's length: Claude
 
 ### D30: The sorter's one write
-- **Date:** 2026-10-31 · **Status:** active
+- **Date:** 2026-10-31 · **Status:** active; what is written superseded by D32
 - **Decision:** `set_category` re-reads the posting's whole group right before it writes, and writes with one PUT of
   the group: the posting's `category_id` and `tags`, only `transaction_journal_id` for every other split, the
   `group_title` of a split group, and `apply_rules: false`. The tags lose every tag an active rule of the rule group adds,
@@ -313,3 +313,16 @@ to set their status to `superseded by D<n>`, or to name a part a later decision 
   entry wherever it is typed. Opening Alle posteringer and leaving it through the trail keep the search.
 - **Why:** Thomas looks for a store's cost on the overview and expects the search to stay when he switches cards.
 - **Source:** Thomas, 2026-10-31, [the postings search spec](superpowers/specs/2026-10-31-postings-search.md).
+
+### D32: The sorter writes a posting's shop
+- **Date:** 2026-10-31 · **Status:** active
+- **Decision:** `set_category` may also write a withdrawal's shop, by the account's id, in the same PUT as D30's, and
+  only on a withdrawal whose destination is the expense account `(no name)`; it replaces D30's list of what is written.
+  For that the endpoint may make expense accounts, through the client's `post`, used for nothing else; the name check,
+  the lookup order, the 12,000-character cap on `start`'s shops and the failure answer are in
+  [`addon/DOCS.md`](../addon/DOCS.md#the-sorters-endpoint).
+- **Why:** Postings imported from a bank file land on `(no name)` with the shop only in the bank text, and the sorter
+  already works out the shop. Writing by id keeps a name from pointing a purchase at a liability and the outcome
+  independent of the database's collation.
+- **Source:** Thomas, 2026-10-31, the design of the shop on every posting;
+  [the shop spec](superpowers/specs/2026-11-01-sorter-shop.md); the limits: Claude

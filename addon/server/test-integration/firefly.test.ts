@@ -2,7 +2,7 @@ import { exampleSeed, seedFirefly } from "@ha-spending/dev";
 import { classify, parts, type SpendingData } from "@ha-spending/shared";
 import { beforeAll, describe, expect, it, vi } from "vitest";
 import { createSorterApp } from "../src/sorter/http";
-import { createSorterTools } from "../src/sorter/tools";
+import { createSorterTools, readAccounts } from "../src/sorter/tools";
 import { createApp } from "../src/app";
 import { createFireflyClient, type FetchLike, type FireflyClient, FireflyError } from "../src/firefly/client";
 import { type ReadSettings, readSpendingData, readVersion } from "../src/firefly/read";
@@ -304,5 +304,192 @@ describe("the sorter's tools on a real Firefly III", () => {
       "Kiosk",
       "Integration del 2",
     ]);
+  });
+});
+
+// After the sorter's tests above: these postings are dated in December, after theirs. The tests are independent of
+// each other (each gives out its own postings), but they use the earlier describe's categories, rules and Konto A.
+describe("the sorter's shop on a real Firefly III", () => {
+  const KEY = "made-up-sorter-key-made-up-sorter-key";
+  let call: (name: string, args: unknown) => Promise<{ isError: boolean; value: Record<string, unknown> }>;
+  let ids: Map<string, number>;
+
+  const query = { start: "2026-12-01", end: "2026-12-31", type: "all", limit: "50" };
+  const splits = async () => {
+    const page = (await client.get("transactions", query)) as WirePage<WireGroup>;
+    return new Map<string, WireSplit>(page.data.flatMap((g) => g.attributes.transactions.map((t) => [t.description, t])));
+  };
+  const accounts = () => readAccounts(client, { pageSize: 50 }, AbortSignal.timeout(30_000));
+  const accountsOfType = async (type: string) =>
+    (await accounts()).filter((a) => a.type === type).map((a) => a.name);
+  const unchanged = (s: WireSplit) => [s.amount, s.date, s.description, s.notes, s.source_id, s.type];
+
+  beforeAll(async () => {
+    await seedFirefly(url, token, {
+      accounts: [],
+      otherAccounts: [
+        { name: "Lån Bank", type: "liabilities", active: true },
+        { name: "Lukket Butik", type: "expense", active: false },
+      ],
+      categories: [],
+      ruleGroups: [],
+      transactions: [
+        { splits: [{ type: "withdrawal", date: "2026-12-02", amount: "41.50", description: "Shop køb 1",
+          source: "Konto A", notes: "Banken: Butik Ny", tags: ["Kvittering", "Bolig"] }] },
+        { splits: [{ type: "withdrawal", date: "2026-12-08", amount: "15.00", description: "Shop nyt",
+          source: "Konto A", notes: "Banken: Butik Rep", tags: ["Kvittering", "Bolig"] }] },
+        { splits: [{ type: "withdrawal", date: "2026-12-03", amount: "12.00", description: "Shop køb 2",
+          source: "Konto A" }] },
+        {
+          groupTitle: "Shop delt",
+          splits: [
+            { type: "withdrawal", date: "2026-12-04", amount: "20.00", description: "Shop del 1", source: "Konto A" },
+            { type: "withdrawal", date: "2026-12-04", amount: "30.00", description: "Shop del 2", source: "Konto A",
+              destination: "Butik Z", tags: ["Ferie"] },
+          ],
+        },
+        { splits: [{ type: "withdrawal", date: "2026-12-05", amount: "50.00", description: "Shop gæld",
+          source: "Konto A" }] },
+        { splits: [{ type: "withdrawal", date: "2026-12-06", amount: "60.00", description: "Shop lukket",
+          source: "Konto A" }] },
+        { splits: [{ type: "withdrawal", date: "2026-12-07", amount: "70.00", description: "Shop kendt",
+          source: "Konto A", destination: "Butik X" }] },
+        { splits: [{ type: "withdrawal", date: "2026-12-09", amount: "80.00", description: "Shop kontant navn",
+          source: "Konto A" }] },
+      ],
+    });
+    const tools = createSorterTools(client, {
+      mainGroupRuleGroup: "Sorteringsgrupper",
+      excludedMainGroups: ["Penge ind og ud"],
+      inboxCategory: "Til sortering",
+      pageSize: 5,
+      timeoutMs: 30_000,
+    }, () => {});
+    const app = createSorterApp({ key: KEY, tools, log: () => {} });
+    call = async (name, args) => {
+      const res = await app.request("/mcp", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${KEY}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "tools/call", params: { name, arguments: args } }),
+      });
+      const body = (await res.json()) as { result: { content: { text: string }[]; isError?: boolean } };
+      return { isError: body.result.isError === true, value: JSON.parse(body.result.content[0].text) };
+    };
+    const categories = (await client.get("categories", { limit: "50" })) as WirePage<WireCategory>;
+    ids = new Map(categories.data.map((c) => [c.attributes.name, Number(c.id)]));
+  });
+
+  const tree = () => [
+    { id: ids.get("Dagligvarer")!, name: "Dagligvarer", group: "Mad" },
+    { id: ids.get("Husleje")!, name: "Husleje", group: "Bolig" },
+  ];
+  // `start` gives the postings out, which `set_category` needs, and says each one's amount.
+  const given = async () => {
+    const { value } = await call("start", { categories: tree() });
+    return { value, amounts: new Map((value.postings as { posting_id: number; amount: string }[])
+      .map((p) => [p.posting_id, p.amount])) };
+  };
+  const assignment = (before: Map<string, WireSplit>, amounts: Map<number, string>, description: string, shop?: string) => {
+    const posting_id = Number(before.get(description)!.transaction_journal_id);
+    return { posting_id, category_id: ids.get("Dagligvarer")!, amount: amounts.get(posting_id)!,
+      ...(shop === undefined ? {} : { shop }) };
+  };
+
+  it("reads a withdrawal on the importer's literal (no name) as an expense account, and takes a shop", async () => {
+    const before = await splits();
+    const first = before.get("Shop køb 1")!;
+    expect(first.destination_name).toBe("(no name)");
+    expect(first.destination_type).toBe("Expense account");
+
+    const { value, amounts } = await given();
+    expect(value.ok).toBe(true);
+    const answer = await call("set_category", { assignments: [assignment(before, amounts, "Shop køb 1", "Butik Ny")] });
+    expect(answer.isError).toBe(false);
+    expect(answer.value.results).toEqual([{ posting_id: Number(first.transaction_journal_id), ok: true, shop: "Butik Ny" }]);
+    expect((await splits()).get("Shop køb 1")).toMatchObject({ destination_name: "Butik Ny", destination_type: "Expense account" });
+  });
+
+  it("set_category with a shop makes the expense account, a second posting with the same shop reuses it, and the " +
+    "amount, date, source account, type, category, tags, notes and the other split stay", async () => {
+    const before = await splits();
+    const { amounts } = await given();
+    const expenseCount = (await accountsOfType("expense")).length;
+
+    const answer = await call("set_category", {
+      assignments: [
+        assignment(before, amounts, "Shop nyt", "Butik Rep"),
+        assignment(before, amounts, "Shop køb 2", "butik rep"),
+        assignment(before, amounts, "Shop del 1", "Butik Del"),
+      ],
+    });
+    expect(answer.isError).toBe(false);
+    expect((answer.value.results as { ok: boolean; shop?: string }[]).map((r) => r.shop))
+      .toEqual(["Butik Rep", "Butik Rep", "Butik Del"]);
+
+    const after = await splits();
+    expect(after.get("Shop køb 2")!.destination_id).toBe(after.get("Shop nyt")!.destination_id);
+    // One account for the first two postings, one new for the split: the count rose by two only.
+    expect((await accountsOfType("expense")).length).toBe(expenseCount + 2);
+
+    const made = after.get("Shop nyt")!;
+    expect(made).toMatchObject({ category_name: "Dagligvarer", destination_name: "Butik Rep" });
+    expect(unchanged(made)).toEqual(unchanged(before.get("Shop nyt")!));
+    expect(made.source_name).toBe("Konto A");
+    expect([...made.tags].sort()).toEqual(["Kvittering", "Mad"]);
+    const reused = after.get("Shop køb 2")!;
+    expect(reused).toMatchObject({ category_name: "Dagligvarer", destination_name: "Butik Rep" });
+    expect(unchanged(reused)).toEqual(unchanged(before.get("Shop køb 2")!));
+    const one = after.get("Shop del 1")!;
+    expect(one).toMatchObject({ destination_name: "Butik Del", category_name: "Dagligvarer" });
+    expect(unchanged(one)).toEqual(unchanged(before.get("Shop del 1")!));
+    const other = after.get("Shop del 2")!;
+    expect(other).toMatchObject({ destination_name: "Butik Z", category_name: null, tags: ["Ferie"] });
+    expect(unchanged(other)).toEqual(unchanged(before.get("Shop del 2")!));
+  });
+
+  it("a liability's name and an inactive expense account's name are name-taken, and the destination stays", async () => {
+    const before = await splits();
+    const { amounts } = await given();
+    const answer = await call("set_category", {
+      assignments: [
+        assignment(before, amounts, "Shop gæld", "Lån Bank"),
+        assignment(before, amounts, "Shop lukket", "Lukket Butik"),
+        assignment(before, amounts, "Shop kendt", "Butik Ny"),
+      ],
+    });
+    expect(answer.isError).toBe(false);
+    const results = answer.value.results as { shop_refused?: string; ok: boolean }[];
+    expect(results.map((r) => r.shop_refused)).toEqual(["name-taken", "name-taken", "has-shop"]);
+    const after = await splits();
+    for (const d of ["Shop gæld", "Shop lukket", "Shop kendt"]) {
+      expect(after.get(d)!.destination_id).toBe(before.get(d)!.destination_id);
+      expect(after.get(d)!.category_name).toBe("Dagligvarer");
+    }
+    expect(await accountsOfType("expense")).not.toContain("Lån Bank");
+  });
+
+  it("sends a withdrawal made through the API without a destination to the cash account, which keeps it (has-shop) " +
+    "and whose name is name-taken", async () => {
+    await client.post("transactions", { apply_rules: false, transactions: [{ type: "withdrawal", date: "2026-12-10",
+      amount: "90.00", description: "Shop kontant", source_name: "Konto A" }] });
+    const before = await splits();
+    const cash = before.get("Shop kontant")!;
+    expect([cash.destination_type, cash.destination_name]).toEqual(["Cash account", "Cash account"]);
+    const listed = (await accounts()).find((a) => a.id === cash.destination_id);
+    expect(listed).toMatchObject({ name: "Cash account", type: "cash" });
+
+    const { amounts } = await given();
+    const answer = await call("set_category", {
+      assignments: [
+        assignment(before, amounts, "Shop kontant", "Butik Ny"),
+        assignment(before, amounts, "Shop kontant navn", cash.destination_name),
+      ],
+    });
+    expect(answer.isError).toBe(false);
+    expect((answer.value.results as { shop_refused?: string }[]).map((r) => r.shop_refused))
+      .toEqual(["has-shop", "name-taken"]);
+    const after = await splits();
+    expect(after.get("Shop kontant")!.destination_id).toBe(cash.destination_id);
+    expect(after.get("Shop kontant navn")!.destination_id).toBe(before.get("Shop kontant navn")!.destination_id);
   });
 });

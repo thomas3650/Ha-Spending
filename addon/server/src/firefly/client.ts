@@ -19,6 +19,8 @@ export interface FireflyClient {
   get(path: string, query: Record<string, string>, signal?: AbortSignal): Promise<unknown>;
   /** Only the sorter's `set_category` writes (D29). */
   put(path: string, body: unknown, signal?: AbortSignal): Promise<unknown>;
+  /** Only the sorter's `set_category` makes something: a new shop's expense account (D32). */
+  post(path: string, body: unknown, signal?: AbortSignal): Promise<unknown>;
 }
 
 /** `baseUrl` comes without a trailing slash: options.ts strips it. */
@@ -51,15 +53,18 @@ export function createFireflyClient(options: { baseUrl: string; token: string; f
     return body;
   }
 
+  const write = (method: "PUT" | "POST", path: string, body: unknown, signal?: AbortSignal) =>
+    send(`${base}/api/v1/${path}`, {
+      method,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+      signal,
+    });
+
   return {
     get: (path, query, signal) => send(`${base}/api/v1/${path}?${new URLSearchParams(query)}`, { method: "GET", signal }),
-    put: (path, body, signal) =>
-      send(`${base}/api/v1/${path}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-        signal,
-      }),
+    put: (path, body, signal) => write("PUT", path, body, signal),
+    post: (path, body, signal) => write("POST", path, body, signal),
   };
 }
 

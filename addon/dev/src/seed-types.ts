@@ -5,7 +5,8 @@ export interface SeedSplit {
   amount: string;
   description: string;
   source: string;
-  destination: string;
+  /** Left out on a withdrawal: the expense account `(no name)`, the Data Importer's name for no counterparty. */
+  destination?: string;
   category?: string;
   foreignAmount?: string;
   foreignCurrency?: string;
@@ -23,6 +24,8 @@ export interface SeedRule {
 export interface SeedData {
   /** Asset accounts, in DKK. */
   accounts: { name: string; active: boolean }[];
+  /** More accounts, such as a liability or an inactive expense account. In the fake a withdrawal may pay one. */
+  otherAccounts?: { name: string; type: "expense" | "revenue" | "liabilities"; active: boolean }[];
   /** Every category, also those with no postings. */
   categories: string[];
   /** A group's rules run in array order. */

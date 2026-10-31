@@ -31,9 +31,9 @@ The server reads Firefly III and answers `/api/data`; the page fetches it and sh
   - `charts/echarts.ts`: the one wrapper around ECharts, which the component tests mock ([D19](decisions.md));
   - `data/api.ts`: the fetch of `api/data`.
   The build is one JS chunk ([D19](decisions.md)).
-- **The Firefly III client** (`addon/server/src/firefly/`) has a `get` and a `put`. It pages through the answers and
-  maps them to postings ([D12](decisions.md), [D15](decisions.md)). Only the sorter's `set_category` calls `put`
-  ([D29](decisions.md)).
+- **The Firefly III client** (`addon/server/src/firefly/`) has a `get`, a `put` and a `post`. It pages through the
+  answers and maps them to postings ([D12](decisions.md), [D15](decisions.md)). Only the sorter's `set_category` calls
+  `put` ([D29](decisions.md)), and `post` only to make a shop's expense account ([D32](decisions.md)).
 - **The sorter's endpoint** (`addon/server/src/sorter/`) is a second Hono app on port 8100, started only when
   `sorter_key` is set ([D29](decisions.md)): `http.ts` holds the key check and MCP's JSON-RPC, `tools.ts` the tools
   `start` and `set_category` and their limits. Their contract is in [`addon/DOCS.md`](../addon/DOCS.md#the-sorters-endpoint).

@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { createFakeFirefly } from "../src/fake";
 import { exampleSeed } from "../src/example";
 import { generateSeed } from "../src/generate";
+import type { SeedData } from "../src/seed-types";
 
 const token = "fake-token";
 
@@ -259,6 +260,171 @@ describe("the fake Firefly III", () => {
     expect((await put({ transactions: [{ transaction_journal_id: gift.transaction_journal_id }] })).status).toBe(200);
     after = (await json<{ data: Group }>(`transactions/${bilka.id}`)).data.attributes.transactions;
     expect(after.map((s) => s.description)).toEqual(["Bilka gave"]);
+  });
+
+  describe("accounts of every type", () => {
+    interface AccountAttributes {
+      name: string;
+      type: string;
+      active: boolean;
+      currency_code: string;
+    }
+    type Accounts = Page<{ id: string; attributes: AccountAttributes }>;
+
+    const seed = (): SeedData => ({
+      accounts: [{ name: "Konto A", active: true }],
+      categories: ["Dagligvarer"],
+      ruleGroups: [],
+      otherAccounts: [
+        { name: "Boliglån", type: "liabilities", active: true },
+        { name: "Lukket butik", type: "expense", active: false },
+        { name: "Gammel kunde", type: "revenue", active: true },
+      ],
+      transactions: [
+        {
+          splits: [
+            { type: "withdrawal", date: "2026-01-05", amount: "10.00", description: "Brød", source: "Konto A",
+              destination: "Bager", category: "Dagligvarer" },
+          ],
+        },
+        {
+          splits: [
+            { type: "withdrawal", date: "2026-01-06", amount: "20.00", description: "Mælk", source: "Konto A" },
+          ],
+        },
+        {
+          splits: [
+            { type: "deposit", date: "2026-01-07", amount: "30.00", description: "Løn", source: "Firma",
+              destination: "Konto A" },
+          ],
+        },
+      ],
+    });
+
+    const named = (accounts: Accounts) => accounts.data.map((a) => `${a.attributes.type}:${a.attributes.name}`).sort();
+    const post = (get: ReturnType<typeof client>["get"], body: unknown) =>
+      get("accounts", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+
+    it("lists expense accounts, also those only a split names", async () => {
+      const { json } = client(createFakeFirefly(seed()));
+      const accounts = await json<Accounts>("accounts?type=expense");
+      expect(named(accounts)).toEqual(["expense:(no name)", "expense:Bager", "expense:Lukket butik"]);
+      expect(accounts.data.find((a) => a.attributes.name === "Lukket butik")?.attributes.active).toBe(false);
+      expect(accounts.data.find((a) => a.attributes.name === "Bager")?.attributes).toEqual({
+        name: "Bager",
+        type: "expense",
+        active: true,
+        currency_code: "DKK",
+      });
+      expect(named(await json<Accounts>("accounts?type=revenue"))).toEqual(["revenue:Firma", "revenue:Gammel kunde"]);
+      expect(named(await json<Accounts>("accounts?type=liabilities"))).toEqual(["liabilities:Boliglån"]);
+      expect(named(await json<Accounts>("accounts"))).toEqual(["asset:Konto A"]);
+    });
+
+    it("lists every type with type=all", async () => {
+      const { json } = client(createFakeFirefly(seed(), { maxPerPage: 4 }));
+      const first = await json<Accounts>("accounts?type=all");
+      expect(first.meta.pagination.total).toBe(7);
+      expect(first.meta.pagination.total_pages).toBe(2);
+      const second = await json<Accounts>("accounts?type=all&page=2");
+      expect(named({ ...first, data: [...first.data, ...second.data] })).toEqual([
+        "asset:Konto A",
+        "expense:(no name)",
+        "expense:Bager",
+        "expense:Lukket butik",
+        "liabilities:Boliglån",
+        "revenue:Firma",
+        "revenue:Gammel kunde",
+      ]);
+    });
+
+    it("POST accounts makes an expense account", async () => {
+      const { get, json } = client(createFakeFirefly(seed()));
+      const res = await post(get, { name: "Ny butik", type: "expense" });
+      expect(res.status).toBe(200);
+      const made = (await res.json()) as { data: { id: string; attributes: AccountAttributes } };
+      expect(made.data.attributes).toEqual({ name: "Ny butik", type: "expense", active: true, currency_code: "DKK" });
+      const listed = await json<Accounts>("accounts?type=expense");
+      expect(listed.data.find((a) => a.id === made.data.id)?.attributes.name).toBe("Ny butik");
+    });
+
+    it("POST accounts with a taken name is 422", async () => {
+      const { get } = client(createFakeFirefly(seed()));
+      for (const name of ["Bager", "Konto A", "Boliglån", "Firma", "Lukket butik"]) {
+        expect((await post(get, { name, type: "expense" })).status).toBe(422);
+      }
+      expect((await post(get, { name: "bager", type: "expense" })).status).toBe(200);
+      expect((await post(get, { name: "Anden", type: "asset" })).status).toBe(422);
+    });
+
+    describe("a PUT with a destination", () => {
+      const put = async (fake: ReturnType<typeof createFakeFirefly>, id: string, split: Record<string, unknown>) =>
+        fake.fetch(`http://f/api/v1/transactions/${id}`, {
+          method: "PUT",
+          headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+          body: JSON.stringify({ transactions: [split] }),
+        });
+
+      async function setup() {
+        const fake = createFakeFirefly(seed());
+        const { json } = client(fake);
+        const groups = (await json<Page<Group>>("transactions?start=2026-01-01&end=2026-01-31&type=all")).data;
+        const milk = byDescription(groups, "Mælk");
+        const expense = await json<Accounts>("accounts?type=expense");
+        const idOf = (name: string) => expense.data.find((a) => a.attributes.name === name)!.id;
+        return { fake, json, milk, idOf, split: milk.attributes.transactions[0] };
+      }
+
+      it("moves the split", async () => {
+        const { fake, json, milk, idOf } = await setup();
+        const res = await put(fake, milk.id, { destination_id: idOf("Bager") });
+        expect(res.status).toBe(200);
+        const after = (await json<{ data: Group }>(`transactions/${milk.id}`)).data.attributes.transactions[0] as
+          Split & { destination_id: string; destination_name: string };
+        expect(after.destination_id).toBe(idOf("Bager"));
+        expect(after.destination_name).toBe("Bager");
+        expect(after.destination_type).toBe("Expense account");
+      });
+
+      it("is 422 for an unknown destination_id, a non-expense one and a name", async () => {
+        const { fake, json, milk, split } = await setup();
+        expect((await put(fake, milk.id, { destination_id: "99999" })).status).toBe(422);
+        const assets = await json<Accounts>("accounts");
+        expect((await put(fake, milk.id, { destination_id: assets.data[0].id })).status).toBe(422);
+        expect((await put(fake, milk.id, { destination_name: "Bager" })).status).toBe(422);
+        expect((await put(fake, milk.id, { source_id: "1" })).status).toBe(422);
+        const after = (await json<{ data: Group }>(`transactions/${milk.id}`)).data.attributes.transactions[0];
+        expect(after).toEqual(split);
+      });
+    });
+
+    it("a withdrawal seeded without a destination reads (no name)", async () => {
+      const { json } = client(createFakeFirefly(seed()));
+      const groups = (await json<Page<Group>>("transactions?start=2026-01-01&end=2026-01-31&type=all")).data;
+      const milk = byDescription(groups, "Mælk").attributes.transactions[0] as Split & {
+        destination_name: string;
+      };
+      expect(milk.destination_name).toBe("(no name)");
+      expect(milk.destination_type).toBe("Expense account");
+    });
+
+    it("a withdrawal seeded to a listed liability pays that liability, which is listed once", async () => {
+      const data = seed();
+      data.otherAccounts!.push({ name: "Laan", type: "liabilities", active: true });
+      data.transactions.push({ splits: [{ type: "withdrawal", date: "2026-01-08", amount: "40.00",
+        description: "Afdrag", source: "Konto A", destination: "Laan" }] });
+      const { json } = client(createFakeFirefly(data));
+      const groups = (await json<Page<Group>>("transactions?start=2026-01-01&end=2026-01-31&type=all")).data;
+      const paid = byDescription(groups, "Afdrag").attributes.transactions[0] as Split & { destination_id: string };
+      const all = await json<Accounts>("accounts?type=all");
+      const laan = all.data.filter((a) => a.attributes.name === "Laan");
+      expect(laan.map((a) => a.attributes.type)).toEqual(["liabilities"]);
+      expect(paid).toMatchObject({ destination_id: laan[0].id, destination_name: "Laan", destination_type: "Loan" });
+    });
   });
 
   it("answers the faults", async () => {

@@ -37,6 +37,17 @@ export async function seedFirefly(baseUrl: string, token: string, data: SeedData
     ids.set(account.name, answer.data.id);
   }
 
+  for (const account of data.otherAccounts ?? []) {
+    const answer = await send("POST", "accounts", {
+      name: account.name,
+      type: account.type,
+      currency_code: "DKK",
+      ...(account.type === "liabilities" ? { liability_type: "loan", liability_direction: "credit" } : {}),
+    });
+    if (answer.data?.id === undefined) throw new Error(`seedFirefly: no id for the account ${account.name}`);
+    ids.set(account.name, answer.data.id);
+  }
+
   for (const name of data.categories) await send("POST", "categories", { name });
 
   for (const group of data.ruleGroups) {
@@ -60,7 +71,10 @@ export async function seedFirefly(baseUrl: string, token: string, data: SeedData
     amount: s.amount,
     description: s.description,
     source_name: s.source,
-    destination_name: s.destination,
+    // As the Data Importer names a line with no counterparty: the one destination that takes a shop.
+    ...(s.destination === undefined
+      ? s.type === "withdrawal" ? { destination_name: "(no name)" } : {}
+      : { destination_name: s.destination }),
     ...(s.category === undefined ? {} : { category_name: s.category }),
     ...(s.foreignAmount === undefined ? {} : { foreign_amount: s.foreignAmount }),
     ...(s.foreignCurrency === undefined ? {} : { foreign_currency_code: s.foreignCurrency }),
@@ -75,7 +89,7 @@ export async function seedFirefly(baseUrl: string, token: string, data: SeedData
   }
 
   // Last, so an inactive account can still hold postings.
-  for (const account of data.accounts) {
+  for (const account of [...data.accounts, ...(data.otherAccounts ?? [])]) {
     if (!account.active) await send("PUT", `accounts/${ids.get(account.name)}`, { name: account.name, active: false });
   }
 }

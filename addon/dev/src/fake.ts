@@ -24,7 +24,16 @@ export interface FakeOptions {
 const SLOW_MS = 60_000;
 const DEFAULT_PER_PAGE = 50;
 
-type AccountType = "Asset account" | "Expense account" | "Revenue account";
+interface FakeAccount {
+  id: string;
+  name: string;
+  type: "asset" | "expense" | "revenue" | "liabilities";
+  active: boolean;
+}
+
+const ACCOUNT_TYPES = new Set(["all", "asset", "expense", "revenue", "liabilities"]);
+
+type AccountType = "Asset account" | "Expense account" | "Revenue account" | "Loan";
 
 interface Item {
   id: string;
@@ -76,6 +85,10 @@ function buildData(data: SeedData) {
   const assets = data.accounts.map((a) => ({ id: nextId(), ...a }));
   const assetIds = new Map(assets.map((a) => [a.name, a.id]));
   const others = new Map<string, string>();
+  const NO_NAME = "(no name)";
+  const extra = (data.otherAccounts ?? []).map((a) => ({ id: nextId(), ...a }));
+  // Firefly III lets a withdrawal pay a liability.
+  const liabilityIds = new Map(extra.filter((a) => a.type === "liabilities").map((a) => [a.name, a.id]));
 
   function account(name: string, type: AccountType): string {
     if (type === "Asset account") {
@@ -83,12 +96,23 @@ function buildData(data: SeedData) {
       if (!id) throw new Error(`The seed names an asset account it does not list: ${name}`);
       return id;
     }
+    if (type === "Loan") return liabilityIds.get(name)!;
     const key = `${type}\u0000${name}`;
     if (!others.has(key)) others.set(key, nextId());
     return others.get(key)!;
   }
 
+  function destinationName(split: SeedSplit): string {
+    if (split.destination !== undefined) return split.destination;
+    if (split.type !== "withdrawal") throw new Error(`The seed leaves out the destination of a ${split.type}`);
+    return NO_NAME;
+  }
+
+  const paysLiability = (split: SeedSplit) =>
+    split.type === "withdrawal" && split.destination !== undefined && liabilityIds.has(split.destination);
+
   function ends(split: SeedSplit): [AccountType, AccountType] {
+    if (paysLiability(split)) return ["Asset account", "Loan"];
     if (split.type === "withdrawal") return ["Asset account", "Expense account"];
     if (split.type === "deposit") return ["Revenue account", "Asset account"];
     return ["Asset account", "Asset account"];
@@ -98,7 +122,7 @@ function buildData(data: SeedData) {
     for (const s of t.splits) {
       const [from, to] = ends(s);
       account(s.source, from);
-      account(s.destination, to);
+      account(destinationName(s), to);
     }
   }
 
@@ -127,8 +151,8 @@ function buildData(data: SeedData) {
           source_id: account(s.source, sourceType),
           source_name: s.source,
           source_type: sourceType,
-          destination_id: account(s.destination, destinationType),
-          destination_name: s.destination,
+          destination_id: account(destinationName(s), destinationType),
+          destination_name: destinationName(s),
           destination_type: destinationType,
           category_id: categoryId,
           category_name: s.category ?? null,
@@ -155,7 +179,16 @@ function buildData(data: SeedData) {
     })),
   }));
 
-  return { assets, categories, groups, ruleGroups };
+  const accounts: FakeAccount[] = [
+    ...assets.map((a) => ({ id: a.id, name: a.name, type: "asset" as const, active: a.active })),
+    ...[...others].map(([key, id]) => {
+      const [type, name] = key.split("\u0000");
+      return { id, name, type: type === "Expense account" ? ("expense" as const) : ("revenue" as const), active: true };
+    }),
+    ...extra,
+  ].sort((a, b) => Number(a.id) - Number(b.id));
+
+  return { assets, accounts, categories, groups, ruleGroups, nextId };
 }
 
 type FakeSplit = ReturnType<typeof buildData>["groups"][number]["attributes"]["transactions"][number];
@@ -185,7 +218,7 @@ const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null && !Array.isArray(value);
 
 const GROUP_KEYS = new Set(["apply_rules", "fire_webhooks", "group_title", "transactions"]);
-const SPLIT_KEYS = new Set(["transaction_journal_id", "category_id", "tags"]);
+const SPLIT_KEYS = new Set(["transaction_journal_id", "category_id", "tags", "destination_id"]);
 
 /**
  * Firefly III's update of a group, for the fields the sorter sends; any other field is refused, so a test sees one
@@ -195,6 +228,7 @@ function updateGroup(
   group: { group_title: string | null; transactions: FakeSplit[] },
   body: unknown,
   categories: { id: string; name: string }[],
+  accounts: FakeAccount[],
 ): string | null {
   if (!isRecord(body) || !Array.isArray(body.transactions)) return "The body has no transactions.";
   const extra = Object.keys(body).find((key) => !GROUP_KEYS.has(key));
@@ -216,6 +250,11 @@ function updateGroup(
     if (entry.category_id !== undefined && !categories.some((x) => x.id === entry.category_id)) {
       return "Unknown category.";
     }
+    if (entry.destination_id !== undefined) {
+      const target = accounts.find((a) => a.id === entry.destination_id);
+      if (target?.type !== "expense") return "Unknown destination.";
+      if (split.type !== "withdrawal") return "Only a withdrawal has an expense account as its destination.";
+    }
     const tags = entry.tags;
     if (tags !== undefined && !(Array.isArray(tags) && tags.every((t) => typeof t === "string"))) {
       return "The tags are not a list of text.";
@@ -227,6 +266,10 @@ function updateGroup(
     if (entry.category_id !== undefined) {
       split.category_id = entry.category_id as string;
       split.category_name = categories.find((x) => x.id === entry.category_id)!.name;
+    }
+    if (entry.destination_id !== undefined) {
+      split.destination_id = entry.destination_id as string;
+      split.destination_name = accounts.find((a) => a.id === entry.destination_id)!.name;
     }
     if (entry.tags !== undefined) split.tags = [...(entry.tags as string[])];
   }
@@ -251,6 +294,11 @@ export function createFakeFirefly(data: SeedData, options: FakeOptions = {}): Fa
       return Promise.race([answer, aborted(init.signal)]);
     },
   };
+
+  const accountItem = (a: FakeAccount): Item => ({
+    id: a.id,
+    attributes: { name: a.name, type: a.type, active: a.active, currency_code: "DKK" },
+  });
 
   function page(c: Context, items: Item[]) {
     const asked = Number(c.req.query("limit") ?? DEFAULT_PER_PAGE);
@@ -287,12 +335,14 @@ export function createFakeFirefly(data: SeedData, options: FakeOptions = {}): Fa
 
   app.use(async (c, next) => {
     const { method, path } = c.req;
-    if (method === "PUT") {
+    if (method === "PUT" || (method === "POST" && path === "/api/v1/accounts")) {
       fake.requests.push({ method, path, body: await c.req.raw.clone().json().catch(() => null) });
     } else {
       fake.requests.push({ method, path });
     }
-    const writable = method === "PUT" && /^\/api\/v1\/transactions\/[0-9]+$/.test(path);
+    const writable =
+      (method === "PUT" && /^\/api\/v1\/transactions\/[0-9]+$/.test(path)) ||
+      (method === "POST" && path === "/api/v1/accounts");
     if (method !== "GET" && !writable) return c.json({ message: "Method not allowed." }, 405);
     await next();
   });
@@ -349,19 +399,32 @@ export function createFakeFirefly(data: SeedData, options: FakeOptions = {}): Fa
     const group = built.groups.find((g) => g.id === c.req.param("id"));
     if (!group) return c.json({ message: "Resource not found", exception: "NotFoundHttpException" }, 404);
     const body = await c.req.json<unknown>().catch(() => null);
-    const outcome = updateGroup(group.attributes, body, built.categories);
+    const outcome = updateGroup(group.attributes, body, built.categories, built.accounts);
     if (typeof outcome === "string") return c.json({ message: outcome, errors: {} }, 422);
     return c.json({ data: { id: group.id, attributes: group.attributes } });
   });
 
   app.get("/api/v1/accounts", (c) => {
-    const type = c.req.query("type");
-    const listed = type === undefined || type === "asset" ? built.assets : [];
-    const shown = options.hideInactiveAccounts ? listed.filter((a) => a.active) : listed;
-    return page(
-      c,
-      shown.map((a) => ({ id: a.id, attributes: { name: a.name, type: "asset", currency_code: "DKK", active: a.active } })),
+    const type = c.req.query("type") ?? "asset";
+    if (!ACCOUNT_TYPES.has(type)) return c.json({ message: "Unknown account type.", errors: {} }, 422);
+    const shown = built.accounts.filter(
+      (a) => (type === "all" || a.type === type) && (!options.hideInactiveAccounts || a.active),
     );
+    return page(c, shown.map(accountItem));
+  });
+
+  app.post("/api/v1/accounts", async (c) => {
+    const body = await c.req.json<unknown>().catch(() => null);
+    if (!isRecord(body) || typeof body.name !== "string" || body.name === "" || body.type !== "expense") {
+      return c.json({ message: "The fake makes expense accounts with a name.", errors: {} }, 422);
+    }
+    const name = body.name;
+    if (built.accounts.some((a) => a.name === name)) {
+      return c.json({ message: "The name is already in use.", errors: {} }, 422);
+    }
+    const made: FakeAccount = { id: built.nextId(), name, type: "expense", active: true };
+    built.accounts.push(made);
+    return c.json({ data: accountItem(made) });
   });
 
   app.get("/api/v1/categories", (c) =>
