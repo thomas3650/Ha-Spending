@@ -1,0 +1,14 @@
+# A throwaway Firefly III for the integration tests (scripts/integration). No volume: every start is empty.
+services:
+  firefly:
+    image: fireflyiii/core:version-6.7.9@sha256:d51ab6a3a7b91a5c892441578e0da7f2935f84f36bd1151fc3833acc6e060871
+    environment:
+      # Made up, and low in entropy on purpose, so gitleaks stays quiet. Firefly III wants exactly 32 characters.
+      APP_KEY: madeupintegrationkeyhaspending00
+      DB_CONNECTION: sqlite
+      APP_URL: http://localhost:${FIREFLY_PORT:-8090}
+      TRUSTED_PROXIES: "**"
+      TZ: Europe/Copenhagen
+      SITE_OWNER: test@example.com
+    ports:
+      - "127.0.0.1:${FIREFLY_PORT:-8090}:8080"

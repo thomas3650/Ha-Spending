@@ -1,0 +1,32 @@
+#!/usr/bin/env bash
+# The integration tests: a real Firefly III in Docker, seeded with the example dataset, read by the server's client.
+# The container and its data are removed when the script ends, also on failure. The token lives only in this
+# process's environment: never echo it, never set -x here.
+set -euo pipefail
+
+cd "$(dirname "$0")/.."
+
+port="${FIREFLY_PORT:-8090}"
+compose="docker compose -f addon/dev/firefly/compose.yaml -p ha-spending-integration"
+trap '$compose down -v' EXIT
+
+$compose up -d
+curl -sf -o /dev/null --retry 60 --retry-delay 2 --retry-connrefused --retry-all-errors "http://127.0.0.1:${port}/health"
+
+$compose exec -T firefly php artisan passport:client --personal --name=integration --no-interaction >/dev/null
+$compose cp addon/dev/firefly/mktoken.php firefly:/tmp/mktoken.php
+# The script's output also carries a log line: the token is the last JWT in it.
+token="$($compose exec -T firefly php /tmp/mktoken.php | grep -oE 'eyJ[A-Za-z0-9._-]*' | tail -n1 || true)"
+if [ -z "$token" ]; then
+  echo "integration: could not make a token in the Firefly III container" >&2
+  exit 1
+fi
+if [ "${GITHUB_ACTIONS:-}" = "true" ]; then
+  echo "::add-mask::$token"
+fi
+
+# Without it every API write answers 500: the new user has no user group yet.
+$compose exec -T firefly php artisan correction:create-group-memberships >/dev/null
+
+FIREFLY_URL="http://127.0.0.1:${port}" FIREFLY_TOKEN="$token" \
+  npm run test:integration --prefix addon --workspace ha-spending-server

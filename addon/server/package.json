@@ -12,6 +12,7 @@
     "build": "node build.mjs",
     "dev": "tsx watch src/main.ts",
     "test": "vitest run",
+    "test:integration": "vitest run --config vitest.integration.config.ts",
     "lint": "eslint . && tsc --noEmit"
   },
   "dependencies": {
