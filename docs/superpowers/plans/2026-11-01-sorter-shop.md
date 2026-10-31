@@ -28,6 +28,7 @@ through `scripts/integration`.
 3. **A name of 60 code points with an emoji** passes; 61 is refused; a lone surrogate is refused. Test in Task 2.
 4. **`shops` at its cap**: names past 12,000 code points are left out and `shops_more` is `true`. Test in Task 3.
 5. **A split group**: only the assigned split's destination changes. Test in Task 3.
+6. **A new shop is POSTed and written by id, never by name**: the fake refuses `destination_name`. Task 1.
 
 ---
 
@@ -49,7 +50,8 @@ Model: sonnet · Review: yes
 - `POST /api/v1/accounts` with `{name, type: "expense"}` makes an active expense account and answers it; a name an
   account of any type has exactly is 422.
 - A PUT split entry may carry `destination_id` (an existing expense account's id, else 422); it sets the split's
-  `destination_id` and `destination_name`.
+  `destination_id` and `destination_name`. It still refuses `destination_name` and every other key, so a write by name
+  fails every test.
 
 - [ ] Tests first, run to fail: `lists expense accounts, also those only a split names`; `lists every type with
   type=all`; `POST accounts makes an expense account`; `POST accounts with a taken name is 422`; `a PUT with
@@ -92,7 +94,7 @@ Model: opus · Review: yes
 **Produces:**
 - `readAccounts(client, settings, signal): Promise<AccountInfo[]>`, `AccountInfo = {id: string, name: string, type:
   string, active: boolean}`, every page of `accounts?type=all`.
-- `FireflyClient.post(path, body, signal)`, as `put`; its comment and D29 say only the sorter's new shop uses it.
+- `FireflyClient.post(path, body, signal)`, as `put`; its comment says only the sorter's new shop uses it (D32).
 - `SHOPS_LIMIT = 12000` (code points). `start`'s ok answer `{ok, postings, more, shops, shops_more}` as spec §2.
 - Assignment `shop?: string` in the schema; a non-string is `bad-arguments`.
 - `AssignmentResult` written: `{posting_id, ok: true, shop?: string, shop_refused?: ShopRefusal}`,
@@ -125,7 +127,8 @@ Model: opus · Review: yes
 Model: sonnet · Review: yes
 
 **Files:** `addon/server/test-integration/firefly.test.ts`, `addon/DOCS.md`, `.claude/agents/reviewer.md`,
-`docs/decisions.md`.
+`docs/decisions.md`, `docs/architecture.md`, `docs/testing.md`; `addon/dev/src/fake.ts` and
+`addon/dev/src/seed-firefly.ts` only to match the real Firefly III.
 
 - [ ] Integration tests, seeded in their own `describe` after the existing ones and dated after their periods, so the
   existing inbox lists stay as they are:
@@ -133,8 +136,10 @@ Model: sonnet · Review: yes
     amount, date, source account, type, category, tags, notes and the other split stay`;
   - `a liability's name and an inactive expense account's name are name-taken, and the destination stays`;
   - `a withdrawal made without a destination reads (no name), of type Expense account, and takes a shop`.
-  Run `scripts/integration`; pass. If Firefly III differs from the fake, the fake may be changed to match it. A change
-  to what `set_category` sends or checks stops the task and goes back to the controller.
-- [ ] DOCS.md and `reviewer.md` as spec §5; D32 in the log's format, and D30's status `active; what is written
-  superseded by D32`.
+  Run `scripts/integration`; pass. If Firefly III differs from the fake or the seeder (a liability may need `interest`
+  and `interest_period`), they may be changed to match it. A change to what `set_category` sends or checks stops the
+  task and goes back to the controller.
+- [ ] DOCS.md, `reviewer.md`, `architecture.md` and `testing.md` as spec §5; D32 in the log's format; D30's status
+  `active; what is written superseded by D32`, and D29's only if a part of it no longer holds. No entry's text is
+  edited.
 - [ ] Gates and the link check; commit `docs: the sorter's shop in DOCS.md and D32`.

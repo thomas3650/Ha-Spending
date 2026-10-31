@@ -123,9 +123,12 @@ leave Firefly III no reason to refuse a name.
   input, results and "Written" bullet.
 - `tools.ts`: both tools' descriptions; the comment on the rules not running.
 - `.claude/agents/reviewer.md`: what the endpoint writes.
-- `client.ts`: a `post`, used only to make a shop's expense account; its comment and D29's list of what the client
-  does.
+- `client.ts`: a `post`, used only to make a shop's expense account; its comment.
+- `docs/architecture.md`, where it says the client has a `get` and a `put`; `docs/testing.md`, where it names the
+  sorter's one write.
 - D32 records the shop write: withdrawals on `(no name)` only, §1's check, the add-on's own lookup and `name-taken`,
-  the account made by the add-on and written by id, and that the endpoint now makes expense accounts, at most one per
-  posting given out. D30's list of what is written is
+  the account made by the add-on and written by id, the client's `post` for that alone, and that the endpoint now
+  makes expense accounts, at most one per posting given out in a run; an account made before a PUT that then fails
+  stays and is reused by a later run. D29 and D30 are not edited; where a part of them no longer holds, their status
+  becomes `active; <part> superseded by D32`. D30's list of what is written is
   then active with that part superseded by D32.
