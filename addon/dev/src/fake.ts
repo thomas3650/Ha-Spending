@@ -33,7 +33,7 @@ interface FakeAccount {
 
 const ACCOUNT_TYPES = new Set(["all", "asset", "expense", "revenue", "liabilities"]);
 
-type AccountType = "Asset account" | "Expense account" | "Revenue account";
+type AccountType = "Asset account" | "Expense account" | "Revenue account" | "Loan";
 
 interface Item {
   id: string;
@@ -86,6 +86,9 @@ function buildData(data: SeedData) {
   const assetIds = new Map(assets.map((a) => [a.name, a.id]));
   const others = new Map<string, string>();
   const NO_NAME = "(no name)";
+  const extra = (data.otherAccounts ?? []).map((a) => ({ id: nextId(), ...a }));
+  // Firefly III lets a withdrawal pay a liability.
+  const liabilityIds = new Map(extra.filter((a) => a.type === "liabilities").map((a) => [a.name, a.id]));
 
   function account(name: string, type: AccountType): string {
     if (type === "Asset account") {
@@ -93,6 +96,7 @@ function buildData(data: SeedData) {
       if (!id) throw new Error(`The seed names an asset account it does not list: ${name}`);
       return id;
     }
+    if (type === "Loan") return liabilityIds.get(name)!;
     const key = `${type}\u0000${name}`;
     if (!others.has(key)) others.set(key, nextId());
     return others.get(key)!;
@@ -104,7 +108,11 @@ function buildData(data: SeedData) {
     return NO_NAME;
   }
 
+  const paysLiability = (split: SeedSplit) =>
+    split.type === "withdrawal" && split.destination !== undefined && liabilityIds.has(split.destination);
+
   function ends(split: SeedSplit): [AccountType, AccountType] {
+    if (paysLiability(split)) return ["Asset account", "Loan"];
     if (split.type === "withdrawal") return ["Asset account", "Expense account"];
     if (split.type === "deposit") return ["Revenue account", "Asset account"];
     return ["Asset account", "Asset account"];
@@ -177,7 +185,7 @@ function buildData(data: SeedData) {
       const [type, name] = key.split("\u0000");
       return { id, name, type: type === "Expense account" ? ("expense" as const) : ("revenue" as const), active: true };
     }),
-    ...(data.otherAccounts ?? []).map((a) => ({ id: nextId(), ...a })),
+    ...extra,
   ].sort((a, b) => Number(a.id) - Number(b.id));
 
   return { assets, accounts, categories, groups, ruleGroups, nextId };

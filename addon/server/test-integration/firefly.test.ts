@@ -2,7 +2,7 @@ import { exampleSeed, seedFirefly } from "@ha-spending/dev";
 import { classify, parts, type SpendingData } from "@ha-spending/shared";
 import { beforeAll, describe, expect, it, vi } from "vitest";
 import { createSorterApp } from "../src/sorter/http";
-import { createSorterTools } from "../src/sorter/tools";
+import { createSorterTools, readAccounts } from "../src/sorter/tools";
 import { createApp } from "../src/app";
 import { createFireflyClient, type FetchLike, type FireflyClient, FireflyError } from "../src/firefly/client";
 import { type ReadSettings, readSpendingData, readVersion } from "../src/firefly/read";
@@ -308,9 +308,7 @@ describe("the sorter's tools on a real Firefly III", () => {
 });
 
 // After the sorter's tests above: these postings are dated in December, after theirs. The tests are independent of
-// each other (each gives out its own postings), but they use the earlier describe's categories, rules and Konto A,
-// and the seeder sends the literal "(no name)" for a withdrawal without a destination, as the Data Importer does:
-// left out, Firefly III's API would send it to the cash account.
+// each other (each gives out its own postings), but they use the earlier describe's categories, rules and Konto A.
 describe("the sorter's shop on a real Firefly III", () => {
   const KEY = "made-up-sorter-key-made-up-sorter-key";
   let call: (name: string, args: unknown) => Promise<{ isError: boolean; value: Record<string, unknown> }>;
@@ -321,8 +319,9 @@ describe("the sorter's shop on a real Firefly III", () => {
     const page = (await client.get("transactions", query)) as WirePage<WireGroup>;
     return new Map<string, WireSplit>(page.data.flatMap((g) => g.attributes.transactions.map((t) => [t.description, t])));
   };
+  const accounts = () => readAccounts(client, { pageSize: 50 }, AbortSignal.timeout(30_000));
   const accountsOfType = async (type: string) =>
-    ((await client.get("accounts", { type, limit: "50" })) as WirePage<WireAccount>).data.map((a) => a.attributes.name);
+    (await accounts()).filter((a) => a.type === type).map((a) => a.name);
   const unchanged = (s: WireSplit) => [s.amount, s.date, s.description, s.notes, s.source_id, s.type];
 
   beforeAll(async () => {
@@ -355,6 +354,8 @@ describe("the sorter's shop on a real Firefly III", () => {
           source: "Konto A" }] },
         { splits: [{ type: "withdrawal", date: "2026-12-07", amount: "70.00", description: "Shop kendt",
           source: "Konto A", destination: "Butik X" }] },
+        { splits: [{ type: "withdrawal", date: "2026-12-09", amount: "80.00", description: "Shop kontant navn",
+          source: "Konto A" }] },
       ],
     });
     const tools = createSorterTools(client, {
@@ -394,7 +395,7 @@ describe("the sorter's shop on a real Firefly III", () => {
       ...(shop === undefined ? {} : { shop }) };
   };
 
-  it("reads a withdrawal made without a destination as (no name), of type Expense account, and takes a shop", async () => {
+  it("reads a withdrawal on the importer's literal (no name) as an expense account, and takes a shop", async () => {
     const before = await splits();
     const first = before.get("Shop køb 1")!;
     expect(first.destination_name).toBe("(no name)");
@@ -465,5 +466,30 @@ describe("the sorter's shop on a real Firefly III", () => {
       expect(after.get(d)!.category_name).toBe("Dagligvarer");
     }
     expect(await accountsOfType("expense")).not.toContain("Lån Bank");
+  });
+
+  it("sends a withdrawal made through the API without a destination to the cash account, which keeps it (has-shop) " +
+    "and whose name is name-taken", async () => {
+    await client.post("transactions", { apply_rules: false, transactions: [{ type: "withdrawal", date: "2026-12-10",
+      amount: "90.00", description: "Shop kontant", source_name: "Konto A" }] });
+    const before = await splits();
+    const cash = before.get("Shop kontant")!;
+    expect([cash.destination_type, cash.destination_name]).toEqual(["Cash account", "Cash account"]);
+    const listed = (await accounts()).find((a) => a.id === cash.destination_id);
+    expect(listed).toMatchObject({ name: "Cash account", type: "cash" });
+
+    const { amounts } = await given();
+    const answer = await call("set_category", {
+      assignments: [
+        assignment(before, amounts, "Shop kontant", "Butik Ny"),
+        assignment(before, amounts, "Shop kontant navn", cash.destination_name),
+      ],
+    });
+    expect(answer.isError).toBe(false);
+    expect((answer.value.results as { shop_refused?: string }[]).map((r) => r.shop_refused))
+      .toEqual(["has-shop", "name-taken"]);
+    const after = await splits();
+    expect(after.get("Shop kontant")!.destination_id).toBe(cash.destination_id);
+    expect(after.get("Shop kontant navn")!.destination_id).toBe(before.get("Shop kontant navn")!.destination_id);
   });
 });

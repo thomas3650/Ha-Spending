@@ -365,7 +365,7 @@ async function shopAccount(
   const id = answer.data?.id;
   const made = answer.data?.attributes;
   // Firefly III takes any account's id as a withdrawal's destination, so only an active expense account is written.
-  if (typeof id !== "string" || id === "" || made?.type !== "expense" || made.active === false) {
+  if (typeof id !== "string" || id === "" || made?.type !== "expense" || made.active !== true) {
     throw new FireflyError("unreachable");
   }
   const account = { id, name, type: "expense", active: true };

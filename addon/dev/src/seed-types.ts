@@ -5,7 +5,7 @@ export interface SeedSplit {
   amount: string;
   description: string;
   source: string;
-  /** Left out on a withdrawal, it has no counterparty: Firefly III names the expense account `(no name)`. */
+  /** Left out on a withdrawal: the expense account `(no name)`, the Data Importer's name for no counterparty. */
   destination?: string;
   category?: string;
   foreignAmount?: string;

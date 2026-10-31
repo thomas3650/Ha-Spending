@@ -411,6 +411,20 @@ describe("the fake Firefly III", () => {
       expect(milk.destination_name).toBe("(no name)");
       expect(milk.destination_type).toBe("Expense account");
     });
+
+    it("a withdrawal seeded to a listed liability pays that liability, which is listed once", async () => {
+      const data = seed();
+      data.otherAccounts!.push({ name: "Laan", type: "liabilities", active: true });
+      data.transactions.push({ splits: [{ type: "withdrawal", date: "2026-01-08", amount: "40.00",
+        description: "Afdrag", source: "Konto A", destination: "Laan" }] });
+      const { json } = client(createFakeFirefly(data));
+      const groups = (await json<Page<Group>>("transactions?start=2026-01-01&end=2026-01-31&type=all")).data;
+      const paid = byDescription(groups, "Afdrag").attributes.transactions[0] as Split & { destination_id: string };
+      const all = await json<Accounts>("accounts?type=all");
+      const laan = all.data.filter((a) => a.attributes.name === "Laan");
+      expect(laan.map((a) => a.attributes.type)).toEqual(["liabilities"]);
+      expect(paid).toMatchObject({ destination_id: laan[0].id, destination_name: "Laan", destination_type: "Loan" });
+    });
   });
 
   it("answers the faults", async () => {

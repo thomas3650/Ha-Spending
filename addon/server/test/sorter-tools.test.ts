@@ -735,6 +735,7 @@ describe("set_category with a shop", () => {
     ["a liability", { type: "liabilities", active: true }],
     ["an inactive expense account", { type: "expense", active: false }],
     ["an account of no type", { active: true }],
+    ["an expense account that does not say it is active", { type: "expense" }],
   ])("stops the batch as unreachable when the new account comes back as %s, and leaves the posting", async (_, kind) => {
     const s = setup({
       data: shopSeed,
@@ -807,6 +808,27 @@ describe("set_category with a shop", () => {
     expect(body.transactions[0]).not.toHaveProperty("destination_id");
     s.logsNoShop("Ny butik", "Billaan", "billaan", "Gammel butik", "KONTO A", "Butik B");
   });
+
+  it("writes the category and refuses the shop as has-shop for a withdrawal paying a liability named (no name)",
+    async () => {
+      const data: SeedData = {
+        ...shopSeed,
+        otherAccounts: [...shopSeed.otherAccounts!, { name: "(no name)", type: "liabilities", active: true }],
+        transactions: [...shopSeed.transactions, one({ type: "withdrawal", date: "2026-03-09", amount: "70.00",
+          description: "Afdrag", source: "Konto A", destination: "(no name)" })],
+      };
+      const s = setup({ data });
+      const before = (await s.splits()).get("Afdrag")!;
+      expect(before).toMatchObject({ destination_name: "(no name)", destination_type: "Loan" });
+      const { postings, answer } = await writeShops(s, [{ description: "Afdrag", shop: "Ny butik" }]);
+      expect(answer.value.results).toEqual([{ posting_id: postings[0], ok: true, shop_refused: "has-shop" }]);
+      expect((await s.splits()).get("Afdrag")).toMatchObject({ category_name: "Dagligvarer",
+        destination_id: before.destination_id, destination_name: "(no name)", destination_type: "Loan" });
+      expect(s.posts()).toEqual([]);
+      const body = s.puts()[0].body as { transactions: Record<string, unknown>[] };
+      expect(body.transactions[0]).not.toHaveProperty("destination_id");
+      s.logsNoShop("Ny butik");
+    });
 
   it("writes an existing shop for its exact name and for its name in another case, and echoes its spelling", async () => {
     const s = setup({ data: shopSeed });

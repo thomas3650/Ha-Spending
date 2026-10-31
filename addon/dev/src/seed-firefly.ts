@@ -71,8 +71,7 @@ export async function seedFirefly(baseUrl: string, token: string, data: SeedData
     amount: s.amount,
     description: s.description,
     source_name: s.source,
-    // Left out, Firefly III's API makes a withdrawal go to its cash account. The Data Importer sends the
-    // literal "(no name)" for a line with no counterparty, so the seeder does too.
+    // As the Data Importer names a line with no counterparty: the one destination that takes a shop.
     ...(s.destination === undefined
       ? s.type === "withdrawal" ? { destination_name: "(no name)" } : {}
       : { destination_name: s.destination }),
