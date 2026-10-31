@@ -47,7 +47,7 @@ function julyBar(root: HTMLElement): HTMLElement {
 }
 
 describe("screen 4, a chosen unit", () => {
-  it("chooses July from its bar and shows Posteringer", async () => {
+  it("chooses July from its bar and shows its postings", async () => {
     const { app, root } = await mount("");
     fireEvent.click(julyBar(root));
     await settle(app);
@@ -149,6 +149,7 @@ describe("screen 4, a chosen unit", () => {
     fireEvent.click(julyBar(root));
     await settle(app);
     expect(queryByRole(root, "button", { name: da.remove(julyName()) })).toBeNull();
+    expect(getByRole(viewSwitch(root), "button", { name: da.bars }).getAttribute("aria-pressed")).toBe("true");
     expect(location.hash).toBe("");
   });
 
