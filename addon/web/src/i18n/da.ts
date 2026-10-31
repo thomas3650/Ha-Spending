@@ -1,6 +1,5 @@
 import type { Grouping, Preset } from "@ha-spending/shared";
-
-export type Sort = "newest" | "oldest" | "largest" | "smallest";
+import type { Sort } from "../state/view";
 
 interface GroupingTexts {
   label: string;
