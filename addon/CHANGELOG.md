@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.1](https://github.com/thomas3650/Ha-Spending/compare/v0.2.0...v0.2.1) (2026-10-31)
+
+
+### Bug Fixes
+
+* start answers at most 100 postings, and says when there are more ([#35](https://github.com/thomas3650/Ha-Spending/issues/35)) ([a299109](https://github.com/thomas3650/Ha-Spending/commit/a29910980d74aed46589ddf7d7d9ac22097b673a))
+
 ## [0.2.0](https://github.com/thomas3650/Ha-Spending/compare/v0.1.2...v0.2.0) (2026-10-31)
 
 
