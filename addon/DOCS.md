@@ -1,8 +1,8 @@
 # HA Spending
 
-The HA Spending add-on shows a household's spending from Firefly III on a page in Home Assistant. The server reads
-Firefly III, but the page itself still only greets you and shows the add-on's version. The screens come in a later
-version.
+The HA Spending add-on shows a household's spending from Firefly III on a page in Home Assistant. The page shows the
+spending of a period as main groups, then categories, then postings, and compares a unit of the chosen grouping with
+the one before it. Nothing is written to Firefly III.
 
 ## Installation
 
@@ -32,7 +32,9 @@ from inside Home Assistant.
 
 ## The page
 
-The page is in Danish and has a light theme.
+The page is in Danish and has a light theme. Click a main group to see its categories and a category to see its
+postings. A posting opens in Firefly III only when `firefly_link_url` is set; without it the posting is plain text. If
+the rule group in `main_group_rule_group` does not exist, the page says so.
 
 ## Support
 

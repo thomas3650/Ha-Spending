@@ -65,7 +65,7 @@ curl -sf -o /dev/null -H "Authorization: Bearer $fake_token" --retry 30 --retry-
 
 (
   export HA_SPENDING_DEV=1
-  export HA_SPENDING_OPTIONS="$PWD/addon/dev/options.json"
+  export HA_SPENDING_OPTIONS="${HA_SPENDING_OPTIONS:-$PWD/addon/dev/options.json}"
   # Unset, the server looks for the page in /opt/ha-spending/web, which does not exist on the Mac, so it serves
   # no page at /: the page comes from Vite.
   unset HA_SPENDING_WEB_DIR

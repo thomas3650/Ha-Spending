@@ -2,9 +2,9 @@
 
 ## What this repo is
 
-HA Spending is a Home Assistant add-on that will show a household's spending from Firefly III on a page in Home
-Assistant's side menu. The repo is **public**. Today the server reads Firefly III (`GET /api/data`) and the page still
-only says "Hej" and the server's version, through ingress. What it becomes is in the [UI spec](docs/superpowers/specs/2026-10-30-ui-ux-design.md) and the
+HA Spending is a Home Assistant add-on that shows a household's spending from Firefly III on a page in Home
+Assistant's side menu. The repo is **public**. The server reads Firefly III (`GET /api/data`) and the page shows the
+spending, through ingress. The design is in the [UI spec](docs/superpowers/specs/2026-10-30-ui-ux-design.md) and the
 [technical spec](docs/superpowers/specs/2026-10-30-technical-design.md).
 
 ## Layout
@@ -14,7 +14,7 @@ only says "Hej" and the server's version, through ingress. What it becomes is in
   - `addon/shared/` — the types between the server and the page, and the money and date rules
   - `addon/dev/` — a fake Firefly III, the example data, and the compose file for a real one; test and dev only
   - `addon/server/` — the add-on server (TypeScript, Hono on Node)
-  - `addon/web/` — the page (TypeScript, Lit, Vite); its Danish texts in `src/i18n/da.ts`
+  - `addon/web/` — the page (TypeScript, Lit, ECharts, Vite); its Danish texts in `src/i18n/da.ts`
   - `addon/translations/` — the option labels, `en.yaml` and `da.yaml`
 - `docs/` — the docs; the map is `docs/README.md`
 - `scripts/` — `setup`, the fast loop (`develop`), `integration` and the link check

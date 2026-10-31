@@ -3,7 +3,9 @@
  * app renders into one). This message prints the container's markup itself, so a failed query reads as one.
  */
 import { configure } from "@testing-library/dom";
-import { afterEach, beforeEach } from "vitest";
+import { afterEach, beforeEach, vi } from "vitest";
+
+vi.mock("../src/charts/echarts", () => import("./chart-mock"));
 
 const LIMIT = 4000;
 

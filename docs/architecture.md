@@ -17,13 +17,20 @@ The server and the page reach each other only through the routes below.
 
 ## What exists now
 
-The page says "Hej" and the server's version. The server reads Firefly III and answers `/api/data`; the page does not
-call it yet.
+The server reads Firefly III and answers `/api/data`; the page fetches it and shows screens 1 to 4 of the
+[UI spec](superpowers/specs/2026-10-30-ui-ux-design.md).
 
 - **The server** is Hono on `@hono/node-server` ([D3](decisions.md)), in `addon/server/src/`. In the image it is one
   bundle at `/opt/ha-spending/server.mjs`, run by `node:24-alpine` ([D4](decisions.md)).
-- **The page** is one Lit element, `<hs-app>`, built by Vite. In the image its build is at `/opt/ha-spending/web`, or
-  wherever `HA_SPENDING_WEB_DIR` points.
+- **The page** is a Lit element, `<hs-app>`, built by Vite. In the image its build is at `/opt/ha-spending/web`, or
+  wherever `HA_SPENDING_WEB_DIR` points. Its parts, in `addon/web/src/`:
+  - `state/`: the view state and its hash ([D20](decisions.md)), and the actions that change it;
+  - `model/`: the pure functions from an answer and the view state to what is shown (circle, key numbers, postings,
+    filters);
+  - `screens/` and `components/`: the screens and the cards, dropdowns and lists they use;
+  - `charts/echarts.ts`: the one wrapper around ECharts, which the component tests mock ([D19](decisions.md));
+  - `data/api.ts`: the fetch of `api/data`.
+  The build is one JS chunk ([D19](decisions.md)).
 - **The Firefly III client** (`addon/server/src/firefly/`) has one method, `get`, so nothing is ever written. It pages
   through the answers and maps them to postings ([D12](decisions.md), [D15](decisions.md)).
 - **The options** are read once at start from `/data/options.json`, or from `HA_SPENDING_OPTIONS`. Without a Firefly III
@@ -41,7 +48,7 @@ call it yet.
 | any other `/api/…` | 404 |
 | `GET /` and `GET /web/*` | the page's built files |
 
-No route writes. Every URL the page uses is relative (`./web/…`, `api/health`), so it works under the ingress path.
+No route writes. Every URL the page uses is relative (`./web/…`, `api/data`), so it works under the ingress path.
 
 ## Ingress
 

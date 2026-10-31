@@ -16,6 +16,7 @@
   },
   "dependencies": {
     "@ha-spending/shared": "0.0.0",
+    "echarts": "6.1.0",
     "lit": "3.3.3"
   },
   "devDependencies": {

@@ -19,7 +19,11 @@ its name in code, so the same thing has one name everywhere. The Danish word is 
 | Timeline | — | `timeline` (type `Timeline`): a period, a grouping, today and the earliest posting |
 | Whole unit | hel enhed | `isWhole`; the rule is in [D16](decisions.md) |
 | Today | i dag | `today`: the day the data was read |
+| View state | — | `ViewState`: everything the page shows, kept in the URL hash ([D20](decisions.md)) |
+| Level | niveau | `level`: the screen's depth, from all spending to a main group to a category |
+| Chosen unit | valgt enhed | `unit` in the view state: the bar the user clicked |
+| Card | kort | `card` in the view state: which card the second half shows, Søjler, Posteringer or Forskel (`"bars"` \| `"postings"` \| `"difference"`) |
 
-`Posting`, `kind` and the `null` category are fixed by technical spec §3.2
+The hash keys are listed in [D20](decisions.md). `Posting`, `kind` and the `null` category are fixed by technical spec §3.2
 ([technical spec](superpowers/specs/2026-10-30-technical-design.md)). The other names are chosen here; they are in
 `addon/shared/src/`. Their texts, such as Uden kategori, belong to the page.
