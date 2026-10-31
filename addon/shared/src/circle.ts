@@ -28,8 +28,13 @@ export function greys(n: number): string[] {
   });
 }
 
-export function circle(parts: Part[]): CirclePart[] {
+/** With `period`, each part keeps the colour its key has there, so a chosen unit's circle matches the period's (D16). */
+export function circle(parts: Part[], period?: CirclePart[]): CirclePart[] {
   const ordered = [...parts].sort((a, b) => b.amount - a.amount || compareKeys(a.key, b.key));
+  if (period) {
+    const kept = new Map(period.filter((p) => p.piece).map((p) => [p.key, p.colour]));
+    return ordered.map((p) => ({ ...p, colour: kept.get(p.key) ?? NO_PIECE, piece: p.amount > 0 }));
+  }
   const positive = ordered.filter((p) => p.amount > 0).length;
   const colours = [...PALETTE.slice(0, positive), ...greys(Math.max(0, positive - PALETTE.length))];
   return ordered.map((p, i) =>

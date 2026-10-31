@@ -17,6 +17,12 @@ export interface Part {
   amount: number;
 }
 
+export interface UnitPostings {
+  unit: Unit;
+  postings: ClassifiedPosting[];
+  total: number;
+}
+
 export interface Average {
   amount: number | null;
   units: number;
@@ -101,6 +107,10 @@ export function parts(postings: ClassifiedPosting[], level: Level): Part[] {
     .sort((a, b) => compareKeys(a.key, b.key));
 }
 
+export function change(amount: number, base: number | null): number | null {
+  return base !== null && base > 0 ? (amount - base) / base : null;
+}
+
 export function share(amount: number, whole: number): number | null {
   return whole > 0 ? amount / whole : null;
 }
@@ -111,6 +121,13 @@ function unitTotal(postings: ClassifiedPosting[], unit: Unit): number {
 
 export function unitTotals(postings: ClassifiedPosting[], units: Unit[]): number[] {
   return units.map((u) => unitTotal(postings, u));
+}
+
+export function byUnit(postings: ClassifiedPosting[], units: Unit[]): UnitPostings[] {
+  return units.map((unit) => {
+    const inUnit = within(postings, unit);
+    return { unit, postings: inUnit, total: total(inUnit) };
+  });
 }
 
 function averageOf(sums: number[]): number | null {

@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
+  byUnit,
+  change,
   chosenUnitNumbers,
   classify,
   differences,
@@ -180,6 +182,27 @@ describe("money", () => {
     expect(differences(all, { kind: "all" }, dec, unit)).toEqual([
       { key: "Bolig", amount: 500000, average: null, difference: null },
       { key: "Mad", amount: 10000, average: null, difference: null },
+    ]);
+  });
+
+  it("gives the change against a base", () => {
+    expect(change(1150000, 1100000)).toBeCloseTo(0.04545, 5);
+    expect(change(900, 1000)).toBeCloseTo(-0.1);
+    expect(change(50000, 0)).toBeNull();
+    expect(change(1, -5)).toBeNull();
+    expect(change(1, null)).toBeNull();
+  });
+
+  it("splits postings per unit, adding up to the bars", () => {
+    const units = unitsOf(T.period, "month", T.today);
+    const groups = byUnit(all, units);
+    expect(groups.map((g) => g.unit)).toEqual(units);
+    expect(groups.map((g) => g.total)).toEqual(unitTotals(all, units));
+    expect(groups.map((g) => g.total)).toEqual([523000, 504500, 16000]);
+    expect(groups.map((g) => g.postings.map((p) => p.id))).toEqual([
+      ["p3", "p4", "p5", "p6"],
+      ["p7", "p8", "p9"],
+      ["p10", "p11"],
     ]);
   });
 });
