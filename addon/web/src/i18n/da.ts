@@ -13,8 +13,6 @@ const kroner = new Intl.NumberFormat("da-DK", { maximumFractionDigits: 0 });
 
 export const da = {
   title: "Forbrug",
-  hello: "Hej",
-  version: (v: string) => `Version ${v}`,
   months: ["jan", "feb", "mar", "apr", "maj", "jun", "jul", "aug", "sep", "okt", "nov", "dec"],
 
   allSpending: "Alt forbrug",
