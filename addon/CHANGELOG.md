@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.2](https://github.com/thomas3650/Ha-Spending/compare/v0.2.1...v0.2.2) (2026-10-31)
+
+
+### Bug Fixes
+
+* set_category writes only what start gave out, with its amount ([#37](https://github.com/thomas3650/Ha-Spending/issues/37)) ([22d70c9](https://github.com/thomas3650/Ha-Spending/commit/22d70c9e98c5d2bbf4f9468bf38625656f8691be))
+
 ## [0.2.1](https://github.com/thomas3650/Ha-Spending/compare/v0.2.0...v0.2.1) (2026-10-31)
 
 
