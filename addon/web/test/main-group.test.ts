@@ -9,7 +9,7 @@ import {
 } from "@testing-library/dom";
 import { afterEach, describe, expect, it } from "vitest";
 
-import { comparisonLabel, kr, partLabel, percent } from "../src/format";
+import { comparisonLabel, kr, partLabel, percent, unitName } from "../src/format";
 import { da } from "../src/i18n/da";
 import { partName } from "../src/model/context";
 import { mount, settle, unmount } from "./mount";
@@ -140,7 +140,9 @@ describe("screen 2, a main group", () => {
 
   it("keeps the chosen unit while filtering to a category", async () => {
     const { app, root } = await mount("group=Mad&unit=2026-09-01");
-    fireEvent.click(cafeButton(root));
+    const sep = unitName(unitAt("2026-09-01", "month", TODAY), "month");
+    const card = getByRole(root, "region", { name: da.inUnit(da.categories, sep) });
+    fireEvent.click(getByRole(card, "button", { name: new RegExp("^Café,") }));
     await settle(app);
     getByRole(root, "heading", { level: 1, name: "Café" });
     const params = new URLSearchParams(location.hash.slice(1));

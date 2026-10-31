@@ -1,4 +1,4 @@
-import { circle, type CirclePart, parts, share, total, unitTotals, within } from "@ha-spending/shared";
+import { circle, type CirclePart, type ClassifiedPosting, parts, share, total, unitTotals, within } from "@ha-spending/shared";
 import { type BarItem, isRunning } from "../components/bars";
 import type { CircleItem } from "../components/circle";
 import { unitAxis, unitName } from "../format";
@@ -10,14 +10,25 @@ function periodCircle(ctx: ViewContext): CirclePart[] {
   return circle(parts(within(ctx.circlePostings, ctx.timeline.period), ctx.circleLevel));
 }
 
+/** The chosen unit's circle keeps the period's colours (D16). */
+function shownCircle(ctx: ViewContext): CirclePart[] {
+  if (ctx.chosen === null) return periodCircle(ctx);
+  return circle(parts(within(ctx.circlePostings, ctx.chosen), ctx.circleLevel), periodCircle(ctx));
+}
+
+/** The circle's postings in the chosen unit, or in the period. */
+export function circleSpan(ctx: ViewContext): ClassifiedPosting[] {
+  return within(ctx.circlePostings, ctx.chosen ?? ctx.timeline.period);
+}
+
 export function circleTotal(ctx: ViewContext): number {
-  return total(within(ctx.circlePostings, ctx.timeline.period));
+  return total(circleSpan(ctx));
 }
 
 export function circleItems(ctx: ViewContext): CircleItem[] {
   const of = ctx.circleLevel.kind === "all" ? "mainGroup" : "category";
   const whole = circleTotal(ctx);
-  return periodCircle(ctx).map((p) => ({
+  return shownCircle(ctx).map((p) => ({
     key: p.key,
     name: partName(p.key, of),
     amount: p.amount,
