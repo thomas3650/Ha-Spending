@@ -9,6 +9,9 @@ export default defineConfig({
     assetsDir: "web",
     emptyOutDir: true,
     sourcemap: false,
+    // ECharts core and zrender are most of the one chunk; ingress serves it over the local network, and one chunk
+    // keeps check-dist simple.
+    chunkSizeWarningLimit: 700,
   },
   // The fast loop's server listens on 127.0.0.1 only, and `localhost` may resolve to `::1` first, so the proxy and
   // the fast loop's checks name 127.0.0.1.

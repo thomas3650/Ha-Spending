@@ -1,4 +1,4 @@
-import { css, html, LitElement, nothing } from "lit";
+import { css, html, LitElement, nothing, type PropertyValues } from "lit";
 import { createRef, ref } from "lit/directives/ref.js";
 import { type Chart, createChart, type EChartsCoreOption } from "../charts/echarts";
 import { kr, partLabel, percent } from "../format";
@@ -59,6 +59,8 @@ export class Circle extends LitElement {
   declare selectable: boolean;
 
   private chart: Chart | null = null;
+  /** Set after a chart click, since ECharts toggles its own selection and the properties must win. */
+  private chartStale = false;
   private readonly chartEl = createRef<HTMLDivElement>();
 
   constructor() {
@@ -100,14 +102,23 @@ export class Circle extends LitElement {
     );
   }
 
-  protected override updated(): void {
+  protected override updated(changed: PropertyValues<this>): void {
     const el = this.chartEl.value;
     if (!el) return;
+    let fresh = false;
     if (this.chart === null) {
+      fresh = true;
       this.chart = createChart(el);
-      this.chart.on("click", (p) => this.fire(this.pieces[p.dataIndex]));
+      this.chart.on("click", (p) => {
+        this.fire(this.pieces[p.dataIndex]);
+        this.chartStale = true;
+        this.requestUpdate();
+      });
     }
-    this.chart.setOption(this.option(), { notMerge: true });
+    if (fresh || this.chartStale || changed.has("items") || changed.has("selected") || changed.has("selectable")) {
+      this.chartStale = false;
+      this.chart.setOption(this.option(), { notMerge: true });
+    }
   }
 
   /** ECharts draws outside CSS, so it gets the theme's tokens as values. */
@@ -132,7 +143,6 @@ export class Circle extends LitElement {
           itemStyle: { borderColor: token("--hs-card"), borderWidth: 2 },
           label: { alignTo: "edge", edgeDistance: 8, padding: [2, 4], borderRadius: 4 },
           labelLine: { length: 10, length2: 14, lineStyle: { color: token("--hs-leader") } },
-          labelLayout: { hideOverlap: false },
           emphasis: {
             scale: true,
             scaleSize: 6,

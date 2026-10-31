@@ -7,6 +7,7 @@ import { type CircleItem, type CircleSelection, ringStartAngle } from "../src/co
 import { kr, partLabel } from "../src/format";
 import { da } from "../src/i18n/da";
 import { partName } from "../src/model/context";
+import { charts, forgetCharts } from "./chart-mock";
 import { answerFor } from "./fixture";
 
 const THIS_YEAR = { start: "2026-01-01", end: "2026-10-30" };
@@ -52,6 +53,7 @@ function piece(key: string, amount: number, s: number): CircleItem {
 
 afterEach(() => {
   document.body.replaceChildren();
+  forgetCharts();
 });
 
 describe("the circle", () => {
@@ -74,6 +76,41 @@ describe("the circle", () => {
     document.body.addEventListener("part-click", (e) => heard((e as CustomEvent).detail));
     fireEvent.click(getByRole(el, "button", { name: new RegExp(`^${da.noMainGroup},`) }));
     expect(heard).toHaveBeenCalledWith({ key: null });
+  });
+
+  it("shows a focused name on the chart and clears it on blur", async () => {
+    const el = await render({ items: itemsOf({ kind: "all" }, "mainGroup") });
+    const bil = getByRole(el, "button", { name: /^Bil,/ });
+    fireEvent.focus(bil);
+    expect(charts[0].calls.highlight).toEqual([2]);
+    fireEvent.blur(bil);
+    expect(charts[0].calls.downplay).toEqual([2]);
+  });
+
+  it("reports a click on a piece with its key", async () => {
+    const el = await render({ items: itemsOf({ kind: "all" }, "mainGroup") });
+    const heard = vi.fn();
+    el.addEventListener("part-click", (e) => heard((e as CustomEvent).detail));
+    expect(charts).toHaveLength(1);
+    for (const handler of charts[0].clickHandlers) handler({ dataIndex: 1 });
+    expect(heard).toHaveBeenCalledWith({ key: "Mad" });
+  });
+
+  it("redraws the ring after a piece click, so the chosen part comes from its properties", async () => {
+    const el = await render({ items: itemsOf({ kind: "all" }, "mainGroup"), selectable: true });
+    const before = charts[0].calls.setOption;
+    for (const handler of charts[0].clickHandlers) handler({ dataIndex: 0 });
+    await el.updateComplete;
+    expect(charts[0].calls.setOption).toBe(before + 1);
+  });
+
+  it("leaves the ring alone when only the middle changes", async () => {
+    const el = await render({ items: itemsOf({ kind: "all" }, "mainGroup") });
+    const before = charts[0].calls.setOption;
+    el.centreAmount = 100;
+    await el.updateComplete;
+    getByText(el, kr(100));
+    expect(charts[0].calls.setOption).toBe(before);
   });
 
   it("shows the total in the middle", async () => {
