@@ -263,12 +263,19 @@ describe("the sorter's tools on a real Firefly III", () => {
 
   it("writes the category and the main group's tag only, and keeps the other split", async () => {
     const before = await splits();
+    const given = await call("start", { categories: tree() });
+    const amounts = new Map((given.value.postings as { posting_id: number; amount: string }[])
+      .map((p) => [p.posting_id, p.amount]));
     const assignments = [
       ["Integration køb", "Dagligvarer"],
       ["Integration del 1", "Husleje"],
       ["Integration overførsel", "Dagligvarer"],
       ["Integration refusion", "Husleje"],
-    ].map(([d, c]) => ({ posting_id: Number(before.get(d)!.transaction_journal_id), category_id: ids.get(c)! }));
+    ].map(([d, c]) => {
+      const posting_id = Number(before.get(d)!.transaction_journal_id);
+      // A transfer is never given out; it is refused before its amount is looked at.
+      return { posting_id, category_id: ids.get(c)!, amount: amounts.get(posting_id) ?? "1.00" };
+    });
     const { isError, value } = await call("set_category", { assignments });
     expect(isError).toBe(false);
     expect((value.results as { ok: boolean; reason?: string }[]).map((r) => r.reason ?? r.ok)).toEqual([
