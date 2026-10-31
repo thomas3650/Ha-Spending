@@ -162,18 +162,60 @@ describe("start", () => {
     expect(s.log).toHaveBeenCalledWith("sorter: start: ok, 5 postings");
   });
 
-  it("answers at most 500 postings, the oldest", async () => {
+  it("answers at most 100 postings, the oldest, and says when there are more", async () => {
     const day = (n: number) => new Date(Date.UTC(2025, 0, 1 + n)).toISOString().slice(0, 10);
-    const transactions = Array.from({ length: 501 }, (_, n) =>
+    const transactions = Array.from({ length: 101 }, (_, n) =>
       one({ type: "withdrawal" as const, date: day(n), amount: "1.00", description: `Køb ${n}`,
         source: "Konto A", destination: "Butik" }),
     );
-    const s = setup({ data: { ...seed, transactions }, settings: { pageSize: 200 } });
+    const s = setup({ data: { ...seed, transactions }, settings: { pageSize: 40 } });
     const { value } = await s.call("start", { categories: await s.tree() });
     const postings = value.postings as { date: string }[];
-    expect(postings).toHaveLength(500);
+    expect(postings).toHaveLength(100);
     expect(postings[0].date).toBe(day(0));
-    expect(postings[499].date).toBe(day(499));
+    expect(postings[99].date).toBe(day(99));
+    expect(value.more).toBe(true);
+  });
+
+  it("says there are no more when the whole inbox fits", async () => {
+    const day = (n: number) => new Date(Date.UTC(2025, 0, 1 + n)).toISOString().slice(0, 10);
+    const transactions = Array.from({ length: 100 }, (_, n) =>
+      one({ type: "withdrawal" as const, date: day(n), amount: "1.00", description: `Køb ${n}`,
+        source: "Konto A", destination: "Butik" }),
+    );
+    const s = setup({ data: { ...seed, transactions }, settings: { pageSize: 40 } });
+    const { value } = await s.call("start", { categories: await s.tree() });
+    expect(value.postings).toHaveLength(100);
+    expect(value.more).toBe(false);
+  });
+
+  it("keeps a full answer small enough for the agent to take in one tool result", async () => {
+    // Claude Code saves a tool result over about 25,000 tokens to a file instead, which the sorter may not read.
+    // Bank-like text tokenizes badly: digits, codes, quotes and line breaks, which JSON escapes.
+    const text = 'MobilePay "Ref 4711-0815"\\n'.repeat(20);
+    const transactions = Array.from({ length: 100 }, (_, n) =>
+      one({ type: "withdrawal" as const, date: "2025-01-01", amount: "1234567.89", description: text, notes: text,
+        source: "Konto A", destination: `Butik ${n}` }),
+    );
+    const s = setup({ data: { ...seed, transactions }, settings: { pageSize: 40 } });
+    const { value } = await s.call("start", { categories: await s.tree() });
+    expect(JSON.stringify(value).length).toBeLessThan(50_000);
+    const first = (value.postings as { description: string; notes: string }[])[0];
+    expect(Array.from(first.description)).toHaveLength(150);
+    expect(first.description.endsWith("…")).toBe(true);
+    expect(Array.from(first.notes)).toHaveLength(150);
+  });
+
+  it("never cuts an emoji in half", async () => {
+    const text = `${"a".repeat(148)}😀${"b".repeat(10)}`;
+    const s = setup({
+      data: { ...seed, transactions: [one({ type: "withdrawal" as const, date: "2025-01-01", amount: "1.00",
+        description: text, source: "Konto A", destination: "Butik" })] },
+    });
+    const { value } = await s.call("start", { categories: await s.tree() });
+    const description = (value.postings as { description: string }[])[0].description;
+    expect(description).toBe(`${"a".repeat(148)}😀…`);
+    expect(/[\uD800-\uDBFF](?![\uDC00-\uDFFF])/.test(description)).toBe(false);
   });
 
   it.each([
