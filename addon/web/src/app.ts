@@ -20,6 +20,7 @@ import { LoadError, type LoadErrorCode, loadData } from "./data/api";
 import { da } from "./i18n/da";
 import { type ViewContext, viewContext } from "./model/context";
 import { keyCards } from "./model/key-numbers";
+import { allPostingsStyles, type CategoryChoice } from "./screens/all-postings";
 import "./screens/overview";
 import { overviewStyles } from "./screens/overview";
 import {
@@ -28,13 +29,28 @@ import {
   openAllPostings,
   openPart,
   removeCategory,
+  removeMainGroup,
   removeUnit,
   setAccounts,
+  setAmount,
   setCard,
+  setCategory,
   setGrouping,
+  setMainGroup,
   setPeriod,
+  setSearch,
+  setSort,
 } from "./state/actions";
-import { type Card, parseHash, type PeriodChoice, periodOf, toHash, type ViewState } from "./state/view";
+import {
+  type AmountRange,
+  type Card,
+  parseHash,
+  type PeriodChoice,
+  periodOf,
+  type Sort,
+  toHash,
+  type ViewState,
+} from "./state/view";
 import { card, theme } from "./theme";
 
 type Load =
@@ -66,6 +82,7 @@ export class SpendingApp extends LitElement {
     barsStyles,
     postingsStyles,
     overviewStyles,
+    allPostingsStyles,
     css`
       :host {
         display: block;
@@ -269,7 +286,18 @@ export class SpendingApp extends LitElement {
               @remove-category=${() => this.push(removeCategory(this.state))}
               @open-all-postings=${() => this.push(openAllPostings(this.state))}
             ></hs-overview>`
-        : nothing}
+        : html`<hs-all-postings
+            .ctx=${ctx}
+            @search-input=${(e: CustomEvent<string>) => this.apply(setSearch(this.state, e.detail), "replace")}
+            @sort-change=${(e: CustomEvent<Sort>) => this.push(setSort(this.state, e.detail))}
+            @remove-main-group=${() => this.push(removeMainGroup(this.state))}
+            @remove-category=${() => this.push(removeCategory(this.state))}
+            @remove-unit=${() => this.push(removeUnit(this.state))}
+            @set-amount=${(e: CustomEvent<AmountRange | null>) => this.push(setAmount(this.state, e.detail))}
+            @set-main-group=${(e: CustomEvent<string | null>) => this.push(setMainGroup(this.state, e.detail))}
+            @set-category=${(e: CustomEvent<CategoryChoice>) =>
+              this.push(setCategory(this.state, e.detail.mainGroup, e.detail.category))}
+          ></hs-all-postings>`}
     `;
   }
 

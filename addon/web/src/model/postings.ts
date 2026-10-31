@@ -89,3 +89,12 @@ export function groupedPostings(
   if (newestFirst) groups.reverse();
   return { kind: "grouped", newestFirst, groups };
 }
+
+export function flatPostings(
+  postings: ClassifiedPosting[],
+  ctx: ViewContext,
+  colours: Map<string | null, string>,
+): PostingList {
+  const rc = rowContext(ctx, colours);
+  return { kind: "flat", rows: postings.map((p) => row(p, rc)) };
+}
