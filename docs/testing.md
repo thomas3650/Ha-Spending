@@ -102,7 +102,7 @@ The page's list. Every screenshot is at 1440×960 with the console free of error
     periode in 2020).
 15. `29-ingen-regelgruppe`: `scripts/develop` with `HA_SPENDING_OPTIONS` pointing at a copy of `addon/dev/options.json`
     in `local/` whose `main_group_rule_group` names a group that does not exist. The page shows `da.noRuleGroup` once.
-16. `30-1024`: the window at 1024×960. The frame is wider than 960 px, so the halves sit side by side, equal
+16. `30-1024`: the window at 1024×960. The frame is 1024 px or wider, so the halves sit side by side, equal
     ([D24](decisions.md)). The circle's names neither overlap nor are cut.
 17. `31-900`: the window at 900×960. The halves stack.
 18. Back: three clicks, then back three times returns to the opening view.

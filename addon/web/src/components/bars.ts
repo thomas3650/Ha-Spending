@@ -30,10 +30,11 @@ export interface UnitSelection {
 
 const RUNNING = 0.5;
 const FADED = 0.3;
-/** The width an axis label takes with its gap, such as "uge 44". */
-const LABEL_ROOM = 48;
+/** About the width of one character of an 11 px axis label, and the gap between two labels. */
+const LABEL_CHAR = 6;
+const LABEL_GAP = 8;
 /** About the y-axis labels and the grid's sides. */
-const PLOT_INSET = 80;
+const PLOT_INSET = 110;
 /** The room on the right of the plot for the average line's label. */
 const AVERAGE_ROOM = 72;
 const FOCUS_SHADE = 0.3;
@@ -154,7 +155,9 @@ export class Bars extends LitElement {
 
   private labelsThatFit(): number {
     const width = this.chartEl.value?.clientWidth ?? 0;
-    return Math.floor((width - PLOT_INSET) / LABEL_ROOM);
+    // "i gang" sits on a second line, under its neighbours' empty one, so only the first line counts.
+    const longest = Math.max(1, ...this.items.map((i) => i.axis.length));
+    return Math.floor((width - PLOT_INSET) / (longest * LABEL_CHAR + LABEL_GAP));
   }
 
   /** ECharts draws outside CSS, so it gets the theme's tokens as values. */

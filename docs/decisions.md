@@ -214,7 +214,7 @@ to set their status to `superseded by D<n>`, or to name a part a later decision 
 - **Source:** Claude, [page plan](superpowers/plans/2026-10-31-page.md)
 
 ### D22: The halves stack below 960 px of frame width
-- **Date:** 2026-10-31 · **Status:** active
+- **Date:** 2026-10-31 · **Status:** active; stack point superseded by D24
 - **Decision:** The two halves stack when the page's frame is narrower than 960 px.
 - **Why:** With Home Assistant's side menu open, a 1280 px window leaves the frame about 1024 px. Two halves still fit
   there, so UI spec §8's 1280 px holds.
@@ -231,10 +231,13 @@ to set their status to `superseded by D<n>`, or to name a part a later decision 
 - **Source:** the controller's rulings, [page plan](superpowers/plans/2026-10-31-page.md);
   [D16](decisions.md) for the partial unit
 
-### D24: The halves are equal below 1280 px of frame width
+### D24: The halves stack below 1024 px, and are equal below 1280 px
 - **Date:** 2026-10-31 · **Status:** active
-- **Decision:** From 960 px to 1279 px of frame width the two halves are equal, `minmax(0, 1fr) minmax(0, 1fr)`. From
-  1280 px they are 5 : 7. The circle's ring is 34–46 % with 12 px names, so its names fit beside it.
+- **Decision:**
+  - The two halves stack when the page's frame is narrower than 1024 px.
+  - From 1024 px to 1279 px they are equal, `minmax(0, 1fr) minmax(0, 1fr)`. From 1280 px they are 5 : 7.
+  - The circle's ring is 34–46 % with 12 px names, so its names fit beside it.
 - **Why:** At a 1024 px frame the 5 : 7 circle half left no room for the names, and they ran into each other. Equal
-  halves keep the halves side by side there, as [D22](decisions.md) wants.
-- **Source:** Claude, from the controller's Chrome check of the [page plan](superpowers/plans/2026-10-31-page.md)
+  halves fit them there. Below 1024 px even equal halves are too narrow for a long name such as Uden hovedgruppe.
+- **Source:** the controller's ruling after the Chrome check of the
+  [page plan](superpowers/plans/2026-10-31-page.md)

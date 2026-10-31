@@ -144,7 +144,7 @@ export class SpendingApp extends LitElement {
           grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
         }
       }
-      @media (max-width: 959px) {
+      @media (max-width: 1023px) {
         .halves {
           grid-template-columns: minmax(0, 1fr);
         }
