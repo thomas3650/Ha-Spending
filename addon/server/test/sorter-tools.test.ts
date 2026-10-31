@@ -204,6 +204,17 @@ describe("start", () => {
     expect(value.postings).toBeUndefined();
   });
 
+  it("answers a problem when the rule group maps a name that is not a category in Firefly III", async () => {
+    const ghost = { ...seed, ruleGroups: [{ title: "Hovedgrupper", rules: [...seed.ruleGroups[0].rules,
+      tagRule("Findes ikke", "Mad")] }] };
+    const s = setup({ data: ghost });
+    const { value } = await s.call("start", { categories: await s.tree() });
+    expect(value).toEqual({
+      ok: false,
+      problems: ['"Findes ikke" is in the rule group but not a category in Firefly III'],
+    });
+  });
+
   it("answers a problem when the rule group is missing or maps a category twice", async () => {
     const missing = setup({ settings: { mainGroupRuleGroup: "Ingen" } });
     const answer = await missing.call("start", { categories: [] });
@@ -264,6 +275,22 @@ describe("set_category", () => {
     ]);
     s.logsNoPosting();
     expect(s.log).toHaveBeenCalledWith("sorter: set_category: 1 written");
+  });
+
+  it("removes the losing tag of a conflict too", async () => {
+    const conflict = {
+      ...seed,
+      ruleGroups: [{ title: "Hovedgrupper", rules: [...seed.ruleGroups[0].rules, tagRule("Gammel", "Fritid"),
+        tagRule("Gammel", "Hobby")] }],
+      transactions: [one({ type: "withdrawal" as const, date: "2026-02-15", amount: "45.00", description: "Kiosk",
+        source: "Konto A", destination: "Kiosk", tags: ["Fritid", "Ferie"] })],
+    };
+    const s = setup({ data: conflict });
+    const kiosk = await s.postingId("Kiosk");
+    const food = (await s.categoryIds()).get("Dagligvarer")!;
+    const { value } = await s.call("set_category", { assignments: [{ posting_id: kiosk, category_id: food }] });
+    expect(value.results).toEqual([{ posting_id: kiosk, ok: true }]);
+    expect((await s.splits()).get("Kiosk")!.tags).toEqual(["Ferie", "Mad"]);
   });
 
   it("takes a posting out of the inbox category and replaces its main group tag", async () => {

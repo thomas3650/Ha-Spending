@@ -79,6 +79,8 @@ interface Catalog {
   /** Category name → main group, from the rule group. */
   mapping: Map<string, string>;
   conflicts: Set<string>;
+  /** Every tag the rule group adds: the main-group tags a write replaces. */
+  mainGroupTags: Set<string>;
 }
 
 async function readCatalog(client: FireflyClient, settings: SorterSettings, signal: AbortSignal): Promise<Catalog> {
@@ -91,6 +93,7 @@ async function readCatalog(client: FireflyClient, settings: SorterSettings, sign
     names: new Map(categories.map((c) => [c.id, c.attributes.name])),
     mapping: mainGroups.mapping,
     conflicts: new Set(mainGroups.conflicts),
+    mainGroupTags: mainGroups.tags,
   };
 }
 
@@ -181,9 +184,11 @@ function compare(given: GivenCategory[], catalog: Catalog, settings: SorterSetti
     else if (actual !== group) problems.push(`"${real}" is in the main group "${actual}", not "${group}"`);
   }
 
+  const inFirefly = new Set(catalog.names.values());
   for (const [name, group] of catalog.mapping) {
     if (excluded.has(group) || name === settings.inboxCategory || listed.has(name)) continue;
-    problems.push(`"${name}" (main group "${group}") is missing from the list`);
+    if (!inFirefly.has(name)) problems.push(`"${name}" is in the rule group but not a category in Firefly III`);
+    else problems.push(`"${name}" (main group "${group}") is missing from the list`);
   }
   return problems;
 }
@@ -262,8 +267,7 @@ async function assign(
   if (!isWithdrawalOrDeposit(split)) return { posting_id, ok: false, reason: "not-withdrawal-or-deposit" };
   if (!inInbox(split, settings.inboxCategory)) return { posting_id, ok: false, reason: "not-in-inbox" };
 
-  const mainGroupTags = new Set(catalog.mapping.values());
-  const tags = [...(split.tags ?? []).filter((t) => !mainGroupTags.has(t)), category.group];
+  const tags = [...(split.tags ?? []).filter((t) => !catalog.mainGroupTags.has(t)), category.group];
   await client.put(
     `transactions/${encodeURIComponent(group.id)}`,
     {

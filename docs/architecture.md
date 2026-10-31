@@ -57,8 +57,8 @@ No route on port 8099 writes. Every URL the page uses is relative (`./web/…`, 
 ## Ingress
 
 - The server listens on port 8099, Home Assistant's default ingress port. `addon/config.yaml` publishes no port.
+- Port 8099 answers only Home Assistant's ingress address; any other peer gets 403 ([D5](decisions.md)).
 - Port 8100, the sorter's endpoint, has no ingress check: other add-ons reach it on the internal network, with the key
   ([D29](decisions.md)). Port 8099 does not serve it.
-- It answers only Home Assistant's ingress address; any other peer gets 403 ([D5](decisions.md)).
 - `HA_SPENDING_DEV=1` turns the check off, and binds `127.0.0.1` only ([D13](decisions.md)). The add-on never sets
   it; the fast loop does ([`testing.md`](testing.md#fast-loop)).

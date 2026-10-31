@@ -81,11 +81,13 @@ groups, is a difference too.
 Input: `{"assignments": [{"posting_id": 345, "category_id": 12}, …]}`, 1 to 100 assignments, each posting once.
 
 Each assignment is checked and written on its own; one refused does not stop the others. The posting is read again
-from Firefly III right before it is written, so a category set by hand since `start` is never overwritten. The answer
+from Firefly III right before it is written, so a category set by hand since `start` is not overwritten. Firefly III
+has no conditional update, so a change by hand in the moment between that read and the write can still be. The answer
 has one result per assignment, in order:
 `{"results": [{"posting_id": 345, "ok": true}, {"posting_id": 346, "ok": false, "reason": "not-in-inbox"}]}`.
 
-- **Written:** the category, and the posting's tags with every main-group tag replaced by the category's main group.
+- **Written:** the category, and the posting's tags with every main-group tag (any tag an active rule of
+  `main_group_rule_group` adds) replaced by the category's main group.
   Every other tag, the amount, the date, the accounts, the description and the notes stay as they are. Firefly III's
   rules do not run on the write.
 - **Refused, with the reason:** `unknown-category`, `inbox-category`, `no-main-group`, `ambiguous-main-group` (the
