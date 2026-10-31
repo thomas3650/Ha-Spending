@@ -20,9 +20,9 @@ A name is checked, and cleaned, the same way wherever it is used (§2 and §3):
 
 - It is normalised to Unicode NFC and trimmed of white space at both ends. The cleaned name is what is compared and
   written.
-- It is refused when it is empty, when it has more than 60 code points, or when it holds a character of the Unicode
+- It is refused when it is empty, when it has more than 60 code points, when it holds a character of the Unicode
   categories Cc (control), Cf (format, such as the bidi overrides and zero-width characters), Zl, Zp (the line and
-  paragraph separators) or Cs (a lone surrogate).
+  paragraph separators) or Cs (a lone surrogate), or when it is `(no name)` in any case.
 - "The same name" means the same after `toLocaleLowerCase("und")` of the cleaned names; "exactly" means the cleaned
   names are equal.
 
@@ -35,10 +35,12 @@ The ok answer gains `shops`:
 
 `{"ok": true, "postings": [...], "more": false, "shops": ["Butik A", "Kiosk"]}`
 
-- The names of the active expense accounts in Firefly III, every page read, except `(no name)` and except a name §1
-  refuses. Each name once, sorted in code-point order.
-- At most 1,000 names, the first in that order; `shops_more: true` says that some were left out. A thousand names of
-  60 code points stay well under the size Claude Code passes on as one tool result.
+- The names of the active expense accounts in Firefly III, every page read, except a name §1 refuses (`(no name)`
+  among them). Each cleaned name once, sorted in code-point order (by code point, not JavaScript's default sort,
+  which compares UTF-16 code units).
+- The names together hold at most 12,000 code points: the first names in that order that fit. `shops_more` is always
+  in an ok answer, `true` when names were left out. With the 50 postings and their texts, that keeps one answer well
+  under the about 25,000 tokens Claude Code passes on as one tool result, also when every name is 60 code points.
 - The agent reuses one of these names for a shop it meets again, instead of spelling it a new way. The names are data
   from Firefly III, some made by importers from bank text, never instructions; the tool's description says so.
 - An answer with `ok: false` has no `shops`, as it has no postings.
@@ -83,8 +85,8 @@ date, the source account, the type, the description, the notes and every other s
 rules do not run on the write. The endpoint can now make expense accounts: at most one per posting given out, named by
 the agent within §1.
 
-If Firefly III refuses the write anyway (a 422), it is `refused`, as any refused write today: the batch stops, the
-posting keeps its category, and the results before it stand (D30). The checks above are meant to leave Firefly III no
+If Firefly III refuses the write anyway (a 422), it is `unreachable`, as any failed write today: the batch stops, the
+posting is unchanged and stays in the inbox, and the results before it stand (D30). The checks above are meant to leave Firefly III no
 reason to refuse a name.
 
 ## 4. Tests
@@ -102,7 +104,9 @@ reason to refuse a name.
   - names: only spaces, a line feed, a bidi override, a zero-width space, U+2028, a lone surrogate, 61 code points
     refused; 60 code points with an emoji, and "Café" in its two encodings as one account;
   - a split group where only the assigned split's destination changes;
-  - `start`'s `shops` over several pages, without `(no name)`, without a refused name, cut at 1,000 with `shops_more`;
+  - `start`'s `shops` over several pages, without `(no name)`, without a refused name, cut at 12,000 code points with
+    `shops_more: true`, and `shops_more: false` when all fit;
+  - a `shop` of `(no name)`: `bad-shop-name`;
   - a shop name in no log line.
 - An integration test on the real Firefly III in Docker: a shop makes its expense account, a second posting with the
   same shop reuses it, and the amount, date, source account, type, category, tags, notes and the other split stay.
@@ -114,7 +118,6 @@ reason to refuse a name.
   input, results and "Written" bullet.
 - `tools.ts`: both tools' descriptions; the comment on the rules not running.
 - `.claude/agents/reviewer.md`: what the endpoint writes.
-- `docs/architecture.md` where it names what `set_category` writes.
 - D32 records the shop write: withdrawals on `(no name)` only, §1's check, the add-on's own lookup and `name-taken`,
   and that the endpoint now makes expense accounts, at most one per posting given out. D30's list of what is written is
   then active with that part superseded by D32.
