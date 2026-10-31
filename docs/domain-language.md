@@ -11,11 +11,15 @@ its name in code, so the same thing has one name everywhere. The Danish word is 
 | Posting | postering | `posting` (type `Posting`) |
 | Spending | forbrug | `spending` (`Posting.kind`) |
 | Refund | — | `refund` (`Posting.kind`) |
-| Uden hovedgruppe | Uden hovedgruppe | `noMainGroup` |
-| Uden kategori | Uden kategori | `noCategory` (a posting's `category` is `null`) |
-| Period | periode | `period` |
-| Grouping | gruppering ("Gruppér pr.") | `grouping` |
+| Uden hovedgruppe | Uden hovedgruppe | `mainGroup: null` on a category ([D15](decisions.md)) |
+| Uden kategori | Uden kategori | `category: null` on a posting ([D15](decisions.md)) |
+| Period | periode | `period` (type `Period`) |
+| Grouping | gruppering ("Gruppér pr.") | `grouping` (type `Grouping`) |
+| Unit | enhed | `unit` (type `Unit`): one day, week, month, quarter or year of a period |
+| Timeline | — | `timeline` (type `Timeline`): a period, a grouping, today and the earliest posting |
+| Whole unit | hel enhed | `wholeUnit` (`isWhole`); the rule is in [D16](decisions.md) |
+| Today | i dag | `today`: the day the data was read |
 
 `Posting`, `kind` and the `null` category are fixed by technical spec §3.2
-([technical spec](superpowers/specs/2026-10-30-technical-design.md)). The other names are chosen here; none is in the
-code yet.
+([technical spec](superpowers/specs/2026-10-30-technical-design.md)). The other names are chosen here; they are in
+`addon/shared/src/`. Their texts, such as Uden kategori, belong to the page.

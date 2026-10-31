@@ -37,7 +37,6 @@ jobs:
       - run: npm test
       - run: npm run build
 
-  # Against a real Firefly III in Docker; scripts/integration starts it, seeds it and removes it.
   integration:
     runs-on: ubuntu-latest
     timeout-minutes: 20
