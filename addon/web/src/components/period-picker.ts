@@ -64,7 +64,7 @@ export class PeriodPicker extends Dropdown {
         <small>${da.period}</small><span>${closed}</span>
       </button>
       ${this.open
-        ? html`<div class="menu" role="group" aria-label=${da.period}>
+        ? html`<div class="menu" tabindex="-1" role="group" aria-label=${da.period}>
             ${PRESETS.map(
               (preset) =>
                 html`<button

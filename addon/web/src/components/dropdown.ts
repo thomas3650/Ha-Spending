@@ -7,8 +7,9 @@ function onFocusable(path: EventTarget[]): boolean {
 }
 
 /**
- * A field that opens a panel. Escape or a click outside closes it and returns focus to the field's button. The
- * pickers render into the app's shadow root (no shadow root of their own), so one tree holds every role and name.
+ * A field that opens a panel. Escape or a click outside closes it and returns focus to the field's button; focus
+ * leaving closes it too. The pickers render into the app's shadow root (no shadow root of their own), so one tree
+ * holds every role and name.
  */
 export class Dropdown extends LitElement {
   static override properties: PropertyDeclarations = {
@@ -39,15 +40,23 @@ export class Dropdown extends LitElement {
     void this.close(true);
   };
 
+  /** The panel has tabindex -1, so a click on its background keeps focus inside. */
+  private readonly onFocusOut = (event: FocusEvent): void => {
+    const next = event.relatedTarget;
+    if (this.open && !(next instanceof Node && this.contains(next))) void this.close(false);
+  };
+
   override connectedCallback(): void {
     super.connectedCallback();
     document.addEventListener("click", this.onDocumentClick);
     this.addEventListener("keydown", this.onKeyDown);
+    this.addEventListener("focusout", this.onFocusOut);
   }
 
   override disconnectedCallback(): void {
     document.removeEventListener("click", this.onDocumentClick);
     this.removeEventListener("keydown", this.onKeyDown);
+    this.removeEventListener("focusout", this.onFocusOut);
     super.disconnectedCallback();
   }
 
@@ -120,6 +129,9 @@ export const dropdownStyles = css`
     z-index: 5;
     display: flex;
     flex-direction: column;
+  }
+  .menu:focus {
+    outline: none;
   }
   .menu.end {
     left: auto;

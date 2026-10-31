@@ -58,7 +58,7 @@ export class AccountsPicker extends Dropdown {
         <small>${da.accounts}</small><span>${closed}</span>
       </button>
       ${this.open && this.accounts
-        ? html`<div class="menu end" role="group" aria-label=${da.accounts}>
+        ? html`<div class="menu end" tabindex="-1" role="group" aria-label=${da.accounts}>
             <label class="cb"
               ><input
                 type="checkbox"

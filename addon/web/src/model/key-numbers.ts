@@ -46,7 +46,7 @@ export function keyCards(ctx: ViewContext): [KeyCard, KeyCard, KeyCard] {
   };
 
   const c = numbers.comparison;
-  let third: KeyCard = { label: da.none, value: da.none, sub: "", trend: null };
+  let third: KeyCard = { label: `${da.none} ${da.against} ${da.none}`, value: da.none, sub: "", trend: null };
   if (c) {
     const label = comparisonLabel(c.unit, c.before, g);
     if (c.beforeAmount === null) {

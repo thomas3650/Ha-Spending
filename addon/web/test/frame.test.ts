@@ -138,6 +138,33 @@ describe("the frame", () => {
     expect(shadow.activeElement).toBe(periodButton(root));
   });
 
+  it("keeps Konti disabled until the first answer", async () => {
+    const { root } = await mount("", { answer: () => new Promise<Response>(() => {}) });
+    expect((kontiButton(root) as HTMLButtonElement).disabled).toBe(true);
+  });
+
+  it("marks the chosen preset as pressed", async () => {
+    const { app, root } = await mount("period=lastMonth");
+    fireEvent.click(periodButton(root));
+    await app.updateComplete;
+    const panel = getByRole(root, "group", { name: da.period });
+    expect(getByRole(panel, "button", { name: da.presets.lastMonth }).getAttribute("aria-pressed")).toBe("true");
+    expect(getByRole(panel, "button", { name: da.presets.thisYear }).getAttribute("aria-pressed")).toBe("false");
+  });
+
+  it("closes a panel when focus leaves it", async () => {
+    const { app, root } = await mount("");
+    fireEvent.click(kontiButton(root));
+    await app.updateComplete;
+    getByRole(root, "checkbox", { name: da.allAccounts }).focus();
+    await app.updateComplete;
+    getByRole(root, "checkbox", { name: da.allAccounts });
+    periodButton(root).focus();
+    await settle(app);
+    expect(queryByRole(root, "checkbox", { name: da.allAccounts })).toBeNull();
+    expect(app.shadowRoot!.activeElement).toBe(periodButton(root));
+  });
+
   it("chooses a period from the dropdown and a custom one", async () => {
     const { app, root, fetch } = await mount("");
     await choosePreset(root, app, da.presets.lastYear);
