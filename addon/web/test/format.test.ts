@@ -93,6 +93,9 @@ describe("units", () => {
     expect(pair("2026-10-30", "2026-10-29", "day")).toBe("30.10. mod 29.10.");
     expect(pair("2026-10-30", "2026-07-30", "quarter")).toBe("4. kvartal mod 3. kvartal");
     expect(pair("2026-10-30", "2025-10-30", "year")).toBe("2026 mod 2025");
+    expect(pair("2026-01-01", "2025-12-25", "week")).toBe("Uge 1 2026 mod uge 52 2025");
+    expect(pair("2026-01-10", "2025-10-10", "quarter")).toBe("1. kvartal 2026 mod 4. kvartal 2025");
+    expect(pair("2026-01-01", "2025-12-31", "day")).toBe("1.1.2026 mod 31.12.2025");
   });
 });
 
