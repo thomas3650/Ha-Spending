@@ -43,8 +43,8 @@ types:
 
 ## Merging
 
-The squash commit's subject must be the PR title. Until the repo's squash commit title is set to the PR title
-([GitHub settings](#github-settings)), GitHub takes a one-commit PR's commit message instead, so every merge names the
+The squash commit's subject must be the PR title. The repo keeps GitHub's default squash title, as Ha-Fitness does
+([GitHub settings](#github-settings)), which takes a one-commit PR's commit message instead, so every merge names the
 subject:
 
 ```bash
@@ -130,17 +130,15 @@ CI.
 
 ## GitHub settings
 
-Set once with `gh`, each at Thomas's yes ([`way-of-working.md`](way-of-working.md) §4). None of them is set yet.
+Set with `gh` on 2026-10-31 at Thomas's yes ([`way-of-working.md`](way-of-working.md) §4), as Ha-Fitness has them:
 
-- Squash merge only; the PR title as the squash commit's title; the branch deleted after merge.
-- `main` protected, with the required checks `pr-title`, `node`, `addon-lint`, `addon-build`, `workflows`,
-  `gitleaks` and `integration`.
-- `RELEASE_PLEASE_TOKEN`, or instead "Allow GitHub Actions to create and approve pull requests"
-  ([above](#while-release-please-cannot-open-its-pr)).
-- Private vulnerability reporting on ([`SECURITY.md`](../SECURITY.md)):
-  `gh api -X PUT repos/thomas3650/Ha-Spending/private-vulnerability-reporting`.
+- Squash merge only, with GitHub's default squash title; the branch deleted after merge.
+- `main` protected: the required checks `pr-title`, `node`, `integration`, `addon-lint`, `addon-build`, `workflows`
+  and `gitleaks`, linear history, no force pushes or deletions. Admins are not held to it.
+- Private vulnerability reporting on ([`SECURITY.md`](../SECURITY.md)).
 
-Until they are set, the hooks are the only guard on `main`, and every merge names its subject ([Merging](#merging)).
+Not set yet: `RELEASE_PLEASE_TOKEN` ([the token](#the-release-please-token)). Thomas makes it, as in Ha-Fitness;
+"Allow GitHub Actions to create and approve pull requests" stays off, as there.
 
 ## When a release fails
 

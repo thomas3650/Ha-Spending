@@ -4,7 +4,6 @@
 
 Please report it privately through GitHub's security advisories:
 <https://github.com/thomas3650/Ha-Spending/security/advisories/new>. Don't open a public issue for it.
-Until private reporting is turned on for the repo, contact the owner through their GitHub profile instead.
 
 ## What the add-on holds
 
