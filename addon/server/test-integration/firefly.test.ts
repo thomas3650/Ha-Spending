@@ -62,6 +62,15 @@ describe("a real Firefly III", () => {
     expect(warn.mock.calls[0][0]).toContain("Streaming");
   });
 
+  it("filters the transactions by type as the fake does", async () => {
+    const count = async (type: string) =>
+      ((await client.get("transactions", { start: "1900-01-01", end: today, type, limit: "50" })) as WirePage<unknown>)
+        .data.length;
+    expect(await count("withdrawal")).toBe(11);
+    expect(await count("deposit")).toBe(4);
+    expect(await count("transfer")).toBe(2);
+  });
+
   it("lists the inactive account as inactive", async () => {
     const answer = (await client.get("accounts", { type: "asset" })) as WirePage<WireAccount>;
     const listed = answer.data.map((a) => ({ name: a.attributes.name, active: a.attributes.active }));

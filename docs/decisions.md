@@ -100,12 +100,21 @@ to set their status to `superseded by D<n>`, or to name a part a later decision 
 ### D12: How Firefly III is read
 - **Date:** 2026-10-31 · **Status:** active
 - **Decision:** The client takes a page size: 500 in the add-on, 5 in the integration tests. Paging follows each
-  answer's `meta.pagination.total_pages`. The earliest posting date takes two GETs: `limit=1` from `1900-01-01`, then
-  the last page. The answer lists every asset account, active or not. The main group rule group is found by name and
-  its active flag is ignored.
-- **Why:** The technical spec §3.1 names no active check. A server-side cap on the page size then does no harm, and a filter by account never drops a posting. A real
-  Firefly III 6.7.9 lists inactive asset accounts, checked by the integration tests.
-- **Source:** Claude, [data plan](superpowers/plans/2026-10-31-data.md); [technical spec](superpowers/specs/2026-10-30-technical-design.md) §3.3
+  answer's `meta.pagination.total_pages`. The earliest posting date is the earliest withdrawal or deposit, also in an
+  excluded main group; opening balances, reconciliations and transfers don't count. It takes two GETs per type, or one
+  when there is at most one page: `limit=1` from `1900-01-01`, then the last page. The answer lists every asset
+  account, active or not. The main group rule group is found by name and its active flag is ignored.
+- **Why:**
+  - The page size: 500 keeps the requests few, and 5 makes the integration tests read more than one page.
+  - The paging: a server-side cap on the page size then does no harm.
+  - The earliest date: Firefly III has no endpoint for it. A posting in an excluded main group is a real household
+    posting, so data exists from then; the other types are not spending.
+  - The accounts: a filter by account never drops a posting. A real Firefly III 6.7.9 lists inactive asset accounts,
+    checked by the integration tests.
+  - The rule group: the technical spec §3.1 names no active check.
+- **Source:** Claude, [data plan](superpowers/plans/2026-10-31-data.md);
+  [technical spec](superpowers/specs/2026-10-30-technical-design.md) §3.3; the earliest date: Claude's ruling after the
+  branch review, 2026-10-31
 
 ### D13: The fast loop's server binds `127.0.0.1`; the options file is `HA_SPENDING_OPTIONS`
 - **Date:** 2026-10-31 · **Status:** active
@@ -155,9 +164,10 @@ to set their status to `superseded by D<n>`, or to name a part a later decision 
 
 ### D18: `/api/data` answers errors as codes
 - **Date:** 2026-10-31 · **Status:** active
-- **Decision:** Firefly III unreachable, timed out, answering 5xx or not JSON: `502 {"error":"unreachable"}`. Answering
-  401 or 403: `502 {"error":"refused"}`. A bad query: `400 {"error":"bad-request"}`. Anything else:
-  `500 {"error":"internal"}`.
+- **Decision:** Firefly III answering 401 or 403: `502 {"error":"refused"}`. Any other failed or malformed answer:
+  `502 {"error":"unreachable"}`. That is no answer, a timeout, a non-2xx status other than 401 and 403, a redirect, a
+  body that is not JSON or has no `data`, or an unreadable amount. A bad query: `400 {"error":"bad-request"}`.
+  Anything else: `500 {"error":"internal"}`.
 - **Why:** The page shows "Firefly III svarer ikke" or "Firefly III afviser nøglen" from the code (plan 3), and no
   Danish text comes from the server.
 - **Source:** Claude, [data plan](superpowers/plans/2026-10-31-data.md)

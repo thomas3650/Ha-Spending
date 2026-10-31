@@ -2,7 +2,7 @@ import type { Context } from "hono";
 import { Hono } from "hono";
 import { getConnInfo } from "@hono/node-server/conninfo";
 import { serveStatic } from "@hono/node-server/serve-static";
-import type { DataError, DataErrorCode, Health, Period, SpendingData } from "@ha-spending/shared";
+import { type DataError, type DataErrorCode, type Health, isDate, type Period, type SpendingData } from "@ha-spending/shared";
 import { FireflyError } from "./firefly/client";
 import { isIngress } from "./ingress";
 import { VERSION } from "./version";
@@ -17,13 +17,6 @@ function peerAddress(c: Context): string | undefined {
 }
 
 export type DataLoader = (range: Period) => Promise<SpendingData>;
-
-function isDate(value: string | undefined): value is string {
-  if (value === undefined || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
-  const [year, month, day] = value.split("-").map(Number);
-  const date = new Date(Date.UTC(year, month - 1, day));
-  return date.getUTCFullYear() === year && date.getUTCMonth() === month - 1 && date.getUTCDate() === day;
-}
 
 function failure(error: unknown): { status: 500 | 502; code: DataErrorCode } {
   if (error instanceof FireflyError) return { status: 502, code: error.reason };

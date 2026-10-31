@@ -1,8 +1,6 @@
 import type { Posting } from "@ha-spending/shared";
 import { toOre } from "./amount";
-import type { WireGroup, WireSplit } from "./wire";
-
-const ASSET = "Asset account";
+import { ASSET, type WireGroup, type WireSplit } from "./wire";
 
 function posting(groupId: string, split: WireSplit, kind: Posting["kind"], account: string): Posting {
   const amount = toOre(split.amount);

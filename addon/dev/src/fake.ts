@@ -237,7 +237,10 @@ export function createFakeFirefly(data: SeedData, options: FakeOptions = {}): Fa
   app.get("/api/v1/transactions", (c) => {
     const start = c.req.query("start") ?? "0000-01-01";
     const end = c.req.query("end") ?? "9999-12-31";
-    const inside = built.groups.filter((g) => g.date >= start && g.date <= end);
+    const type = c.req.query("type") ?? "all";
+    const inside = built.groups.filter(
+      (g) => g.date >= start && g.date <= end && (type === "all" || g.attributes.transactions[0].type === type),
+    );
     return page(c, inside.map((g) => ({ id: g.id, attributes: g.attributes })));
   });
 

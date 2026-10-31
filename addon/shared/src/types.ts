@@ -39,7 +39,7 @@ export interface SpendingData {
   range: Period;
   /** The day the data was read, in the add-on's time zone. */
   today: string;
-  /** null: Firefly III has no transactions. */
+  /** The oldest withdrawal or deposit; null when there is none (D12). */
   earliestPostingDate: string | null;
   /** Within range, newest first. */
   postings: Posting[];

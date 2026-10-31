@@ -17,7 +17,7 @@ its name in code, so the same thing has one name everywhere. The Danish word is 
 | Grouping | gruppering ("Gruppér pr.") | `grouping` (type `Grouping`) |
 | Unit | enhed | `unit` (type `Unit`): one day, week, month, quarter or year of a period |
 | Timeline | — | `timeline` (type `Timeline`): a period, a grouping, today and the earliest posting |
-| Whole unit | hel enhed | `wholeUnit` (`isWhole`); the rule is in [D16](decisions.md) |
+| Whole unit | hel enhed | `isWhole`; the rule is in [D16](decisions.md) |
 | Today | i dag | `today`: the day the data was read |
 
 `Posting`, `kind` and the `null` category are fixed by technical spec §3.2

@@ -19,9 +19,9 @@ export interface FireflyClient {
   get(path: string, query: Record<string, string>, signal?: AbortSignal): Promise<unknown>;
 }
 
+/** `baseUrl` comes without a trailing slash: options.ts strips it. */
 export function createFireflyClient(options: { baseUrl: string; token: string; fetch?: FetchLike }): FireflyClient {
-  const base = options.baseUrl.replace(/\/+$/, "");
-  const { token } = options;
+  const { baseUrl: base, token } = options;
   const fetch = options.fetch ?? globalThis.fetch;
 
   return {

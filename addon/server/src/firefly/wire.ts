@@ -1,5 +1,7 @@
 /** The fields of Firefly III's answers that the server reads. */
 
+export const ASSET = "Asset account";
+
 export interface WirePage<T> {
   data: T[];
   meta?: { pagination?: { total_pages?: number } };

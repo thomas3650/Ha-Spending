@@ -86,5 +86,8 @@ export const exampleSeed: SeedData = {
       source: "Konto B", destination: "Q8", category: "Brændstof" }),
     one({ type: "deposit", date: "2026-07-01", amount: "600.00", description: "Refusion Q8",
       source: "Q8", destination: "Konto B", category: "Brændstof" }),
+    // Older than every withdrawal and deposit: the earliest posting date must pass it by.
+    one({ type: "transfer", date: "2024-11-20", amount: "1000.00", description: "Første overførsel",
+      source: "Konto A", destination: "Konto B" }),
   ],
 };

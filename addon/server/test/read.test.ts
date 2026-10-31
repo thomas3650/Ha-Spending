@@ -1,4 +1,4 @@
-import { createFakeFirefly, exampleSeed, generateSeed } from "@ha-spending/dev";
+import { createFakeFirefly, exampleSeed, generateSeed, type SeedSplit } from "@ha-spending/dev";
 import { classify, fetchRange, parts, within } from "@ha-spending/shared";
 import { describe, expect, it, vi } from "vitest";
 import { createFireflyClient } from "../src/firefly/client";
@@ -153,14 +153,51 @@ describe("readSpendingData", () => {
 });
 
 describe("earliestPostingDate", () => {
-  it("reads the first day with any transaction", async () => {
+  const seedOf = (...splits: [SeedSplit["type"], string][]) =>
+    createFakeFirefly({
+      ...exampleSeed,
+      transactions: splits.map(([type, date]) => ({
+        splits: [{ type, date, amount: "1", description: date, source: type === "deposit" ? "Netto" : "Konto A",
+          destination: { withdrawal: "Netto", deposit: "Konto A", transfer: "Konto B" }[type] }],
+      })),
+    });
+
+  it("reads the first day with a withdrawal or a deposit, past an older transfer", async () => {
     expect(await earliestPostingDate(clientOf(), today)).toBe("2025-12-03");
   });
 
-  it("takes two GETs", async () => {
-    const fake = createFakeFirefly(exampleSeed);
-    await earliestPostingDate(clientOf(fake), today);
-    expect(fake.requests).toHaveLength(2);
+  it("takes the older of the oldest withdrawal and the oldest deposit", async () => {
+    const fake = seedOf(["transfer", "2025-01-10"], ["deposit", "2025-03-01"], ["withdrawal", "2025-05-01"],
+      ["withdrawal", "2025-06-01"]);
+    expect(await earliestPostingDate(clientOf(fake), today)).toBe("2025-03-01");
+    const withdrawalFirst = seedOf(["withdrawal", "2025-02-01"], ["deposit", "2025-03-01"], ["deposit", "2025-04-01"]);
+    expect(await earliestPostingDate(clientOf(withdrawalFirst), today)).toBe("2025-02-01");
+  });
+
+  it("counts a withdrawal in an excluded main group", async () => {
+    const fake = createFakeFirefly({
+      ...exampleSeed,
+      transactions: [
+        ...exampleSeed.transactions,
+        { splits: [{ type: "withdrawal", date: "2025-06-01", amount: "1", description: "Gammel opsparing",
+          source: "Konto A", destination: "Opsparingskonto", category: "Opsparing" }] },
+      ],
+    });
+    const d = await readSpendingData(clientOf(fake), settings, R1, { today, warn: () => {} });
+    expect(d.earliestPostingDate).toBe("2025-06-01");
+  });
+
+  it("answers null with only transfers", async () => {
+    expect(await earliestPostingDate(clientOf(seedOf(["transfer", "2025-01-10"])), today)).toBeNull();
+  });
+
+  it("takes two GETs per type, or one when there is at most one page", async () => {
+    const many = createFakeFirefly(exampleSeed);
+    await earliestPostingDate(clientOf(many), today);
+    expect(many.requests).toHaveLength(4);
+    const few = seedOf(["withdrawal", "2025-02-01"]);
+    await earliestPostingDate(clientOf(few), today);
+    expect(few.requests).toHaveLength(2);
   });
 });
 

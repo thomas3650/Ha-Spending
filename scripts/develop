@@ -5,7 +5,7 @@
 #   scripts/develop        start all three; stays in the foreground until stopped
 #   scripts/develop stop   stop all three (from another shell)
 #
-# Both log to local/ and have pidfiles there. local/ is git-ignored: never commit it.
+# All three log to local/ and have pidfiles there. local/ is git-ignored: never commit it.
 set -euo pipefail
 
 cd "$(dirname "$0")/.."

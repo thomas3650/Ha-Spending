@@ -14,6 +14,16 @@ function fromUtc(ms: number): string {
   return `${pad(d.getUTCFullYear(), 4)}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())}`;
 }
 
+/** A real calendar day as YYYY-MM-DD. */
+export function isDate(value: string | undefined): value is string {
+  if (value === undefined || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+  const [year, month, day] = value.split("-").map(Number);
+  // setUTCFullYear, unlike Date.UTC, keeps the years 0 to 99 as they are.
+  const date = new Date(0);
+  date.setUTCFullYear(year, month - 1, day);
+  return date.getUTCFullYear() === year && date.getUTCMonth() === month - 1 && date.getUTCDate() === day;
+}
+
 export function addDays(date: string, days: number): string {
   return fromUtc(toUtc(date) + days * DAY_MS);
 }

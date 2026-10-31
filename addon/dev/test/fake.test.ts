@@ -211,6 +211,19 @@ describe("the fake Firefly III", () => {
     expect(page.data[0].attributes.transactions[0].amount).toBe("1.000000000000");
   });
 
+  it.each([
+    ["withdrawal", 11],
+    ["deposit", 4],
+    ["transfer", 2],
+    ["all", 17],
+  ])("filters the transactions by type %s", async (type, count) => {
+    const page = await client().json<Page<Group>>(`transactions?start=1900-01-01&end=2026-12-31&type=${type}`);
+    expect(page.data).toHaveLength(count);
+    if (type !== "all") {
+      expect(page.data.every((g) => g.attributes.transactions.every((s) => s.type === type))).toBe(true);
+    }
+  });
+
   it("tells its version", async () => {
     const about = await client().json<{ data: { version: string } }>("about");
     expect(about.data.version).toBe("6.7.9");

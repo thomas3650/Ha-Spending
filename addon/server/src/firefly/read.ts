@@ -2,7 +2,8 @@ import { type Account, type Category, compareKeys, type Period, type SpendingDat
 import { type FireflyClient, FireflyError, getAllPages } from "./client";
 import { findRuleGroup, mapCategories } from "./main-groups";
 import { toPostings } from "./normalise";
-import type { WireAbout, WireAccount, WireCategory, WireGroup, WirePage, WireRule, WireRuleGroup } from "./wire";
+import { ASSET, type WireAbout, type WireAccount, type WireCategory, type WireGroup, type WirePage, type WireRule,
+  type WireRuleGroup } from "./wire";
 
 export interface ReadSettings {
   mainGroupRuleGroup: string;
@@ -12,26 +13,31 @@ export interface ReadSettings {
   timeoutMs: number;
 }
 
-const ASSET = "Asset account";
-
 /** The add-on's timeout for one read (technical spec §3.3). */
 export const READ_TIMEOUT_MS = 30_000;
 
-/** Firefly III has no endpoint for it: the last page of one transaction per page holds the oldest. */
+/**
+ * Firefly III has no endpoint for it: the last page of one transaction per page holds the oldest. Only withdrawals and
+ * deposits count: an opening balance, a reconciliation or a transfer is not spending (D12).
+ */
 export async function earliestPostingDate(
   client: FireflyClient,
   today: string,
   signal?: AbortSignal,
 ): Promise<string | null> {
-  const query = { start: "1900-01-01", end: today, type: "all", limit: "1" };
-  const page = async (n: number) =>
-    (await client.get("transactions", { ...query, page: String(n) }, signal)) as WirePage<WireGroup>;
-  let answer = await page(1);
-  const pages = answer.meta?.pagination?.total_pages ?? 0;
-  if (pages === 0) return null;
-  if (pages > 1) answer = await page(pages);
-  const split = answer.data?.[0]?.attributes.transactions[0];
-  return split ? split.date.slice(0, 10) : null;
+  const oldest = async (type: string) => {
+    const query = { start: "1900-01-01", end: today, type, limit: "1" };
+    const page = async (n: number) =>
+      (await client.get("transactions", { ...query, page: String(n) }, signal)) as WirePage<WireGroup>;
+    let answer = await page(1);
+    const pages = answer.meta?.pagination?.total_pages ?? 0;
+    if (pages === 0) return null;
+    if (pages > 1) answer = await page(pages);
+    const split = answer.data?.[0]?.attributes.transactions[0];
+    return split ? split.date.slice(0, 10) : null;
+  };
+  const dates = (await Promise.all([oldest("withdrawal"), oldest("deposit")])).filter((d) => d !== null);
+  return dates.length === 0 ? null : dates.reduce((a, b) => (a < b ? a : b));
 }
 
 async function readMainGroups(client: FireflyClient, settings: ReadSettings, signal: AbortSignal) {
