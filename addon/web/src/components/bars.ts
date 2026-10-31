@@ -1,0 +1,238 @@
+import type { Unit } from "@ha-spending/shared";
+import { css, html, LitElement, nothing, type PropertyValues } from "lit";
+import { createRef, ref } from "lit/directives/ref.js";
+import { type Chart, createChart, type EChartsCoreOption } from "../charts/echarts";
+import { axisKr, kr, rangeText } from "../format";
+import { da } from "../i18n/da";
+import { visuallyHidden } from "../theme";
+
+export interface BarItem {
+  unit: Unit;
+  axis: string;
+  name: string;
+  amount: number;
+}
+
+export interface BarsAverage {
+  amount: number;
+  label: string;
+}
+
+export interface UnitSelection {
+  fullStart: string;
+}
+
+const PARTIAL = 0.5;
+const FADED = 0.3;
+
+function escapeHtml(text: string): string {
+  return text.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
+}
+
+function buttonName(item: BarItem): string {
+  const name = item.unit.partial ? `${item.name} (${da.inProgress})` : item.name;
+  return `${name}, ${kr(item.amount)}`;
+}
+
+/**
+ * One bar per unit, drawn by ECharts and named by a hidden button per bar (D19). An empty unit keeps its slot (UI
+ * spec §3.3). Fires `unit-click` with the unit's fullStart.
+ */
+export class Bars extends LitElement {
+  static override properties = {
+    items: { attribute: false },
+    colour: { attribute: false },
+    average: { attribute: false },
+    chosen: { attribute: false },
+  };
+
+  declare items: BarItem[];
+  declare colour: string;
+  declare average: BarsAverage | null;
+  declare chosen: string | null;
+
+  private chart: Chart | null = null;
+  /** Set after a chart click, so the chosen bar comes from the properties whatever ECharts did. */
+  private chartStale = false;
+  private readonly chartEl = createRef<HTMLDivElement>();
+
+  constructor() {
+    super();
+    this.items = [];
+    this.colour = "";
+    this.average = null;
+    this.chosen = null;
+  }
+
+  protected override createRenderRoot(): HTMLElement {
+    return this;
+  }
+
+  override connectedCallback(): void {
+    super.connectedCallback();
+    if (this.hasUpdated && this.chart === null) this.requestUpdate();
+  }
+
+  override disconnectedCallback(): void {
+    this.chart?.dispose();
+    this.chart = null;
+    super.disconnectedCallback();
+  }
+
+  private isChosen(item: BarItem): boolean {
+    return item.unit.fullStart === this.chosen;
+  }
+
+  private fire(item: BarItem | undefined): void {
+    if (!item) return;
+    this.dispatchEvent(
+      new CustomEvent<UnitSelection>("unit-click", {
+        detail: { fullStart: item.unit.fullStart },
+        bubbles: true,
+        composed: true,
+      }),
+    );
+  }
+
+  protected override updated(changed: PropertyValues<this>): void {
+    const el = this.chartEl.value;
+    if (!el) return;
+    let fresh = false;
+    if (this.chart === null) {
+      fresh = true;
+      this.chart = createChart(el);
+      this.chart.on("click", (p) => {
+        this.fire(this.items[p.dataIndex]);
+        this.chartStale = true;
+        this.requestUpdate();
+      });
+    }
+    if (
+      fresh ||
+      this.chartStale ||
+      changed.has("items") ||
+      changed.has("colour") ||
+      changed.has("average") ||
+      changed.has("chosen")
+    ) {
+      this.chartStale = false;
+      this.chart.setOption(this.option(), { notMerge: true });
+    }
+  }
+
+  /** ECharts draws outside CSS, so it gets the theme's tokens as values. */
+  private option(): EChartsCoreOption {
+    const style = getComputedStyle(this);
+    const token = (name: string) => style.getPropertyValue(name).trim();
+    const muted = token("--hs-muted");
+    const colour = this.colour || token("--hs-accent");
+    const anyChosen = this.chosen !== null;
+    const items = this.items;
+    return {
+      textStyle: { fontFamily: token("--hs-font") },
+      grid: { left: 8, right: 8, top: 16, bottom: 8, containLabel: true },
+      tooltip: {
+        trigger: "item",
+        formatter: (p: { dataIndex: number }) => {
+          const item = items[p.dataIndex];
+          if (!item) return "";
+          const range = rangeText({ start: item.unit.start, end: item.unit.end });
+          return `${escapeHtml(item.name)}<br>${escapeHtml(range)}<br>${escapeHtml(kr(item.amount))}`;
+        },
+      },
+      xAxis: {
+        type: "category",
+        // fullStart keeps every slot apart; two units can share an axis text, such as a day in two years.
+        data: items.map((i) => i.unit.fullStart),
+        axisTick: { show: false },
+        axisLine: { lineStyle: { color: token("--hs-line") } },
+        axisLabel: {
+          color: muted,
+          fontSize: 11,
+          interval: 0,
+          formatter: (_value: string, index: number) => {
+            const item = items[index];
+            if (!item) return "";
+            return item.unit.partial ? `${item.axis}\n${da.inProgress}` : item.axis;
+          },
+        },
+      },
+      yAxis: {
+        type: "value",
+        splitNumber: 4,
+        axisLabel: { color: muted, fontSize: 11, formatter: (value: number) => axisKr(value) },
+        splitLine: { lineStyle: { color: token("--hs-grid") } },
+      },
+      series: [
+        {
+          type: "bar",
+          barCategoryGap: "35%",
+          emphasis: { itemStyle: { opacity: 1 } },
+          data: items.map((item) => {
+            const faded = anyChosen && !this.isChosen(item);
+            const opacity = faded ? FADED : item.unit.partial ? PARTIAL : 1;
+            return { value: item.amount, itemStyle: { color: colour, opacity } };
+          }),
+          markLine:
+            this.average === null
+              ? undefined
+              : {
+                  // Silent, or a click on the line would arrive as a click on the first bar.
+                  silent: true,
+                  symbol: "none",
+                  lineStyle: { type: "dashed", color: muted, width: 1 },
+                  label: {
+                    position: "insideStartTop",
+                    formatter: this.average.label,
+                    color: muted,
+                    fontSize: 11,
+                  },
+                  data: [{ yAxis: this.average.amount }],
+                },
+        },
+      ],
+    };
+  }
+
+  override render() {
+    return html`<div class="bars">
+      <div class="chart" aria-hidden="true" ${ref(this.chartEl)}></div>
+      <div class="visually-hidden">
+        <ul>
+          ${this.items.map(
+            (item, i) =>
+              html`<li>
+                <button
+                  type="button"
+                  aria-pressed=${String(this.isChosen(item))}
+                  @click=${() => this.fire(item)}
+                  @focus=${() => this.chart?.highlight(i)}
+                  @blur=${() => this.chart?.downplay(i)}
+                >
+                  ${buttonName(item)}
+                </button>
+              </li>`,
+          )}
+        </ul>
+        ${this.average === null ? nothing : html`<p>${this.average.label}</p>`}
+      </div>
+    </div>`;
+  }
+}
+
+export const barsStyles = [
+  visuallyHidden,
+  css`
+    .bars .chart {
+      height: 340px;
+    }
+  `,
+];
+
+if (!customElements.get("hs-bars")) customElements.define("hs-bars", Bars);
+
+declare global {
+  interface HTMLElementTagNameMap {
+    "hs-bars": Bars;
+  }
+}
