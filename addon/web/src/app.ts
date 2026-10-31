@@ -293,6 +293,7 @@ export class SpendingApp extends LitElement {
               @remove-unit=${() => this.push(removeUnit(this.state))}
               @remove-category=${() => this.push(removeCategory(this.state))}
               @open-all-postings=${() => this.push(openAllPostings(this.state))}
+              @search-input=${(e: CustomEvent<string>) => this.apply(setSearch(this.state, e.detail), "replace")}
             ></hs-overview>`
         : html`<hs-all-postings
             .ctx=${ctx}

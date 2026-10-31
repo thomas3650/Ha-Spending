@@ -1,15 +1,17 @@
-import { chosenUnitNumbers, type ClassifiedPosting, differences, keyNumbers, type Unit, within } from "@ha-spending/shared";
+import { chosenUnitNumbers, differences, keyNumbers, total, type Unit, within } from "@ha-spending/shared";
 import { css, html, LitElement, nothing } from "lit";
+import { live } from "lit/directives/live.js";
 import "../components/bars";
 import { chip, fire } from "../components/chip";
 import "../components/circle";
 import "../components/difference";
 import type { DifferenceItem } from "../components/difference";
 import "../components/postings";
-import { kr, unitName } from "../format";
+import { count, kr, unitName } from "../format";
 import { da } from "../i18n/da";
 import { barItems, categoryColours, circleItems, circleSpan, circleTotal, partColours } from "../model/circle";
 import { levelName, partName, type ViewContext } from "../model/context";
+import { matchesSearch } from "../model/filter";
 import { groupedPostings } from "../model/postings";
 import type { Card } from "../state/view";
 
@@ -89,18 +91,33 @@ export class Overview extends LitElement {
       <p class="half-foot">${da.barsHint(g)}</p>`;
   }
 
-  private postings(inPeriod: ClassifiedPosting[]) {
+  /** The search row stays one element whatever the list turns into, so the field keeps its focus while typing. */
+  private postings() {
     const ctx = this.ctx;
+    const search = ctx.state.search;
     const chosen = ctx.chosen;
-    const list =
-      chosen === null
-        ? groupedPostings(inPeriod, ctx.units, ctx, true, categoryColours(ctx))
-        : groupedPostings(within(inPeriod, chosen), [chosen], ctx, true, categoryColours(ctx));
-    return html`<hs-postings .list=${list} .grouping=${ctx.timeline.grouping}></hs-postings>
-      <p class="half-foot">
-        ${da.postingsHint(ctx.timeline.grouping)}
-        <button type="button" class="half-link" @click=${() => fire(this, "open-all-postings")}>${da.showAll}</button>
-      </p>`;
+    const postings = within(ctx.shown, chosen ?? ctx.timeline.period).filter((p) => matchesSearch(p.text, search));
+    const g = ctx.timeline.grouping;
+    let body: unknown;
+    if (postings.length === 0) body = html`<p class="empty">${search.trim() === "" ? da.noSpending : da.noMatch}</p>`;
+    else {
+      const list = groupedPostings(postings, chosen === null ? ctx.units : [chosen], ctx, true, categoryColours(ctx));
+      body = html`<hs-postings .list=${list} .query=${search} .grouping=${g}></hs-postings>
+        <p class="half-foot">${da.postingsHint(g)}</p>`;
+    }
+    return html`<div class="postings-search-row">
+        <input
+          class="all-search"
+          type="search"
+          aria-label=${da.searchLabel}
+          placeholder=${da.search}
+          .value=${live(search)}
+          @input=${(e: Event) => fire(this, "search-input", (e.target as HTMLInputElement).value)}
+        />
+        <button type="button" class="show-all" @click=${() => fire(this, "open-all-postings")}>${da.showAll}</button>
+      </div>
+      <p class="postings-summary">${da.summary(count(postings.length), kr(total(postings)))}</p>
+      ${body}`;
   }
 
   private differenceTitle(unit: Unit): string {
@@ -149,9 +166,9 @@ export class Overview extends LitElement {
     const inPeriod = within(ctx.shown, ctx.timeline.period);
     const title = this.cardTitle(card);
     let body: unknown;
-    if (inPeriod.length === 0) body = this.empty();
+    if (card === "postings") body = this.postings();
+    else if (inPeriod.length === 0) body = this.empty();
     else if (card === "difference" && ctx.chosen !== null) body = this.difference(ctx.chosen, title);
-    else if (card === "postings") body = this.postings(inPeriod);
     else body = this.bars();
     return html`<section class="card half" role="region" aria-labelledby=${RIGHT_TITLE}>
       <div class="half-head">
@@ -234,17 +251,33 @@ export const overviewStyles = css`
     color: var(--hs-muted);
     font-size: 12px;
   }
-  .half-foot .half-link {
-    padding: 0;
+  .postings-search-row {
+    display: flex;
+    gap: 8px;
+    align-items: stretch;
+  }
+  .postings-search-row .show-all {
+    flex: none;
+    padding: 0 14px;
     font: inherit;
     color: var(--hs-accent-text);
-    background: none;
-    border: 0;
+    background: var(--hs-card);
+    border: 1px solid var(--hs-field);
+    border-radius: 8px;
     cursor: pointer;
   }
-  .half-foot .half-link:hover,
-  .half-foot .half-link:focus-visible {
-    text-decoration: underline;
+  .postings-search-row .show-all:hover {
+    border-color: var(--hs-accent-text);
+  }
+  .postings-search-row .show-all:focus-visible {
+    outline: 2px solid var(--hs-accent-text);
+    outline-offset: -2px;
+  }
+  .postings-summary {
+    margin: 12px 0;
+    text-align: right;
+    color: var(--hs-muted);
+    font-variant-numeric: tabular-nums;
   }
 `;
 

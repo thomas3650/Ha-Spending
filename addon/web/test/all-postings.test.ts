@@ -178,13 +178,13 @@ describe("screen 3, all postings", () => {
     expect(queryByRole(root, "table")).toBeNull();
   });
 
-  it("leaves the search behind through the trail", async () => {
+  it("keeps the search but not the amount through the trail", async () => {
     const { app, root } = await mount(`${CAFE}&q=pizza&min=400`);
     fireEvent.click(getByRole(trail(root), "link", { name: "Mad" }));
     await settle(app);
     getByRole(root, "heading", { level: 1, name: "Mad" });
     const params = new URLSearchParams(location.hash.slice(1));
-    expect(params.has("q")).toBe(false);
+    expect(params.get("q")).toBe("pizza");
     expect(params.has("min")).toBe(false);
   });
 

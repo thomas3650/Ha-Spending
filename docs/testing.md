@@ -97,8 +97,8 @@ The page's list. Every screenshot is at 1440×960 with the console free of error
 11. `18-uden-hovedgruppe`: Uden hovedgruppe as a screen, with its categories and Uden kategori.
 12. `19-alle-posteringer`, `20-stoerste-foerst`, `21-filter`, `22-ingen-match`: screen 3 with chips; sorted by size as a
     flat list; the "+ Filter" panel open; a search nothing matches (`da.noMatch`). Compare `3-posteringer.png`.
-13. `23-soejle`, `24-soejle-kategori`: a chosen month with Forskel at all spending, then in Mad with a category chosen,
-    with both chips. Compare `4-soejle.png`.
+13. `23-soejle`, `24-soejle-kategori`: a click on a bar opens Posteringer for that month; press Forskel. A chosen month
+    with Forskel at all spending, then in Mad with a category chosen, with both chips. Compare `4-soejle.png`.
 14. `25-loading` (`FAKE_FIREFLY_FAULT=slow`), `26-refused` (`refused`), `27-unreachable` (`error`), `28-empty` (Vælg
     periode in 2020).
 15. `29-ingen-regelgruppe`: `scripts/develop` with `HA_SPENDING_OPTIONS` pointing at a copy of `addon/dev/options.json`
@@ -111,3 +111,8 @@ The page's list. Every screenshot is at 1440×960 with the console free of error
     ([D28](decisions.md)). Hover and Tab on a row bring its piece out; a click on a row chooses it, and the other rows
     fade.
 19. Back: three clicks, then back three times returns to the opening view.
+20. `33-posteringer-soeg`: screen 1 on Posteringer with a search typed. The search row, with "Vis alle" on its line,
+    sits under the title; the count and the sum follow the search; the circle and the key numbers do not. Also at
+    1728 and 420 px. Back after typing returns to the view before the first key.
+21. `34-posteringer-ingen-match`: a search nothing matches on the overview: the summary at 0 and `da.noMatch`, with
+    the search row still there.
