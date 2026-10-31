@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.0](https://github.com/thomas3650/Ha-Spending/compare/v0.3.0...v0.4.0) (2026-10-31)
+
+
+### Features
+
+* the sorter sets a posting's shop ([#44](https://github.com/thomas3650/Ha-Spending/issues/44)) ([52e4a34](https://github.com/thomas3650/Ha-Spending/commit/52e4a34690f63f7f6196f37db554c2af3ed81c08))
+
 ## [0.3.0](https://github.com/thomas3650/Ha-Spending/compare/v0.2.2...v0.3.0) (2026-10-31)
 
 
