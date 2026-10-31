@@ -80,4 +80,17 @@ describe("readOptions", () => {
     expect(none.message).toContain("firefly_url");
     expect(none.message).toContain("firefly_token");
   });
+
+  it("refuses options of the wrong shape", () => {
+    const base = { firefly_url: "http://firefly.test", firefly_token: "t0ken-made-up" };
+    expect(refusal(file(["not", "an", "object"])).message).toContain("options.json");
+    expect(refusal(file({ ...base, firefly_link_url: 42 })).message).toContain("firefly_link_url");
+    expect(refusal(file({ ...base, excluded_main_groups: "A" })).message).toContain("excluded_main_groups");
+    expect(refusal(file({ ...base, excluded_main_groups: ["A", 1] })).message).toContain("excluded_main_groups");
+  });
+
+  it("reads an empty rule group as the default", () => {
+    const path = file({ firefly_url: "http://firefly.test", firefly_token: "t0ken-made-up", main_group_rule_group: "" });
+    expect(readOptions(path).mainGroupRuleGroup).toBe("Hovedgrupper");
+  });
 });
