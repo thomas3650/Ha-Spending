@@ -3,8 +3,10 @@ import type { AddressInfo } from "node:net";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { serve } from "@hono/node-server";
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { createApp } from "../src/app";
+import type { SpendingData } from "@ha-spending/shared";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
+import { createApp as createAppWith, type DataLoader } from "../src/app";
+import { FireflyError } from "../src/firefly/client";
 import { VERSION } from "../src/version";
 
 let webDir: string;
@@ -22,6 +24,35 @@ afterAll(() => {
 
 const from = (address: string) => ({ incoming: { socket: { remoteAddress: address } } });
 const ingress = from("::ffff:172.30.32.2");
+
+const D: SpendingData = {
+  range: { start: "2026-01-01", end: "2026-01-31" },
+  today: "2026-01-15",
+  earliestPostingDate: "2025-06-01",
+  postings: [
+    {
+      id: "1",
+      groupId: "1",
+      date: "2026-01-10",
+      text: "Made-up shop",
+      account: "a1",
+      category: "Food",
+      kind: "spending",
+      amount: 12345,
+    },
+  ],
+  accounts: [{ id: "a1", name: "Account A" }],
+  categories: [{ name: "Food", mainGroup: "Home" }],
+  mainGroups: ["Home"],
+  mainGroupsFound: true,
+  fireflyLinkUrl: null,
+};
+
+const unused: DataLoader = () => Promise.reject(new Error("not used"));
+
+function createApp(options: { webDir: string; dev: boolean; loadData?: DataLoader }) {
+  return createAppWith({ loadData: unused, log: () => {}, ...options });
+}
 
 describe("createApp", () => {
   it("answers the health from ingress", async () => {
@@ -72,5 +103,51 @@ describe("createApp", () => {
     } finally {
       await new Promise<void>((resolve, reject) => server.close((err) => (err ? reject(err) : resolve())));
     }
+  });
+
+  it("answers the data for a range", async () => {
+    const loadData = vi.fn(async () => D);
+    const res = await createApp({ webDir, dev: false, loadData }).request(
+      "/api/data?start=2026-01-01&end=2026-01-31",
+      {},
+      ingress,
+    );
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual(D);
+    expect(loadData).toHaveBeenCalledWith({ start: "2026-01-01", end: "2026-01-31" });
+  });
+
+  it.each([
+    "",
+    "?start=2026-01-01",
+    "?start=2026-02-30&end=2026-03-01",
+    "?start=2026-1-1&end=2026-01-31",
+    "?start=2026-02-01&end=2026-01-31",
+  ])("refuses %s with 400", async (query) => {
+    const loadData = vi.fn(async () => D);
+    const res = await createApp({ webDir, dev: false, loadData }).request(`/api/data${query}`, {}, ingress);
+    expect(res.status).toBe(400);
+    expect(await res.json()).toEqual({ error: "bad-request" });
+    expect(loadData).not.toHaveBeenCalled();
+  });
+
+  it("maps the Firefly III errors", async () => {
+    const answer = async (error: Error) => {
+      const app = createApp({ webDir, dev: false, loadData: () => Promise.reject(error) });
+      const res = await app.request("/api/data?start=2026-01-01&end=2026-01-31", {}, ingress);
+      return { status: res.status, body: await res.json() };
+    };
+    expect(await answer(new FireflyError("refused"))).toEqual({ status: 502, body: { error: "refused" } });
+    expect(await answer(new FireflyError("unreachable"))).toEqual({ status: 502, body: { error: "unreachable" } });
+    expect(await answer(new Error())).toEqual({ status: 500, body: { error: "internal" } });
+  });
+
+  it("guards the data like every route", async () => {
+    const loadData = vi.fn(async () => D);
+    const app = createApp({ webDir, dev: false, loadData });
+    const query = "/api/data?start=2026-01-01&end=2026-01-31";
+    expect((await app.request(query, {}, from("127.0.0.1"))).status).toBe(403);
+    expect((await app.request(query, { method: "POST" }, ingress)).status).toBe(404);
+    expect(loadData).not.toHaveBeenCalled();
   });
 });

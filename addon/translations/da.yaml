@@ -1,0 +1,22 @@
+configuration:
+  firefly_url:
+    name: Firefly III-adresse
+    description: >-
+      Firefly III's adresse, som tilføjelsen når den, for eksempel http://<firefly-tilføjelsens vært>:8080.
+  firefly_token:
+    name: Firefly III-nøgle
+    description: >-
+      En Personal Access Token fra Firefly III. Tilføjelsen læser kun med den.
+  firefly_link_url:
+    name: Firefly III-linkadresse
+    description: >-
+      Firefly III's adresse, som browseren når den. Når den er sat, åbner en postering der i en ny fane. Når den er
+      tom, er posteringerne ikke links.
+  main_group_rule_group:
+    name: Regelgruppe for hovedgrupper
+    description: >-
+      Den regelgruppe i Firefly III, hvis regler lægger kategorierne i hovedgrupper.
+  excluded_main_groups:
+    name: Udeladte hovedgrupper
+    description: >-
+      Hovedgrupper, der ikke er forbrug, for eksempel penge ind og ud. Deres posteringer er udeladt.

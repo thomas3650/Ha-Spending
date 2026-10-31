@@ -10,7 +10,8 @@ export default defineConfig({
     emptyOutDir: true,
     sourcemap: false,
   },
-  // On macOS `localhost` resolves to `::1`; the proxy and the fast loop's checks use 127.0.0.1.
+  // The fast loop's server listens on 127.0.0.1 only, and `localhost` may resolve to `::1` first, so the proxy and
+  // the fast loop's checks name 127.0.0.1.
   server: {
     host: "127.0.0.1",
     port: 5173,

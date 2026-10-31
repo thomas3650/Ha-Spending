@@ -1,0 +1,22 @@
+configuration:
+  firefly_url:
+    name: Firefly III address
+    description: >-
+      Firefly III's address as the add-on reaches it, for example http://<firefly add-on host>:8080.
+  firefly_token:
+    name: Firefly III token
+    description: >-
+      A Personal Access Token from Firefly III. The add-on only reads with it.
+  firefly_link_url:
+    name: Firefly III link address
+    description: >-
+      Firefly III's address as the browser reaches it. When set, a posting opens there in a new tab. When empty,
+      postings are not links.
+  main_group_rule_group:
+    name: Main group rule group
+    description: >-
+      The Firefly III rule group whose rules put the categories into main groups.
+  excluded_main_groups:
+    name: Excluded main groups
+    description: >-
+      Main groups that are not spending, such as money moved in and out. Their postings are left out.

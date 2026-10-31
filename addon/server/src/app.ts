@@ -2,7 +2,8 @@ import type { Context } from "hono";
 import { Hono } from "hono";
 import { getConnInfo } from "@hono/node-server/conninfo";
 import { serveStatic } from "@hono/node-server/serve-static";
-import type { Health } from "@ha-spending/shared";
+import type { DataError, DataErrorCode, Health, Period, SpendingData } from "@ha-spending/shared";
+import { FireflyError } from "./firefly/client";
 import { isIngress } from "./ingress";
 import { VERSION } from "./version";
 
@@ -15,8 +16,28 @@ function peerAddress(c: Context): string | undefined {
   }
 }
 
-export function createApp(options: { webDir: string; dev: boolean }): Hono {
+export type DataLoader = (range: Period) => Promise<SpendingData>;
+
+function isDate(value: string | undefined): value is string {
+  if (value === undefined || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+  const [year, month, day] = value.split("-").map(Number);
+  const date = new Date(Date.UTC(year, month - 1, day));
+  return date.getUTCFullYear() === year && date.getUTCMonth() === month - 1 && date.getUTCDate() === day;
+}
+
+function failure(error: unknown): { status: 500 | 502; code: DataErrorCode } {
+  if (error instanceof FireflyError) return { status: 502, code: error.reason };
+  return { status: 500, code: "internal" };
+}
+
+export function createApp(options: {
+  webDir: string;
+  dev: boolean;
+  loadData: DataLoader;
+  log?: (message: string) => void;
+}): Hono {
   const app = new Hono();
+  const log = options.log ?? ((message: string) => console.error(message));
 
   app.use(async (c, next) => {
     if (!options.dev && !isIngress(peerAddress(c))) return c.text("Forbidden", 403);
@@ -24,6 +45,22 @@ export function createApp(options: { webDir: string; dev: boolean }): Hono {
   });
 
   app.get("/api/health", (c) => c.json<Health>({ status: "ok", version: VERSION }));
+  app.get("/api/data", async (c) => {
+    const start = c.req.query("start");
+    const end = c.req.query("end");
+    if (!isDate(start) || !isDate(end) || start > end) {
+      log("GET /api/data: bad-request");
+      return c.json<DataError>({ error: "bad-request" }, 400);
+    }
+    try {
+      return c.json<SpendingData>(await options.loadData({ start, end }));
+    } catch (error) {
+      const { status, code } = failure(error);
+      // The reason and the error's name only: a message or a cause may carry a posting, an amount or the token.
+      log(`GET /api/data: ${code}${code === "internal" && error instanceof Error ? ` (${error.name})` : ""}`);
+      return c.json<DataError>({ error: code }, status);
+    }
+  });
   app.all("/api/*", (c) => c.notFound());
 
   const files = serveStatic({ root: options.webDir });

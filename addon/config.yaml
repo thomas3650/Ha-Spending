@@ -11,3 +11,16 @@ image: ghcr.io/thomas3650/ha-spending
 ingress: true
 panel_icon: mdi:chart-donut
 panel_title: Forbrug
+options:
+  firefly_url: null
+  firefly_token: null
+  main_group_rule_group: Hovedgrupper
+  excluded_main_groups:
+    - Penge ind og ud
+schema:
+  firefly_url: url
+  firefly_token: password
+  firefly_link_url: url?
+  main_group_rule_group: str
+  excluded_main_groups:
+    - str
