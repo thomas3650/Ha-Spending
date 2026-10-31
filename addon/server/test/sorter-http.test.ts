@@ -57,12 +57,6 @@ describe("the sorter's endpoint", () => {
     expect((await sorter().app.request("/mcp")).status).toBe(401);
   });
 
-  it("refuses a request from a browser", async () => {
-    const { app } = sorter();
-    const res = await app.request("/mcp", post(rpc("ping"), { Authorization: `Bearer ${KEY}`, Origin: "http://evil.test" }));
-    expect(res.status).toBe(403);
-  });
-
   it("initializes, echoing a protocol version it knows", async () => {
     const { app } = sorter();
     const res = await app.request("/mcp", post(rpc("initialize", { protocolVersion: "2025-06-18", capabilities: {},

@@ -327,6 +327,24 @@ describe("set_category", () => {
     expect(await s.splits()).toEqual(before);
   });
 
+  it("refuses a posting that is neither a withdrawal nor a deposit", async () => {
+    const s = setup({
+      fetch: (fetch) => async (input, init) => {
+        const res = await fetch(input, init);
+        const url = new URL(input instanceof Request ? input.url : input);
+        if (!url.pathname.includes("/search/") && !/\/transactions\/[0-9]+$/.test(url.pathname)) return res;
+        // Firefly III also has opening balances and reconciliations, which the fake does not make.
+        const text = (await res.text()).replaceAll('"type":"withdrawal"', '"type":"opening balance"');
+        return new Response(text, { status: res.status, headers: res.headers });
+      },
+    });
+    const kiosk = await s.postingId("Kiosk");
+    const food = (await s.categoryIds()).get("Dagligvarer")!;
+    const { value } = await s.call("set_category", { assignments: [{ posting_id: kiosk, category_id: food }] });
+    expect(value.results).toEqual([{ posting_id: kiosk, ok: false, reason: "not-withdrawal-or-deposit" }]);
+    expect(s.puts()).toEqual([]);
+  });
+
   it("refuses a posting or a category Firefly III does not have", async () => {
     const s = setup();
     const kiosk = await s.postingId("Kiosk");

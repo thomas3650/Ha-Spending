@@ -52,7 +52,7 @@ strange posting text can at worst give a wrong category.
 
 - **Address:** `POST http://<this add-on's hostname>:8100/mcp`, with the header `Authorization: Bearer <sorter_key>`.
   The hostname is on the add-on's page in Home Assistant.
-  Any other key, or none, gets 401. A request with an `Origin` header (a browser) gets 403.
+  Any other key, or none, gets 401.
 - **Protocol:** MCP over streamable HTTP, answered as plain JSON, never as an event stream. It knows `initialize`,
   `ping`, `tools/list` and `tools/call`. `GET /mcp` gets 405.
 - **The inbox:** withdrawals and deposits with no category, or with the category in `sorter_inbox_category`. Transfers

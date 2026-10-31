@@ -38,8 +38,6 @@ export function createSorterApp(options: { key: string; tools: Tool[]; log?: (me
   const expected = digest(options.key);
 
   app.use(async (c, next) => {
-    // A browser sends an Origin; the sorter's client does not.
-    if (c.req.header("Origin") !== undefined) return c.json({ error: "forbidden" }, 403);
     const given = /^Bearer (.+)$/i.exec(c.req.header("Authorization") ?? "")?.[1] ?? "";
     // Equal-length digests, so the comparison takes the same time whatever was sent.
     if (!timingSafeEqual(digest(given), expected)) {
