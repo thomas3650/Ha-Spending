@@ -42,7 +42,8 @@ Model: sonnet · Review: yes
 
 **Produces:**
 - `SeedData.otherAccounts?: { name: string; type: "expense" | "revenue" | "liabilities"; active: boolean }[]`, accounts
-  no transaction names (a liability, an inactive expense account). Cash is left to the real Firefly III (Task 4).
+  beyond those the transactions name (a liability, an inactive expense account). In the fake, a withdrawal whose
+  `destination` names a listed liability pays it. Cash is left to the real Firefly III (Task 4).
 - `SeedSplit.destination` may be left out on a withdrawal: the fake names it `(no name)`, and the seeder sends that
   literal name, as the Data Importer does for a line with no counterparty.
 - `GET /api/v1/accounts?type=all|asset|expense|revenue|liabilities` lists accounts of that type (no `type`: asset, as

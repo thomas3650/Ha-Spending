@@ -24,7 +24,7 @@ export interface SeedRule {
 export interface SeedData {
   /** Asset accounts, in DKK. */
   accounts: { name: string; active: boolean }[];
-  /** Accounts no transaction names, such as a liability or an inactive expense account. */
+  /** More accounts, such as a liability or an inactive expense account. In the fake a withdrawal may pay one. */
   otherAccounts?: { name: string; type: "expense" | "revenue" | "liabilities"; active: boolean }[];
   /** Every category, also those with no postings. */
   categories: string[];
