@@ -1,0 +1,114 @@
+import { circle, classify, type Level, parts, share, total, within } from "@ha-spending/shared";
+import { fireEvent, getAllByRole, getByRole, getByText } from "@testing-library/dom";
+import { afterEach, describe, expect, it, vi } from "vitest";
+
+import "../src/components/circle";
+import { type CircleItem, type CircleSelection, ringStartAngle } from "../src/components/circle";
+import { kr, partLabel } from "../src/format";
+import { da } from "../src/i18n/da";
+import { partName } from "../src/model/context";
+import { answerFor } from "./fixture";
+
+const THIS_YEAR = { start: "2026-01-01", end: "2026-10-30" };
+
+function itemsOf(level: Level, of: "mainGroup" | "category"): CircleItem[] {
+  const data = answerFor(THIS_YEAR);
+  const postings = within(classify(data.postings, data.categories), THIS_YEAR);
+  const split = parts(postings, level);
+  const whole = total(postings.filter((p) => level.kind === "all" || p.mainGroup === level.mainGroup));
+  return circle(split).map((p) => ({
+    key: p.key,
+    name: partName(p.key, of),
+    amount: p.amount,
+    share: share(p.amount, whole),
+    colour: p.colour,
+    piece: p.piece,
+  }));
+}
+
+interface Options {
+  items: CircleItem[];
+  centreName?: string;
+  centreAmount?: number;
+  selected?: CircleSelection | null;
+  selectable?: boolean;
+}
+
+async function render(opts: Options) {
+  const el = document.createElement("hs-circle");
+  el.items = opts.items;
+  el.centreName = opts.centreName ?? da.allSpending;
+  el.centreAmount = opts.centreAmount ?? opts.items.reduce((sum, i) => sum + i.amount, 0);
+  el.selected = opts.selected ?? null;
+  el.selectable = opts.selectable ?? false;
+  document.body.append(el);
+  await el.updateComplete;
+  return el;
+}
+
+function piece(key: string, amount: number, s: number): CircleItem {
+  return { key, name: key, amount, share: s, colour: "#2a78d6", piece: true };
+}
+
+afterEach(() => {
+  document.body.replaceChildren();
+});
+
+describe("the circle", () => {
+  it("names every part as a button, largest first", async () => {
+    const el = await render({ items: itemsOf({ kind: "all" }, "mainGroup") });
+    const all = 11566012;
+    const expected = [
+      partLabel("Bolig", 8000000, 8000000 / all),
+      partLabel("Mad", 3281012, 3281012 / all),
+      partLabel("Bil", 150000, 150000 / all),
+      partLabel(da.noMainGroup, 135000, 135000 / all),
+    ];
+    const buttons = getAllByRole(el, "button");
+    expect(buttons).toEqual(expected.map((name) => getByRole(el, "button", { name })));
+  });
+
+  it("reports a click on a name with its key", async () => {
+    const el = await render({ items: itemsOf({ kind: "all" }, "mainGroup") });
+    const heard = vi.fn();
+    document.body.addEventListener("part-click", (e) => heard((e as CustomEvent).detail));
+    fireEvent.click(getByRole(el, "button", { name: new RegExp(`^${da.noMainGroup},`) }));
+    expect(heard).toHaveBeenCalledWith({ key: null });
+  });
+
+  it("shows the total in the middle", async () => {
+    const el = await render({ items: itemsOf({ kind: "all" }, "mainGroup"), centreName: da.allSpending });
+    getByText(el, da.allSpending);
+    getByText(el, kr(11566012));
+  });
+
+  it("marks the chosen part when selectable", async () => {
+    const items = itemsOf({ kind: "mainGroup", mainGroup: "Mad" }, "category");
+    const el = await render({ items, centreName: "Mad", selectable: true, selected: { key: "Café" } });
+    expect(getByRole(el, "button", { name: /^Café,/ }).getAttribute("aria-pressed")).toBe("true");
+    expect(getByRole(el, "button", { name: /^Dagligvarer,/ }).getAttribute("aria-pressed")).toBe("false");
+  });
+
+  it("leaves the buttons unpressed when not selectable", async () => {
+    const el = await render({ items: itemsOf({ kind: "all" }, "mainGroup") });
+    expect(getAllByRole(el, "button").every((b) => !b.hasAttribute("aria-pressed"))).toBe(true);
+  });
+
+  it("lists a part with no piece under the ring", async () => {
+    const items: CircleItem[] = [
+      piece("Dagligvarer", 3150000, 1),
+      { key: "Café", name: "Café", amount: 0, share: 0, colour: "#c4c4c4", piece: false },
+    ];
+    const el = await render({ items, centreName: "Mad" });
+    const under = getByRole(el, "group", { name: da.noPiece });
+    getByText(under, da.noPiece);
+    getByRole(under, "button", { name: partLabel("Café", 0, 0) });
+    expect(getAllByRole(el, "button", { name: /^Café,/ }).length).toBe(1);
+  });
+
+  it("turns the ring so the small pieces sit left", () => {
+    const items = [piece("a", 69, 0.69), piece("b", 28, 0.28), piece("c", 13, 0.013), piece("d", 12, 0.012)];
+    expect(ringStartAngle(items)).toBeCloseTo(175.5, 5);
+    expect(ringStartAngle([piece("a", 60, 0.6), piece("b", 40, 0.4)])).toBe(90);
+  });
+});
