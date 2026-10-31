@@ -91,7 +91,7 @@ export function setSort(s: ViewState, sort: Sort): ViewState {
 }
 
 export function setAmount(s: ViewState, amount: AmountRange | null): ViewState {
-  return { ...s, amount };
+  return { ...s, amount: amount && (amount.min !== null || amount.max !== null) ? amount : null };
 }
 
 function knownLevel(level: Level, data: SpendingData): Level {
@@ -102,7 +102,7 @@ function knownLevel(level: Level, data: SpendingData): Level {
   return known ? level : { kind: "mainGroup", mainGroup: level.mainGroup };
 }
 
-/** Drops what the answer does not know, on every answer and every state change (D20). */
+/** Drops what the answer does not know. */
 export function normalise(s: ViewState, data: SpendingData, today: string): ViewState {
   const accounts = s.accounts && s.accounts.filter((id) => data.accounts.some((a) => a.id === id));
   const units = unitsOf(periodOf(s.period, today), s.grouping, today);

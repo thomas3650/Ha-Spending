@@ -136,6 +136,7 @@ describe("the actions", () => {
     expect(setSort(DEFAULT_STATE, "smallest").sort).toBe("smallest");
     expect(setAmount(DEFAULT_STATE, { min: null, max: 300 }).amount).toEqual({ min: null, max: 300 });
     expect(setAmount({ ...DEFAULT_STATE, amount: { min: 1, max: 2 } }, null).amount).toBeNull();
+    expect(setAmount(DEFAULT_STATE, { min: null, max: null }).amount).toBeNull();
   });
 });
 
