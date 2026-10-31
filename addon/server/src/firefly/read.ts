@@ -14,6 +14,9 @@ export interface ReadSettings {
 
 const ASSET = "Asset account";
 
+/** The add-on's timeout for one read (technical spec §3.3). */
+export const READ_TIMEOUT_MS = 30_000;
+
 /** Firefly III has no endpoint for it: the last page of one transaction per page holds the oldest. */
 export async function earliestPostingDate(
   client: FireflyClient,
@@ -108,8 +111,11 @@ export async function readSpendingData(
   };
 }
 
-export async function readVersion(client: FireflyClient): Promise<string> {
-  const about = (await client.get("about", {})) as WireAbout;
+export async function readVersion(
+  client: FireflyClient,
+  signal: AbortSignal = AbortSignal.timeout(READ_TIMEOUT_MS),
+): Promise<string> {
+  const about = (await client.get("about", {}, signal)) as WireAbout;
   if (typeof about.data?.version !== "string") throw new FireflyError("unreachable");
   return about.data.version;
 }

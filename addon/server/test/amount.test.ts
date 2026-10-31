@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { toOre } from "../src/firefly/amount";
+import { FireflyError } from "../src/firefly/client";
 
 describe("toOre", () => {
   it("reads Firefly III's twelve decimals as whole øre", () => {
@@ -17,5 +18,19 @@ describe("toOre", () => {
   it("reads a sign and missing decimals", () => {
     expect(toOre("-3.5")).toBe(-350);
     expect(toOre("8")).toBe(800);
+  });
+
+  it("refuses a malformed amount without echoing it", () => {
+    for (const amount of ["", "12,50", "1.2.3", "abc", "1e3"]) {
+      let error: unknown;
+      try {
+        toOre(amount);
+      } catch (e) {
+        error = e;
+      }
+      expect(error).toBeInstanceOf(FireflyError);
+      expect((error as FireflyError).reason).toBe("unreachable");
+      if (amount !== "") expect((error as FireflyError).message).not.toContain(amount);
+    }
   });
 });

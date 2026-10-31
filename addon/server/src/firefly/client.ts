@@ -33,6 +33,7 @@ export function createFireflyClient(options: { baseUrl: string; token: string; f
           method: "GET",
           headers: { Authorization: `Bearer ${token}`, Accept: "application/vnd.api+json" },
           signal,
+          redirect: "error",
         });
       } catch {
         throw new FireflyError("unreachable");

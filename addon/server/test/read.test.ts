@@ -168,4 +168,12 @@ describe("readVersion", () => {
   it("reads the version", async () => {
     expect(await readVersion(clientOf())).toBe("6.7.9");
   });
+
+  it("times out a slow Firefly III", async () => {
+    const fake = createFakeFirefly(exampleSeed);
+    fake.fault = "slow";
+    const started = Date.now();
+    await expect(readVersion(clientOf(fake), AbortSignal.timeout(50))).rejects.toMatchObject({ reason: "unreachable" });
+    expect(Date.now() - started).toBeLessThan(1000);
+  });
 });
