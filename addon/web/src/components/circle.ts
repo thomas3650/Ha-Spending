@@ -20,6 +20,18 @@ export interface CircleSelection {
 
 const SMALL = 0.05;
 const FADED = 0.35;
+/** The width a column of labels needs beside the ring, its lines and the edge included. */
+const LABEL_ROOM = 150;
+
+/**
+ * The ring's inner and outer radius in px: as big as the labels' room beside it allows, between 46 % and 62 % of half
+ * the chart's shorter side.
+ */
+export function ringRadius(width: number, height: number): [number, number] {
+  const half = Math.min(width, height) / 2;
+  const outer = Math.max(0.46 * half, Math.min(0.62 * half, width / 2 - LABEL_ROOM));
+  return [Math.round(outer * 0.74), Math.round(outer)];
+}
 
 /** The small pieces come last, so turning the ring by their half puts their middle at 9 o'clock (UI spec §3.2). */
 export function ringStartAngle(items: CircleItem[]): number {
@@ -60,6 +72,8 @@ export class Circle extends LitElement {
   declare selectable: boolean;
 
   private chart: Chart | null = null;
+  private resizeObserver: ResizeObserver | null = null;
+  private ringSize = "";
   /** Set after a chart click, since ECharts toggles its own selection and the properties must win. */
   private chartStale = false;
   private readonly chartEl = createRef<HTMLDivElement>();
@@ -83,6 +97,8 @@ export class Circle extends LitElement {
   }
 
   override disconnectedCallback(): void {
+    this.resizeObserver?.disconnect();
+    this.resizeObserver = null;
     this.chart?.dispose();
     this.chart = null;
     super.disconnectedCallback();
@@ -115,6 +131,12 @@ export class Circle extends LitElement {
         this.chartStale = true;
         this.requestUpdate();
       });
+      this.resizeObserver = new ResizeObserver(() => {
+        if (`${el.clientWidth}x${el.clientHeight}` === this.ringSize) return;
+        this.chartStale = true;
+        this.requestUpdate();
+      });
+      this.resizeObserver.observe(el);
     }
     if (fresh || this.chartStale || changed.has("items") || changed.has("selected") || changed.has("selectable")) {
       this.chartStale = false;
@@ -130,12 +152,15 @@ export class Circle extends LitElement {
     const muted = token("--hs-muted");
     const accentText = token("--hs-accent-text");
     const anyChosen = this.selected !== null;
+    const el = this.chartEl.value;
+    this.ringSize = el ? `${el.clientWidth}x${el.clientHeight}` : "";
+    const radius = el && el.clientWidth > 0 ? ringRadius(el.clientWidth, el.clientHeight) : ["34%", "46%"];
     return {
       textStyle: { fontFamily: token("--hs-font") },
       series: [
         {
           type: "pie",
-          radius: ["34%", "46%"],
+          radius,
           startAngle: ringStartAngle(this.items),
           clockwise: true,
           avoidLabelOverlap: true,
@@ -164,8 +189,8 @@ export class Circle extends LitElement {
                 formatter: labelText(item),
                 opacity,
                 rich: {
-                  name: { fontSize: 12, color: text, fontWeight: weight, lineHeight: 15 },
-                  sub: { fontSize: 10, color: muted, lineHeight: 13 },
+                  name: { fontSize: 14, color: text, fontWeight: weight, lineHeight: 18 },
+                  sub: { fontSize: 12, color: muted, lineHeight: 15 },
                 },
               },
               labelLine: { lineStyle: { opacity } },
@@ -173,8 +198,8 @@ export class Circle extends LitElement {
                 label: {
                   opacity: 1,
                   rich: {
-                    name: { fontSize: 12, color: accentText, fontWeight: weight, lineHeight: 15 },
-                    sub: { fontSize: 10, color: muted, lineHeight: 13 },
+                    name: { fontSize: 14, color: accentText, fontWeight: weight, lineHeight: 18 },
+                    sub: { fontSize: 12, color: muted, lineHeight: 15 },
                   },
                 },
               },
@@ -237,12 +262,12 @@ export const circleStyles = [
       position: relative;
     }
     .circle-ring .chart {
-      height: 340px;
+      height: 400px;
     }
     /* A narrow ring leaves its labels little width, so they wrap and need more height. */
     @media (max-width: 599px) {
       .circle-ring .chart {
-        height: 480px;
+        height: 560px;
       }
     }
     .circle-centre {

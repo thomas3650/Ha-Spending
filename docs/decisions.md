@@ -232,7 +232,7 @@ to set their status to `superseded by D<n>`, or to name a part a later decision 
   [D16](decisions.md) for the partial unit
 
 ### D24: The halves stack below 1024 px, and are equal below 1280 px
-- **Date:** 2026-10-31 · **Status:** active
+- **Date:** 2026-10-31 · **Status:** active; ring and name size superseded by D27
 - **Decision:**
   - The two halves stack when the page's frame is narrower than 1024 px.
   - From 1024 px to 1279 px they are equal, `minmax(0, 1fr) minmax(0, 1fr)`. From 1280 px they are 5 : 7.
@@ -258,3 +258,12 @@ to set their status to `superseded by D<n>`, or to name a part a later decision 
 - **Why:** The names made the field four times as wide and moved the toolbar (#23). The names are in the open panel.
 - **Source:** [first-test fixes spec §3](superpowers/specs/2026-10-31-first-test-fixes.md#3-the-fields-keep-their-width-23),
   from the first test of 0.1.0.
+
+### D27: A bigger circle with bigger names
+- **Date:** 2026-10-31 · **Status:** active
+- **Decision:** The ring is as big as the room for its labels allows, between 46 % and 62 % of half the chart's
+  shorter side, and is sized again when the chart is resized. Names are 14 px and amounts 12 px. The circle and the
+  bars are 400 px high, the circle 560 px below 600 px.
+- **Why:** At full screen the ring and its names were small beside the bars (Thomas). The bars share the height so the
+  two halves stay level.
+- **Source:** Thomas, 2026-10-31 ("the circel to the left can be bigger", "and bigger fonts on the cirkel")

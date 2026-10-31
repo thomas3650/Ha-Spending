@@ -4,7 +4,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import "../src/components/circle";
 import { parseRichText } from "zrender/lib/graphic/helper/parseText.js";
-import { type CircleItem, type CircleSelection, labelText, ringStartAngle } from "../src/components/circle";
+import { type CircleItem, type CircleSelection, labelText, ringRadius, ringStartAngle } from "../src/components/circle";
 import { kr, partLabel } from "../src/format";
 import { da } from "../src/i18n/da";
 import { partName } from "../src/model/context";
@@ -158,8 +158,8 @@ describe("the circle", () => {
         {
           overflow: "break",
           width,
-          font: "12px sans-serif",
-          rich: { name: { font: "12px sans-serif" }, sub: { font: "10px sans-serif" } },
+          font: "14px sans-serif",
+          rich: { name: { font: "14px sans-serif" }, sub: { font: "12px sans-serif" } },
         },
         null,
         null,
@@ -171,5 +171,11 @@ describe("the circle", () => {
       expect(laid.slice(firstSub).every((line) => line.every((s) => s === "sub"))).toBe(true);
     }
     expect(lines(110).filter((line) => line.includes("name")).length).toBeGreaterThan(1);
+  });
+
+  it("grows the ring with the room its labels leave, within limits", () => {
+    expect(ringRadius(1000, 400)).toEqual([92, 124]);
+    expect(ringRadius(500, 400)).toEqual([74, 100]);
+    expect(ringRadius(350, 560)).toEqual([60, 81]);
   });
 });
