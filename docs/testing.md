@@ -105,4 +105,8 @@ The page's list. Every screenshot is at 1440×960 with the console free of error
 16. `30-1024`: the window at 1024×960. The frame is 1024 px or wider, so the halves sit side by side, equal
     ([D24](decisions.md)). The circle's names neither overlap nor are cut.
 17. `31-900`: the window at 900×960. The halves stack.
-18. Back: three clicks, then back three times returns to the opening view.
+18. `32-420`: the window at 420×900. The circle's chart is narrower than 400 px, so Alt forbrug and Mad show their parts
+    as a list under the ring, with no names beside it and no name broken inside a word, and the key numbers stack
+    ([D28](decisions.md)). Hover and Tab on a row bring its piece out; a click on a row chooses it, and the other rows
+    fade.
+19. Back: three clicks, then back three times returns to the opening view.

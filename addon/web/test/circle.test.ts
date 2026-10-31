@@ -1,5 +1,5 @@
 import { circle, classify, type Level, parts, share, total, within } from "@ha-spending/shared";
-import { fireEvent, getAllByRole, getByRole, getByText } from "@testing-library/dom";
+import { fireEvent, getAllByRole, getByRole, getByText, queryByText } from "@testing-library/dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import "../src/components/circle";
@@ -191,5 +191,46 @@ describe("the circle", () => {
     document.body.addEventListener("part-click", (e) => heard((e as CustomEvent).detail));
     fireEvent.click(bolig);
     expect(heard).toHaveBeenCalledWith({ key: "Bolig" });
+  });
+
+  it("shows a hovered name on the chart and clears it when the mouse leaves", async () => {
+    const el = await render({ items: itemsOf({ kind: "all" }, "mainGroup"), narrow: true });
+    const bil = getByRole(el, "button", { name: /^Bil,/ });
+    fireEvent.mouseEnter(bil);
+    expect(charts[0].calls.highlight).toEqual([2]);
+    fireEvent.mouseLeave(bil);
+    expect(charts[0].calls.downplay).toEqual([2]);
+  });
+
+  it("lists the parts under the ring once the chart is narrower than 400 px", async () => {
+    const observers: ResizeObserverCallback[] = [];
+    vi.stubGlobal(
+      "ResizeObserver",
+      class {
+        constructor(callback: ResizeObserverCallback) {
+          observers.push(callback);
+        }
+        observe() {}
+        disconnect() {}
+      },
+    );
+    let width = 400;
+    const clientWidth = vi.spyOn(HTMLElement.prototype, "clientWidth", "get").mockImplementation(() => width);
+    try {
+      const el = await render({ items: itemsOf({ kind: "all" }, "mainGroup") });
+      const resize = async () => {
+        for (const callback of observers) callback([], {} as ResizeObserver);
+        await el.updateComplete;
+      };
+      const bolig = () => getByRole(el, "button", { name: /^Bolig,/ });
+      await resize();
+      expect(queryByText(bolig(), "Bolig")).toBeNull();
+      width = 399;
+      await resize();
+      getByText(bolig(), "Bolig");
+    } finally {
+      clientWidth.mockRestore();
+      vi.unstubAllGlobals();
+    }
   });
 });

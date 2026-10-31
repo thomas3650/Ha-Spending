@@ -23,7 +23,7 @@ const FADED = 0.35;
 /** The width a column of labels needs beside the ring, its lines and the edge included. */
 const LABEL_ROOM = 150;
 /** Below this chart width the labels lack room beside the ring, so the parts are listed under it instead. */
-export const NARROW_CHART = 400;
+const NARROW_CHART = 400;
 
 /**
  * The ring's inner and outer radius in px: as big as the labels' room beside it allows, between 46 % and 62 % of half
@@ -249,7 +249,7 @@ export class Circle extends LitElement {
           <div class="circle-centre-amount">${kr(this.centreAmount)}</div>
         </div>
       </div>
-      <ul class=${this.narrow ? "circle-list" : "visually-hidden"}>
+      <ul class=${!this.narrow ? "visually-hidden" : this.selected !== null ? "circle-list circle-list-chosen" : "circle-list"}>
         ${this.pieces.map(
           (item, i) =>
             html`<li>
@@ -260,6 +260,8 @@ export class Circle extends LitElement {
                 @click=${() => this.fire(item)}
                 @focus=${() => this.chart?.highlight(i)}
                 @blur=${() => this.chart?.downplay(i)}
+                @mouseenter=${() => this.chart?.highlight(i)}
+                @mouseleave=${() => this.chart?.downplay(i)}
               >
                 ${this.narrow
                   ? html`<span class="circle-dot" style=${`background: ${item.colour}`}></span
@@ -324,6 +326,9 @@ export const circleStyles = [
     }
     .circle-list button[aria-pressed="true"] {
       font-weight: bold;
+    }
+    .circle-list-chosen button[aria-pressed="false"] {
+      opacity: 0.35;
     }
     .circle-dot {
       flex: none;
