@@ -315,20 +315,14 @@ to set their status to `superseded by D<n>`, or to name a part a later decision 
 - **Source:** Thomas, 2026-10-31, [the postings search spec](superpowers/specs/2026-10-31-postings-search.md).
 
 ### D32: The sorter writes a posting's shop
-- **Date:** 2026-11-01 · **Status:** active
-- **Decision:** `set_category` may also write a withdrawal's shop, its destination, in the same PUT as D30's, and only
-  on a withdrawal whose destination is the expense account `(no name)`; a shop set by hand is never overwritten. The
-  name is checked as in the [spec](superpowers/specs/2026-11-01-sorter-shop.md) §1 and the add-on finds the account
-  itself: an active expense account of that name, else one of the same name in other case, else it makes one with
-  `POST accounts`, and writes `destination_id`, never the name. A name that an account which is not an active expense
-  account holds (a liability, an asset, cash, an inactive one) is refused as `name-taken`. The client gains a `post`,
-  used for that alone, so the endpoint now makes expense accounts, at most one per posting given out in a run; an account
-  made before a PUT that then fails stays and is reused by a later run. `start` gives the shop names, capped at 12,000
-  characters. In a failure answer the results already written leave out the shop name and keep `shop_refused`, because
-  no shop name may appear in a failure's detail. It replaces D30's list of what is written.
-- **Why:** Postings imported from a bank file land on the expense account `(no name)`, the Data Importer's name for a line with
-  no counterparty (one made through the API with no destination name lands on the cash account and is left alone),
-  and the sorter already works out the shop. Writing by id keeps a
-  name from pointing a purchase at a liability and the outcome independent of the database's collation.
+- **Date:** 2026-10-31 · **Status:** active
+- **Decision:** `set_category` may also write a withdrawal's shop, by the account's id, in the same PUT as D30's, and
+  only on a withdrawal whose destination is the expense account `(no name)`; it replaces D30's list of what is written.
+  For that the endpoint may make expense accounts, through the client's `post`, used for nothing else; the name check,
+  the lookup order, the 12,000-character cap on `start`'s shops and the failure answer are in
+  [`addon/DOCS.md`](../addon/DOCS.md#the-sorters-endpoint).
+- **Why:** Postings imported from a bank file land on `(no name)` with the shop only in the bank text, and the sorter
+  already works out the shop. Writing by id keeps a name from pointing a purchase at a liability and the outcome
+  independent of the database's collation.
 - **Source:** Thomas, 2026-10-31, the design of the shop on every posting;
   [the shop spec](superpowers/specs/2026-11-01-sorter-shop.md); the limits: Claude

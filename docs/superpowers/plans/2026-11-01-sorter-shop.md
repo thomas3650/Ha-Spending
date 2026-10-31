@@ -28,7 +28,8 @@ through `scripts/integration`.
 3. **A name of 60 code points with an emoji** passes; 61 is refused; a lone surrogate is refused. Test in Task 2.
 4. **`shops` at its cap**: names past 12,000 code points are left out and `shops_more` is `true`. Test in Task 3.
 5. **A split group**: only the assigned split's destination changes. Test in Task 3.
-6. **A new shop is POSTed and written by id, never by name**: the fake refuses `destination_name` (Task 1), and the sorter's test makes a new shop by POST (Task 3).
+6. **A new shop is POSTed and written by id, never by name**: the fake refuses `destination_name` (Task 1), and the
+   sorter's test makes a new shop by POST (Task 3).
 
 ---
 
@@ -42,8 +43,8 @@ Model: sonnet · Review: yes
 **Produces:**
 - `SeedData.otherAccounts?: { name: string; type: "expense" | "revenue" | "liabilities"; active: boolean }[]`, accounts
   no transaction names (a liability, an inactive expense account). Cash is left to the real Firefly III (Task 4).
-- `SeedSplit.destination` may be left out on a withdrawal: the fake names it `(no name)`, as Firefly III does, and the
-  seeder sends no `destination_name`.
+- `SeedSplit.destination` may be left out on a withdrawal: the fake names it `(no name)`, and the seeder sends that
+  literal name, as the Data Importer does for a line with no counterparty.
 - `GET /api/v1/accounts?type=all|asset|expense|revenue|liabilities` lists accounts of that type (no `type`: asset, as
   today), paged, each `{id, attributes: {name, type, active, currency_code}}`, `type` in Firefly III's short form
   (`asset`, `expense`, `revenue`, `liabilities`); a split's expense and revenue accounts are listed too.
@@ -58,8 +59,8 @@ Model: sonnet · Review: yes
   destination_id moves the split`; `a PUT with an unknown destination_id is 422`; `a withdrawal seeded without a
   destination reads (no name)`.
 - [ ] `seed-firefly.ts`: create `otherAccounts` (a liability with `liability_type: "loan"`, `liability_direction:
-  "credit"` and the currency; an inactive one set inactive last, as for assets), and send no `destination_name` for a
-  split without a destination.
+  "credit"` and the currency; an inactive one set inactive last, as for assets), and send
+  `destination_name: "(no name)"` for a withdrawal without a destination.
 - [ ] Implement; run; pass; gates; commit `test: the fake Firefly III keeps every account and writes a destination`.
 
 ## Task 2: the shop's name
@@ -135,7 +136,7 @@ Model: sonnet · Review: yes
   - `set_category with a shop makes the expense account, a second posting with the same shop reuses it, and the
     amount, date, source account, type, category, tags, notes and the other split stay`;
   - `a liability's name and an inactive expense account's name are name-taken, and the destination stays`;
-  - `a withdrawal made without a destination reads (no name), of type Expense account, and takes a shop`.
+  - `reads a withdrawal on the importer's literal (no name) as an expense account, and takes a shop`.
   Run `scripts/integration`; pass. If Firefly III differs from the fake or the seeder (a liability may need `interest`
   and `interest_period`), they may be changed to match it. A change to what `set_category` sends or checks stops the
   task and goes back to the controller.

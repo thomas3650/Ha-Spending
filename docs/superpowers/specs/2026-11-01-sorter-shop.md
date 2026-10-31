@@ -58,9 +58,15 @@ included. Otherwise the shop is checked, in this order, and the first that fails
 | `shop_refused` | When |
 |---|---|
 | `not-withdrawal` | The posting is not a withdrawal. |
-| `has-shop` | The posting's destination is not the expense account `(no name)` (its type `Expense account` and its name `(no name)`, the name Firefly III gives an expense with no counterparty). A shop set by hand is never overwritten. |
+| `has-shop` | The destination is not the expense account `(no name)` (below): a shop set by hand stays. |
 | `bad-shop-name` | §1 refuses the name. |
-| `name-taken` | An account that is not an active expense account has the same name: an asset, a liability, a revenue account, cash, or an inactive account of any type. |
+| `name-taken` | An account that is not an active expense account has the same name ([DOCS.md][set] lists them). |
+
+`(no name)` here is the destination's type `Expense account` and its name `(no name)`, the literal name the Data
+Importer gives a line with no counterparty. A withdrawal made through the API without a destination is not on it: it
+lands on the cash account ([DOCS.md][set]).
+
+[set]: ../../../addon/DOCS.md#set_category
 
 When the shop passes, the add-on finds its account itself and the same PUT that writes the category writes the
 split's destination:
@@ -98,7 +104,9 @@ leave Firefly III no reason to refuse a name.
 - The fake Firefly III in `addon/dev` lists accounts of every type and by type, keeps expense, liability and inactive
   accounts, makes an expense account on `POST accounts`, and accepts `destination_id` on a PUT.
 - Unit tests through the MCP endpoint, as the sorter's tests are today:
-  - each row of the table, a liability's name among them;
+  - each row of the table, a liability's name among them, and a withdrawal paying a liability named `(no name)`:
+    `has-shop`;
+  - a new account answered without `active: true`: `unreachable`;
   - a shop written on a withdrawal on `(no name)`, with the name written echoed;
   - an exact match, a case match, and two accounts that differ only in case;
   - two assignments in one call with the same new shop in different case: one account;
@@ -114,7 +122,9 @@ leave Firefly III no reason to refuse a name.
 - Integration tests on the real Firefly III in Docker: a shop makes its expense account, a second posting with the
   same shop reuses it, and the amount, date, source account, type, category, tags, notes and the other split stay; a
   liability's name and an inactive expense account's name are `name-taken` and leave the destination as it was; a
-  withdrawal made without a destination reads `(no name)`, of type `Expense account`, and takes a shop.
+  withdrawal on the Data Importer's literal `(no name)` reads it, of type `Expense account`, and takes a shop; one made
+  through the API without a destination is on the cash account, keeps it (`has-shop`), and the cash account's name is
+  `name-taken`.
 
 ## 5. What else changes
 
@@ -126,8 +136,5 @@ leave Firefly III no reason to refuse a name.
 - `client.ts`: a `post`, used only to make a shop's expense account; its comment.
 - `docs/architecture.md`, where it says the client has a `get` and a `put`; `docs/testing.md`, where it names the
   sorter's one write.
-- D32 records the shop write: withdrawals on `(no name)` only, §1's check, the add-on's own lookup and `name-taken`,
-  the account made by the add-on and written by id, the client's `post` for that alone, and that the endpoint now
-  makes expense accounts, at most one per posting given out in a run; an account made before a PUT that then fails
-  stays and is reused by a later run. D29 and D30 are not edited; where a part of them no longer holds, their status
-  becomes `active; <part> superseded by D32`.
+- D32 records the shop write. D29 and D30 are not edited; where a part of them no longer holds, their status becomes
+  `active; <part> superseded by D32`.
