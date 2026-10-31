@@ -13,7 +13,8 @@ export function inAmount(p: ClassifiedPosting, range: AmountRange | null): boole
   return range.max === null || p.amount <= range.max * 100;
 }
 
-function byDate(a: ClassifiedPosting, b: ClassifiedPosting): number {
+/** Oldest first, and by id within a day, so the order is stable. */
+export function byDate(a: ClassifiedPosting, b: ClassifiedPosting): number {
   return a.date.localeCompare(b.date) || a.id.localeCompare(b.id);
 }
 

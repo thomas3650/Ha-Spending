@@ -1,6 +1,7 @@
 import { unitAt, unitsOf } from "@ha-spending/shared";
 import { describe, expect, it } from "vitest";
 import {
+  amountChip,
   axisKr,
   comparisonLabel,
   count,
@@ -35,6 +36,11 @@ describe("money", () => {
     expect(postingAmount(31012)).toBe("-310,12");
     expect(postingAmount(-20000)).toBe("+200,00");
     expect(postingAmount(1131012)).toBe("-11.310,12");
+  });
+  it("words an amount range in whole kroner", () => {
+    expect(amountChip({ min: 1000, max: 2500 })).toBe("Beløb: 1.000–2.500 kr.");
+    expect(amountChip({ min: 100, max: null })).toBe("Beløb: fra 100 kr.");
+    expect(amountChip({ min: null, max: 500 })).toBe("Beløb: til 500 kr.");
   });
   it("shortens axis values", () => {
     expect(axisKr(6200000)).toBe("62k");

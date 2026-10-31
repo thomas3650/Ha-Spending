@@ -14,7 +14,7 @@ spending, through ingress. The design is in the [UI spec](docs/superpowers/specs
   - `addon/shared/` — the types between the server and the page, and the money and date rules
   - `addon/dev/` — a fake Firefly III, the example data, and the compose file for a real one; test and dev only
   - `addon/server/` — the add-on server (TypeScript, Hono on Node)
-  - `addon/web/` — the page (TypeScript, Lit, Vite); its Danish texts in `src/i18n/da.ts`
+  - `addon/web/` — the page (TypeScript, Lit, ECharts, Vite); its Danish texts in `src/i18n/da.ts`
   - `addon/translations/` — the option labels, `en.yaml` and `da.yaml`
 - `docs/` — the docs; the map is `docs/README.md`
 - `scripts/` — `setup`, the fast loop (`develop`), `integration` and the link check

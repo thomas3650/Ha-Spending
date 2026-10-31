@@ -179,7 +179,8 @@ to set their status to `superseded by D<n>`, or to name a part a later decision 
     chunk, with `chunkSizeWarningLimit` 700, because ECharts core and zrender dominate it.
   - The chart's element is `aria-hidden="true"`. Beside it, a visually hidden list of `<button>`s carries one button
     per piece and per bar, and a table carries the Forskel rows.
-  - Hover or focus on a button calls `highlight` on its piece or bar. Blur calls `downplay`. A click on a piece, its
+  - Focus on a button calls `highlight` on its piece or bar, and blur calls `downplay`. Hovering the chart uses
+    ECharts' own emphasis. A click on a piece, its
     ECharts label or a bar calls the same handler as its button, and the component then calls `requestUpdate()`, so its
     props win over ECharts' own selection.
   - The wrapper `src/charts/echarts.ts` is mocked in the component tests, because happy-dom has no canvas and zrender
@@ -229,3 +230,11 @@ to set their status to `superseded by D<n>`, or to name a part a later decision 
 - **Why:** The UI spec's wording wins over technical spec §6 where they meet. A unit that has not begun is not running.
 - **Source:** the controller's rulings, [page plan](superpowers/plans/2026-10-31-page.md);
   [D16](decisions.md) for the partial unit
+
+### D24: The halves are equal below 1280 px of frame width
+- **Date:** 2026-10-31 · **Status:** active
+- **Decision:** From 960 px to 1279 px of frame width the two halves are equal, `minmax(0, 1fr) minmax(0, 1fr)`. From
+  1280 px they are 5 : 7. The circle's ring is 34–46 % with 12 px names, so its names fit beside it.
+- **Why:** At a 1024 px frame the 5 : 7 circle half left no room for the names, and they ran into each other. Equal
+  halves keep the halves side by side there, as [D22](decisions.md) wants.
+- **Source:** Claude, from the controller's Chrome check of the [page plan](superpowers/plans/2026-10-31-page.md)

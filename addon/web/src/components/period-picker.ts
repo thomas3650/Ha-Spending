@@ -55,7 +55,7 @@ export class PeriodPicker extends Dropdown {
     const closed = periodClosedText(this.choice, this.today);
     return html`<div class="dd">
       <button
-        class="sel"
+        class="field"
         type="button"
         aria-expanded=${this.open ? "true" : "false"}
         aria-label=${`${da.period} ${closed}`}
@@ -64,11 +64,11 @@ export class PeriodPicker extends Dropdown {
         <small>${da.period}</small><span>${closed}</span>
       </button>
       ${this.open
-        ? html`<div class="menu" tabindex="-1" role="group" aria-label=${da.period}>
+        ? html`<div class="dd-menu" tabindex="-1" role="group" aria-label=${da.period}>
             ${PRESETS.map(
               (preset) =>
                 html`<button
-                  class="o"
+                  class="dd-option"
                   type="button"
                   aria-pressed=${this.choice.preset === preset ? "true" : "false"}
                   @click=${() => this.choose({ preset })}
@@ -77,17 +77,17 @@ export class PeriodPicker extends Dropdown {
                 </button>`,
             )}
             <hr />
-            <div class="custom">
+            <div class="period-custom">
               <span>${da.custom}</span>
-              <div class="dates">
-                <label class="date"
+              <div class="period-dates">
+                <label class="period-date"
                   ><small>${da.from}</small
                   ><input
                     type="date"
                     .value=${live(this.from)}
                     @input=${(e: Event) => (this.from = (e.target as HTMLInputElement).value)}
                 /></label>
-                <label class="date"
+                <label class="period-date"
                   ><small>${da.to}</small
                   ><input
                     type="date"
@@ -96,7 +96,7 @@ export class PeriodPicker extends Dropdown {
                 /></label>
               </div>
               <button
-                class="btn"
+                class="period-show"
                 type="button"
                 ?disabled=${!this.customValid}
                 @click=${() => this.choose({ preset: "custom", start: this.from, end: this.to })}
@@ -111,17 +111,17 @@ export class PeriodPicker extends Dropdown {
 }
 
 export const periodPickerStyles = css`
-  .custom {
+  .period-custom {
     padding: 8px 16px 10px;
     display: flex;
     flex-direction: column;
     gap: 8px;
   }
-  .dates {
+  .period-dates {
     display: flex;
     gap: 8px;
   }
-  .date {
+  .period-date {
     border: 1px solid var(--hs-field);
     border-radius: 6px;
     padding: 5px 10px;
@@ -129,18 +129,18 @@ export const periodPickerStyles = css`
     flex-direction: column;
     min-width: 130px;
   }
-  .date small {
+  .period-date small {
     color: var(--hs-muted);
     font-size: 11px;
   }
-  .date input {
+  .period-date input {
     border: 0;
     padding: 0;
     font: inherit;
     color: var(--hs-text);
     background: none;
   }
-  .btn {
+  .period-show {
     align-self: flex-end;
     background: var(--hs-accent);
     color: #fff;
@@ -151,7 +151,7 @@ export const periodPickerStyles = css`
     font-weight: 600;
     cursor: pointer;
   }
-  .btn:disabled {
+  .period-show:disabled {
     background: var(--hs-field);
     cursor: default;
   }

@@ -1,6 +1,7 @@
 import { chosenUnitNumbers, type ClassifiedPosting, differences, keyNumbers, type Unit, within } from "@ha-spending/shared";
 import { css, html, LitElement, nothing } from "lit";
 import "../components/bars";
+import { chip, fire } from "../components/chip";
 import "../components/circle";
 import "../components/difference";
 import type { DifferenceItem } from "../components/difference";
@@ -24,10 +25,6 @@ export class Overview extends LitElement {
 
   protected override createRenderRoot(): HTMLElement {
     return this;
-  }
-
-  private fire(name: string, detail?: unknown): void {
-    this.dispatchEvent(new CustomEvent(name, { detail, bubbles: true, composed: true }));
   }
 
   private empty() {
@@ -61,7 +58,7 @@ export class Overview extends LitElement {
               .selectable=${!all}
               .selected=${selected}
             ></hs-circle>
-            <p class="foot">${hint}</p>`}
+            <p class="half-foot">${hint}</p>`}
     </section>`;
   }
 
@@ -70,7 +67,7 @@ export class Overview extends LitElement {
     return html`<button
       type="button"
       aria-pressed=${String(pressed)}
-      @click=${() => this.fire("card-change", card)}
+      @click=${() => fire(this, "card-change", card)}
     >
       ${label}
     </button>`;
@@ -89,7 +86,7 @@ export class Overview extends LitElement {
         .average=${average}
         .chosen=${ctx.state.unit}
       ></hs-bars>
-      <p class="foot">${da.barsHint(g)}</p>`;
+      <p class="half-foot">${da.barsHint(g)}</p>`;
   }
 
   private postings(inPeriod: ClassifiedPosting[]) {
@@ -100,9 +97,9 @@ export class Overview extends LitElement {
         ? groupedPostings(inPeriod, ctx.units, ctx, true, categoryColours(ctx))
         : groupedPostings(within(inPeriod, chosen), [chosen], ctx, true, categoryColours(ctx));
     return html`<hs-postings .list=${list} .grouping=${ctx.timeline.grouping}></hs-postings>
-      <p class="foot">
+      <p class="half-foot">
         ${da.postingsHint(ctx.timeline.grouping)}
-        <button type="button" class="link" @click=${() => this.fire("open-all-postings")}>${da.showAll}</button>
+        <button type="button" class="half-link" @click=${() => fire(this, "open-all-postings")}>${da.showAll}</button>
       </p>`;
   }
 
@@ -135,20 +132,15 @@ export class Overview extends LitElement {
       chosen: d.key === chosen,
     }));
     return html`<hs-difference .items=${items} .title=${title}></hs-difference>
-      <p class="foot">${da.differenceHint}</p>`;
-  }
-
-  private chip(name: string, event: string) {
-    return html`<button type="button" class="chip" aria-label=${da.remove(name)} @click=${() => this.fire(event)}>
-      ${name}<span class="x" aria-hidden="true">✕</span>
-    </button>`;
+      <p class="half-foot">${da.differenceHint}</p>`;
   }
 
   private chips() {
     const ctx = this.ctx;
     const level = ctx.state.level;
-    return html`${level.kind === "category" ? this.chip(levelName(level), "remove-category") : nothing}
-    ${ctx.chosen === null ? nothing : this.chip(unitName(ctx.chosen, ctx.timeline.grouping), "remove-unit")}`;
+    const unit = ctx.chosen === null ? null : unitName(ctx.chosen, ctx.timeline.grouping);
+    return html`${level.kind === "category" ? chip(levelName(level), () => fire(this, "remove-category")) : nothing}
+    ${unit === null ? nothing : chip(unit, () => fire(this, "remove-unit"))}`;
   }
 
   private right() {
@@ -163,11 +155,11 @@ export class Overview extends LitElement {
     else body = this.bars();
     return html`<section class="card half" role="region" aria-labelledby=${RIGHT_TITLE}>
       <div class="half-head">
-        <div class="title">
+        <div class="half-title">
           <h2 id=${RIGHT_TITLE}>${title}</h2>
           ${this.chips()}
         </div>
-        <div class="switch" role="group" aria-label=${da.view}>
+        <div class="card-switch" role="group" aria-label=${da.view}>
           ${this.switchButton("bars", da.bars)} ${this.switchButton("postings", da.postings)}
           ${ctx.chosen === null ? nothing : this.switchButton("difference", da.difference)}
         </div>
@@ -184,66 +176,40 @@ export class Overview extends LitElement {
 export const overviewStyles = css`
   .half-head {
     display: flex;
-    flex-wrap: wrap;
-    align-items: center;
+    align-items: flex-start;
     justify-content: space-between;
     gap: 8px;
     margin-bottom: 8px;
+  }
+  .half-head > :first-child {
+    flex: 1 1 auto;
+    min-width: 0;
   }
   .half-head h2 {
     margin: 0;
     font-size: 16px;
     font-weight: 600;
   }
-  .half-head .title {
+  .half-title {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
     gap: 10px;
     min-width: 0;
   }
-  .chip {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    font: inherit;
-    font-weight: 600;
-    padding: 3px 6px 3px 12px;
-    color: var(--hs-accent-text);
-    background: var(--hs-accent-soft);
-    border: 0;
-    border-radius: 14px;
-    cursor: pointer;
-  }
-  .chip .x {
-    display: inline-grid;
-    place-items: center;
-    width: 18px;
-    height: 18px;
-    font-size: 11px;
-    border-radius: 50%;
-    background: var(--hs-chip-x);
-  }
-  .chip:hover .x,
-  .chip:focus-visible .x {
-    color: var(--hs-card);
-    background: var(--hs-accent-text);
-  }
-  .chip:focus-visible {
-    outline: 2px solid var(--hs-accent-text);
-    outline-offset: 2px;
-  }
   .half-sum {
+    flex: none;
     color: var(--hs-muted);
     font-variant-numeric: tabular-nums;
   }
-  .switch {
+  .card-switch {
+    flex: none;
     display: inline-flex;
     border: 1px solid var(--hs-field);
     border-radius: 6px;
     overflow: hidden;
   }
-  .switch button {
+  .card-switch button {
     font: inherit;
     padding: 6px 14px;
     color: var(--hs-text);
@@ -251,24 +217,24 @@ export const overviewStyles = css`
     border: 0;
     cursor: pointer;
   }
-  .switch button + button {
+  .card-switch button + button {
     border-left: 1px solid var(--hs-field);
   }
-  .switch button[aria-pressed="true"] {
+  .card-switch button[aria-pressed="true"] {
     color: #fff;
     font-weight: 600;
     background: var(--hs-accent);
   }
-  .switch button:focus-visible {
+  .card-switch button:focus-visible {
     outline: 2px solid var(--hs-accent-text);
     outline-offset: -2px;
   }
-  .foot {
+  .half-foot {
     margin: 12px 0 0;
     color: var(--hs-muted);
     font-size: 12px;
   }
-  .foot .link {
+  .half-foot .half-link {
     padding: 0;
     font: inherit;
     color: var(--hs-accent-text);
@@ -276,8 +242,8 @@ export const overviewStyles = css`
     border: 0;
     cursor: pointer;
   }
-  .foot .link:hover,
-  .foot .link:focus-visible {
+  .half-foot .half-link:hover,
+  .half-foot .half-link:focus-visible {
     text-decoration: underline;
   }
 `;

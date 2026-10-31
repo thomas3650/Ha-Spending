@@ -134,7 +134,7 @@ export class Circle extends LitElement {
       series: [
         {
           type: "pie",
-          radius: ["36%", "52%"],
+          radius: ["34%", "46%"],
           startAngle: ringStartAngle(this.items),
           clockwise: true,
           avoidLabelOverlap: true,
@@ -142,8 +142,8 @@ export class Circle extends LitElement {
           selectedOffset: 8,
           itemStyle: { borderColor: token("--hs-card"), borderWidth: 2 },
           // A name is never cut: without "break" ECharts truncates it to the room between the edge and its line.
-          label: { alignTo: "edge", edgeDistance: 8, padding: [2, 4], borderRadius: 4, overflow: "break" },
-          labelLine: { length: 8, length2: 10, lineStyle: { color: token("--hs-leader") } },
+          label: { alignTo: "edge", edgeDistance: 4, padding: [2, 4], borderRadius: 4, overflow: "break" },
+          labelLine: { length: 6, length2: 8, lineStyle: { color: token("--hs-leader") } },
           emphasis: {
             scale: true,
             scaleSize: 6,
@@ -163,8 +163,8 @@ export class Circle extends LitElement {
                 formatter: labelText(item),
                 opacity,
                 rich: {
-                  name: { fontSize: 13, color: text, fontWeight: weight, lineHeight: 17 },
-                  sub: { fontSize: 11, color: muted, lineHeight: 15 },
+                  name: { fontSize: 12, color: text, fontWeight: weight, lineHeight: 15 },
+                  sub: { fontSize: 10, color: muted, lineHeight: 13 },
                 },
               },
               labelLine: { lineStyle: { opacity } },
@@ -172,8 +172,8 @@ export class Circle extends LitElement {
                 label: {
                   opacity: 1,
                   rich: {
-                    name: { fontSize: 13, color: accentText, fontWeight: weight, lineHeight: 17 },
-                    sub: { fontSize: 11, color: muted, lineHeight: 15 },
+                    name: { fontSize: 12, color: accentText, fontWeight: weight, lineHeight: 15 },
+                    sub: { fontSize: 10, color: muted, lineHeight: 13 },
                   },
                 },
               },
@@ -191,11 +191,11 @@ export class Circle extends LitElement {
   override render() {
     const rest = this.items.filter((i) => !i.piece);
     return html`<div class="circle">
-      <div class="ring">
+      <div class="circle-ring">
         <div class="chart" aria-hidden="true" ${ref(this.chartEl)}></div>
-        <div class="centre">
-          <div class="centre-name">${this.centreName}</div>
-          <div class="centre-amount">${kr(this.centreAmount)}</div>
+        <div class="circle-centre">
+          <div class="circle-centre-name">${this.centreName}</div>
+          <div class="circle-centre-amount">${kr(this.centreAmount)}</div>
         </div>
       </div>
       <ul class="visually-hidden">
@@ -216,7 +216,7 @@ export class Circle extends LitElement {
       </ul>
       ${rest.length === 0
         ? nothing
-        : html`<div class="no-piece" role="group" aria-label=${da.noPiece}>
+        : html`<div class="circle-no-piece" role="group" aria-label=${da.noPiece}>
             <span aria-hidden="true">${da.noPiece}</span>
             ${rest.map(
               (item) =>
@@ -232,13 +232,13 @@ export class Circle extends LitElement {
 export const circleStyles = [
   visuallyHidden,
   css`
-    .ring {
+    .circle-ring {
       position: relative;
     }
-    .ring .chart {
+    .circle-ring .chart {
       height: 340px;
     }
-    .centre {
+    .circle-centre {
       position: absolute;
       inset: 0;
       display: flex;
@@ -248,15 +248,15 @@ export const circleStyles = [
       pointer-events: none;
       text-align: center;
     }
-    .centre-name {
+    .circle-centre-name {
       color: var(--hs-muted);
       font-size: 13px;
     }
-    .centre-amount {
+    .circle-centre-amount {
       font-size: 20px;
       font-variant-numeric: tabular-nums;
     }
-    .no-piece {
+    .circle-no-piece {
       display: flex;
       flex-wrap: wrap;
       align-items: center;
@@ -265,7 +265,7 @@ export const circleStyles = [
       color: var(--hs-muted);
       font-size: 12px;
     }
-    .no-piece button {
+    .circle-no-piece button {
       font: inherit;
       color: var(--hs-text);
       background: var(--hs-soft);
@@ -274,12 +274,12 @@ export const circleStyles = [
       padding: 2px 8px;
       cursor: pointer;
     }
-    .no-piece button:hover,
-    .no-piece button:focus-visible {
+    .circle-no-piece button:hover,
+    .circle-no-piece button:focus-visible {
       background: var(--hs-accent-soft);
       color: var(--hs-accent-text);
     }
-    .no-piece button[aria-pressed="true"] {
+    .circle-no-piece button[aria-pressed="true"] {
       font-weight: bold;
     }
   `,

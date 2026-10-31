@@ -1,5 +1,6 @@
 import { isoWeek, type Grouping, type Period, type Unit } from "@ha-spending/shared";
 import { da } from "./i18n/da";
+import type { AmountRange } from "./state/view";
 
 const whole = new Intl.NumberFormat("da-DK", { maximumFractionDigits: 0 });
 const cents = new Intl.NumberFormat("da-DK", {
@@ -49,13 +50,19 @@ function isZero(text: string): boolean {
 }
 
 export function kr(ore: number): string {
-  return `${whole.format(Math.abs(ore) / 100)} kr.`;
+  return `${whole.format(Math.abs(ore) / 100)} ${da.kr}`;
 }
 
 export function signedKr(ore: number): string {
   const text = whole.format(Math.abs(ore) / 100);
-  if (isZero(text)) return `${text} kr.`;
-  return `${ore < 0 ? "-" : "+"}${text} kr.`;
+  if (isZero(text)) return `${text} ${da.kr}`;
+  return `${ore < 0 ? "-" : "+"}${text} ${da.kr}`;
+}
+
+/** The range is in whole kroner, not øre. */
+export function amountChip(range: AmountRange): string {
+  const text = (kroner: number | null) => (kroner === null ? null : whole.format(kroner));
+  return da.amountChip(text(range.min), text(range.max));
 }
 
 export function postingAmount(ore: number): string {

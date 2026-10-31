@@ -9,10 +9,9 @@ interface GroupingTexts {
   average: string;
 }
 
-const kroner = new Intl.NumberFormat("da-DK", { maximumFractionDigits: 0 });
-
 export const da = {
   title: "Forbrug",
+  kr: "kr.",
   months: ["jan", "feb", "mar", "apr", "maj", "jun", "jul", "aug", "sep", "okt", "nov", "dec"],
 
   allSpending: "Alt forbrug",
@@ -146,10 +145,10 @@ export const da = {
   mainGroupChip: (name: string) => `Hovedgruppe: ${name}`,
   categoryChip: (name: string) => `Kategori: ${name}`,
   amountFilter: "Beløb",
-  amountChip: (min: number | null, max: number | null) => {
-    if (min !== null && max !== null) return `Beløb: ${kroner.format(min)}–${kroner.format(max)} kr.`;
-    if (min !== null) return `Beløb: fra ${kroner.format(min)} kr.`;
-    return `Beløb: til ${kroner.format(max ?? 0)} kr.`;
+  amountChip: (min: string | null, max: string | null) => {
+    if (min !== null && max !== null) return `Beløb: ${min}–${max} ${da.kr}`;
+    if (min !== null) return `Beløb: fra ${min} ${da.kr}`;
+    return `Beløb: til ${max ?? ""} ${da.kr}`;
   },
   add: "Tilføj",
   summary: (count: string, sum: string) => `${count} · ${sum}`,

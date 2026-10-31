@@ -78,13 +78,15 @@ export class Postings extends LitElement {
       ? html`<a href=${r.href} target="_blank" rel="noopener noreferrer">${p.text}</a>`
       : p.text;
     return html`<tr class="posting">
-      <td class="date">${tableDate(p.date)}</td>
+      <td class="posting-date">${tableDate(p.date)}</td>
       <td>${text}</td>
       ${this.showCategory
-        ? html`<td><span class="dot" aria-hidden="true" style=${styleMap({ background: r.colour })}></span>${r.category}</td>`
+        ? html`<td>
+            <span class="posting-dot" aria-hidden="true" style=${styleMap({ background: r.colour })}></span>${r.category}
+          </td>`
         : nothing}
       <td>${r.account}</td>
-      <td class="amount">${postingAmount(p.amount)}</td>
+      <td class="posting-amount">${postingAmount(p.amount)}</td>
     </tr>`;
   }
 
@@ -112,7 +114,7 @@ export class Postings extends LitElement {
   }
 
   private more(label: string, step: number) {
-    return html`<button type="button" class="more" @click=${() => (this.shown += step)}>${label}</button>`;
+    return html`<button type="button" class="postings-more" @click=${() => (this.shown += step)}>${label}</button>`;
   }
 
   override render() {
@@ -123,7 +125,7 @@ export class Postings extends LitElement {
         <th scope="col">${da.columns.text}</th>
         ${this.showCategory ? html`<th scope="col">${da.columns.category}</th>` : nothing}
         <th scope="col">${da.columns.account}</th>
-        <th scope="col" class="amount">${da.columns.amount}</th>
+        <th scope="col" class="posting-amount">${da.columns.amount}</th>
       </tr>
     </thead>`;
     if (list.kind === "grouped") {
@@ -166,10 +168,10 @@ export const postingsStyles = css`
     color: var(--hs-muted);
     font-weight: normal;
   }
-  .postings .amount {
+  .postings .posting-amount {
     text-align: right;
   }
-  .postings td.date {
+  .postings .posting-date {
     padding-left: 24px;
   }
   .postings .group-line th {
@@ -216,14 +218,14 @@ export const postingsStyles = css`
     color: var(--hs-accent-text);
     text-decoration: underline;
   }
-  .postings .dot {
+  .postings .posting-dot {
     display: inline-block;
     width: 8px;
     height: 8px;
     margin-right: 6px;
     border-radius: 50%;
   }
-  .postings .more {
+  .postings .postings-more {
     margin-top: 8px;
     padding: 0;
     font: inherit;

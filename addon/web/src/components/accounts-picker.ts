@@ -48,7 +48,7 @@ export class AccountsPicker extends Dropdown {
     const closed = accountsClosedText(this.accounts, this.chosen);
     return html`<div class="dd">
       <button
-        class="sel"
+        class="field"
         type="button"
         aria-expanded=${this.open ? "true" : "false"}
         aria-label=${`${da.accounts} ${closed}`}
@@ -58,8 +58,8 @@ export class AccountsPicker extends Dropdown {
         <small>${da.accounts}</small><span>${closed}</span>
       </button>
       ${this.open && this.accounts
-        ? html`<div class="menu end" tabindex="-1" role="group" aria-label=${da.accounts}>
-            <label class="cb"
+        ? html`<div class="dd-menu dd-end" tabindex="-1" role="group" aria-label=${da.accounts}>
+            <label class="dd-check"
               ><input
                 type="checkbox"
                 .checked=${live(count === accounts.length)}
@@ -71,7 +71,7 @@ export class AccountsPicker extends Dropdown {
             <hr />
             ${accounts.map(
               (a) =>
-                html`<label class="cb"
+                html`<label class="dd-check"
                   ><input
                     type="checkbox"
                     .checked=${live(this.ticked(a.id))}

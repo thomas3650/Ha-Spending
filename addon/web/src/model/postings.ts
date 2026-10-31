@@ -1,6 +1,7 @@
-import { byUnit, type ClassifiedPosting, type Unit } from "@ha-spending/shared";
+import { byUnit, type ClassifiedPosting, NO_PIECE, type Unit } from "@ha-spending/shared";
 import { unitName } from "../format";
 import { type ViewContext, partName } from "./context";
+import { byDate } from "./filter";
 
 export interface PostingRow {
   posting: ClassifiedPosting;
@@ -22,9 +23,10 @@ export type PostingList =
   | { kind: "grouped"; newestFirst: boolean; groups: PostingGroup[] }
   | { kind: "flat"; rows: PostingRow[] };
 
-const NO_COLOUR = "#b5b5b5";
-
-/** Only an http(s) base becomes a link, so an option such as `javascript:` can never reach an href. */
+/**
+ * Only an http(s) base becomes a link, so an option such as `javascript:` can never reach an href. The server has
+ * already stripped its trailing slash.
+ */
 export function linkBase(url: string | null): string | null {
   if (url === null) return null;
   let parsed: URL;
@@ -33,8 +35,7 @@ export function linkBase(url: string | null): string | null {
   } catch {
     return null;
   }
-  if (parsed.protocol !== "http:" && parsed.protocol !== "https:") return null;
-  return url.endsWith("/") ? url.slice(0, -1) : url;
+  return parsed.protocol === "http:" || parsed.protocol === "https:" ? url : null;
 }
 
 interface RowContext {
@@ -56,7 +57,7 @@ function row(p: ClassifiedPosting, rc: RowContext): PostingRow {
     posting: p,
     account: rc.accounts.get(p.account) ?? p.account,
     category: partName(p.category, "category"),
-    colour: rc.colours.get(p.category) ?? NO_COLOUR,
+    colour: rc.colours.get(p.category) ?? NO_PIECE,
     href: rc.base === null ? null : `${rc.base}/transactions/show/${encodeURIComponent(p.groupId)}`,
   };
 }
@@ -77,7 +78,7 @@ export function groupedPostings(
         key: u.unit.fullStart,
         name: unitName(u.unit, ctx.timeline.grouping),
         rows: [...u.postings]
-          .sort((a, b) => direction * (a.date.localeCompare(b.date) || a.id.localeCompare(b.id)))
+          .sort((a, b) => direction * byDate(a, b))
           .map((p) => row(p, rc)),
         total: u.total,
       }),

@@ -1,8 +1,8 @@
 # HA Spending
 
 The HA Spending add-on shows a household's spending from Firefly III on a page in Home Assistant. The page shows the
-spending of a period as main groups, then categories, then postings, and compares a month, week or day with the one
-before it. Nothing is written to Firefly III.
+spending of a period as main groups, then categories, then postings, and compares a unit of the chosen grouping with
+the one before it. Nothing is written to Firefly III.
 
 ## Installation
 

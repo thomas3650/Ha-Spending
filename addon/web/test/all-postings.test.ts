@@ -2,7 +2,7 @@ import { type ClassifiedPosting, unitAt } from "@ha-spending/shared";
 import { fireEvent, getAllByRole, getByRole, getByText, queryAllByRole, queryByRole } from "@testing-library/dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { count, kr, postingAmount, unitName } from "../src/format";
+import { amountChip, count, kr, postingAmount, unitName } from "../src/format";
 import type { SpendingApp } from "../src/app";
 import { da } from "../src/i18n/da";
 import { inAmount, matchesSearch, sortPostings } from "../src/model/filter";
@@ -138,7 +138,7 @@ describe("screen 3, all postings", () => {
     fireEvent.click(getByRole(part, "button", { name: da.add }));
     await settle(app);
     summary(root, 1, 50000);
-    fireEvent.click(chip(root, da.amountChip(400, 600)));
+    fireEvent.click(chip(root, amountChip({ min: 400, max: 600 })));
     await settle(app);
     summary(root, 4, 131012);
   });
@@ -193,6 +193,17 @@ describe("screen 3, all postings", () => {
     const card = getByRole(root, "region", { name: da.loading });
     expect(card.getAttribute("aria-busy")).toBe("true");
     expect(queryByRole(root, "searchbox")).toBeNull();
+  });
+
+  it("closes + Filter when the view changes under it", async () => {
+    const { app, root } = await mount(CAFE);
+    await openFilter(app, root);
+    getByRole(root, "group", { name: da.amountFilter });
+    history.replaceState(null, "", "#view=all-postings");
+    window.dispatchEvent(new PopStateEvent("popstate"));
+    await settle(app);
+    expect(queryByRole(root, "group", { name: da.amountFilter })).toBeNull();
+    expect(getByRole(root, "button", { name: da.addFilter }).getAttribute("aria-expanded")).toBe("false");
   });
 
   it("refuses an amount that is not whole kroner", async () => {

@@ -13,7 +13,8 @@ export const PALETTE: readonly string[] = [
 
 const GREY_DARK = 0x8a;
 const GREY_LIGHT = 0xc4;
-const NO_PIECE = "#c4c4c4";
+/** The grey of a part with no piece in the circle. */
+export const NO_PIECE = "#c4c4c4";
 
 export interface CirclePart extends Part {
   colour: string;

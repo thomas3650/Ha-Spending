@@ -52,7 +52,7 @@ import {
   toHash,
   type ViewState,
 } from "./state/view";
-import { card, theme } from "./theme";
+import { card, chip, field, theme } from "./theme";
 
 type Load =
   | { kind: "idle" }
@@ -75,6 +75,8 @@ export class SpendingApp extends LitElement {
   static override styles = [
     theme,
     card,
+    chip,
+    field,
     dropdownStyles,
     periodPickerStyles,
     topCardStyles,
@@ -136,6 +138,11 @@ export class SpendingApp extends LitElement {
       }
       .half:has(.empty) {
         min-height: 0;
+      }
+      @media (max-width: 1279px) {
+        .halves {
+          grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+        }
       }
       @media (max-width: 959px) {
         .halves {

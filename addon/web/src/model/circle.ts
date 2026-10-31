@@ -1,10 +1,18 @@
-import { circle, type CirclePart, type ClassifiedPosting, parts, share, total, unitTotals, within } from "@ha-spending/shared";
+import {
+  circle,
+  type CirclePart,
+  type ClassifiedPosting,
+  NO_PIECE,
+  parts,
+  share,
+  total,
+  unitTotals,
+  within,
+} from "@ha-spending/shared";
 import { type BarItem, isRunning } from "../components/bars";
 import type { CircleItem } from "../components/circle";
 import { unitAxis, unitName } from "../format";
 import { partName, type ViewContext } from "./context";
-
-const NO_CATEGORY = "#c4c4c4";
 
 function periodCircle(ctx: ViewContext): CirclePart[] {
   return circle(parts(within(ctx.circlePostings, ctx.timeline.period), ctx.circleLevel));
@@ -42,13 +50,21 @@ export function partColours(ctx: ViewContext): Map<string | null, string> {
   return new Map(periodCircle(ctx).map((p) => [p.key, p.colour]));
 }
 
+/**
+ * Uden kategori is in every main group, so it keeps its circle colour only while one main group is shown (UI spec
+ * §3.2).
+ */
 export function categoryColours(ctx: ViewContext): Map<string | null, string> {
   const inPeriod = within(ctx.postings, ctx.timeline.period);
   const colours = new Map<string | null, string>();
   for (const mainGroup of new Set(inPeriod.map((p) => p.mainGroup))) {
-    for (const p of circle(parts(inPeriod, { kind: "mainGroup", mainGroup }))) colours.set(p.key, p.colour);
+    for (const p of circle(parts(inPeriod, { kind: "mainGroup", mainGroup }))) {
+      if (p.key !== null) colours.set(p.key, p.colour);
+    }
   }
-  colours.set(null, NO_CATEGORY);
+  const level = ctx.state.level;
+  const shown = level.kind === "all" ? undefined : partColours(ctx).get(null);
+  colours.set(null, shown ?? NO_PIECE);
   return colours;
 }
 

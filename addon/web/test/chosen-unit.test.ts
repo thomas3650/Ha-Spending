@@ -83,7 +83,7 @@ describe("screen 4, a chosen unit", () => {
     getByText(root, da.more);
   });
 
-  it("shows the circle of July in the period colours", async () => {
+  it("shows the circle of July with its parts and shares", async () => {
     const { root } = await mount(CHOSEN);
     const card = getByRole(root, "region", { name: da.inUnit(da.mainGroups, julyName()) });
     getByRole(card, "heading", { name: da.inUnit(da.mainGroups, julyName()) });

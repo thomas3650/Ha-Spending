@@ -75,49 +75,7 @@ export const dropdownStyles = css`
   .dd {
     position: relative;
   }
-  .sel {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    min-width: 190px;
-    padding: 6px 36px 6px 12px;
-    border: 1px solid var(--hs-field);
-    border-radius: 8px;
-    background: var(--hs-card);
-    color: var(--hs-text);
-    font: inherit;
-    text-align: left;
-    position: relative;
-    cursor: pointer;
-  }
-  .sel:disabled {
-    cursor: default;
-    color: var(--hs-muted);
-  }
-  .sel small {
-    color: var(--hs-muted);
-    font-size: 11px;
-  }
-  .sel span {
-    font-size: 14px;
-  }
-  .sel::after {
-    content: "▾";
-    position: absolute;
-    right: 12px;
-    top: 14px;
-    color: var(--hs-muted);
-  }
-  .sel[aria-expanded="true"],
-  .sel:focus-visible {
-    border: 2px solid var(--hs-accent);
-    padding: 5px 35px 5px 11px;
-    outline: none;
-  }
-  .sel[aria-expanded="true"] small {
-    color: var(--hs-accent);
-  }
-  .menu {
+  .dd-menu {
     position: absolute;
     top: calc(100% + 4px);
     left: 0;
@@ -130,20 +88,20 @@ export const dropdownStyles = css`
     display: flex;
     flex-direction: column;
   }
-  .menu:focus {
+  .dd-menu:focus {
     outline: none;
   }
-  .menu.end {
+  .dd-menu.dd-end {
     left: auto;
     right: 0;
   }
-  .menu hr {
+  .dd-menu hr {
     border: 0;
     border-top: 1px solid var(--hs-line);
     margin: 6px 0;
     width: 100%;
   }
-  .o {
+  .dd-option {
     padding: 9px 16px;
     white-space: nowrap;
     border: 0;
@@ -153,16 +111,16 @@ export const dropdownStyles = css`
     text-align: left;
     cursor: pointer;
   }
-  .o:hover,
-  .o:focus-visible {
+  .dd-option:hover,
+  .dd-option:focus-visible {
     background: var(--hs-soft);
     outline: none;
   }
-  .o[aria-pressed="true"] {
+  .dd-option[aria-pressed="true"] {
     background: var(--hs-accent-soft);
     color: var(--hs-accent-text);
   }
-  .cb {
+  .dd-check {
     display: flex;
     gap: 10px;
     align-items: center;
@@ -170,7 +128,7 @@ export const dropdownStyles = css`
     white-space: nowrap;
     cursor: pointer;
   }
-  .cb input {
+  .dd-check input {
     width: 16px;
     height: 16px;
     margin: 0;

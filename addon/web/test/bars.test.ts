@@ -3,7 +3,7 @@ import { fireEvent, getAllByRole, getByRole, getByText, queryByText } from "@tes
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import "../src/components/bars";
-import { type BarItem, type Bars, isRunning } from "../src/components/bars";
+import { axisLabelShown, type BarItem, type Bars, isRunning } from "../src/components/bars";
 import { kr, unitAxis, unitName } from "../src/format";
 import { da } from "../src/i18n/da";
 import { charts, forgetCharts } from "./chart-mock";
@@ -136,5 +136,20 @@ describe("the bars", () => {
     getByText(el, label);
     const without = await render({ average: null });
     expect(queryByText(without, label)).toBeNull();
+  });
+});
+
+describe("the bars' axis labels", () => {
+  const shown = (count: number, running: number, most = 12) =>
+    Array.from({ length: count }, (_, i) => i).filter((i) => axisLabelShown(i, count, running, most));
+
+  it("names every bar while they are few", () => {
+    expect(shown(12, 9)).toHaveLength(12);
+  });
+
+  it("skips labels evenly when the bars are many, keeping the running one", () => {
+    expect(shown(44, 43)).toEqual([0, 4, 8, 12, 16, 20, 24, 28, 32, 36, 43]);
+    expect(shown(44, -1)).toEqual([0, 4, 8, 12, 16, 20, 24, 28, 32, 36, 40]);
+    expect(shown(44, 43, 5)).toEqual([0, 9, 18, 27, 43]);
   });
 });

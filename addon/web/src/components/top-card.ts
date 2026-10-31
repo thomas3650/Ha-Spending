@@ -54,14 +54,14 @@ export class TopCard extends LitElement {
 
   override render() {
     const { links, current } = trail(this.state);
-    return html`<div class="card top">
-      <nav class="trail" aria-label=${da.trail}>
-        ${links.map((l) => html`<a href=${l.href}>${l.name}</a><span class="sep" aria-hidden="true">›</span>`)}
+    return html`<div class="card top-card">
+      <nav class="top-trail" aria-label=${da.trail}>
+        ${links.map((l) => html`<a href=${l.href}>${l.name}</a><span class="top-sep" aria-hidden="true">›</span>`)}
         <h1>${current}</h1>
       </nav>
-      <div class="filters">
+      <div class="top-filters">
         <hs-period-picker .choice=${this.state.period} .today=${this.today}></hs-period-picker>
-        <label class="sel grouping">
+        <label class="field">
           <small>${da.groupBy}</small>
           <select .value=${live(this.state.grouping)} @change=${(e: Event) => this.onGrouping(e)}>
             ${GROUPINGS.map(
@@ -76,14 +76,14 @@ export class TopCard extends LitElement {
 }
 
 export const topCardStyles = css`
-  .top {
+  .top-card {
     display: flex;
     flex-wrap: wrap;
     gap: 12px;
     align-items: center;
     justify-content: space-between;
   }
-  .trail {
+  .top-trail {
     display: flex;
     flex-wrap: wrap;
     align-items: baseline;
@@ -91,47 +91,27 @@ export const topCardStyles = css`
     font-size: 16px;
     font-weight: 600;
   }
-  .trail a {
+  .top-trail a {
     color: var(--hs-accent-text);
     text-decoration: none;
   }
-  .trail a:hover,
-  .trail a:focus-visible {
+  .top-trail a:hover,
+  .top-trail a:focus-visible {
     text-decoration: underline;
   }
-  .trail .sep {
+  .top-trail .top-sep {
     color: var(--hs-muted);
     font-weight: 400;
   }
-  .trail h1 {
+  .top-trail h1 {
     margin: 0;
     font: inherit;
   }
-  .filters {
+  .top-filters {
     display: flex;
     flex-wrap: wrap;
     gap: 12px;
     align-items: flex-start;
-  }
-  .grouping select {
-    border: 0;
-    padding: 0;
-    margin: 0;
-    background: none;
-    font: inherit;
-    color: var(--hs-text);
-    font-size: 14px;
-    appearance: none;
-    width: 100%;
-    cursor: pointer;
-    outline: none;
-  }
-  .grouping:focus-within {
-    border: 2px solid var(--hs-accent);
-    padding: 5px 35px 5px 11px;
-  }
-  .grouping:focus-within small {
-    color: var(--hs-accent);
   }
 `;
 

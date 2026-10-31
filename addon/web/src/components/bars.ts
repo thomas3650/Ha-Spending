@@ -30,6 +30,32 @@ export interface UnitSelection {
 
 const RUNNING = 0.5;
 const FADED = 0.3;
+/** The width an axis label takes with its gap, such as "uge 44". */
+const LABEL_ROOM = 48;
+/** About the y-axis labels and the grid's sides. */
+const PLOT_INSET = 80;
+/** The room on the right of the plot for the average line's label. */
+const AVERAGE_ROOM = 72;
+const FOCUS_SHADE = 0.3;
+
+/**
+ * With many bars only every few gets a label, so the texts never run together. The running unit always keeps its
+ * "i gang", and a label too close to it gives way.
+ */
+export function axisLabelShown(index: number, count: number, running: number, most: number): boolean {
+  const step = Math.ceil(count / Math.max(1, most));
+  if (index === running) return true;
+  return index % step === 0 && (running < 0 || Math.abs(index - running) >= step);
+}
+
+/** A darker shade of a #rrggbb colour, for the focused bar. */
+function shade(colour: string): string {
+  const m = /^#([0-9a-f]{6})$/i.exec(colour);
+  if (!m) return colour;
+  const n = Number.parseInt(m[1], 16);
+  const part = (shift: number) => Math.round(((n >> shift) & 0xff) * (1 - FOCUS_SHADE));
+  return `#${[16, 8, 0].map((s) => part(s).toString(16).padStart(2, "0")).join("")}`;
+}
 
 function escapeHtml(text: string): string {
   return text.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
@@ -126,6 +152,11 @@ export class Bars extends LitElement {
     }
   }
 
+  private labelsThatFit(): number {
+    const width = this.chartEl.value?.clientWidth ?? 0;
+    return Math.floor((width - PLOT_INSET) / LABEL_ROOM);
+  }
+
   /** ECharts draws outside CSS, so it gets the theme's tokens as values. */
   private option(): EChartsCoreOption {
     const style = getComputedStyle(this);
@@ -134,9 +165,10 @@ export class Bars extends LitElement {
     const colour = this.colour || token("--hs-accent");
     const anyChosen = this.chosen !== null;
     const items = this.items;
+    const running = items.findIndex((i) => i.running);
     return {
       textStyle: { fontFamily: token("--hs-font") },
-      grid: { left: 8, right: 8, top: 16, bottom: 8, containLabel: true },
+      grid: { left: 8, right: this.average === null ? 8 : AVERAGE_ROOM, top: 16, bottom: 8, containLabel: true },
       tooltip: {
         trigger: "item",
         formatter: (p: { dataIndex: number }) => {
@@ -155,7 +187,8 @@ export class Bars extends LitElement {
         axisLabel: {
           color: muted,
           fontSize: 11,
-          interval: 0,
+          // ECharts asks again on a resize, so the width is read here.
+          interval: (index: number) => axisLabelShown(index, items.length, running, this.labelsThatFit()),
           formatter: (_value: string, index: number) => {
             const item = items[index];
             if (!item) return "";
@@ -173,7 +206,11 @@ export class Bars extends LitElement {
         {
           type: "bar",
           barCategoryGap: "35%",
-          emphasis: { itemStyle: { opacity: 1 } },
+          // A focused or hovered bar is marked by itself; the other bars keep their look.
+          emphasis: {
+            focus: "none",
+            itemStyle: { color: shade(colour), opacity: 1, borderColor: token("--hs-text"), borderWidth: 2 },
+          },
           data: items.map((item) => {
             const faded = anyChosen && !this.isChosen(item);
             const opacity = faded ? FADED : item.running ? RUNNING : 1;
@@ -188,13 +225,13 @@ export class Bars extends LitElement {
                   symbol: "none",
                   lineStyle: { type: "dashed", color: muted, width: 1 },
                   label: {
-                    // At the right end, above the line, so the label never covers a bar's top.
-                    position: "insideEndTop",
+                    // Outside the plot, in the grid's room on the right, so it never covers a bar.
+                    position: "end",
                     formatter: this.average.label,
                     color: muted,
                     fontSize: 11,
-                    backgroundColor: token("--hs-card"),
-                    padding: [2, 4],
+                    width: AVERAGE_ROOM - 8,
+                    overflow: "break",
                   },
                   data: [{ yAxis: this.average.amount }],
                 },

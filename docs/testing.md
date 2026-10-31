@@ -15,10 +15,10 @@ Every PR. The server and the page on the Mac, with a fake Firefly III and nothin
    - the fake Firefly III (`addon/dev`) on port 8091 with generated data (log `local/fake.log`). Set
      `FAKE_FIREFLY_FAULT` to `refused`, `error` or `slow` before `scripts/develop` to see the error states;
    - the server (`npm run dev` in `addon/server`, which restarts on a change) on port 8099, with `HA_SPENDING_DEV=1`,
-     so the ingress check is off, `HA_SPENDING_OPTIONS` set to `addon/dev/options.json`, which points at the fake (a value already set wins, so a
-     copy of that file in `local/` can replace it), and
-     `HA_SPENDING_WEB_DIR` unset, so it serves no page at `/`: the default web
-     directory `/opt/ha-spending/web` does not exist on the Mac (log `local/server.log`);
+     so the ingress check is off, `HA_SPENDING_OPTIONS` set to `addon/dev/options.json`, which points at the fake (a
+     value already set wins, so a copy of that file in `local/` can replace it), and `HA_SPENDING_WEB_DIR` unset, so it
+     serves no page at `/`: the default web directory `/opt/ha-spending/web` does not exist on the Mac (log
+     `local/server.log`);
    - Vite's dev server with the page on `http://127.0.0.1:5173`, which passes `/api` to the server (log
      `local/web.log`).
 
@@ -102,6 +102,7 @@ The page's list. Every screenshot is at 1440×960 with the console free of error
     periode in 2020).
 15. `29-ingen-regelgruppe`: `scripts/develop` with `HA_SPENDING_OPTIONS` pointing at a copy of `addon/dev/options.json`
     in `local/` whose `main_group_rule_group` names a group that does not exist. The page shows `da.noRuleGroup` once.
-16. `30-1024`: the window at 1024×960. The frame is wider than 960 px, so the halves sit side by side.
+16. `30-1024`: the window at 1024×960. The frame is wider than 960 px, so the halves sit side by side, equal
+    ([D24](decisions.md)). The circle's names neither overlap nor are cut.
 17. `31-900`: the window at 900×960. The halves stack.
 18. Back: three clicks, then back three times returns to the opening view.

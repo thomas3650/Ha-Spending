@@ -1,23 +1,20 @@
 import { compareKeys, total } from "@ha-spending/shared";
-import { css, html, LitElement, nothing, type PropertyDeclarations } from "lit";
+import { css, html, LitElement, nothing, type PropertyDeclarations, type PropertyValues } from "lit";
 import { live } from "lit/directives/live.js";
+import { chip, fire } from "../components/chip";
 import { Dropdown } from "../components/dropdown";
 import "../components/postings";
-import { count, kr, unitName } from "../format";
+import { amountChip, count, kr, unitName } from "../format";
 import { da } from "../i18n/da";
 import { categoryColours } from "../model/circle";
 import { partName, type ViewContext } from "../model/context";
 import { filteredPostings, sortPostings } from "../model/filter";
 import { flatPostings, groupedPostings } from "../model/postings";
-import { type AmountRange, parseKroner, type Sort } from "../state/view";
+import { type AmountRange, parseKroner, type Sort, toHash } from "../state/view";
 
 export interface CategoryChoice {
   mainGroup: string | null;
   category: string | null;
-}
-
-function fire(el: HTMLElement, name: string, detail?: unknown): void {
-  el.dispatchEvent(new CustomEvent(name, { detail, bubbles: true, composed: true }));
 }
 
 /** "+ Filter": a main group, a category or an amount range. Fires `set-main-group`, `set-category` and `set-amount`. */
@@ -38,6 +35,12 @@ export class FilterPicker extends Dropdown {
     this.max = "";
   }
 
+  /** A new view, from the trail or the browser's back, leaves the panel's choices behind. */
+  protected override willUpdate(changed: PropertyValues<this>): void {
+    const before = changed.get("ctx") as ViewContext | undefined;
+    if (before !== undefined && toHash(before.state) !== toHash(this.ctx.state)) this.open = false;
+  }
+
   private choose(name: string, detail: unknown): void {
     fire(this, name, detail);
     void this.close(true);
@@ -53,7 +56,12 @@ export class FilterPicker extends Dropdown {
   }
 
   private option(label: string, pressed: boolean, name: string, detail: unknown) {
-    return html`<button type="button" class="o" aria-pressed=${String(pressed)} @click=${() => this.choose(name, detail)}>
+    return html`<button
+      type="button"
+      class="dd-option"
+      aria-pressed=${String(pressed)}
+      @click=${() => this.choose(name, detail)}
+    >
       ${label}
     </button>`;
   }
@@ -64,7 +72,7 @@ export class FilterPicker extends Dropdown {
     const mainGroup = level.kind === "all" ? undefined : level.mainGroup;
     const category = level.kind === "category" ? level.category : undefined;
     const categories = [...data.categories].sort((a, b) => compareKeys(a.name, b.name));
-    return html`<div class="menu filter-menu" tabindex="-1">
+    return html`<div class="dd-menu filter-menu" tabindex="-1">
       <div role="group" aria-labelledby="hs-filter-main-groups">
         <h3 id="hs-filter-main-groups">${da.mainGroups}</h3>
         ${[...data.mainGroups, null].map((key) =>
@@ -108,7 +116,7 @@ export class FilterPicker extends Dropdown {
             @input=${(e: Event) => (this.max = (e.target as HTMLInputElement).value)}
           />
         </label>
-        <button type="button" class="add" @click=${() => this.addAmount()}>${da.add}</button>
+        <button type="button" class="filter-add" @click=${() => this.addAmount()}>${da.add}</button>
       </div>
     </div>`;
   }
@@ -139,9 +147,7 @@ export class AllPostings extends LitElement {
   }
 
   private chip(text: string, name: string, detail?: unknown) {
-    return html`<button type="button" class="chip" aria-label=${da.remove(text)} @click=${() => fire(this, name, detail)}>
-      ${text}<span class="x" aria-hidden="true">✕</span>
-    </button>`;
+    return chip(text, () => fire(this, name, detail));
   }
 
   private chips() {
@@ -155,7 +161,7 @@ export class AllPostings extends LitElement {
       ? this.chip(da.categoryChip(partName(level.category, "category")), "remove-category")
       : nothing}
     ${chosen === null ? nothing : this.chip(unitName(chosen, timeline.grouping), "remove-unit")}
-    ${amount === null ? nothing : this.chip(da.amountChip(amount.min, amount.max), "set-amount", null)}`;
+    ${amount === null ? nothing : this.chip(amountChip(amount), "set-amount", null)}`;
   }
 
   private table(postings: ReturnType<typeof filteredPostings>) {
@@ -175,16 +181,16 @@ export class AllPostings extends LitElement {
     const state = ctx.state;
     const postings = filteredPostings(ctx);
     return html`<section class="card all-postings">
-      <div class="search-row">
+      <div class="all-search-row">
         <input
-          class="search"
+          class="all-search"
           type="search"
           aria-label=${da.searchLabel}
           placeholder=${da.search}
           .value=${live(state.search)}
           @input=${(e: Event) => fire(this, "search-input", (e.target as HTMLInputElement).value)}
         />
-        <label class="sel sort">
+        <label class="field">
           <small>${da.sort}</small>
           <!-- The options are static so that the value binding finds them when it is first set. -->
           <select
@@ -198,12 +204,12 @@ export class AllPostings extends LitElement {
           </select>
         </label>
       </div>
-      <div class="chips-row">
-        <div class="chips">
+      <div class="all-chips-row">
+        <div class="all-chips">
           ${this.chips()}
           <hs-filter-picker .ctx=${ctx}></hs-filter-picker>
         </div>
-        <span class="summary">${da.summary(count(postings.length), kr(total(postings)))}</span>
+        <span class="all-summary">${da.summary(count(postings.length), kr(total(postings)))}</span>
       </div>
       ${this.table(postings)}
     </section>`;
@@ -211,12 +217,12 @@ export class AllPostings extends LitElement {
 }
 
 export const allPostingsStyles = css`
-  .search-row {
+  .all-search-row {
     display: flex;
     gap: 12px;
     align-items: stretch;
   }
-  .search {
+  .all-search {
     flex: 1;
     min-width: 0;
     padding: 10px 12px 10px 36px;
@@ -228,32 +234,12 @@ export const allPostingsStyles = css`
       url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 16 16'%3E%3Ccircle cx='6.5' cy='6.5' r='5' fill='none' stroke='%236b6b6b' stroke-width='1.6'/%3E%3Cpath d='M10.3 10.3 15 15' stroke='%236b6b6b' stroke-width='1.6' stroke-linecap='round'/%3E%3C/svg%3E")
       12px center no-repeat;
   }
-  .search:focus-visible {
+  .all-search:focus-visible {
     outline: none;
     border: 2px solid var(--hs-accent);
     padding: 9px 11px 9px 35px;
   }
-  .sort select {
-    border: 0;
-    padding: 0;
-    margin: 0;
-    background: none;
-    font: inherit;
-    color: var(--hs-text);
-    font-size: 14px;
-    appearance: none;
-    width: 100%;
-    cursor: pointer;
-    outline: none;
-  }
-  .sort:focus-within {
-    border: 2px solid var(--hs-accent);
-    padding: 5px 35px 5px 11px;
-  }
-  .sort:focus-within small {
-    color: var(--hs-accent);
-  }
-  .chips-row {
+  .all-chips-row {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
@@ -261,7 +247,7 @@ export const allPostingsStyles = css`
     gap: 10px;
     margin: 12px 0;
   }
-  .chips {
+  .all-chips {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
@@ -323,7 +309,7 @@ export const allPostingsStyles = css`
     border: 1px solid var(--hs-field);
     border-radius: 6px;
   }
-  .amount-part .add {
+  .amount-part .filter-add {
     align-self: flex-end;
     padding: 6px 14px;
     font: inherit;
@@ -334,13 +320,9 @@ export const allPostingsStyles = css`
     border-radius: 6px;
     cursor: pointer;
   }
-  .summary {
+  .all-summary {
     color: var(--hs-muted);
     font-variant-numeric: tabular-nums;
-  }
-  .all-postings .empty {
-    margin: 0;
-    color: var(--hs-muted);
   }
 `;
 

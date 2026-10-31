@@ -34,6 +34,101 @@ export const card = css`
   }
 `;
 
+export const chip = css`
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font: inherit;
+    font-weight: 600;
+    padding: 3px 6px 3px 12px;
+    color: var(--hs-accent-text);
+    background: var(--hs-accent-soft);
+    border: 0;
+    border-radius: 14px;
+    cursor: pointer;
+  }
+  .chip-x {
+    display: inline-grid;
+    place-items: center;
+    width: 18px;
+    height: 18px;
+    font-size: 11px;
+    border-radius: 50%;
+    background: var(--hs-chip-x);
+  }
+  .chip:hover .chip-x,
+  .chip:focus-visible .chip-x {
+    color: var(--hs-card);
+    background: var(--hs-accent-text);
+  }
+  .chip:focus-visible {
+    outline: 2px solid var(--hs-accent-text);
+    outline-offset: 2px;
+  }
+`;
+
+/** A label holding a small caption and a value: a dropdown's button, or a native select. */
+export const field = css`
+  .field {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    min-width: 190px;
+    padding: 6px 36px 6px 12px;
+    border: 1px solid var(--hs-field);
+    border-radius: 8px;
+    background: var(--hs-card);
+    color: var(--hs-text);
+    font: inherit;
+    text-align: left;
+    position: relative;
+    cursor: pointer;
+  }
+  .field:disabled {
+    cursor: default;
+    color: var(--hs-muted);
+  }
+  .field small {
+    color: var(--hs-muted);
+    font-size: 11px;
+  }
+  .field span {
+    font-size: 14px;
+  }
+  .field::after {
+    content: "▾";
+    position: absolute;
+    right: 12px;
+    top: 14px;
+    color: var(--hs-muted);
+  }
+  .field[aria-expanded="true"],
+  .field:focus-visible,
+  label.field:focus-within {
+    border: 2px solid var(--hs-accent);
+    padding: 5px 35px 5px 11px;
+    outline: none;
+  }
+  .field[aria-expanded="true"] small,
+  label.field:focus-within small {
+    color: var(--hs-accent);
+  }
+  .field select {
+    border: 0;
+    padding: 0;
+    margin: 0;
+    background: none;
+    font: inherit;
+    color: var(--hs-text);
+    font-size: 14px;
+    appearance: none;
+    width: 100%;
+    cursor: pointer;
+    outline: none;
+  }
+`;
+
 /** Keeps an element for assistive technology only. */
 export const visuallyHidden = css`
   .visually-hidden {

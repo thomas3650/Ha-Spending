@@ -24,9 +24,9 @@ export class KeyNumbers extends LitElement {
       return html`<div class="kpis" role="group" aria-busy="true" aria-label=${da.loading}>
         ${[0, 1, 2].map(
           () => html`<div class="card kpi">
-            <div class="bone short"></div>
-            <div class="bone tall"></div>
-            <div class="bone"></div>
+            <div class="kpi-bone short"></div>
+            <div class="kpi-bone tall"></div>
+            <div class="kpi-bone"></div>
           </div>`,
         )}
       </div>`;
@@ -34,9 +34,9 @@ export class KeyNumbers extends LitElement {
     return html`<div class="kpis">
       ${this.cards.map(
         (c) => html`<div class="card kpi" role="group" aria-label=${c.label}>
-          <div class="label">${c.label}</div>
-          <div class="v">${c.value}</div>
-          <div class="s ${c.trend === "up" ? "up" : ""}">${c.sub}</div>
+          <div class="kpi-label">${c.label}</div>
+          <div class="kpi-value">${c.value}</div>
+          <div class="kpi-sub ${c.trend === "up" ? "kpi-up" : ""}">${c.sub}</div>
         </div>`,
       )}
     </div>`;
@@ -49,35 +49,35 @@ export const keyNumbersStyles = css`
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 14px;
   }
-  .kpi .label {
+  .kpi-label {
     color: var(--hs-muted);
     font-size: 12px;
   }
-  .kpi .v {
+  .kpi-value {
     font-size: 26px;
     margin-top: 4px;
     font-variant-numeric: tabular-nums;
   }
-  .kpi .s {
+  .kpi-sub {
     color: var(--hs-muted);
     font-size: 12px;
     margin-top: 2px;
   }
-  .kpi .s.up {
+  .kpi-sub.kpi-up {
     color: var(--hs-up);
   }
-  .bone {
+  .kpi-bone {
     height: 12px;
     width: 60%;
     border-radius: 4px;
     background: var(--hs-soft);
     margin-top: 8px;
   }
-  .bone.short {
+  .kpi-bone.short {
     width: 40%;
     margin-top: 0;
   }
-  .bone.tall {
+  .kpi-bone.tall {
     height: 28px;
   }
 `;

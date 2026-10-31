@@ -146,7 +146,7 @@ describe("the postings list", () => {
     expect(linkBase("ftp://x.test")).toBeNull();
     expect(linkBase("not a url")).toBeNull();
     expect(linkBase(null)).toBeNull();
-    expect(linkBase("https://firefly.test/")).toBe("https://firefly.test");
+    expect(linkBase("https://firefly.test")).toBe("https://firefly.test");
     expect(linkBase("http://firefly.test/sub")).toBe("http://firefly.test/sub");
 
     const data = { ...answerFor(THIS_YEAR), fireflyLinkUrl: null };

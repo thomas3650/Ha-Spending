@@ -17,9 +17,9 @@ describe("da", () => {
     expect(da.allAccountsCount(2)).toBe("Alle konti (2)");
   });
   it("words the amount chip", () => {
-    expect(da.amountChip(100, 500)).toBe("Beløb: 100–500 kr.");
-    expect(da.amountChip(100, null)).toBe("Beløb: fra 100 kr.");
-    expect(da.amountChip(null, 500)).toBe("Beløb: til 500 kr.");
+    expect(da.amountChip("100", "500")).toBe("Beløb: 100–500 kr.");
+    expect(da.amountChip("100", null)).toBe("Beløb: fra 100 kr.");
+    expect(da.amountChip(null, "500")).toBe("Beløb: til 500 kr.");
   });
   it("titles the difference", () => {
     expect(da.differenceTitle("Juli 2026", "month")).toBe("Juli 2026 mod en gennemsnitlig måned");
