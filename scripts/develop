@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
-# The fast loop: the add-on server on http://127.0.0.1:8099 with the ingress check off, and Vite's dev server with
-# the page on http://127.0.0.1:5173, which passes /api to the server.
+# The fast loop: a fake Firefly III on http://127.0.0.1:8091, the add-on server on http://127.0.0.1:8099 with the
+# ingress check off, and Vite's dev server with the page on http://127.0.0.1:5173, which passes /api to the server.
 #
-#   scripts/develop        start both; stays in the foreground until stopped
-#   scripts/develop stop   stop both (from another shell)
+#   scripts/develop        start all three; stays in the foreground until stopped
+#   scripts/develop stop   stop all three (from another shell)
 #
-# Both log to local/ and have pidfiles there. local/ is git-ignored: never commit it.
+# All three log to local/ and have pidfiles there. local/ is git-ignored: never commit it.
 set -euo pipefail
 
 cd "$(dirname "$0")/.."
@@ -13,6 +13,7 @@ cd "$(dirname "$0")/.."
 mkdir -p local
 server_pidfile=local/server.pid
 web_pidfile=local/web.pid
+fake_pidfile=local/fake.pid
 
 # Stop the process group in a pidfile, if it still runs, and remove the pidfile. Each npm script runs in its own
 # group (set -m below), so the watcher that npm starts stops with it.
@@ -27,10 +28,11 @@ stop_pidfile() {
 stop_background() {
   stop_pidfile "$server_pidfile"
   stop_pidfile "$web_pidfile"
+  stop_pidfile "$fake_pidfile"
 }
 
 listening() {
-  lsof -nP -iTCP:8099 -iTCP:5173 -sTCP:LISTEN >/dev/null 2>&1
+  lsof -nP -iTCP:8099 -iTCP:5173 -iTCP:8091 -sTCP:LISTEN >/dev/null 2>&1
 }
 
 if [ "${1:-}" = "stop" ]; then
@@ -39,12 +41,12 @@ if [ "${1:-}" = "stop" ]; then
     listening || exit 0
     sleep 1
   done
-  echo "develop: something still listens on 8099 or 5173 after 30 s." >&2
+  echo "develop: something still listens on 8091, 8099 or 5173 after 30 s." >&2
   exit 1
 fi
 
 if listening; then
-  echo "develop: 8099 or 5173 is in use; stop the fast loop first (scripts/develop stop)." >&2
+  echo "develop: 8091, 8099 or 5173 is in use; stop the fast loop first (scripts/develop stop)." >&2
   exit 2
 fi
 
@@ -53,8 +55,17 @@ trap 'exit 130' INT
 trap 'exit 143' TERM
 set -m
 
+(exec npm run dev --prefix addon --workspace @ha-spending/dev) </dev/null >local/fake.log 2>&1 &
+echo $! >"$fake_pidfile"
+
+fake_token=fake-token
+curl -sf -o /dev/null -H "Authorization: Bearer $fake_token" --retry 30 --retry-delay 1 --retry-connrefused \
+  --retry-all-errors --max-time 2 http://127.0.0.1:8091/api/v1/about \
+  || { echo "develop: the fake Firefly III isn't answering; see local/fake.log." >&2; exit 1; }
+
 (
   export HA_SPENDING_DEV=1
+  export HA_SPENDING_OPTIONS="$PWD/addon/dev/options.json"
   # Unset, the server looks for the page in /opt/ha-spending/web, which does not exist on the Mac, so it serves
   # no page at /: the page comes from Vite.
   unset HA_SPENDING_WEB_DIR
@@ -69,6 +80,6 @@ curl -sf -o /dev/null --retry 30 --retry-delay 1 --retry-connrefused --retry-all
   http://127.0.0.1:8099/api/health || { echo "develop: the server isn't answering; see local/server.log." >&2; exit 1; }
 curl -sf -o /dev/null --retry 30 --retry-delay 1 --retry-connrefused --retry-all-errors --max-time 2 \
   http://127.0.0.1:5173/ || { echo "develop: Vite isn't answering; see local/web.log." >&2; exit 1; }
-echo "develop: the server (http://127.0.0.1:8099) and the page (http://127.0.0.1:5173) run; logs in local/."
+echo "develop: the fake Firefly III (http://127.0.0.1:8091), the server (http://127.0.0.1:8099) and the page (http://127.0.0.1:5173) run; logs in local/."
 
 wait

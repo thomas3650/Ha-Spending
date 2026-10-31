@@ -54,8 +54,8 @@ gh pr merge <n> --squash --subject "<PR title> (#<n>)"
 ## The workflows
 
 - **`pr-title.yml`** (every PR): the title is a Conventional Commit of the types above.
-- **`ci.yml`** (every PR and push to `main`): the jobs `node` (the add-on's gates), `addon-lint` (the add-on linter),
-  `addon-build` (the gate over the per-arch image builds `addon-build (<arch>)`, nothing pushed) and `workflows`
+- **`ci.yml`** (every PR and push to `main`): the jobs `node` (the add-on's gates), `integration` (`scripts/integration` against a real Firefly III, [`testing.md`](testing.md#integration-tests)),
+  `addon-lint` (the add-on linter), `addon-build` (the gate over the per-arch image builds `addon-build (<arch>)`, nothing pushed) and `workflows`
   (actionlint, zizmor, the link check). The gate commands are in [`CLAUDE.md`](../CLAUDE.md#commands).
 - **`gitleaks.yml`** (every PR and push to `main`): secrets in the history.
 - **`release-please.yml`** (every push to `main`): the `release-please` job opens or updates the release PR. When the
@@ -133,8 +133,8 @@ CI.
 Set once with `gh`, each at Thomas's yes ([`way-of-working.md`](way-of-working.md) §4). None of them is set yet.
 
 - Squash merge only; the PR title as the squash commit's title; the branch deleted after merge.
-- `main` protected, with the required checks `pr-title`, `node`, `addon-lint`, `addon-build`, `workflows` and
-  `gitleaks`. Plan 2 adds `integration`.
+- `main` protected, with the required checks `pr-title`, `node`, `addon-lint`, `addon-build`, `workflows`,
+  `gitleaks` and `integration`.
 - `RELEASE_PLEASE_TOKEN`, or instead "Allow GitHub Actions to create and approve pull requests"
   ([above](#while-release-please-cannot-open-its-pr)).
 - Private vulnerability reporting on ([`SECURITY.md`](../SECURITY.md)):
@@ -164,5 +164,8 @@ Until they are set, the hooks are the only guard on `main`, and every merge name
   is bumped by hand ([D4](decisions.md)). Run `docker buildx imagetools inspect node:24-alpine` and take the top-level
   `Digest:` (the multi-arch index, not a per-platform manifest). Put it into both `FROM` lines, so the build and the
   runtime stage use the same Node. Title the PR `fix(deps): …` when users should get the new Node.
-- **Firefly III:** from plan 2, the integration tests run against a pinned Firefly III image. When the Yellow's
-  Firefly III is updated, the pin is bumped in the same change (technical spec §7.2).
+- **Firefly III:** the integration tests run against a pinned Firefly III image. When the Yellow's Firefly III is
+  updated, the pin is bumped in the same change (technical spec §7.2). The version is in two places: the image tag and
+  digest in `addon/dev/firefly/compose.yaml` (the digest from `docker buildx imagetools inspect
+  fireflyiii/core:version-X.Y.Z`, the top-level `Digest:`), and the version the test expects in
+  `addon/server/test-integration/firefly.test.ts`.

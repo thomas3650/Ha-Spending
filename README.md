@@ -7,8 +7,8 @@ period, grouped by month, week or day.
 It is a Home Assistant add-on: a small server that only reads Firefly III's API, and a page served through Home
 Assistant's ingress. Nothing is written to Firefly III, and no posting is stored in Home Assistant.
 
-**Status:** the skeleton: the page says "Hej" and the add-on's version. Reading Firefly III comes next; the
-[mockups](docs/mockups/README.md) show where it is going.
+**Status:** the server reads Firefly III, but the page still only says "Hej" and the add-on's version. The screens
+come next; the [mockups](docs/mockups/README.md) show where it is going.
 
 **Install:** add this repository to Home Assistant's add-on store, as [`addon/DOCS.md`](addon/DOCS.md) describes.
 

@@ -11,7 +11,8 @@
   "workspaces": [
     "shared",
     "server",
-    "web"
+    "web",
+    "dev"
   ],
   "scripts": {
     "lint": "npm run lint --workspaces --if-present",
