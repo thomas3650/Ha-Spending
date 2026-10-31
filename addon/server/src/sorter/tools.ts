@@ -383,7 +383,7 @@ export function createSorterTools(
       "assignment gives the posting's amount exactly as start gave it. Each posting is read again before it is " +
       "written, and refused with a reason when it is no longer in the inbox, is a transfer, was not given out by start " +
       "in the last 30 minutes, has another amount, or when the category is not one to choose. Only the category and " +
-      "its main group's tag are written.",
+      "its main group's tag are written. On not-given-out, call start again.",
     inputSchema: {
       type: "object",
       properties: {

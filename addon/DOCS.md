@@ -84,8 +84,8 @@ Input: `{"assignments": [{"posting_id": 345, "category_id": 12, "amount": "412.5
 posting once, each with the posting's amount exactly as `start` gave it.
 
 The add-on writes only a posting that `start` gave out in the last 30 minutes, and only when its amount is the one
-given: a posting id the agent copied wrong is refused, unless it is another posting from the same answer with the
-same amount. What `start` gave out is kept in memory, so after a restart the agent calls `start` again.
+given: a posting id the agent copied wrong is refused, unless it is another posting `start` gave out in the last 30
+minutes with the same amount. What `start` gave out is kept in memory, so after a restart the agent calls `start` again.
 
 Each assignment is checked and written on its own; one refused does not stop the others. The posting is read again
 from Firefly III right before it is written, so a category set by hand since `start` is not overwritten. Firefly III
