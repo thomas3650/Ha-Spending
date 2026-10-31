@@ -15,5 +15,5 @@ The root [`README.md`](../README.md) is the public intro. Everything else lives 
 | [`domain-language.md`](domain-language.md) | The words (main group, category, posting …) and their names in code | Naming anything, or reading a spec |
 | [`testing.md`](testing.md) | The fast loop, the image check, the Chrome check | Testing a change beyond the gates |
 | [`superpowers/specs/`](superpowers/specs/) | The design specs: [UI and UX](superpowers/specs/2026-10-30-ui-ux-design.md), [technical](superpowers/specs/2026-10-30-technical-design.md); snapshots, not edited after merge | Why the page and the add-on are shaped this way |
-| [`superpowers/plans/`](superpowers/plans/) | One implementation plan per step: [the skeleton](superpowers/plans/2026-10-30-skeleton.md), [the data](superpowers/plans/2026-10-31-data.md); snapshots | How a step was built |
+| [`superpowers/plans/`](superpowers/plans/) | One implementation plan per step: [the skeleton](superpowers/plans/2026-10-30-skeleton.md), [the data](superpowers/plans/2026-10-31-data.md), [the page](superpowers/plans/2026-10-31-page.md); snapshots | How a step was built |
 | [`mockups/`](mockups/README.md) | The mockups of the page, the chosen screens and the variants tried | Building or changing a screen |

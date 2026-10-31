@@ -171,3 +171,61 @@ to set their status to `superseded by D<n>`, or to name a part a later decision 
 - **Why:** The page shows "Firefly III svarer ikke" or "Firefly III afviser nøglen" from the code (plan 3), and no
   Danish text comes from the server.
 - **Source:** Claude, [data plan](superpowers/plans/2026-10-31-data.md)
+
+### D19: The charts are drawn by ECharts and named in the DOM
+- **Date:** 2026-10-31 · **Status:** active
+- **Decision:**
+  - ECharts uses the SVG renderer and is bundled from `echarts/core` with only the parts used. The build is one JS
+    chunk, with `chunkSizeWarningLimit` 700, because ECharts core and zrender dominate it.
+  - The chart's element is `aria-hidden="true"`. Beside it, a visually hidden list of `<button>`s carries one button
+    per piece and per bar, and a table carries the Forskel rows.
+  - Hover or focus on a button calls `highlight` on its piece or bar. Blur calls `downplay`. A click on a piece, its
+    ECharts label or a bar calls the same handler as its button, and the component then calls `requestUpdate()`, so its
+    props win over ECharts' own selection.
+  - The wrapper `src/charts/echarts.ts` is mocked in the component tests, because happy-dom has no canvas and zrender
+    measures text with one. The mock records calls: the `setOption` count, the highlight and downplay indexes and the
+    click handlers. Focus, blur and chart clicks are tested through those calls, never through option contents.
+- **Why:** SVG stays sharp at any zoom and has few elements here. UI spec §7 asks for an accessible name on every
+  piece, which the DOM layer gives and the ECharts SVG cannot.
+- **Source:** Claude, [page plan](superpowers/plans/2026-10-31-page.md)
+
+### D20: The view state's hash
+- **Date:** 2026-10-31 · **Status:** active
+- **Decision:**
+  - The keys are `period`, `from`, `to`, `by`, `accounts`, `group`, `category`, `unit`, `card`, `view`, `q`, `sort`,
+    `min` and `max`, in a `URLSearchParams` string.
+  - A default value is left out, so the opening view is the empty hash.
+  - Uden hovedgruppe and Uden kategori are the key present with an empty value (`group=`). No filter is the key
+    absent. All accounts is `accounts` absent, so a new account appears by itself; ticking every account sets it
+    absent too.
+  - A click pushes a history entry, so back steps one click. Typing in the search replaces the entry. Folding a group
+    and "Vis ældre" are not in the state.
+  - A value that does not parse, or that the answer does not know, falls back. Dates are checked with shared's
+    `isDate`.
+- **Why:** Back works without a router, and the state needs no store.
+- **Source:** Claude, [page plan](superpowers/plans/2026-10-31-page.md)
+
+### D21: A category implies its main group
+- **Date:** 2026-10-31 · **Status:** active
+- **Decision:** Removing "Hovedgruppe: …" on Alle posteringer also removes the category, as a trail link drops the
+  levels below it. Adding a category through "+ Filter" sets its main group.
+- **Why:** A category belongs to one main group, so a category without its group would be a state that cannot be shown.
+- **Source:** Claude, [page plan](superpowers/plans/2026-10-31-page.md)
+
+### D22: The halves stack below 960 px of frame width
+- **Date:** 2026-10-31 · **Status:** active
+- **Decision:** The two halves stack when the page's frame is narrower than 960 px.
+- **Why:** With Home Assistant's side menu open, a 1280 px window leaves the frame about 1024 px. Two halves still fit
+  there, so UI spec §8's 1280 px holds.
+- **Source:** Claude, [page plan](superpowers/plans/2026-10-31-page.md)
+
+### D23: Dates follow the UI spec, and a unit after today is empty
+- **Date:** 2026-10-31 · **Status:** active
+- **Decision:**
+  - Short month names come without a dot, from `da.months`, so a range reads "1. jan – 30. okt 2026". `Intl` stays
+    for numbers, long month names and table dates.
+  - A unit that starts after today is an empty slot, not "i gang". Only a partial unit that has begun is running
+    (`BarItem.running`).
+- **Why:** The UI spec's wording wins over technical spec §6 where they meet. A unit that has not begun is not running.
+- **Source:** the controller's rulings, [page plan](superpowers/plans/2026-10-31-page.md);
+  [D16](decisions.md) for the partial unit

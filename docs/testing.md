@@ -15,14 +15,15 @@ Every PR. The server and the page on the Mac, with a fake Firefly III and nothin
    - the fake Firefly III (`addon/dev`) on port 8091 with generated data (log `local/fake.log`). Set
      `FAKE_FIREFLY_FAULT` to `refused`, `error` or `slow` before `scripts/develop` to see the error states;
    - the server (`npm run dev` in `addon/server`, which restarts on a change) on port 8099, with `HA_SPENDING_DEV=1`,
-     so the ingress check is off, `HA_SPENDING_OPTIONS` set to `addon/dev/options.json`, which points at the fake, and
+     so the ingress check is off, `HA_SPENDING_OPTIONS` set to `addon/dev/options.json`, which points at the fake (a value already set wins, so a
+     copy of that file in `local/` can replace it), and
      `HA_SPENDING_WEB_DIR` unset, so it serves no page at `/`: the default web
      directory `/opt/ha-spending/web` does not exist on the Mac (log `local/server.log`);
    - Vite's dev server with the page on `http://127.0.0.1:5173`, which passes `/api` to the server (log
      `local/web.log`).
 
    It waits until the fake and both others answer, and stops with an error naming the log when one does not.
-3. Check: `curl -s http://127.0.0.1:5173/api/health` gives the health JSON, and `curl -s http://127.0.0.1:5173/`
+3. Check: `curl -s http://127.0.0.1:5173/api/health` gives the health JSON (the page itself calls `api/data`), and `curl -s http://127.0.0.1:5173/`
    holds `<hs-app>`. `curl -s 'http://127.0.0.1:5173/api/data?start=2026-01-01&end=2026-01-31'` gives the postings
    of the made-up data.
 4. Open `http://127.0.0.1:5173/` for the [Chrome check](#chrome-check).
@@ -69,3 +70,38 @@ For every UI change, in the fast loop:
 - No errors in the console.
 - Screenshots go in `screenshots/<YYYY-MM-DD>-<topic>/` in the repo root. The folder is git-ignored. The PR
   description lists the screens checked and the folder. Screenshots show made-up data only, never the real Firefly III.
+
+### The screens and states
+
+The page's list. Every screenshot is at 1440×960 with the console free of errors, compared with the mockup named
+(files in `docs/mockups/v2/`).
+
+1. `01-alt-forbrug`: the opening view, with every main group in the circle, the eight largest in colour and the rest
+   grey. Compare `1-alt-forbrug.png`.
+2. `02-hover`: the mouse on a small group's name. The name has a light blue background, the line is blue and the piece
+   is out.
+3. `03-focus-piece`, `04-focus-bar`: Tab to a circle name, then to a bar. Each shows the highlight from the keyboard.
+4. Clicks, each with a screenshot after it: `05-click-piece` (on a piece), `06-click-label` (on an ECharts label) and
+   `07-click-bar` (on a bar). Each does what its button does.
+5. `08-periode`, `09-gruppering`, `10-konti`: the three dropdowns open. Compare `1-alt-forbrug-period.png`,
+   `1-alt-forbrug-grain.png` and `1-alt-forbrug-konti.png`. Load the page once with `#by=week` and check that the
+   Gruppér pr. select shows Uge on the first render.
+6. `11-uge`: Gruppér pr. Uge. The first bar is clipped and the last is light, with "i gang".
+7. `12-denne-maaned`: Denne måned. The average reads "gns. … før".
+8. `13-posteringer`: screen 1 on Posteringer.
+9. `14-link`: a click on a posting opens a new tab at the fake's `/transactions/show/<id>`. `addon/dev/options.json`
+   sets `firefly_link_url` to the fake, so the tab may show the fake's 404; the URL is what is checked.
+10. `15-hovedgruppe`, `16-kategori-soejler`, `17-kategori-posteringer`: Mad, then a category with bars, then with
+    postings. Compare `2-hovedgruppe*.png`.
+11. `18-uden-hovedgruppe`: Uden hovedgruppe as a screen, with its categories and Uden kategori.
+12. `19-alle-posteringer`, `20-stoerste-foerst`, `21-filter`, `22-ingen-match`: screen 3 with chips; sorted by size as a
+    flat list; the "+ Filter" panel open; a search nothing matches (`da.noMatch`). Compare `3-posteringer.png`.
+13. `23-soejle`, `24-soejle-kategori`: a chosen month with Forskel at all spending, then in Mad with a category chosen,
+    with both chips. Compare `4-soejle.png`.
+14. `25-loading` (`FAKE_FIREFLY_FAULT=slow`), `26-refused` (`refused`), `27-unreachable` (`error`), `28-empty` (Vælg
+    periode in 2020).
+15. `29-ingen-regelgruppe`: `scripts/develop` with `HA_SPENDING_OPTIONS` pointing at a copy of `addon/dev/options.json`
+    in `local/` whose `main_group_rule_group` names a group that does not exist. The page shows `da.noRuleGroup` once.
+16. `30-1024`: the window at 1024×960. The frame is wider than 960 px, so the halves sit side by side.
+17. `31-900`: the window at 900×960. The halves stack.
+18. Back: three clicks, then back three times returns to the opening view.
