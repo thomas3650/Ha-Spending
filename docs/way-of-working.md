@@ -64,7 +64,7 @@ There is one agent, `reviewer` (`.claude/agents/reviewer.md`, technical spec §1
     actionlint and zizmor when a workflow is staged.
   - `pre-push` refuses a push to `main`.
   - `.claude/settings.json` denies pushes to `main` and `--no-verify`.
-- **Branch protection** on `main` is meant to require CI; the checks, and whether it is set:
+- **Branch protection** on `main` requires CI; the checks:
   [`releasing.md`](releasing.md#github-settings).
 - **Pushing:** Claude pushes feature branches. Nobody pushes to `main` or force-pushes.
 - **GitHub settings** (branch protection, merge settings, secrets, Actions permissions, package visibility) change
