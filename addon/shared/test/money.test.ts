@@ -11,7 +11,7 @@ import {
   unitTotals,
   within,
 } from "../src/money";
-import { unitsOf } from "../src/units";
+import { type Timeline, unitsOf } from "../src/units";
 import { categories, postings, T } from "./fixture";
 
 const all = classify(postings, categories);
@@ -117,6 +117,44 @@ describe("money", () => {
     expect(empty.total).toBe(0);
     expect(empty.average.amount).toBeNull();
     expect(empty.comparison?.beforeAmount).toBeNull();
+  });
+
+  it("counts a clipped unit as whole in the average and the comparison", () => {
+    const t = { ...T, period: { start: "2026-01-15", end: "2026-02-28" } };
+    expect(keyNumbers(all, t)).toEqual({
+      total: 1002500,
+      average: { amount: 501250, units: 2, basis: "period" },
+      comparison: {
+        unit: expect.objectContaining({ fullStart: "2026-02-01" }),
+        amount: 504500,
+        before: expect.objectContaining({ start: "2026-01-15", fullStart: "2026-01-01" }),
+        beforeAmount: 498000,
+      },
+    });
+  });
+
+  it("compares with the clipped unit before when it lies inside the period", () => {
+    const t: Timeline = {
+      period: { start: "2026-01-01", end: "2026-10-30" },
+      grouping: "week",
+      today: "2026-10-30",
+      earliest: "2025-12-30",
+    };
+    const weekly = classify(
+      [
+        { ...postings[0], id: "w1", date: "2025-12-30", amount: 1000 },
+        { ...postings[0], id: "w2", date: "2026-01-02", amount: 2000 },
+        { ...postings[0], id: "w3", date: "2026-01-06", amount: 4000 },
+      ],
+      categories,
+    );
+    const week2 = unitsOf(t.period, t.grouping, t.today)[1];
+    const numbers = chosenUnitNumbers(weekly, t, week2);
+    expect(numbers.amount).toBe(4000);
+    expect(numbers.before).toMatchObject({ start: "2026-01-01", end: "2026-01-04", clipped: true });
+    expect(numbers.beforeAmount).toBe(2000);
+    const [week1] = unitsOf(t.period, t.grouping, t.today);
+    expect(chosenUnitNumbers(weekly, t, week1).before).toMatchObject({ start: "2025-12-22", end: "2025-12-28" });
   });
 
   it("compares a chosen unit with the other whole units and the one before", () => {

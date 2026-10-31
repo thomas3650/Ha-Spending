@@ -101,7 +101,6 @@ export function parts(postings: ClassifiedPosting[], level: Level): Part[] {
     .sort((a, b) => compareKeys(a.key, b.key));
 }
 
-/** A fraction of whole; null when there is nothing to share. */
 export function share(amount: number, whole: number): number | null {
   return whole > 0 ? amount / whole : null;
 }
@@ -118,7 +117,6 @@ function averageOf(sums: number[]): number | null {
   return sums.length === 0 ? null : Math.round(sums.reduce((s, x) => s + x, 0) / sums.length);
 }
 
-/** The full units before the period's first unit that have data, which a one-unit period is averaged over. */
 function beforeUnits(t: Timeline): Unit[] {
   const units: Unit[] = [];
   let unit = unitAt(t.period.start, t.grouping, t.today);
@@ -129,7 +127,6 @@ function beforeUnits(t: Timeline): Unit[] {
   return units;
 }
 
-/** The units an average is taken over, with the chosen unit left out of a period average. */
 function averageUnits(t: Timeline, chosen: Unit | null): { units: Unit[]; basis: Average["basis"] } {
   if (isOneUnit(t.period, t.grouping, t.today)) return { units: beforeUnits(t), basis: "before" };
   const units = unitsOf(t.period, t.grouping, t.today).filter(
@@ -142,6 +139,12 @@ function average(postings: ClassifiedPosting[], units: Unit[], basis: Average["b
   return { amount: averageOf(unitTotals(postings, units)), units: units.length, basis };
 }
 
+/** Inside the period, the clipped unit, so the comparison matches the bar beside it. */
+function unitBeforeIn(unit: Unit, t: Timeline): Unit {
+  const before = unitBefore(unit, t.grouping, t.today);
+  return unitsOf(t.period, t.grouping, t.today).find((u) => u.fullStart === before.fullStart) ?? before;
+}
+
 function beforeAmount(postings: ClassifiedPosting[], before: Unit, t: Timeline): number | null {
   return hasData(before, t.earliest) ? unitTotal(postings, before) : null;
 }
@@ -152,7 +155,7 @@ export function keyNumbers(postings: ClassifiedPosting[], t: Timeline): KeyNumbe
   const unit = units.filter(isWhole).at(-1) ?? units.at(-1);
   let comparison: Comparison | null = null;
   if (unit) {
-    const before = unitBefore(unit, t.grouping, t.today);
+    const before = unitBeforeIn(unit, t);
     comparison = {
       unit,
       amount: unitTotal(postings, unit),
@@ -169,7 +172,7 @@ export function keyNumbers(postings: ClassifiedPosting[], t: Timeline): KeyNumbe
 
 export function chosenUnitNumbers(postings: ClassifiedPosting[], t: Timeline, chosen: Unit): ChosenNumbers {
   const { units, basis } = averageUnits(t, chosen);
-  const before = unitBefore(chosen, t.grouping, t.today);
+  const before = unitBeforeIn(chosen, t);
   return {
     amount: unitTotal(postings, chosen),
     average: average(postings, units, basis),

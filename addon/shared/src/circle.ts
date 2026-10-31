@@ -20,7 +20,6 @@ export interface CirclePart extends Part {
   piece: boolean;
 }
 
-/** From the darkest grey for the largest to the lightest for the smallest. */
 export function greys(n: number): string[] {
   return Array.from({ length: n }, (_, i) => {
     const level = n === 1 ? GREY_DARK : Math.round(GREY_DARK + ((GREY_LIGHT - GREY_DARK) * i) / (n - 1));
