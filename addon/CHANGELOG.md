@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.2.0](https://github.com/thomas3650/Ha-Spending/compare/v0.1.2...v0.2.0) (2026-10-31)
+
+
+### Features
+
+* the sorter's endpoint: two MCP tools on an internal port with a key ([#34](https://github.com/thomas3650/Ha-Spending/issues/34)) ([c655940](https://github.com/thomas3650/Ha-Spending/commit/c655940e22b516e9792facd2697339daec6f3c3a))
+
+
+### Bug Fixes
+
+* a narrow circle lists its parts, and the key numbers stack ([#32](https://github.com/thomas3650/Ha-Spending/issues/32)) ([5c7a3c5](https://github.com/thomas3650/Ha-Spending/commit/5c7a3c55f181215ea85e434c27cee4a2cc009902))
+
 ## [0.1.2](https://github.com/thomas3650/Ha-Spending/compare/v0.1.1...v0.1.2) (2026-10-31)
 
 
