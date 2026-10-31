@@ -34,9 +34,10 @@ function richSafe(text: string): string {
   return text.replace(/[{}]/g, "");
 }
 
-function labelText(item: CircleItem): string {
+/** When ECharts wraps a label it drops a newline between two styles, so the newline sits inside the amount's style. */
+export function labelText(item: CircleItem): string {
   const sub = item.share === null ? kr(item.amount) : `${kr(item.amount)} · ${percent(item.share)}`;
-  return `{name|${richSafe(item.name)}}\n{sub|${sub}}`;
+  return `{name|${richSafe(item.name)}}{sub|\n${sub}}`;
 }
 
 /**
@@ -237,6 +238,12 @@ export const circleStyles = [
     }
     .circle-ring .chart {
       height: 340px;
+    }
+    /* A narrow ring leaves its labels little width, so they wrap and need more height. */
+    @media (max-width: 599px) {
+      .circle-ring .chart {
+        height: 480px;
+      }
     }
     .circle-centre {
       position: absolute;

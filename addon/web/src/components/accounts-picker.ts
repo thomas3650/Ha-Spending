@@ -7,8 +7,9 @@ import { Dropdown } from "./dropdown";
 export function accountsClosedText(accounts: Account[] | null, chosen: string[] | null): string {
   if (accounts === null) return da.allAccounts;
   if (chosen === null) return da.allAccountsCount(accounts.length);
-  const names = accounts.filter((a) => chosen.includes(a.id)).map((a) => a.name);
-  return names.length === 0 ? da.noAccounts : names.join(", ");
+  const ticked = accounts.filter((a) => chosen.includes(a.id)).length;
+  if (ticked === 0) return da.noAccounts;
+  return ticked === accounts.length ? da.allAccountsCount(ticked) : da.someAccounts(ticked, accounts.length);
 }
 
 /** Fires `hs-accounts` with the ticked account ids. */

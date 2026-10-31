@@ -68,13 +68,17 @@ export const chip = css`
   }
 `;
 
-/** A label holding a small caption and a value: a dropdown's button, or a native select. */
+/**
+ * A label holding a small caption and a value: a dropdown's button, or a native select. Its width is fixed, so the
+ * toolbar keeps still when a value changes.
+ */
 export const field = css`
   .field {
     display: flex;
     flex-direction: column;
     align-items: flex-start;
-    min-width: 190px;
+    width: var(--hs-field-width, 200px);
+    max-width: 100%;
     padding: 6px 36px 6px 12px;
     border: 1px solid var(--hs-field);
     border-radius: 8px;
@@ -94,7 +98,12 @@ export const field = css`
     font-size: 11px;
   }
   .field span {
+    display: block;
+    max-width: 100%;
     font-size: 14px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
   .field::after {
     content: "▾";
@@ -102,6 +111,7 @@ export const field = css`
     right: 12px;
     top: 14px;
     color: var(--hs-muted);
+    pointer-events: none;
   }
   .field[aria-expanded="true"],
   .field:focus-visible,
@@ -114,9 +124,24 @@ export const field = css`
   label.field:focus-within small {
     color: var(--hs-accent);
   }
+  /* The select covers the whole field, so a click anywhere on it opens the list. */
+  label.field,
+  label.field:focus-within {
+    padding: 0;
+  }
+  label.field small {
+    position: absolute;
+    top: 6px;
+    left: 12px;
+    pointer-events: none;
+  }
+  label.field:focus-within small {
+    top: 5px;
+    left: 11px;
+  }
   .field select {
     border: 0;
-    padding: 0;
+    padding: 20px 36px 5px 12px;
     margin: 0;
     background: none;
     font: inherit;
@@ -126,6 +151,9 @@ export const field = css`
     width: 100%;
     cursor: pointer;
     outline: none;
+  }
+  label.field:focus-within select {
+    padding: 19px 35px 4px 11px;
   }
 `;
 

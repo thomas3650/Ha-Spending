@@ -113,6 +113,14 @@ export const topCardStyles = css`
     gap: 12px;
     align-items: flex-start;
   }
+  .top-filters,
+  .top-filters > * {
+    min-width: 0;
+    max-width: 100%;
+  }
+  hs-period-picker {
+    --hs-field-width: 360px;
+  }
 `;
 
 if (!customElements.get("hs-top-card")) customElements.define("hs-top-card", TopCard);
