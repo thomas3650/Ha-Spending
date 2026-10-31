@@ -11,6 +11,12 @@ export interface BarItem {
   axis: string;
   name: string;
   amount: number;
+  /** Runs on today; a unit after today is an empty slot. */
+  running: boolean;
+}
+
+export function isRunning(unit: Unit, today: string): boolean {
+  return unit.partial && unit.fullStart <= today;
 }
 
 export interface BarsAverage {
@@ -22,7 +28,7 @@ export interface UnitSelection {
   fullStart: string;
 }
 
-const PARTIAL = 0.5;
+const RUNNING = 0.5;
 const FADED = 0.3;
 
 function escapeHtml(text: string): string {
@@ -30,7 +36,7 @@ function escapeHtml(text: string): string {
 }
 
 function buttonName(item: BarItem): string {
-  const name = item.unit.partial ? `${item.name} (${da.inProgress})` : item.name;
+  const name = item.running ? `${item.name} (${da.inProgress})` : item.name;
   return `${name}, ${kr(item.amount)}`;
 }
 
@@ -153,7 +159,7 @@ export class Bars extends LitElement {
           formatter: (_value: string, index: number) => {
             const item = items[index];
             if (!item) return "";
-            return item.unit.partial ? `${item.axis}\n${da.inProgress}` : item.axis;
+            return item.running ? `${item.axis}\n${da.inProgress}` : item.axis;
           },
         },
       },
@@ -170,7 +176,7 @@ export class Bars extends LitElement {
           emphasis: { itemStyle: { opacity: 1 } },
           data: items.map((item) => {
             const faded = anyChosen && !this.isChosen(item);
-            const opacity = faded ? FADED : item.unit.partial ? PARTIAL : 1;
+            const opacity = faded ? FADED : item.running ? RUNNING : 1;
             return { value: item.amount, itemStyle: { color: colour, opacity } };
           }),
           markLine:

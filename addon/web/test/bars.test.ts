@@ -3,7 +3,7 @@ import { fireEvent, getAllByRole, getByRole, getByText, queryByText } from "@tes
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import "../src/components/bars";
-import type { BarItem, Bars } from "../src/components/bars";
+import { type BarItem, type Bars, isRunning } from "../src/components/bars";
 import { kr, unitAxis, unitName } from "../src/format";
 import { da } from "../src/i18n/da";
 import { charts, forgetCharts } from "./chart-mock";
@@ -12,16 +12,21 @@ import { answerFor } from "./fixture";
 const THIS_YEAR = { start: "2026-01-01", end: "2026-10-30" };
 const TODAY = "2026-10-30";
 
-function itemsOfThisYear(): BarItem[] {
-  const data = answerFor(THIS_YEAR);
-  const units = unitsOf(THIS_YEAR, "month", TODAY);
+function itemsOf(period: { start: string; end: string }): BarItem[] {
+  const data = answerFor(period);
+  const units = unitsOf(period, "month", TODAY);
   const totals = unitTotals(classify(data.postings, data.categories), units);
   return units.map((unit, i) => ({
     unit,
     axis: unitAxis(unit, "month"),
     name: unitName(unit, "month"),
     amount: totals[i],
+    running: isRunning(unit, TODAY),
   }));
+}
+
+function itemsOfThisYear(): BarItem[] {
+  return itemsOf(THIS_YEAR);
 }
 
 interface RenderOptions {
@@ -58,6 +63,16 @@ describe("the bars", () => {
     expect(buttons[9]).toBe(
       getByRole(el, "button", { name: `${unitName(october, "month")} (${da.inProgress}), ${kr(1131012)}` }),
     );
+  });
+
+  it("keeps a unit after today as an empty slot, not in progress", async () => {
+    const items = itemsOf({ start: "2026-10-01", end: "2026-12-31" });
+    const el = await render({ items });
+    const november = items[1];
+    getByRole(el, "button", { name: `${november.name}, ${kr(0)}` });
+    expect(getAllByRole(el, "button", { name: new RegExp(`\\(${da.inProgress}\\)`) })).toEqual([
+      getByRole(el, "button", { name: `${items[0].name} (${da.inProgress}), ${kr(items[0].amount)}` }),
+    ]);
   });
 
   it("keeps an empty unit as a slot", async () => {
