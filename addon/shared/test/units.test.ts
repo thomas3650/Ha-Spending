@@ -1,12 +1,12 @@
 import { describe, expect, it } from "vitest";
 import { fetchRange, hasData, isOneUnit, isWhole, unitAt, unitBefore, unitsOf } from "../src/units";
 
-const iAar = { start: "2026-01-01", end: "2026-10-30" };
+const thisYear = { start: "2026-01-01", end: "2026-10-30" };
 const today = "2026-10-30";
 
 describe("units", () => {
   it("clips the first and last ISO week of I år", () => {
-    const u = unitsOf(iAar, "week", today);
+    const u = unitsOf(thisYear, "week", today);
     expect(u).toHaveLength(44);
     expect(u[0]).toEqual({
       start: "2026-01-01",
@@ -38,7 +38,7 @@ describe("units", () => {
   });
 
   it("groups by month with the running month partial", () => {
-    const u = unitsOf(iAar, "month", today);
+    const u = unitsOf(thisYear, "month", today);
     expect(u).toHaveLength(10);
     expect(u[9]).toMatchObject({
       start: "2026-10-01",
@@ -67,6 +67,12 @@ describe("units", () => {
     expect(isWhole(days[1])).toBe(false);
   });
 
+  it("ends months and quarters that roll into the next year, and leap Februaries", () => {
+    expect(unitAt("2025-12-15", "month", today).fullEnd).toBe("2025-12-31");
+    expect(unitAt("2026-11-15", "quarter", today)).toMatchObject({ fullStart: "2026-10-01", fullEnd: "2026-12-31" });
+    expect(unitAt("2028-02-10", "month", today).fullEnd).toBe("2028-02-29");
+  });
+
   it("marks a unit after today partial", () => {
     expect(unitAt("2026-12-15", "month", today).partial).toBe(true);
   });
@@ -80,12 +86,12 @@ describe("units", () => {
     expect(isOneUnit({ start: "2026-10-01", end: "2026-10-30" }, "month", today)).toBe(true);
     expect(isOneUnit({ start: "2026-09-01", end: "2026-10-30" }, "month", today)).toBe(true);
     expect(isOneUnit({ start: "2026-07-01", end: "2026-09-30" }, "quarter", today)).toBe(true);
-    expect(isOneUnit(iAar, "month", today)).toBe(false);
+    expect(isOneUnit(thisYear, "month", today)).toBe(false);
   });
 
   it("widens the range for the comparisons", () => {
-    expect(fetchRange(iAar, "month", today)).toEqual({ start: "2025-12-01", end: "2026-10-30" });
-    expect(fetchRange(iAar, "week", today)).toEqual({ start: "2025-12-22", end: "2026-10-30" });
+    expect(fetchRange(thisYear, "month", today)).toEqual({ start: "2025-12-01", end: "2026-10-30" });
+    expect(fetchRange(thisYear, "week", today)).toEqual({ start: "2025-12-22", end: "2026-10-30" });
     expect(fetchRange({ start: "2026-10-01", end: "2026-10-30" }, "month", today)).toEqual({
       start: "2025-10-01",
       end: "2026-10-30",
