@@ -106,7 +106,6 @@ export class SpendingApp extends LitElement {
         display: flex;
         flex-direction: column;
         gap: 14px;
-        max-width: 1360px;
       }
       .line {
         margin: 0;

@@ -3,7 +3,8 @@ import { fireEvent, getAllByRole, getByRole, getByText } from "@testing-library/
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import "../src/components/circle";
-import { type CircleItem, type CircleSelection, ringStartAngle } from "../src/components/circle";
+import { parseRichText } from "zrender/lib/graphic/helper/parseText.js";
+import { type CircleItem, type CircleSelection, labelText, ringStartAngle } from "../src/components/circle";
 import { kr, partLabel } from "../src/format";
 import { da } from "../src/i18n/da";
 import { partName } from "../src/model/context";
@@ -147,5 +148,28 @@ describe("the circle", () => {
     const items = [piece("a", 69, 0.69), piece("b", 28, 0.28), piece("c", 13, 0.013), piece("d", 12, 0.012)];
     expect(ringStartAngle(items)).toBeCloseTo(175.5, 5);
     expect(ringStartAngle([piece("a", 60, 0.6), piece("b", 40, 0.4)])).toBe(90);
+  });
+
+  it("keeps the amount on lines of its own under a name, wrapped or not", () => {
+    const item = piece("Mad og drikke ude i byen", 762800, 0.03);
+    const lines = (width?: number) =>
+      parseRichText(
+        labelText(item),
+        {
+          overflow: "break",
+          width,
+          font: "12px sans-serif",
+          rich: { name: { font: "12px sans-serif" }, sub: { font: "10px sans-serif" } },
+        },
+        null,
+        null,
+        "left",
+      ).lines.map((line) => line.tokens.filter((t) => t.text !== "").map((t) => t.styleName));
+    for (const laid of [lines(), lines(110)]) {
+      const firstSub = laid.findIndex((line) => line.includes("sub"));
+      expect(laid.slice(0, firstSub).every((line) => line.every((s) => s === "name"))).toBe(true);
+      expect(laid.slice(firstSub).every((line) => line.every((s) => s === "sub"))).toBe(true);
+    }
+    expect(lines(110).filter((line) => line.includes("name")).length).toBeGreaterThan(1);
   });
 });

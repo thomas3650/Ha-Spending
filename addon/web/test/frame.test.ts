@@ -97,7 +97,7 @@ describe("the frame", () => {
     await app.updateComplete;
     fireEvent.click(getByRole(root, "checkbox", { name: "Fælleskonto" }));
     await settle(app);
-    getByRole(root, "button", { name: new RegExp(`^${da.accounts}.*Kreditkort`) });
+    getByRole(root, "button", { name: escaped(`${da.accounts} ${da.someAccounts(1, 2)}`) });
     fireEvent.click(getByRole(root, "checkbox", { name: "Kreditkort" }));
     await settle(app);
     getByRole(root, "button", { name: new RegExp(`^${da.accounts}.*${da.noAccounts}`) });

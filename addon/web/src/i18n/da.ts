@@ -38,6 +38,7 @@ export const da = {
   accounts: "Konti",
   allAccounts: "Alle konti",
   allAccountsCount: (n: number) => `Alle konti (${n})`,
+  someAccounts: (ticked: number, of: number) => `${ticked} af ${of} konti`,
   noAccounts: "Ingen konti",
 
   groupings: {

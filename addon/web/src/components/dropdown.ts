@@ -74,6 +74,7 @@ export class Dropdown extends LitElement {
 export const dropdownStyles = css`
   .dd {
     position: relative;
+    max-width: 100%;
   }
   .dd-menu {
     position: absolute;

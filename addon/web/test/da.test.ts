@@ -15,6 +15,7 @@ describe("da", () => {
   });
   it("counts accounts", () => {
     expect(da.allAccountsCount(2)).toBe("Alle konti (2)");
+    expect(da.someAccounts(4, 5)).toBe("4 af 5 konti");
   });
   it("words the amount chip", () => {
     expect(da.amountChip("100", "500")).toBe("Beløb: 100–500 kr.");

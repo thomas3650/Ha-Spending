@@ -250,3 +250,11 @@ to set their status to `superseded by D<n>`, or to name a part a later decision 
 - **Why:** No token to create and renew. A PR opened with `github.token` triggers no workflows, so the reopen keeps the
   required checks without an admin merge.
 - **Source:** Thomas, 2026-10-31 ("Do like ha-claude-addon")
+
+### D26: The closed Konti field counts the accounts
+- **Date:** 2026-10-31 · **Status:** active
+- **Decision:** With some accounts ticked, the closed "Konti" field shows "4 af 5 konti", not the names. This replaces
+  "or the chosen names" in the UI spec's top card.
+- **Why:** The names made the field four times as wide and moved the toolbar (#23). The names are in the open panel.
+- **Source:** [first-test fixes spec §3](superpowers/specs/2026-10-31-first-test-fixes.md#3-the-fields-keep-their-width-23),
+  from the first test of 0.1.0.
