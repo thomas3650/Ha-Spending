@@ -310,7 +310,7 @@ export class SpendingApp extends LitElement {
       default:
         return this.state.screen === "overview"
           ? html`<hs-key-numbers .cards=${null}></hs-key-numbers>${this.loadingHalves()}`
-          : nothing;
+          : html`<section class="card half" role="region" aria-busy="true" aria-label=${da.loading}></section>`;
     }
   }
 

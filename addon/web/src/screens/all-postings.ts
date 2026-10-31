@@ -9,7 +9,7 @@ import { categoryColours } from "../model/circle";
 import { partName, type ViewContext } from "../model/context";
 import { filteredPostings, sortPostings } from "../model/filter";
 import { flatPostings, groupedPostings } from "../model/postings";
-import type { AmountRange, Sort } from "../state/view";
+import { type AmountRange, parseKroner, type Sort } from "../state/view";
 
 export interface CategoryChoice {
   mainGroup: string | null;
@@ -18,11 +18,6 @@ export interface CategoryChoice {
 
 function fire(el: HTMLElement, name: string, detail?: unknown): void {
   el.dispatchEvent(new CustomEvent(name, { detail, bubbles: true, composed: true }));
-}
-
-function kroner(value: string): number | null {
-  const n = value.trim() === "" ? NaN : Number(value);
-  return Number.isSafeInteger(n) && n >= 0 ? n : null;
 }
 
 /** "+ Filter": a main group, a category or an amount range. Fires `set-main-group`, `set-category` and `set-amount`. */
@@ -49,8 +44,8 @@ export class FilterPicker extends Dropdown {
   }
 
   private addAmount(): void {
-    const a = kroner(this.min);
-    const b = kroner(this.max);
+    const a = parseKroner(this.min.trim());
+    const b = parseKroner(this.max.trim());
     const range: AmountRange = a !== null && b !== null && a > b ? { min: b, max: a } : { min: a, max: b };
     this.min = "";
     this.max = "";
@@ -179,7 +174,7 @@ export class AllPostings extends LitElement {
     const ctx = this.ctx;
     const state = ctx.state;
     const postings = filteredPostings(ctx);
-    return html`<section class="card all-postings" role="region" aria-label=${da.allPostings}>
+    return html`<section class="card all-postings">
       <div class="search-row">
         <input
           class="search"

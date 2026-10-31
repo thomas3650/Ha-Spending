@@ -75,14 +75,15 @@ function parseLevel(p: URLSearchParams): Level {
   return { kind: "category", mainGroup: mainGroup || null, category: category || null };
 }
 
-function kroner(value: string | null): number | null {
+/** Whole kroner as digits only, so "1e3" or "4.5" is refused. */
+export function parseKroner(value: string | null): number | null {
   const n = value !== null && /^\d+$/.test(value) ? Number(value) : null;
   return n !== null && Number.isSafeInteger(n) ? n : null;
 }
 
 function parseAmount(p: URLSearchParams): AmountRange | null {
-  const min = kroner(p.get("min"));
-  const max = kroner(p.get("max"));
+  const min = parseKroner(p.get("min"));
+  const max = parseKroner(p.get("max"));
   if (min === null && max === null) return null;
   if (min !== null && max !== null && min > max) return null;
   return { min, max };

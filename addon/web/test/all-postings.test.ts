@@ -108,6 +108,8 @@ describe("screen 3, all postings", () => {
     expect(queryByRole(root, "button", { name: da.remove(da.categoryChip("Café")) })).toBeNull();
     expect(queryByRole(root, "button", { name: da.remove(da.mainGroupChip("Mad")) })).toBeNull();
     summary(root, 28, 11566012);
+    expect(queryByRole(trail(root), "link", { name: "Mad" })).toBeNull();
+    getByRole(trail(root), "link", { name: da.allSpending });
   });
 
   it("removes the category alone with its chip", async () => {
@@ -177,11 +179,31 @@ describe("screen 3, all postings", () => {
   });
 
   it("leaves the search behind through the trail", async () => {
-    const { app, root } = await mount(`${CAFE}&q=pizza`);
+    const { app, root } = await mount(`${CAFE}&q=pizza&min=400`);
     fireEvent.click(getByRole(trail(root), "link", { name: "Mad" }));
     await settle(app);
     getByRole(root, "heading", { level: 1, name: "Mad" });
-    expect(new URLSearchParams(location.hash.slice(1)).has("q")).toBe(false);
+    const params = new URLSearchParams(location.hash.slice(1));
+    expect(params.has("q")).toBe(false);
+    expect(params.has("min")).toBe(false);
+  });
+
+  it("shows a busy card while the answer is on its way", async () => {
+    const { root } = await mount(CAFE, { answer: () => new Promise<Response>(() => {}) });
+    const card = getByRole(root, "region", { name: da.loading });
+    expect(card.getAttribute("aria-busy")).toBe("true");
+    expect(queryByRole(root, "searchbox")).toBeNull();
+  });
+
+  it("refuses an amount that is not whole kroner", async () => {
+    const { app, root } = await mount(CAFE);
+    await openFilter(app, root);
+    const part = getByRole(root, "group", { name: da.amountFilter });
+    fireEvent.input(getByRole(part, "spinbutton", { name: da.from }), { target: { value: "1e3" } });
+    fireEvent.click(getByRole(part, "button", { name: da.add }));
+    await settle(app);
+    summary(root, 4, 131012);
+    expect(new URLSearchParams(location.hash.slice(1)).has("min")).toBe(false);
   });
 });
 

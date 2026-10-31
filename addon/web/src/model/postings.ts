@@ -61,10 +61,6 @@ function row(p: ClassifiedPosting, rc: RowContext): PostingRow {
   };
 }
 
-export function postingRow(p: ClassifiedPosting, ctx: ViewContext, colours: Map<string | null, string>): PostingRow {
-  return row(p, rowContext(ctx, colours));
-}
-
 export function groupedPostings(
   postings: ClassifiedPosting[],
   units: Unit[],
@@ -81,7 +77,7 @@ export function groupedPostings(
         key: u.unit.fullStart,
         name: unitName(u.unit, ctx.timeline.grouping),
         rows: [...u.postings]
-          .sort((a, b) => direction * a.date.localeCompare(b.date))
+          .sort((a, b) => direction * (a.date.localeCompare(b.date) || a.id.localeCompare(b.id)))
           .map((p) => row(p, rc)),
         total: u.total,
       }),
