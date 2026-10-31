@@ -15,7 +15,7 @@ export interface SorterSettings {
 /** Small enough that a full answer stays well under the size Claude Code passes on as one tool result. */
 export const INBOX_LIMIT = 100;
 /** A description or notes longer than this is cut, for the same reason. */
-export const TEXT_LIMIT = 200;
+export const TEXT_LIMIT = 150;
 export const MAX_ASSIGNMENTS = 100;
 const MAX_CATEGORIES = 1000;
 
@@ -108,8 +108,10 @@ function isWithdrawalOrDeposit(split: WireSplit): split is WireSplit & { type: "
   return split.type === "withdrawal" || split.type === "deposit";
 }
 
+/** Cut by code points, so an emoji is never split into half a surrogate pair, which the model's API refuses. */
 function cut(text: string): string {
-  return text.length > TEXT_LIMIT ? `${text.slice(0, TEXT_LIMIT - 1)}…` : text;
+  const points = Array.from(text);
+  return points.length > TEXT_LIMIT ? `${points.slice(0, TEXT_LIMIT - 1).join("")}…` : text;
 }
 
 async function readInbox(

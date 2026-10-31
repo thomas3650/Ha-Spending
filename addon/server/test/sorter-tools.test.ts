@@ -191,17 +191,31 @@ describe("start", () => {
 
   it("keeps a full answer small enough for the agent to take in one tool result", async () => {
     // Claude Code saves a tool result over about 25,000 tokens to a file instead, which the sorter may not read.
-    const long = "X".repeat(400);
+    // Bank-like text tokenizes badly: digits, codes, quotes and line breaks, which JSON escapes.
+    const text = 'MobilePay "Ref 4711-0815"\\n'.repeat(20);
     const transactions = Array.from({ length: 100 }, (_, n) =>
-      one({ type: "withdrawal" as const, date: "2025-01-01", amount: "12345.67", description: long, notes: long,
+      one({ type: "withdrawal" as const, date: "2025-01-01", amount: "1234567.89", description: text, notes: text,
         source: "Konto A", destination: `Butik ${n}` }),
     );
     const s = setup({ data: { ...seed, transactions }, settings: { pageSize: 40 } });
     const { value } = await s.call("start", { categories: await s.tree() });
-    expect(JSON.stringify(value).length).toBeLessThan(60_000);
+    expect(JSON.stringify(value).length).toBeLessThan(50_000);
     const first = (value.postings as { description: string; notes: string }[])[0];
-    expect(first.description).toBe(`${"X".repeat(199)}…`);
-    expect(first.notes).toHaveLength(200);
+    expect(Array.from(first.description)).toHaveLength(150);
+    expect(first.description.endsWith("…")).toBe(true);
+    expect(Array.from(first.notes)).toHaveLength(150);
+  });
+
+  it("never cuts an emoji in half", async () => {
+    const text = `${"a".repeat(148)}😀${"b".repeat(10)}`;
+    const s = setup({
+      data: { ...seed, transactions: [one({ type: "withdrawal" as const, date: "2025-01-01", amount: "1.00",
+        description: text, source: "Konto A", destination: "Butik" })] },
+    });
+    const { value } = await s.call("start", { categories: await s.tree() });
+    const description = (value.postings as { description: string }[])[0].description;
+    expect(description).toBe(`${"a".repeat(148)}😀…`);
+    expect(/[\uD800-\uDBFF](?![\uDC00-\uDFFF])/.test(description)).toBe(false);
   });
 
   it.each([
