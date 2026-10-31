@@ -261,6 +261,19 @@ describe("the search on Posteringer", () => {
     summary(root, 1, 50000);
   });
 
+  it("starts the postings list afresh on a new search", async () => {
+    const { app, root } = await mount("by=week&card=postings");
+    const card = () => getByRole(root, "region", { name: da.postingsTitle });
+    const groupLines = () => getAllByRole(card(), "button").filter((b) => b.hasAttribute("aria-expanded"));
+    const states = () => groupLines().slice(0, 2).map((b) => b.getAttribute("aria-expanded"));
+    expect(states()).toEqual(["true", "true"]);
+    fireEvent.click(groupLines()[0] as HTMLElement);
+    await settle(app);
+    expect(states()[0]).toBe("false");
+    await type(app, root, "café");
+    expect(states()).toEqual(["true", "true"]);
+  });
+
   it("goes Back past all the keys at once", async () => {
     const { app, root } = await mount("");
     fireEvent.click(getByRole(viewSwitch(root), "button", { name: da.postings }));

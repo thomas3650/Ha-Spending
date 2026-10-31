@@ -73,6 +73,11 @@ describe("the view state's hash", () => {
     expect(toHash(s)).toBe("q=rema");
   });
 
+  it("writes the keys of Alle posteringer in a fixed order", () => {
+    const s: ViewState = { ...DEFAULT_STATE, screen: "allPostings", search: "rema", sort: "largest", card: "postings" };
+    expect(toHash(s)).toBe("card=postings&view=all-postings&q=rema&sort=largest");
+  });
+
   it("reads the sort and amount only on Alle posteringer", () => {
     const s = parseHash("q=rema&sort=largest&min=5&card=postings");
     expect(s.sort).toBe("newest");
