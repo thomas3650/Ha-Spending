@@ -326,7 +326,9 @@ to set their status to `superseded by D<n>`, or to name a part a later decision 
   made before a PUT that then fails stays and is reused by a later run. `start` gives the shop names, capped at 12,000
   characters. In a failure answer the results already written leave out the shop name and keep `shop_refused`, because
   no shop name may appear in a failure's detail. It replaces D30's list of what is written.
-- **Why:** Imported postings all land on `(no name)`, and the sorter already works out the shop. Writing by id keeps a
+- **Why:** Postings imported from a bank file land on the expense account `(no name)`, the Data Importer's name for a line with
+  no counterparty (one made through the API with no destination name lands on the cash account and is left alone),
+  and the sorter already works out the shop. Writing by id keeps a
   name from pointing a purchase at a liability and the outcome independent of the database's collation.
 - **Source:** Thomas, 2026-10-31, the design of the shop on every posting;
   [the shop spec](superpowers/specs/2026-11-01-sorter-shop.md); the limits: Claude

@@ -307,7 +307,10 @@ describe("the sorter's tools on a real Firefly III", () => {
   });
 });
 
-// After the sorter's tests above: these postings are dated in December, after theirs.
+// After the sorter's tests above: these postings are dated in December, after theirs. The tests are independent of
+// each other (each gives out its own postings), but they use the earlier describe's categories, rules and Konto A,
+// and the seeder sends the literal "(no name)" for a withdrawal without a destination, as the Data Importer does:
+// left out, Firefly III's API would send it to the cash account.
 describe("the sorter's shop on a real Firefly III", () => {
   const KEY = "made-up-sorter-key-made-up-sorter-key";
   let call: (name: string, args: unknown) => Promise<{ isError: boolean; value: Record<string, unknown> }>;
@@ -334,6 +337,8 @@ describe("the sorter's shop on a real Firefly III", () => {
       transactions: [
         { splits: [{ type: "withdrawal", date: "2026-12-02", amount: "41.50", description: "Shop køb 1",
           source: "Konto A", notes: "Banken: Butik Ny", tags: ["Kvittering", "Bolig"] }] },
+        { splits: [{ type: "withdrawal", date: "2026-12-08", amount: "15.00", description: "Shop nyt",
+          source: "Konto A", notes: "Banken: Butik Rep", tags: ["Kvittering", "Bolig"] }] },
         { splits: [{ type: "withdrawal", date: "2026-12-03", amount: "12.00", description: "Shop køb 2",
           source: "Konto A" }] },
         {
@@ -407,30 +412,32 @@ describe("the sorter's shop on a real Firefly III", () => {
     "amount, date, source account, type, category, tags, notes and the other split stay", async () => {
     const before = await splits();
     const { amounts } = await given();
-    expect(await accountsOfType("expense")).toContain("Butik Ny");
     const expenseCount = (await accountsOfType("expense")).length;
 
     const answer = await call("set_category", {
       assignments: [
-        assignment(before, amounts, "Shop køb 2", "butik ny"),
+        assignment(before, amounts, "Shop nyt", "Butik Rep"),
+        assignment(before, amounts, "Shop køb 2", "butik rep"),
         assignment(before, amounts, "Shop del 1", "Butik Del"),
       ],
     });
     expect(answer.isError).toBe(false);
-    expect((answer.value.results as { ok: boolean; shop?: string }[]).map((r) => r.shop)).toEqual(["Butik Ny", "Butik Del"]);
+    expect((answer.value.results as { ok: boolean; shop?: string }[]).map((r) => r.shop))
+      .toEqual(["Butik Rep", "Butik Rep", "Butik Del"]);
 
     const after = await splits();
-    expect(after.get("Shop køb 2")!.destination_id).toBe(after.get("Shop køb 1")!.destination_id);
-    // One account for the first two postings, one new for the split: the count rose by one only.
-    expect((await accountsOfType("expense")).length).toBe(expenseCount + 1);
+    expect(after.get("Shop køb 2")!.destination_id).toBe(after.get("Shop nyt")!.destination_id);
+    // One account for the first two postings, one new for the split: the count rose by two only.
+    expect((await accountsOfType("expense")).length).toBe(expenseCount + 2);
 
-    const buy = after.get("Shop køb 2")!;
-    expect(buy).toMatchObject({ category_name: "Dagligvarer", destination_name: "Butik Ny" });
-    expect(unchanged(buy)).toEqual(unchanged(before.get("Shop køb 2")!));
-    // The first posting was written by the test before: its shop, and its notes, source and other tags stay.
-    const earlier = after.get("Shop køb 1")!;
-    expect(earlier).toMatchObject({ notes: "Banken: Butik Ny", source_name: "Konto A", type: "withdrawal" });
-    expect([...earlier.tags].sort()).toEqual(["Kvittering", "Mad"]);
+    const made = after.get("Shop nyt")!;
+    expect(made).toMatchObject({ category_name: "Dagligvarer", destination_name: "Butik Rep" });
+    expect(unchanged(made)).toEqual(unchanged(before.get("Shop nyt")!));
+    expect(made.source_name).toBe("Konto A");
+    expect([...made.tags].sort()).toEqual(["Kvittering", "Mad"]);
+    const reused = after.get("Shop køb 2")!;
+    expect(reused).toMatchObject({ category_name: "Dagligvarer", destination_name: "Butik Rep" });
+    expect(unchanged(reused)).toEqual(unchanged(before.get("Shop køb 2")!));
     const one = after.get("Shop del 1")!;
     expect(one).toMatchObject({ destination_name: "Butik Del", category_name: "Dagligvarer" });
     expect(unchanged(one)).toEqual(unchanged(before.get("Shop del 1")!));
