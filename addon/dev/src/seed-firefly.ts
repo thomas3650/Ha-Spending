@@ -71,7 +71,11 @@ export async function seedFirefly(baseUrl: string, token: string, data: SeedData
     amount: s.amount,
     description: s.description,
     source_name: s.source,
-    ...(s.destination === undefined ? {} : { destination_name: s.destination }),
+    // Left out, Firefly III's API makes a withdrawal go to its cash account. A bank import gives it an empty
+    // counterparty, which Firefly III names "(no name)": the same name, sent in full, makes the same account.
+    ...(s.destination === undefined
+      ? s.type === "withdrawal" ? { destination_name: "(no name)" } : {}
+      : { destination_name: s.destination }),
     ...(s.category === undefined ? {} : { category_name: s.category }),
     ...(s.foreignAmount === undefined ? {} : { foreign_amount: s.foreignAmount }),
     ...(s.foreignCurrency === undefined ? {} : { foreign_currency_code: s.foreignCurrency }),
