@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.1](https://github.com/thomas3650/Ha-Spending/compare/v0.1.0...v0.1.1) (2026-10-31)
+
+
+### Bug Fixes
+
+* the page fills the screen, and the fields and circle labels behave ([#26](https://github.com/thomas3650/Ha-Spending/issues/26)) ([822eaa1](https://github.com/thomas3650/Ha-Spending/commit/822eaa1eecf7baa8c0a2a7cf5993241e74caa508))
+
 ## 0.1.0 (2026-10-31)
 
 
