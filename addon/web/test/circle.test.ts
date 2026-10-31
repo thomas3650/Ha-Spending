@@ -1,11 +1,11 @@
 import { circle, classify, type Level, parts, share, total, within } from "@ha-spending/shared";
-import { fireEvent, getAllByRole, getByRole, getByText } from "@testing-library/dom";
+import { fireEvent, getAllByRole, getByRole, getByText, queryByText } from "@testing-library/dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import "../src/components/circle";
 import { parseRichText } from "zrender/lib/graphic/helper/parseText.js";
 import { type CircleItem, type CircleSelection, labelText, ringRadius, ringStartAngle } from "../src/components/circle";
-import { kr, partLabel } from "../src/format";
+import { kr, partLabel, percent } from "../src/format";
 import { da } from "../src/i18n/da";
 import { partName } from "../src/model/context";
 import { charts, forgetCharts } from "./chart-mock";
@@ -34,6 +34,7 @@ interface Options {
   centreAmount?: number;
   selected?: CircleSelection | null;
   selectable?: boolean;
+  narrow?: boolean;
 }
 
 async function render(opts: Options) {
@@ -43,6 +44,7 @@ async function render(opts: Options) {
   el.centreAmount = opts.centreAmount ?? opts.items.reduce((sum, i) => sum + i.amount, 0);
   el.selected = opts.selected ?? null;
   el.selectable = opts.selectable ?? false;
+  el.narrow = opts.narrow ?? false;
   document.body.append(el);
   await el.updateComplete;
   return el;
@@ -177,5 +179,58 @@ describe("the circle", () => {
     expect(ringRadius(1000, 400)).toEqual([92, 124]);
     expect(ringRadius(500, 400)).toEqual([74, 100]);
     expect(ringRadius(350, 560)).toEqual([60, 81]);
+  });
+
+  it("on a narrow chart lists each part with its amount under the ring, by the same names", async () => {
+    const el = await render({ items: itemsOf({ kind: "all" }, "mainGroup"), narrow: true });
+    const all = 11566012;
+    const bolig = getByRole(el, "button", { name: partLabel("Bolig", 8000000, 8000000 / all) });
+    getByText(bolig, "Bolig");
+    getByText(bolig, `${kr(8000000)} · ${percent(8000000 / all)}`.replace(/\s+/g, " "));
+    const heard = vi.fn();
+    document.body.addEventListener("part-click", (e) => heard((e as CustomEvent).detail));
+    fireEvent.click(bolig);
+    expect(heard).toHaveBeenCalledWith({ key: "Bolig" });
+  });
+
+  it("shows a hovered name on the chart and clears it when the mouse leaves", async () => {
+    const el = await render({ items: itemsOf({ kind: "all" }, "mainGroup"), narrow: true });
+    const bil = getByRole(el, "button", { name: /^Bil,/ });
+    fireEvent.mouseEnter(bil);
+    expect(charts[0].calls.highlight).toEqual([2]);
+    fireEvent.mouseLeave(bil);
+    expect(charts[0].calls.downplay).toEqual([2]);
+  });
+
+  it("lists the parts under the ring once the chart is narrower than 400 px", async () => {
+    const observers: ResizeObserverCallback[] = [];
+    vi.stubGlobal(
+      "ResizeObserver",
+      class {
+        constructor(callback: ResizeObserverCallback) {
+          observers.push(callback);
+        }
+        observe() {}
+        disconnect() {}
+      },
+    );
+    let width = 400;
+    const clientWidth = vi.spyOn(HTMLElement.prototype, "clientWidth", "get").mockImplementation(() => width);
+    try {
+      const el = await render({ items: itemsOf({ kind: "all" }, "mainGroup") });
+      const resize = async () => {
+        for (const callback of observers) callback([], {} as ResizeObserver);
+        await el.updateComplete;
+      };
+      const bolig = () => getByRole(el, "button", { name: /^Bolig,/ });
+      await resize();
+      expect(queryByText(bolig(), "Bolig")).toBeNull();
+      width = 399;
+      await resize();
+      getByText(bolig(), "Bolig");
+    } finally {
+      clientWidth.mockRestore();
+      vi.unstubAllGlobals();
+    }
   });
 });

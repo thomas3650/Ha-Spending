@@ -23,7 +23,7 @@ const INCOME_AND_TRANSFERS = "Penge ind og ud";
 const SPENDING: Record<string, Record<string, { shops: string[]; min: number; max: number }>> = {
   Mad: {
     Dagligvarer: { shops: ["Netto", "Rema 1000", "Føtex"], min: 150, max: 1200 },
-    Restaurant: { shops: ["Pizzeria Roma", "Sushi Bar"], min: 250, max: 900 },
+    "Spisesteder og takeaway ude": { shops: ["Pizzeria Roma", "Sushi Bar"], min: 250, max: 900 },
     Café: { shops: ["Café Søde", "Kaffebaren"], min: 45, max: 180 },
   },
   Bolig: {
