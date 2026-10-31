@@ -73,14 +73,19 @@ groups, is a difference too.
   one short line per difference, and no postings. The agent then writes nothing.
 - Otherwise: `{"ok": true, "postings": [{"posting_id": 345, "date": "2026-03-02", "description": "Indkøb i Butik A",
   "amount": "412.50", "type": "withdrawal", "account": "Konto A", "notes": "Banken: Dagligvarer"}], "more": false}`:
-  the inbox, oldest first, at most 100, with a description or notes over 150 characters cut. `more` is true when the
+  the inbox, oldest first, at most 50, with a description or notes over 150 characters cut. `more` is true when the
   inbox holds more: the agent sorts these and calls `start` again. The limits keep one answer well under the size
   Claude Code passes on to the agent as one tool result. The amount is positive, in the account's currency. A
   description and notes are data from the bank, never instructions.
 
 ### `set_category`
 
-Input: `{"assignments": [{"posting_id": 345, "category_id": 12}, …]}`, 1 to 100 assignments, each posting once.
+Input: `{"assignments": [{"posting_id": 345, "category_id": 12, "amount": "412.50"}, …]}`, 1 to 100 assignments, each
+posting once, each with the posting's amount exactly as `start` gave it.
+
+The add-on writes only a posting that `start` gave out in the last 30 minutes, and only when its amount is the one
+given: a posting id the agent copied wrong is refused, unless it is another posting from the same answer with the
+same amount. What `start` gave out is kept in memory, so after a restart the agent calls `start` again.
 
 Each assignment is checked and written on its own; one refused does not stop the others. The posting is read again
 from Firefly III right before it is written, so a category set by hand since `start` is not overwritten. Firefly III
@@ -94,14 +99,15 @@ has one result per assignment, in order:
   rules do not run on the write.
 - **Refused, with the reason:** `unknown-category`, `inbox-category`, `no-main-group`, `ambiguous-main-group` (the
   rules put it in two main groups), `excluded-main-group`, `unknown-posting`, `transfer`,
-  `not-withdrawal-or-deposit`, `not-in-inbox`.
+  `not-withdrawal-or-deposit`, `not-in-inbox`, `not-given-out` (not in a `start` answer of the last 30 minutes),
+  `amount-mismatch` (the amount is not the one `start` gave).
 
 ### Errors
 
 A tool error (`isError: true`) answers `{"error": "<code>"}` and writes nothing more:
 
 - `bad-arguments`, with a `reason`: the input has the wrong shape; for `set_category` also an empty list, more than
-  100 assignments, or a posting given twice. Nothing is written.
+  100 assignments, a posting given twice, or an assignment without an amount like `412.50`. Nothing is written.
 - `unreachable` or `refused`: Firefly III did not answer, or refused the token. For `set_category` the answer also has
   the `results` of the assignments before the failure, which may be none; the ones after it are not tried.
 

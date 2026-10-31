@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 import { createFireflyClient, type FetchLike } from "../src/firefly/client";
 import type { WireCategory, WireGroup, WirePage, WireSplit } from "../src/firefly/wire";
 import { createSorterApp } from "../src/sorter/http";
+import { toOre } from "../src/firefly/amount";
 import { createSorterTools, type SorterSettings } from "../src/sorter/tools";
 
 const KEY = "made-up-sorter-key-made-up-sorter-key";
@@ -126,11 +127,29 @@ function setup(options: { data?: SeedData; settings?: Partial<SorterSettings>; f
 
   const puts = () => fake.requests.filter((r) => r.method === "PUT");
 
+  /** The amount of a posting as `start` gives it. */
+  async function amountOf(postingId: number): Promise<string> {
+    const split = [...(await splits()).values()].find((x) => Number(x.transaction_journal_id) === postingId);
+    const ore = split === undefined ? 100 : Math.abs(toOre(split.amount));
+    return `${Math.trunc(ore / 100)}.${String(ore % 100).padStart(2, "0")}`;
+  }
+
+  /** The sorter's path: `start` gives the inbox out, then `set_category` with each posting's amount. */
+  async function write(
+    assignments: { posting_id: number; category_id: number }[],
+    categories?: { id: number; name: string; group: string }[],
+  ): Promise<Result> {
+    const started = await call("start", { categories: categories ?? (await tree()) });
+    expect(started.value.ok).toBe(true);
+    const withAmounts = await Promise.all(assignments.map(async (x) => ({ ...x, amount: await amountOf(x.posting_id) })));
+    return call("set_category", { assignments: withAmounts });
+  }
+
   function logsNoPosting() {
     for (const line of log.mock.calls.flat().map(String)) for (const text of TEXTS) expect(line).not.toContain(text);
   }
 
-  return { fake, direct, log, call, categoryIds, splits, postingId, tree, puts, logsNoPosting };
+  return { fake, direct, log, call, categoryIds, splits, postingId, tree, puts, logsNoPosting, amountOf, write };
 }
 
 describe("start", () => {
@@ -162,30 +181,30 @@ describe("start", () => {
     expect(s.log).toHaveBeenCalledWith("sorter: start: ok, 5 postings");
   });
 
-  it("answers at most 100 postings, the oldest, and says when there are more", async () => {
+  it("answers at most 50 postings, the oldest, and says when there are more", async () => {
     const day = (n: number) => new Date(Date.UTC(2025, 0, 1 + n)).toISOString().slice(0, 10);
-    const transactions = Array.from({ length: 101 }, (_, n) =>
+    const transactions = Array.from({ length: 51 }, (_, n) =>
       one({ type: "withdrawal" as const, date: day(n), amount: "1.00", description: `Køb ${n}`,
         source: "Konto A", destination: "Butik" }),
     );
     const s = setup({ data: { ...seed, transactions }, settings: { pageSize: 40 } });
     const { value } = await s.call("start", { categories: await s.tree() });
     const postings = value.postings as { date: string }[];
-    expect(postings).toHaveLength(100);
+    expect(postings).toHaveLength(50);
     expect(postings[0].date).toBe(day(0));
-    expect(postings[99].date).toBe(day(99));
+    expect(postings[49].date).toBe(day(49));
     expect(value.more).toBe(true);
   });
 
   it("says there are no more when the whole inbox fits", async () => {
     const day = (n: number) => new Date(Date.UTC(2025, 0, 1 + n)).toISOString().slice(0, 10);
-    const transactions = Array.from({ length: 100 }, (_, n) =>
+    const transactions = Array.from({ length: 50 }, (_, n) =>
       one({ type: "withdrawal" as const, date: day(n), amount: "1.00", description: `Køb ${n}`,
         source: "Konto A", destination: "Butik" }),
     );
     const s = setup({ data: { ...seed, transactions }, settings: { pageSize: 40 } });
     const { value } = await s.call("start", { categories: await s.tree() });
-    expect(value.postings).toHaveLength(100);
+    expect(value.postings).toHaveLength(50);
     expect(value.more).toBe(false);
   });
 
@@ -300,7 +319,7 @@ describe("set_category", () => {
     const food = (await s.categoryIds()).get("Dagligvarer")!;
     const posting = Number(before.transaction_journal_id);
 
-    const answer = await s.call("set_category", { assignments: [{ posting_id: posting, category_id: food }] });
+    const answer = await s.write([{ posting_id: posting, category_id: food }]);
     expect(answer).toEqual({ isError: false, value: { results: [{ posting_id: posting, ok: true }] } });
 
     const after = (await s.splits()).get("Kiosk")!;
@@ -319,18 +338,18 @@ describe("set_category", () => {
     expect(s.log).toHaveBeenCalledWith("sorter: set_category: 1 written");
   });
 
-  it("removes the losing tag of a conflict too", async () => {
-    const conflict = {
+  it("removes another main group's tag too", async () => {
+    const other = {
       ...seed,
-      ruleGroups: [{ title: "Hovedgrupper", rules: [...seed.ruleGroups[0].rules, tagRule("Gammel", "Fritid"),
-        tagRule("Gammel", "Hobby")] }],
+      ruleGroups: [{ title: "Hovedgrupper", rules: [...seed.ruleGroups[0].rules, tagRule("Gammel", "Fritid")] }],
       transactions: [one({ type: "withdrawal" as const, date: "2026-02-15", amount: "45.00", description: "Kiosk",
         source: "Konto A", destination: "Kiosk", tags: ["Fritid", "Ferie"] })],
     };
-    const s = setup({ data: conflict });
+    const s = setup({ data: other });
     const kiosk = await s.postingId("Kiosk");
     const food = (await s.categoryIds()).get("Dagligvarer")!;
-    const { value } = await s.call("set_category", { assignments: [{ posting_id: kiosk, category_id: food }] });
+    const old = { id: (await s.categoryIds()).get("Gammel")!, name: "Gammel", group: "Fritid" };
+    const { value } = await s.write([{ posting_id: kiosk, category_id: food }], [...(await s.tree()), old]);
     expect(value.results).toEqual([{ posting_id: kiosk, ok: true }]);
     expect((await s.splits()).get("Kiosk")!.tags).toEqual(["Ferie", "Mad"]);
   });
@@ -339,7 +358,7 @@ describe("set_category", () => {
     const s = setup();
     const posting = await s.postingId("Returvare Butik B");
     const rent = (await s.categoryIds()).get("Husleje")!;
-    const { value } = await s.call("set_category", { assignments: [{ posting_id: posting, category_id: rent }] });
+    const { value } = await s.write([{ posting_id: posting, category_id: rent }]);
     expect(value.results).toEqual([{ posting_id: posting, ok: true }]);
     expect((await s.splits()).get("Returvare Butik B")).toMatchObject({ category_name: "Husleje", tags: ["Bolig"] });
   });
@@ -349,7 +368,7 @@ describe("set_category", () => {
     const before = await s.splits();
     const first = Number(before.get("Del 1")!.transaction_journal_id);
     const other = (await s.categoryIds()).get("Mad: Øvrige")!;
-    const { value } = await s.call("set_category", { assignments: [{ posting_id: first, category_id: other }] });
+    const { value } = await s.write([{ posting_id: first, category_id: other }]);
     expect(value.results).toEqual([{ posting_id: first, ok: true }]);
     const after = await s.splits();
     expect(after.get("Del 1")).toMatchObject({ category_name: "Mad: Øvrige", tags: ["Mad"] });
@@ -362,12 +381,10 @@ describe("set_category", () => {
     const ids = await s.categoryIds();
     const kiosk = await s.postingId("Kiosk");
     const rent = await s.postingId("Husleje marts");
-    const { isError, value } = await s.call("set_category", {
-      assignments: [
-        { posting_id: rent, category_id: ids.get("Dagligvarer")! },
-        { posting_id: kiosk, category_id: ids.get("Dagligvarer")! },
-      ],
-    });
+    const { isError, value } = await s.write([
+      { posting_id: rent, category_id: ids.get("Dagligvarer")! },
+      { posting_id: kiosk, category_id: ids.get("Dagligvarer")! },
+    ]);
     expect(isError).toBe(false);
     expect(value.results).toEqual([
       { posting_id: rent, ok: false, reason: "not-in-inbox" },
@@ -390,7 +407,7 @@ describe("set_category", () => {
     const before = await s.splits();
     const posting = Number(before.get(description)!.transaction_journal_id);
     const categoryId = (await s.categoryIds()).get(category)!;
-    const { value } = await s.call("set_category", { assignments: [{ posting_id: posting, category_id: categoryId }] });
+    const { value } = await s.write([{ posting_id: posting, category_id: categoryId }]);
     expect(value.results).toEqual([{ posting_id: posting, ok: false, reason }]);
     expect(s.puts()).toEqual([]);
     expect(await s.splits()).toEqual(before);
@@ -409,7 +426,7 @@ describe("set_category", () => {
     });
     const kiosk = await s.postingId("Kiosk");
     const food = (await s.categoryIds()).get("Dagligvarer")!;
-    const { value } = await s.call("set_category", { assignments: [{ posting_id: kiosk, category_id: food }] });
+    const { value } = await s.write([{ posting_id: kiosk, category_id: food }]);
     expect(value.results).toEqual([{ posting_id: kiosk, ok: false, reason: "not-withdrawal-or-deposit" }]);
     expect(s.puts()).toEqual([]);
   });
@@ -418,12 +435,10 @@ describe("set_category", () => {
     const s = setup();
     const kiosk = await s.postingId("Kiosk");
     const food = (await s.categoryIds()).get("Dagligvarer")!;
-    const { value } = await s.call("set_category", {
-      assignments: [
-        { posting_id: 99999, category_id: food },
-        { posting_id: kiosk, category_id: 99999 },
-      ],
-    });
+    const { value } = await s.write([
+      { posting_id: 99999, category_id: food },
+      { posting_id: kiosk, category_id: 99999 },
+    ]);
     expect(value.results).toEqual([
       { posting_id: 99999, ok: false, reason: "unknown-posting" },
       { posting_id: kiosk, ok: false, reason: "unknown-category" },
@@ -437,7 +452,8 @@ describe("set_category", () => {
     const s = setup({ data: twice });
     const kiosk = await s.postingId("Kiosk");
     const food = (await s.categoryIds()).get("Dagligvarer")!;
-    const { value } = await s.call("set_category", { assignments: [{ posting_id: kiosk, category_id: food }] });
+    // start refuses while a category is in two main groups; set_category checks the category first, too.
+    const { value } = await s.call("set_category", { assignments: [{ posting_id: kiosk, category_id: food, amount: "45.00" }] });
     expect(value.results).toEqual([{ posting_id: kiosk, ok: false, reason: "ambiguous-main-group" }]);
     expect(s.puts()).toEqual([]);
   });
@@ -446,7 +462,7 @@ describe("set_category", () => {
     const s = setup();
     const ids = await s.categoryIds();
     const { value } = await s.call("start", { categories: await s.tree() });
-    const shop = (value.postings as { posting_id: number; description: string }[])
+    const shop = (value.postings as { posting_id: number; description: string; amount: string }[])
       .find((p) => p.description === "Indkøb i Butik A")!;
     const split = (await s.splits()).get("Indkøb i Butik A")!;
     await s.direct.put(`transactions/${split.groupId}`, {
@@ -454,19 +470,70 @@ describe("set_category", () => {
     });
 
     const answer = await s.call("set_category", {
-      assignments: [{ posting_id: shop.posting_id, category_id: ids.get("Dagligvarer")! }],
+      assignments: [{ posting_id: shop.posting_id, category_id: ids.get("Dagligvarer")!, amount: shop.amount }],
     });
     expect(answer.value.results).toEqual([{ posting_id: shop.posting_id, ok: false, reason: "not-in-inbox" }]);
     expect((await s.splits()).get("Indkøb i Butik A")!.category_name).toBe("Husleje");
     expect(s.puts()).toHaveLength(1);
   });
 
+  it("refuses a posting start has not given out, though it is in the inbox", async () => {
+    const s = setup();
+    const kiosk = await s.postingId("Kiosk");
+    const food = (await s.categoryIds()).get("Dagligvarer")!;
+    const { value } = await s.call("set_category", { assignments: [{ posting_id: kiosk, category_id: food, amount: "45.00" }] });
+    expect(value.results).toEqual([{ posting_id: kiosk, ok: false, reason: "not-given-out" }]);
+    expect(s.puts()).toEqual([]);
+  });
+
+  it("refuses a posting whose amount is not the one start gave, as when its id is copied wrong", async () => {
+    const s = setup();
+    const kiosk = await s.postingId("Kiosk");
+    const shop = await s.postingId("Indkøb i Butik A");
+    const food = (await s.categoryIds()).get("Dagligvarer")!;
+    await s.call("start", { categories: await s.tree() });
+    const { value } = await s.call("set_category", {
+      assignments: [
+        { posting_id: shop, category_id: food, amount: "45.00" },
+        { posting_id: kiosk, category_id: food, amount: "45.00" },
+      ],
+    });
+    expect(value.results).toEqual([
+      { posting_id: shop, ok: false, reason: "amount-mismatch" },
+      { posting_id: kiosk, ok: true },
+    ]);
+    expect(s.puts()).toHaveLength(1);
+    expect((await s.splits()).get("Indkøb i Butik A")!.category_name).toBeNull();
+  });
+
+  it("takes a posting 30 minutes after start gave it out, and not later", async () => {
+    let clock = 1_000_000;
+    const fake = createFakeFirefly(seed);
+    const client = createFireflyClient({ baseUrl: "http://f", token: "fake-token", fetch: fake.fetch });
+    const tools = createSorterTools(client, SETTINGS, vi.fn(), () => clock);
+    const [start, setCategory] = tools;
+    const categories = await setup().tree();
+    const { postings } = (await start.call({ categories })) as { postings: { posting_id: number; amount: string }[] };
+    const [first, second] = postings;
+    const food = categories.find((c) => c.name === "Dagligvarer")!.id;
+    clock += 30 * 60 * 1000 - 1;
+    expect(await setCategory.call({ assignments: [{ posting_id: first.posting_id, category_id: food, amount: first.amount }] }))
+      .toEqual({ results: [{ posting_id: first.posting_id, ok: true }] });
+    clock += 1;
+    expect(await setCategory.call({ assignments: [{ posting_id: second.posting_id, category_id: food, amount: second.amount }] }))
+      .toEqual({ results: [{ posting_id: second.posting_id, ok: false, reason: "not-given-out" }] });
+  });
+
   it.each([
     ["an empty list", () => []],
     ["more than 100 assignments", (p: number, c: number) => Array.from({ length: 101 }, (_, n) =>
-      ({ posting_id: n === 0 ? p : 100000 + n, category_id: c }))],
-    ["a posting given twice", (p: number, c: number) => [{ posting_id: p, category_id: c }, { posting_id: p, category_id: c }]],
-    ["an id that is not a whole number", (p: number) => [{ posting_id: p, category_id: "1" }]],
+      ({ posting_id: n === 0 ? p : 100000 + n, category_id: c, amount: "45.00" }))],
+    ["a posting given twice", (p: number, c: number) => [{ posting_id: p, category_id: c, amount: "45.00" },
+      { posting_id: p, category_id: c, amount: "45.00" }]],
+    ["an id that is not a whole number", (p: number) => [{ posting_id: p, category_id: "1", amount: "45.00" }]],
+    ["no amount", (p: number, c: number) => [{ posting_id: p, category_id: c }]],
+    ["an amount as a number", (p: number, c: number) => [{ posting_id: p, category_id: c, amount: 45 }]],
+    ["an amount with a sign", (p: number, c: number) => [{ posting_id: p, category_id: c, amount: "-45.00" }]],
   ])("refuses %s whole, and writes nothing", async (_, assignments) => {
     const s = setup();
     const kiosk = await s.postingId("Kiosk");
@@ -482,8 +549,9 @@ describe("set_category", () => {
     const s = setup();
     const kiosk = await s.postingId("Kiosk");
     const food = (await s.categoryIds()).get("Dagligvarer")!;
+    await s.call("start", { categories: await s.tree() });
     s.fake.fault = "error";
-    const answer = await s.call("set_category", { assignments: [{ posting_id: kiosk, category_id: food }] });
+    const answer = await s.call("set_category", { assignments: [{ posting_id: kiosk, category_id: food, amount: "45.00" }] });
     expect(answer).toEqual({ isError: true, value: { error: "unreachable", results: [] } });
     expect(s.puts()).toEqual([]);
     expect(s.log).toHaveBeenCalledWith("sorter: set_category: unreachable");
@@ -499,9 +567,7 @@ describe("set_category", () => {
     });
     const food = (await s.categoryIds()).get("Dagligvarer")!;
     const ids = await Promise.all(["Kiosk", "Indkøb i Butik A", "Del 1"].map(s.postingId));
-    const answer = await s.call("set_category", {
-      assignments: ids.map((posting_id) => ({ posting_id, category_id: food })),
-    });
+    const answer = await s.write(ids.map((posting_id) => ({ posting_id, category_id: food })));
     expect(answer).toEqual({
       isError: true,
       value: { error: "unreachable", results: [{ posting_id: ids[0], ok: true }] },
