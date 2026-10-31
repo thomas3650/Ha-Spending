@@ -360,13 +360,17 @@ async function shopAccount(
     same.find((a) => tidy(a.name) === name) ?? same.sort((a, b) => byCodePoint(tidy(a.name), tidy(b.name)))[0];
   if (found !== undefined) return found;
 
-  const answer = (await client.post("accounts", { name, type: "expense" }, signal)) as { data?: { id?: unknown } };
+  type Made = { data?: { id?: unknown; attributes?: { type?: unknown; active?: unknown } } };
+  const answer = (await client.post("accounts", { name, type: "expense" }, signal)) as Made;
   const id = answer.data?.id;
-  // Without an id the write would leave the destination out and still answer the shop as written.
-  if (typeof id !== "string" || id === "") throw new FireflyError("unreachable");
-  const made = { id, name, type: "expense", active: true };
-  accounts.push(made);
-  return made;
+  const made = answer.data?.attributes;
+  // Firefly III takes any account's id as a withdrawal's destination, so only an active expense account is written.
+  if (typeof id !== "string" || id === "" || made?.type !== "expense" || made.active === false) {
+    throw new FireflyError("unreachable");
+  }
+  const account = { id, name, type: "expense", active: true };
+  accounts.push(account);
+  return account;
 }
 
 async function assign(

@@ -732,6 +732,47 @@ describe("set_category with a shop", () => {
   });
 
   it.each([
+    ["a liability", { type: "liabilities", active: true }],
+    ["an inactive expense account", { type: "expense", active: false }],
+    ["an account of no type", { active: true }],
+  ])("stops the batch as unreachable when the new account comes back as %s, and leaves the posting", async (_, kind) => {
+    const s = setup({
+      data: shopSeed,
+      fetch: (fetch) => (input, init) => {
+        if (init?.method !== "POST") return fetch(input, init);
+        return Promise.resolve(Response.json({ data: { id: "9999", attributes: { name: "Ny butik", ...kind } } }));
+      },
+    });
+    const before = await s.splits();
+    const { answer } = await writeShops(s, [
+      { description: "Kort 1", shop: "Ny butik" },
+      { description: "Kort 2" },
+    ]);
+    expect(answer).toEqual({ isError: true, value: { error: "unreachable", results: [] } });
+    expect(s.puts()).toEqual([]);
+    expect(await s.splits()).toEqual(before);
+    s.logsNoShop("Ny butik");
+  });
+
+  it("reads the accounts once per call", async () => {
+    const s = setup({ data: shopSeed });
+    const pages = Math.ceil((await s.accounts()).length / SETTINGS.pageSize);
+    const ids = await s.categoryIds();
+    await s.call("start", { categories: await s.tree() });
+    const assignments = await Promise.all([["Kort 1", "Ny butik"], ["Kort 2", "NY BUTIK"], ["Kort 3", "Bager"]].map(
+      async ([description, shop]) => {
+        const posting_id = await s.postingId(description);
+        return { posting_id, category_id: ids.get("Dagligvarer")!, amount: await s.amountOf(posting_id), shop };
+      }));
+    const start = s.fake.requests.length;
+    const { value } = await s.call("set_category", { assignments });
+    expect((value.results as unknown[]).length).toBe(3);
+    expect(pages).toBeGreaterThan(1);
+    const reads = s.fake.requests.slice(start).filter((r) => r.method === "GET" && r.path === "/api/v1/accounts");
+    expect(reads).toHaveLength(pages);
+  });
+
+  it.each([
     ["not-withdrawal", "a deposit whose source is (no name)", "Retur", "Ny butik"],
     ["not-withdrawal", "a deposit, before the name", "Retur", "(no name)"],
     ["has-shop", "a withdrawal whose shop was set by hand", "Kiosk", "Ny butik"],
@@ -782,6 +823,7 @@ describe("set_category with a shop", () => {
     expect(after.get("Kort 1")).toMatchObject({ destination_id: shop.id, destination_name: "Butik A" });
     expect(after.get("Kort 2")).toMatchObject({ destination_id: shop.id, destination_name: "Butik A" });
     expect(s.posts()).toEqual([]);
+    s.logsNoShop("Butik A", "BUTIK a");
   });
 
   it("takes the exact one of two shops that differ in case, else the first in code-point order", async () => {
@@ -803,6 +845,7 @@ describe("set_category with a shop", () => {
     expect(after.get("Kort 2")!.destination_id).toBe(id("Bager"));
     expect(after.get("Kort 3")!.destination_id).toBe(id("Bager"));
     expect(s.posts()).toEqual([]);
+    s.logsNoShop("bager", "Bager", "BAGER");
   });
 
   it.each([
