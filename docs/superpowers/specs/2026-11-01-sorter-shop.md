@@ -86,8 +86,8 @@ rules do not run on the write. The endpoint can now make expense accounts: at mo
 the agent within §1.
 
 If Firefly III refuses the write anyway (a 422), it is `unreachable`, as any failed write today: the batch stops, the
-posting is unchanged and stays in the inbox, and the results before it stand (D30). The checks above are meant to leave Firefly III no
-reason to refuse a name.
+posting is unchanged and stays in the inbox, and the results before it stand (D30). The checks above are meant to
+leave Firefly III no reason to refuse a name.
 
 ## 4. Tests
 
