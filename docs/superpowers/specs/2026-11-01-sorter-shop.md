@@ -130,5 +130,4 @@ leave Firefly III no reason to refuse a name.
   the account made by the add-on and written by id, the client's `post` for that alone, and that the endpoint now
   makes expense accounts, at most one per posting given out in a run; an account made before a PUT that then fails
   stays and is reused by a later run. D29 and D30 are not edited; where a part of them no longer holds, their status
-  becomes `active; <part> superseded by D32`. D30's list of what is written is
-  then active with that part superseded by D32.
+  becomes `active; <part> superseded by D32`.

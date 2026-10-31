@@ -28,7 +28,7 @@ through `scripts/integration`.
 3. **A name of 60 code points with an emoji** passes; 61 is refused; a lone surrogate is refused. Test in Task 2.
 4. **`shops` at its cap**: names past 12,000 code points are left out and `shops_more` is `true`. Test in Task 3.
 5. **A split group**: only the assigned split's destination changes. Test in Task 3.
-6. **A new shop is POSTed and written by id, never by name**: the fake refuses `destination_name`. Task 1.
+6. **A new shop is POSTed and written by id, never by name**: the fake refuses `destination_name` (Task 1), and the sorter's test makes a new shop by POST (Task 3).
 
 ---
 
