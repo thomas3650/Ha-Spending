@@ -5,21 +5,36 @@ import {
   localToday,
   type Period,
   type SpendingData,
-  within,
 } from "@ha-spending/shared";
 import { css, html, LitElement, nothing } from "lit";
 
 import "./components/accounts-picker";
 import { dropdownStyles } from "./components/dropdown";
 import { keyNumbersStyles } from "./components/key-numbers";
+import { barsStyles, type UnitSelection } from "./components/bars";
+import { type CircleSelection, circleStyles } from "./components/circle";
 import { periodPickerStyles } from "./components/period-picker";
+import { postingsStyles } from "./components/postings";
 import { topCardStyles } from "./components/top-card";
 import { LoadError, type LoadErrorCode, loadData } from "./data/api";
 import { da } from "./i18n/da";
 import { type ViewContext, viewContext } from "./model/context";
 import { keyCards } from "./model/key-numbers";
-import { normalise, setAccounts, setGrouping, setPeriod } from "./state/actions";
-import { parseHash, type PeriodChoice, periodOf, toHash, type ViewState } from "./state/view";
+import "./screens/overview";
+import { overviewStyles } from "./screens/overview";
+import {
+  chooseUnit,
+  normalise,
+  openAllPostings,
+  openPart,
+  removeCategory,
+  removeUnit,
+  setAccounts,
+  setCard,
+  setGrouping,
+  setPeriod,
+} from "./state/actions";
+import { type Card, parseHash, type PeriodChoice, periodOf, toHash, type ViewState } from "./state/view";
 import { card, theme } from "./theme";
 
 type Load =
@@ -47,6 +62,10 @@ export class SpendingApp extends LitElement {
     periodPickerStyles,
     topCardStyles,
     keyNumbersStyles,
+    circleStyles,
+    barsStyles,
+    postingsStyles,
+    overviewStyles,
     css`
       :host {
         display: block;
@@ -223,24 +242,34 @@ export class SpendingApp extends LitElement {
     this.apply(setAccounts(this.state, event.detail, all), "push");
   }
 
-  private halves(loading: boolean, empty: boolean) {
+  private push(next: ViewState): void {
+    this.apply(next, "push");
+  }
+
+  private loadingHalves() {
     return html`<div class="halves">
-      ${[0, 1].map(() =>
-        loading
-          ? html`<section class="card half" role="region" aria-busy="true" aria-label=${da.loading}></section>`
-          : html`<section class="card half" role="region">
-              ${empty ? html`<p class="empty">${da.noSpending}</p>` : nothing}
-            </section>`,
+      ${[0, 1].map(
+        () => html`<section class="card half" role="region" aria-busy="true" aria-label=${da.loading}></section>`,
       )}
     </div>`;
   }
 
   private ready(ctx: ViewContext) {
     const overview = this.state.screen === "overview";
-    const empty = within(ctx.shown, ctx.timeline.period).length === 0;
     return html`
       ${ctx.data.mainGroupsFound ? nothing : html`<p class="card line status" role="status">${da.noRuleGroup}</p>`}
-      ${overview ? html`<hs-key-numbers .cards=${keyCards(ctx)}></hs-key-numbers>${this.halves(false, empty)}` : nothing}
+      ${overview
+        ? html`<hs-key-numbers .cards=${keyCards(ctx)}></hs-key-numbers>
+            <hs-overview
+              .ctx=${ctx}
+              @part-click=${(e: CustomEvent<CircleSelection>) => this.push(openPart(this.state, e.detail.key))}
+              @unit-click=${(e: CustomEvent<UnitSelection>) => this.push(chooseUnit(this.state, e.detail.fullStart))}
+              @card-change=${(e: CustomEvent<Card>) => this.push(setCard(this.state, e.detail))}
+              @remove-unit=${() => this.push(removeUnit(this.state))}
+              @remove-category=${() => this.push(removeCategory(this.state))}
+              @open-all-postings=${() => this.push(openAllPostings(this.state))}
+            ></hs-overview>`
+        : nothing}
     `;
   }
 
@@ -252,7 +281,7 @@ export class SpendingApp extends LitElement {
         return this.ready(viewContext(this.load.data, this.state, this.today));
       default:
         return this.state.screen === "overview"
-          ? html`<hs-key-numbers .cards=${null}></hs-key-numbers>${this.halves(true, false)}`
+          ? html`<hs-key-numbers .cards=${null}></hs-key-numbers>${this.loadingHalves()}`
           : nothing;
     }
   }
