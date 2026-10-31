@@ -273,7 +273,7 @@ export const barsStyles = [
   visuallyHidden,
   css`
     .bars .chart {
-      height: 340px;
+      height: 400px;
     }
   `,
 ];
