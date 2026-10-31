@@ -134,15 +134,16 @@ export class Circle extends LitElement {
       series: [
         {
           type: "pie",
-          radius: ["42%", "60%"],
+          radius: ["36%", "52%"],
           startAngle: ringStartAngle(this.items),
           clockwise: true,
           avoidLabelOverlap: true,
           selectedMode: this.selectable ? "single" : false,
           selectedOffset: 8,
           itemStyle: { borderColor: token("--hs-card"), borderWidth: 2 },
-          label: { alignTo: "edge", edgeDistance: 8, padding: [2, 4], borderRadius: 4 },
-          labelLine: { length: 10, length2: 14, lineStyle: { color: token("--hs-leader") } },
+          // A name is never cut: without "break" ECharts truncates it to the room between the edge and its line.
+          label: { alignTo: "edge", edgeDistance: 8, padding: [2, 4], borderRadius: 4, overflow: "break" },
+          labelLine: { length: 8, length2: 10, lineStyle: { color: token("--hs-leader") } },
           emphasis: {
             scale: true,
             scaleSize: 6,

@@ -1,11 +1,11 @@
-import { keyNumbers, within } from "@ha-spending/shared";
+import { type ClassifiedPosting, keyNumbers, within } from "@ha-spending/shared";
 import { css, html, LitElement, nothing } from "lit";
 import "../components/bars";
 import "../components/circle";
 import "../components/postings";
 import { kr } from "../format";
 import { da } from "../i18n/da";
-import { barItems, categoryColours, circleItems } from "../model/circle";
+import { barItems, categoryColours, circleItems, circleTotal } from "../model/circle";
 import { levelName, type ViewContext } from "../model/context";
 import { groupedPostings } from "../model/postings";
 import type { Card } from "../state/view";
@@ -13,11 +13,6 @@ import type { Card } from "../state/view";
 const LEFT_TITLE = "hs-left-title";
 const RIGHT_TITLE = "hs-right-title";
 
-/**
- * The two halves of screens 1, 2 and 4: the circle, and the card that switches between Søjler, Posteringer and
- * Forskel. Fires `card-change` (detail: Card) and `open-all-postings`; `part-click` and `unit-click` bubble up from
- * the circle and the bars.
- */
 export class Overview extends LitElement {
   static override properties = {
     ctx: { attribute: false },
@@ -41,7 +36,7 @@ export class Overview extends LitElement {
     const ctx = this.ctx;
     const all = ctx.circleLevel.kind === "all";
     const items = circleItems(ctx);
-    const whole = items.reduce((sum, i) => sum + i.amount, 0);
+    const whole = circleTotal(ctx);
     const empty = within(ctx.circlePostings, ctx.timeline.period).length === 0;
     return html`<section class="card half" role="region" aria-labelledby=${LEFT_TITLE}>
       <div class="half-head">
@@ -75,9 +70,9 @@ export class Overview extends LitElement {
       <p class="foot">${da.barsHint(g)}</p>`;
   }
 
-  private postings() {
+  private postings(inPeriod: ClassifiedPosting[]) {
     const ctx = this.ctx;
-    const list = groupedPostings(within(ctx.shown, ctx.timeline.period), ctx.units, ctx, true, categoryColours(ctx));
+    const list = groupedPostings(inPeriod, ctx.units, ctx, true, categoryColours(ctx));
     return html`<hs-postings .list=${list} .grouping=${ctx.timeline.grouping}></hs-postings>
       <p class="foot">
         ${da.postingsHint(ctx.timeline.grouping)}
@@ -88,12 +83,12 @@ export class Overview extends LitElement {
   private right() {
     const ctx = this.ctx;
     const card = ctx.state.card;
-    const empty = within(ctx.shown, ctx.timeline.period).length === 0;
+    const inPeriod = within(ctx.shown, ctx.timeline.period);
     const title = card === "postings" ? da.postingsTitle : card === "bars" ? da.per(ctx.timeline.grouping) : da.difference;
     let body: unknown = nothing;
-    if (empty) body = this.empty();
+    if (inPeriod.length === 0) body = this.empty();
     else if (card === "bars") body = this.bars();
-    else if (card === "postings") body = this.postings();
+    else if (card === "postings") body = this.postings(inPeriod);
     return html`<section class="card half" role="region" aria-labelledby=${RIGHT_TITLE}>
       <div class="half-head">
         <h2 id=${RIGHT_TITLE}>${title}</h2>
