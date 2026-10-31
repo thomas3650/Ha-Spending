@@ -1,6 +1,6 @@
 # https://contributors.home-assistant.io/apps/reference/configuration/
 name: HA Spending
-version: "0.2.2"  # x-release-please-version
+version: "0.3.0"  # x-release-please-version
 slug: ha_spending
 description: A household's spending from Firefly III, on a page in Home Assistant.
 url: https://github.com/thomas3650/Ha-Spending/tree/main/addon
