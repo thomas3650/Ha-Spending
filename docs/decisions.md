@@ -241,3 +241,12 @@ to set their status to `superseded by D<n>`, or to name a part a later decision 
   halves fit them there. Below 1024 px even equal halves are too narrow for a long name such as Uden hovedgruppe.
 - **Source:** the controller's ruling after the Chrome check of the
   [page plan](superpowers/plans/2026-10-31-page.md)
+
+### D25: Release PRs from `github.token`, CI started by hand
+- **Date:** 2026-10-31 · **Status:** active
+- **Decision:** "Allow GitHub Actions to create and approve pull requests" is on and no `RELEASE_PLEASE_TOKEN` is set,
+  as in `ha-claude-addon`. The release PR's CI is started by closing and reopening it with Thomas's login
+  ([`releasing.md`](releasing.md#the-release-prs-ci)).
+- **Why:** No token to create and renew. A PR opened with `github.token` triggers no workflows, so the reopen keeps the
+  required checks without an admin merge.
+- **Source:** Thomas, 2026-10-31 ("Do like ha-claude-addon")

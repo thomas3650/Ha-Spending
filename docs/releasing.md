@@ -70,32 +70,25 @@ gh pr merge <n> --squash --subject "<PR title> (#<n>)"
 
 1. Merge feature PRs as usual ([`way-of-working.md`](way-of-working.md) §2). release-please keeps the release PR up
    to date.
-2. Merge the release PR once its CI is green, with its title as the subject ([Merging](#merging)).
+2. Start the release PR's CI ([below](#the-release-prs-ci)), then merge it once green, with its title as the subject
+   ([Merging](#merging)).
 3. Check the result: `gh release list` shows the draft `vX.Y.Z`, and
    `gh run list --workflow addon-image.yml` shows a green run for it.
-4. The first time, make the package public ([GHCR visibility](#ghcr-visibility)).
+4. Check that the package is public ([GHCR visibility](#ghcr-visibility)).
 5. Draft the house issue ([After a release](#after-a-release)).
 
-### While release-please cannot open its PR
+### The release PR's CI
 
-The `release-please` job needs `RELEASE_PLEASE_TOKEN`, or "Allow GitHub Actions to create and approve pull requests"
-in the repo's Actions settings ([the token](#the-release-please-token)). Until one of the two is set, the job fails on
-every push to `main` and no release PR opens. Then open the release PR from a checkout of `main`, with Thomas's `gh`
-login, so CI runs on it:
-
-```bash
-npx release-please@17.11.2 release-pr --token "$(gh auth token)" --repo-url thomas3650/Ha-Spending --target-branch main
-```
-
-The `release-please` job on the release PR's merge tags the commit and drafts the release itself: that needs no PR
-permission. Only when `gh release list` shows no draft for the version, run the same command's `github-release`:
+The `release-please` job opens the release PR with `github.token`, as `ha-claude-addon` does
+([D25](decisions.md)), and a PR opened that way triggers no workflows. So the required checks never start by
+themselves. Close and reopen the PR with Thomas's `gh` login, and CI runs on it:
 
 ```bash
-npx release-please@17.11.2 github-release --token "$(gh auth token)" --repo-url thomas3650/Ha-Spending --target-branch main
+gh pr close <n> && gh pr reopen <n>
 ```
 
-With the Actions setting on but no token, the release PR opens, but CI does not run on it until a commit is pushed to
-its branch.
+Do this again after release-please updates the PR. The job tags the merge commit and drafts the release itself on the
+release PR's merge.
 
 ## After a release
 
@@ -106,7 +99,7 @@ checks to run after installing. It holds nothing private: the repo is public, an
 ## GHCR visibility
 
 Only the multi-arch package `ha-spending` must be public: that is what Home Assistant pulls. The per-arch packages can
-stay private. After the first image, Thomas makes the package public. Check with an anonymous pull:
+stay private. It was public from the first image, 0.1.0 (checked 2026-10-31). Check with an anonymous pull:
 
 ```bash
 docker logout ghcr.io
@@ -117,28 +110,21 @@ Changing the visibility needs Thomas's OK.
 
 ## The release-please token
 
-`RELEASE_PLEASE_TOKEN` is to be a fine-grained token for `thomas3650/Ha-Spending` only, with Contents, Pull requests
-and Issues: read and write, the scopes the `release-please` job asks of `github.token`. With it, release PRs trigger
-CI.
-
-- **Setting it (Thomas):** create the token, then run `gh secret set RELEASE_PLEASE_TOKEN -R thomas3650/Ha-Spending`
-  and paste it. Its expiry date then goes into `docs/notes.md` (created then, and added to the map), so it is
-  renewed in time.
-- **If it expires,** the `release-please` job fails with bad credentials, and nothing moves until Thomas renews it. The
-  workflow doesn't fall back: an expired token is still set.
-- **If the secret is deleted,** the workflow falls back to `github.token` ([above](#while-release-please-cannot-open-its-pr)).
+No `RELEASE_PLEASE_TOKEN` is set ([D25](decisions.md)). `release-please.yml` still prefers one when it is set, so a
+fine-grained token for this repo (Contents, Pull requests and Issues: read and write) would give release PRs CI by
+themselves. Its expiry would then have to be tracked and renewed.
 
 ## GitHub settings
 
-Set with `gh` on 2026-10-31 at Thomas's yes ([`way-of-working.md`](way-of-working.md) §4), as Ha-Fitness has them:
+Set with `gh` on 2026-10-31 at Thomas's yes ([`way-of-working.md`](way-of-working.md) §4), as Ha-Fitness has them, except the release PR route:
 
 - Squash merge only, with GitHub's default squash title; the branch deleted after merge.
 - `main` protected: the required checks `pr-title`, `node`, `integration`, `addon-lint`, `addon-build`, `workflows`
   and `gitleaks`, linear history, no force pushes or deletions. Admins are not held to it.
 - Private vulnerability reporting on ([`SECURITY.md`](../SECURITY.md)).
 
-Not set yet: `RELEASE_PLEASE_TOKEN` ([the token](#the-release-please-token)). Thomas makes it, as in Ha-Fitness;
-"Allow GitHub Actions to create and approve pull requests" stays off, as there.
+- "Allow GitHub Actions to create and approve pull requests" on, and no `RELEASE_PLEASE_TOKEN`, as `ha-claude-addon`
+  has it, not Ha-Fitness ([D25](decisions.md)).
 
 ## When a release fails
 
@@ -153,8 +139,8 @@ Not set yet: `RELEASE_PLEASE_TOKEN` ([the token](#the-release-please-token)). Th
 - **A version has no `addon-image` run at all** (GitHub replaced its run in the queue, and no later run made it up):
   `gh workflow run addon-image.yml --ref main`. It builds the version in `addon/config.yaml` from the commit that set
   it when its image is missing, and skips it when the image is there.
-- **The `release-please` job fails:** see [While release-please cannot open its PR](#while-release-please-cannot-open-its-pr)
-  and [the token](#the-release-please-token).
+- **The `release-please` job fails** with "GitHub Actions is not permitted to create or approve pull requests": the
+  Actions setting is off again ([GitHub settings](#github-settings)). Turning it back on needs Thomas's OK.
 
 ## Bumping pins
 
