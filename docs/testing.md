@@ -54,7 +54,7 @@ would, on the Mac.
 For a change to the Firefly III client, the mapping or the options. `scripts/integration` starts a real Firefly III
 from `addon/dev/firefly/compose.yaml`, makes a user and a token in it, seeds it with the example data, runs the
 server's integration tests against it and removes it, also on failure. They also run the sorter's two tools against
-it, so its search and its one write are checked on a real Firefly III ([D30](decisions.md)). Docker must run. It listens on port 8090;
+it, so its search and its write, a shop's expense account included, are checked on a real Firefly III ([D30](decisions.md), [D32](decisions.md)). Docker must run. It listens on port 8090;
 `FIREFLY_PORT` changes that. The token lives only in the run's environment and is never written or printed. CI runs the
 script as the `integration` job ([`releasing.md`](releasing.md#the-workflows)). The design is technical spec §7.2
 ([technical spec](superpowers/specs/2026-10-30-technical-design.md)); the token script is

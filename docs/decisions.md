@@ -295,7 +295,7 @@ to set their status to `superseded by D<n>`, or to name a part a later decision 
   session, 2026-10-31; the inbox rule and the key's length: Claude
 
 ### D30: The sorter's one write
-- **Date:** 2026-10-31 · **Status:** active
+- **Date:** 2026-10-31 · **Status:** active; what is written superseded by D32
 - **Decision:** `set_category` re-reads the posting's whole group right before it writes, and writes with one PUT of
   the group: the posting's `category_id` and `tags`, only `transaction_journal_id` for every other split, the
   `group_title` of a split group, and `apply_rules: false`. The tags lose every tag an active rule of the rule group adds,
@@ -313,3 +313,20 @@ to set their status to `superseded by D<n>`, or to name a part a later decision 
   entry wherever it is typed. Opening Alle posteringer and leaving it through the trail keep the search.
 - **Why:** Thomas looks for a store's cost on the overview and expects the search to stay when he switches cards.
 - **Source:** Thomas, 2026-10-31, [the postings search spec](superpowers/specs/2026-10-31-postings-search.md).
+
+### D32: The sorter writes a posting's shop
+- **Date:** 2026-11-01 · **Status:** active
+- **Decision:** `set_category` may also write a withdrawal's shop, its destination, in the same PUT as D30's, and only
+  on a withdrawal whose destination is the expense account `(no name)`; a shop set by hand is never overwritten. The
+  name is checked as in the [spec](superpowers/specs/2026-11-01-sorter-shop.md) §1 and the add-on finds the account
+  itself: an active expense account of that name, else one of the same name in other case, else it makes one with
+  `POST accounts`, and writes `destination_id`, never the name. A name that an account which is not an active expense
+  account holds (a liability, an asset, cash, an inactive one) is refused as `name-taken`. The client gains a `post`,
+  used for that alone, so the endpoint now makes expense accounts, at most one per posting given out in a run; an account
+  made before a PUT that then fails stays and is reused by a later run. `start` gives the shop names, capped at 12,000
+  characters. In a failure answer the results already written leave out the shop name and keep `shop_refused`, because
+  no shop name may appear in a failure's detail. It replaces D30's list of what is written.
+- **Why:** Imported postings all land on `(no name)`, and the sorter already works out the shop. Writing by id keeps a
+  name from pointing a purchase at a liability and the outcome independent of the database's collation.
+- **Source:** Thomas, 2026-10-31, the design of the shop on every posting;
+  [the shop spec](superpowers/specs/2026-11-01-sorter-shop.md); the limits: Claude
