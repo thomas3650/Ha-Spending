@@ -102,8 +102,7 @@ export class Overview extends LitElement {
     if (postings.length === 0) body = html`<p class="empty">${search.trim() === "" ? da.noSpending : da.noMatch}</p>`;
     else {
       const list = groupedPostings(postings, chosen === null ? ctx.units : [chosen], ctx, true, categoryColours(ctx));
-      body = html`<p class="postings-summary">${da.summary(count(postings.length), kr(total(postings)))}</p>
-        <hs-postings .list=${list} .query=${search} .grouping=${g}></hs-postings>
+      body = html`<hs-postings .list=${list} .query=${search} .grouping=${g}></hs-postings>
         <p class="half-foot">${da.postingsHint(g)}</p>`;
     }
     return html`<div class="postings-search-row">
@@ -117,6 +116,7 @@ export class Overview extends LitElement {
         />
         <button type="button" class="show-all" @click=${() => fire(this, "open-all-postings")}>${da.showAll}</button>
       </div>
+      <p class="postings-summary">${da.summary(count(postings.length), kr(total(postings)))}</p>
       ${body}`;
   }
 

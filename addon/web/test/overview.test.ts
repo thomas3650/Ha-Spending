@@ -152,12 +152,25 @@ describe("the search on Posteringer", () => {
     expect(push).not.toHaveBeenCalled();
   });
 
-  it("leaves the key numbers and the circle as they are", async () => {
-    const { app, root } = await mount("card=postings");
+  it("leaves the key numbers, the circle and the bars as they are", async () => {
+    const { app, root } = await mount("");
+    const barNames = () =>
+      barButtons(getByRole(root, "region", { name: da.per("month") })).map((b) => b.textContent?.trim());
+    const bars = barNames();
+    expect(bars).toHaveLength(10);
+    fireEvent.click(getByRole(viewSwitch(root), "button", { name: da.postings }));
+    await settle(app);
     const before = keyNumberTexts(root);
+    expect(before).toHaveLength(3);
+    expect(before.every((text) => text !== "")).toBe(true);
     await type(app, root, "roma");
+    summary(root, 2, 50000);
     expect(keyNumberTexts(root)).toEqual(before);
     expect(getAllByText(circleCard(root), kr(TOTAL))).toHaveLength(2);
+    fireEvent.click(getByRole(viewSwitch(root), "button", { name: da.bars }));
+    await settle(app);
+    expect(new URLSearchParams(location.hash.slice(1)).get("q")).toBe("roma");
+    expect(barNames()).toEqual(bars);
   });
 
   it("keeps the text through Søjler and back", async () => {
@@ -184,6 +197,7 @@ describe("the search on Posteringer", () => {
     box.focus();
     await type(app, root, "romaxyz");
     getByText(root, da.noMatch);
+    summary(root, 0, 0);
     expect(searchbox(root)).toBe(box);
     expect((app.shadowRoot as ShadowRoot).activeElement).toBe(box);
   });
