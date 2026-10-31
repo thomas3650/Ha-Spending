@@ -49,6 +49,11 @@ export const keyNumbersStyles = css`
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 14px;
   }
+  @media (max-width: 599px) {
+    .kpis {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
   .kpi-label {
     color: var(--hs-muted);
     font-size: 12px;

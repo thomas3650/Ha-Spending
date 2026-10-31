@@ -260,10 +260,20 @@ to set their status to `superseded by D<n>`, or to name a part a later decision 
   from the first test of 0.1.0.
 
 ### D27: A bigger circle with bigger names
-- **Date:** 2026-10-31 · **Status:** active
+- **Date:** 2026-10-31 · **Status:** active; the height below 600 px superseded by D28
 - **Decision:** The ring is as big as the room for its labels allows, between 46 % and 62 % of half the chart's
   shorter side, and is sized again when the chart is resized. Names are 14 px and amounts 12 px. The circle and the
   bars are 400 px high, the circle 560 px below 600 px.
 - **Why:** At full screen the ring and its names were small beside the bars (Thomas). The bars share the height so the
   two halves stay level.
 - **Source:** Thomas, 2026-10-31 ("the circel to the left can be bigger", "and bigger fonts on the cirkel")
+
+### D28: A narrow circle lists its parts under the ring
+- **Date:** 2026-10-31 · **Status:** active
+- **Decision:** On a chart narrower than 400 px the ring is 240 px high and has no labels beside it. Its parts are listed
+  under it instead, with a colour dot, the name and the amount and share; a part is chosen from the list. Below 600 px
+  the three key numbers stack. Pie labels keep 8 px between them.
+- **Why:** At about 420 px the column beside the ring was some 55 px wide, so names broke inside words and labels
+  overlapped (#28). The list was the hidden button list already there for keyboard and screen readers. The margin
+  leaves room for a chosen piece's label, which moves out with its piece after the labels are spread.
+- **Source:** Claude, for #28 (Thomas: "Yes, fix #28", 2026-10-31)

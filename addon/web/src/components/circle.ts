@@ -22,6 +22,8 @@ const SMALL = 0.05;
 const FADED = 0.35;
 /** The width a column of labels needs beside the ring, its lines and the edge included. */
 const LABEL_ROOM = 150;
+/** Below this chart width the labels lack room beside the ring, so the parts are listed under it instead. */
+export const NARROW_CHART = 400;
 
 /**
  * The ring's inner and outer radius in px: as big as the labels' room beside it allows, between 46 % and 62 % of half
@@ -46,15 +48,18 @@ function richSafe(text: string): string {
   return text.replace(/[{}]/g, "");
 }
 
+function amountText(item: CircleItem): string {
+  return item.share === null ? kr(item.amount) : `${kr(item.amount)} · ${percent(item.share)}`;
+}
+
 /** When ECharts wraps a label it drops a newline between two styles, so the newline sits inside the amount's style. */
 export function labelText(item: CircleItem): string {
-  const sub = item.share === null ? kr(item.amount) : `${kr(item.amount)} · ${percent(item.share)}`;
-  return `{name|${richSafe(item.name)}}{sub|\n${sub}}`;
+  return `{name|${richSafe(item.name)}}{sub|\n${amountText(item)}}`;
 }
 
 /**
- * The ring of parts, drawn by ECharts and named by a hidden button per piece (D19). Fires `part-click` with the
- * part's key.
+ * The ring of parts, drawn by ECharts and named by a hidden button per piece (D19). On a narrow chart the buttons are
+ * shown as a list under the ring instead of the labels beside it. Fires `part-click` with the part's key.
  */
 export class Circle extends LitElement {
   static override properties = {
@@ -63,6 +68,7 @@ export class Circle extends LitElement {
     centreAmount: { attribute: false },
     selected: { attribute: false },
     selectable: { attribute: false },
+    narrow: { attribute: false },
   };
 
   declare items: CircleItem[];
@@ -70,6 +76,8 @@ export class Circle extends LitElement {
   declare centreAmount: number;
   declare selected: CircleSelection | null;
   declare selectable: boolean;
+  /** Set from the chart's width. */
+  declare narrow: boolean;
 
   private chart: Chart | null = null;
   private resizeObserver: ResizeObserver | null = null;
@@ -85,6 +93,7 @@ export class Circle extends LitElement {
     this.centreAmount = 0;
     this.selected = null;
     this.selectable = false;
+    this.narrow = false;
   }
 
   protected override createRenderRoot(): HTMLElement {
@@ -132,13 +141,15 @@ export class Circle extends LitElement {
         this.requestUpdate();
       });
       this.resizeObserver = new ResizeObserver(() => {
+        if (el.clientWidth > 0) this.narrow = el.clientWidth < NARROW_CHART;
         if (`${el.clientWidth}x${el.clientHeight}` === this.ringSize) return;
         this.chartStale = true;
         this.requestUpdate();
       });
       this.resizeObserver.observe(el);
     }
-    if (fresh || this.chartStale || changed.has("items") || changed.has("selected") || changed.has("selectable")) {
+    if (fresh || this.chartStale || changed.has("items") || changed.has("selected") || changed.has("selectable") ||
+      changed.has("narrow")) {
       this.chartStale = false;
       this.chart.setOption(this.option(), { notMerge: true });
     }
@@ -154,7 +165,12 @@ export class Circle extends LitElement {
     const anyChosen = this.selected !== null;
     const el = this.chartEl.value;
     this.ringSize = el ? `${el.clientWidth}x${el.clientHeight}` : "";
-    const radius = el && el.clientWidth > 0 ? ringRadius(el.clientWidth, el.clientHeight) : ["34%", "46%"];
+    const radius = this.narrow
+      ? ["62%", "86%"]
+      : el && el.clientWidth > 0
+        ? ringRadius(el.clientWidth, el.clientHeight)
+        : ["34%", "46%"];
+    const labelled = !this.narrow;
     return {
       textStyle: { fontFamily: token("--hs-font") },
       series: [
@@ -168,13 +184,22 @@ export class Circle extends LitElement {
           selectedOffset: 8,
           itemStyle: { borderColor: token("--hs-card"), borderWidth: 2 },
           // A name is never cut: without "break" ECharts truncates it to the room between the edge and its line.
-          label: { alignTo: "edge", edgeDistance: 4, padding: [2, 4], borderRadius: 4, overflow: "break" },
-          labelLine: { length: 6, length2: 8, lineStyle: { color: token("--hs-leader") } },
+          label: {
+            show: labelled,
+            alignTo: "edge",
+            edgeDistance: 4,
+            padding: [2, 4],
+            borderRadius: 4,
+            overflow: "break",
+            // Room for a chosen piece's label, which moves out with its piece after the labels are spread.
+            minMargin: 8,
+          },
+          labelLine: { show: labelled, length: 6, length2: 8, lineStyle: { color: token("--hs-leader") } },
           emphasis: {
             scale: true,
             scaleSize: 6,
-            label: { backgroundColor: token("--hs-accent-soft") },
-            labelLine: { lineStyle: { color: token("--hs-accent") } },
+            label: { show: labelled, backgroundColor: token("--hs-accent-soft") },
+            labelLine: { show: labelled, lineStyle: { color: token("--hs-accent") } },
           },
           data: this.pieces.map((item) => {
             const chosen = this.isChosen(item);
@@ -216,7 +241,7 @@ export class Circle extends LitElement {
 
   override render() {
     const rest = this.items.filter((i) => !i.piece);
-    return html`<div class="circle">
+    return html`<div class=${this.narrow ? "circle circle-narrow" : "circle"}>
       <div class="circle-ring">
         <div class="chart" aria-hidden="true" ${ref(this.chartEl)}></div>
         <div class="circle-centre">
@@ -224,18 +249,23 @@ export class Circle extends LitElement {
           <div class="circle-centre-amount">${kr(this.centreAmount)}</div>
         </div>
       </div>
-      <ul class="visually-hidden">
+      <ul class=${this.narrow ? "circle-list" : "visually-hidden"}>
         ${this.pieces.map(
           (item, i) =>
             html`<li>
               <button
                 type="button"
+                aria-label=${partLabel(item.name, item.amount, item.share)}
                 aria-pressed=${this.pressed(item)}
                 @click=${() => this.fire(item)}
                 @focus=${() => this.chart?.highlight(i)}
                 @blur=${() => this.chart?.downplay(i)}
               >
-                ${partLabel(item.name, item.amount, item.share)}
+                ${this.narrow
+                  ? html`<span class="circle-dot" style=${`background: ${item.colour}`}></span
+                      ><span class="circle-list-name">${item.name}</span
+                      ><span class="circle-list-amount">${amountText(item)}</span>`
+                  : partLabel(item.name, item.amount, item.share)}
               </button>
             </li>`,
         )}
@@ -264,11 +294,52 @@ export const circleStyles = [
     .circle-ring .chart {
       height: 400px;
     }
-    /* A narrow ring leaves its labels little width, so they wrap and need more height. */
-    @media (max-width: 599px) {
-      .circle-ring .chart {
-        height: 560px;
-      }
+    .circle-narrow .circle-ring .chart {
+      height: 240px;
+    }
+    .circle-list {
+      list-style: none;
+      margin: 8px 0 0;
+      padding: 0;
+    }
+    .circle-list button {
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+      width: 100%;
+      padding: 6px 4px;
+      border: 0;
+      border-radius: 4px;
+      background: none;
+      color: var(--hs-text);
+      font: inherit;
+      font-size: 14px;
+      text-align: left;
+      cursor: pointer;
+    }
+    .circle-list button:hover,
+    .circle-list button:focus-visible {
+      background: var(--hs-accent-soft);
+      color: var(--hs-accent-text);
+    }
+    .circle-list button[aria-pressed="true"] {
+      font-weight: bold;
+    }
+    .circle-dot {
+      flex: none;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+    }
+    .circle-list-name {
+      flex: 1;
+      min-width: 0;
+    }
+    .circle-list-amount {
+      color: var(--hs-muted);
+      font-size: 12px;
+      white-space: nowrap;
+      font-variant-numeric: tabular-nums;
     }
     .circle-centre {
       position: absolute;
