@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.2](https://github.com/thomas3650/Ha-Spending/compare/v0.1.1...v0.1.2) (2026-10-31)
+
+
+### Bug Fixes
+
+* a bigger circle with bigger names ([#29](https://github.com/thomas3650/Ha-Spending/issues/29)) ([04fa898](https://github.com/thomas3650/Ha-Spending/commit/04fa898f9784d7d005379577d2509af12f495e2e))
+
 ## [0.1.1](https://github.com/thomas3650/Ha-Spending/compare/v0.1.0...v0.1.1) (2026-10-31)
 
 
