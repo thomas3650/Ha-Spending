@@ -37,15 +37,32 @@ export function linkBase(url: string | null): string | null {
   return url.endsWith("/") ? url.slice(0, -1) : url;
 }
 
-export function postingRow(p: ClassifiedPosting, ctx: ViewContext, colours: Map<string | null, string>): PostingRow {
-  const base = linkBase(ctx.data.fireflyLinkUrl);
+interface RowContext {
+  base: string | null;
+  accounts: Map<string, string>;
+  colours: Map<string | null, string>;
+}
+
+function rowContext(ctx: ViewContext, colours: Map<string | null, string>): RowContext {
+  return {
+    base: linkBase(ctx.data.fireflyLinkUrl),
+    accounts: new Map(ctx.data.accounts.map((a) => [a.id, a.name])),
+    colours,
+  };
+}
+
+function row(p: ClassifiedPosting, rc: RowContext): PostingRow {
   return {
     posting: p,
-    account: ctx.data.accounts.find((a) => a.id === p.account)?.name ?? p.account,
+    account: rc.accounts.get(p.account) ?? p.account,
     category: partName(p.category, "category"),
-    colour: colours.get(p.category) ?? NO_COLOUR,
-    href: base === null ? null : `${base}/transactions/show/${encodeURIComponent(p.groupId)}`,
+    colour: rc.colours.get(p.category) ?? NO_COLOUR,
+    href: rc.base === null ? null : `${rc.base}/transactions/show/${encodeURIComponent(p.groupId)}`,
   };
+}
+
+export function postingRow(p: ClassifiedPosting, ctx: ViewContext, colours: Map<string | null, string>): PostingRow {
+  return row(p, rowContext(ctx, colours));
 }
 
 export function groupedPostings(
@@ -56,6 +73,7 @@ export function groupedPostings(
   colours: Map<string | null, string>,
 ): PostingList {
   const direction = newestFirst ? -1 : 1;
+  const rc = rowContext(ctx, colours);
   const groups = byUnit(postings, units)
     .filter((u) => u.postings.length > 0)
     .map(
@@ -64,7 +82,7 @@ export function groupedPostings(
         name: unitName(u.unit, ctx.timeline.grouping),
         rows: [...u.postings]
           .sort((a, b) => direction * a.date.localeCompare(b.date))
-          .map((p) => postingRow(p, ctx, colours)),
+          .map((p) => row(p, rc)),
         total: u.total,
       }),
     );

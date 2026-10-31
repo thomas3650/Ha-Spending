@@ -155,6 +155,13 @@ describe("the postings list", () => {
     expect(queryAllByRole(el, "link")).toEqual([]);
   });
 
+  it("renders no link for a javascript: link base", async () => {
+    const data = { ...answerFor(THIS_YEAR), fireflyLinkUrl: "javascript:alert(1)" };
+    const el = await render(listOf({}, data));
+    getByRole(el, "cell", { name: "Café Søde" });
+    expect(queryAllByRole(el, "link")).toEqual([]);
+  });
+
   it("shows the category with its dot", async () => {
     const plain = await render(listOf());
     expect(queryByRole(plain, "columnheader", { name: da.columns.category })).toBeNull();

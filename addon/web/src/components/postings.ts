@@ -57,6 +57,7 @@ export class Postings extends LitElement {
     this.shown = this.list.kind === "grouped" ? GROUPS_STEP : ROWS_STEP;
   }
 
+  /** The first two in the shown order, oldest first too: they are the groups in view. */
   private isOpen(group: PostingGroup, index: number): boolean {
     return index < OPEN_AT_FIRST !== this.toggled.has(group.key);
   }
