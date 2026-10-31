@@ -17,7 +17,7 @@ export class SpendingApp extends LitElement {
         min-height: 100vh;
         padding: 16px;
         box-sizing: border-box;
-        background: var(--hs-background);
+        background: var(--hs-bg);
         color: var(--hs-text);
         font-family: var(--hs-font);
       }
