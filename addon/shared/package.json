@@ -12,6 +12,7 @@
     ".": "./src/index.ts"
   },
   "scripts": {
-    "lint": "eslint . && tsc --noEmit"
+    "lint": "eslint . && tsc --noEmit",
+    "test": "vitest run"
   }
 }
