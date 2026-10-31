@@ -186,4 +186,25 @@ describe("the postings list", () => {
     expect(buttons[0]).toBe(getByRole(el, "button", { name: new RegExp(`^${unitName(sep, "month")},`) }));
     expect(buttons.map((b) => b.getAttribute("aria-expanded")).slice(0, 3)).toEqual(["true", "true", "false"]);
   });
+
+  it("starts over when the search changes", async () => {
+    const full = listOf({ grouping: "week" });
+    if (full.kind !== "grouped") throw new Error("expected a grouped list");
+    const first = { ...full, groups: full.groups.slice(0, 14) };
+    const second = { ...full, groups: [full.groups[0], ...full.groups.slice(2, 15)] };
+    const el = await render(first, { grouping: "week" });
+    fireEvent.click(groupButtons(el)[2]);
+    fireEvent.click(getByRole(el, "button", { name: da.showOlder }));
+    await el.updateComplete;
+    expect(groupButtons(el)).toHaveLength(14);
+
+    el.query = "x";
+    el.list = second;
+    await el.updateComplete;
+    expect(groupButtons(el).map((b) => b.getAttribute("aria-expanded"))).toEqual([
+      "true",
+      "true",
+      ...Array<string>(10).fill("false"),
+    ]);
+  });
 });

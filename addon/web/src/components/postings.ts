@@ -9,8 +9,9 @@ const GROUPS_STEP = 12;
 const ROWS_STEP = 100;
 const OPEN_AT_FIRST = 2;
 
-function resetKey(list: PostingList): string {
-  return list.kind === "grouped" ? `grouped:${list.groups[0]?.key ?? ""}` : `flat:${list.rows[0]?.posting.id ?? ""}`;
+function resetKey(list: PostingList, query: string): string {
+  const first = list.kind === "grouped" ? `grouped:${list.groups[0]?.key ?? ""}` : `flat:${list.rows[0]?.posting.id ?? ""}`;
+  return `${first}|${query}`;
 }
 
 /**
@@ -20,6 +21,7 @@ function resetKey(list: PostingList): string {
 export class Postings extends LitElement {
   static override properties = {
     list: { attribute: false },
+    query: { attribute: false },
     showCategory: { attribute: false },
     grouping: { attribute: false },
     toggled: { state: true },
@@ -27,6 +29,7 @@ export class Postings extends LitElement {
   };
 
   declare list: PostingList;
+  declare query: string;
   declare showCategory: boolean;
   declare grouping: Grouping;
   /** The groups folded the other way from how they start. */
@@ -38,6 +41,7 @@ export class Postings extends LitElement {
   constructor() {
     super();
     this.list = { kind: "flat", rows: [] };
+    this.query = "";
     this.showCategory = false;
     this.grouping = "month";
     this.toggled = new Set();
@@ -49,8 +53,8 @@ export class Postings extends LitElement {
   }
 
   protected override willUpdate(changed: PropertyValues<this>): void {
-    if (!changed.has("list")) return;
-    const key = resetKey(this.list);
+    if (!changed.has("list") && !changed.has("query")) return;
+    const key = resetKey(this.list, this.query);
     if (key === this.shownFor) return;
     this.shownFor = key;
     this.toggled = new Set();
