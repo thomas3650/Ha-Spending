@@ -40,7 +40,7 @@ export function openPart(s: ViewState, key: string | null): ViewState {
 }
 
 export function chooseUnit(s: ViewState, fullStart: string): ViewState {
-  return s.unit === fullStart ? withoutUnit(s) : { ...s, unit: fullStart, card: "difference" };
+  return s.unit === fullStart ? withoutUnit(s) : { ...s, unit: fullStart, card: "postings" };
 }
 
 export function setCard(s: ViewState, card: Card): ViewState {
@@ -48,7 +48,7 @@ export function setCard(s: ViewState, card: Card): ViewState {
 }
 
 export function openAllPostings(s: ViewState): ViewState {
-  return { ...s, screen: "allPostings", search: "", sort: "newest", amount: null };
+  return { ...s, screen: "allPostings", sort: "newest", amount: null };
 }
 
 function levelAt(level: Level, depth: 0 | 1 | 2): Level {
@@ -58,7 +58,7 @@ function levelAt(level: Level, depth: 0 | 1 | 2): Level {
 }
 
 export function trailLevel(s: ViewState, depth: 0 | 1 | 2): ViewState {
-  return { ...s, level: levelAt(s.level, depth), screen: "overview", search: "", sort: "newest", amount: null };
+  return { ...s, level: levelAt(s.level, depth), screen: "overview", sort: "newest", amount: null };
 }
 
 /** A category implies its main group, so it goes too (D21). */

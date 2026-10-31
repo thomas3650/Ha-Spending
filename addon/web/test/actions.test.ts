@@ -53,11 +53,12 @@ describe("the actions", () => {
   it("chooses a unit and toggles it off", () => {
     const s = chooseUnit(DEFAULT_STATE, "2026-07-01");
     expect(s.unit).toBe("2026-07-01");
-    expect(s.card).toBe("difference");
-    const off = chooseUnit(s, "2026-07-01");
+    expect(s.card).toBe("postings");
+    const off = chooseUnit({ ...s, card: "bars" }, "2026-07-01");
     expect(off.unit).toBeNull();
     expect(off.card).toBe("bars");
     expect(chooseUnit(s, "2026-08-01").unit).toBe("2026-08-01");
+    expect(chooseUnit(s, "2026-08-01").card).toBe("postings");
   });
 
   it("keeps the postings card when a unit is toggled off", () => {
@@ -93,10 +94,10 @@ describe("the actions", () => {
     expect(setAccounts(DEFAULT_STATE, [], ["1", "2"]).accounts).toEqual([]);
   });
 
-  it("opens Alle posteringer with no search, newest first and no amount", () => {
-    const s = openAllPostings({ ...at(cafe), search: "pizza", sort: "largest", amount: { min: 1, max: null } });
+  it("opens Alle posteringer keeping the search", () => {
+    const s = openAllPostings({ ...at(cafe), search: "rema", sort: "largest", amount: { min: 1, max: null } });
     expect(s.screen).toBe("allPostings");
-    expect(s.search).toBe("");
+    expect(s.search).toBe("rema");
     expect(s.sort).toBe("newest");
     expect(s.amount).toBeNull();
     expect(s.level).toEqual(cafe);
@@ -107,12 +108,21 @@ describe("the actions", () => {
     const s = trailLevel({ ...inAll, search: "pizza", sort: "oldest", amount: { min: 1, max: null } }, 1);
     expect(s.screen).toBe("overview");
     expect(s.level).toEqual(mad);
-    expect(s.search).toBe("");
+    expect(s.search).toBe("pizza");
     expect(s.sort).toBe("newest");
     expect(s.amount).toBeNull();
     expect(s.unit).toBe("2026-07-01");
     expect(trailLevel(openAllPostings(at(cafe)), 0).level).toEqual({ kind: "all" });
     expect(trailLevel(openAllPostings(at(cafe)), 2).level).toEqual(cafe);
+  });
+
+  it("keeps the search through the shared choices", () => {
+    const s: ViewState = { ...DEFAULT_STATE, search: "rema", unit: "2026-07-01", card: "difference" };
+    expect(openPart(s, "Mad").search).toBe("rema");
+    expect(setCard(s, "bars").search).toBe("rema");
+    expect(setPeriod(s, { preset: "lastMonth" }).search).toBe("rema");
+    expect(setGrouping(s, "week").search).toBe("rema");
+    expect(removeUnit(s).search).toBe("rema");
   });
 
   it("removes the category with its main group (D21)", () => {
@@ -167,6 +177,10 @@ describe("normalise", () => {
   it("keeps a state the answer knows", () => {
     const s: ViewState = { ...DEFAULT_STATE, accounts: ["1"], level: cafe, unit: "2026-07-01", card: "difference" };
     expect(normalise(s, data, today)).toEqual(s);
+  });
+
+  it("keeps the search", () => {
+    expect(norm({ search: "rema", unit: "2020-01-01" }).search).toBe("rema");
   });
 
   it("drops a main group the answer does not know", () => {

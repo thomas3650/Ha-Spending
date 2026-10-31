@@ -28,7 +28,7 @@ export interface ViewState {
   unit: string | null;
   card: Card;
   screen: "overview" | "allPostings";
-  /** search, sort and amount belong to Alle posteringer. */
+  /** The search is a shared choice; sort and amount belong to Alle posteringer. */
   search: string;
   sort: Sort;
   amount: AmountRange | null;
@@ -103,7 +103,7 @@ export function parseHash(hash: string): ViewState {
     unit: isDate(unit) ? unit : null,
     card: oneOf(CARDS, p.get("card"), DEFAULT_STATE.card),
     screen: allPostings ? "allPostings" : "overview",
-    search: allPostings ? (p.get("q") ?? "") : DEFAULT_STATE.search,
+    search: p.get("q") ?? DEFAULT_STATE.search,
     sort: allPostings ? oneOf(SORTS, p.get("sort"), DEFAULT_STATE.sort) : DEFAULT_STATE.sort,
     amount: allPostings ? parseAmount(p) : DEFAULT_STATE.amount,
   };
@@ -125,9 +125,9 @@ export function toHash(s: ViewState): string {
   if (s.level.kind === "category") p.set("category", s.level.category ?? "");
   if (s.unit !== null) p.set("unit", s.unit);
   if (s.card !== DEFAULT_STATE.card) p.set("card", s.card);
+  if (s.screen === "allPostings") p.set("view", ALL_POSTINGS);
+  if (s.search !== "") p.set("q", s.search);
   if (s.screen === "allPostings") {
-    p.set("view", ALL_POSTINGS);
-    if (s.search !== "") p.set("q", s.search);
     if (s.sort !== DEFAULT_STATE.sort) p.set("sort", s.sort);
     if (s.amount?.min != null) p.set("min", String(s.amount.min));
     if (s.amount?.max != null) p.set("max", String(s.amount.max));

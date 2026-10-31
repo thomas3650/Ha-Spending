@@ -306,3 +306,10 @@ to set their status to `superseded by D<n>`, or to name a part a later decision 
   would run its rules. The integration tests check on 6.7.9 that the other split, the amount, the date and the notes
   stay. The re-read keeps a hand correction made since `start`.
 - **Source:** Claude, for D29; the re-read and the fields written: Thomas, 2026-10-31, the design of the AI sorting
+
+### D31: The search is a shared choice
+- **Date:** 2026-10-31 · **Status:** active
+- **Decision:** The search is one of the shared choices. `q` is in the hash on every screen, and typing replaces the
+  entry wherever it is typed. Opening Alle posteringer and leaving it through the trail keep the search.
+- **Why:** Thomas looks for a store's cost on the overview and expects the search to stay when he switches cards.
+- **Source:** Thomas, 2026-10-31, [the postings search spec](superpowers/specs/2026-10-31-postings-search.md).

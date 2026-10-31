@@ -47,9 +47,14 @@ function julyBar(root: HTMLElement): HTMLElement {
 }
 
 describe("screen 4, a chosen unit", () => {
-  it("chooses July from its bar and shows Forskel", async () => {
+  it("chooses July from its bar and shows Posteringer", async () => {
     const { app, root } = await mount("");
     fireEvent.click(julyBar(root));
+    await settle(app);
+    expect(location.hash).toBe("#unit=2026-07-01&card=postings");
+    expect(getByRole(viewSwitch(root), "button", { name: da.postings }).getAttribute("aria-pressed")).toBe("true");
+    getByRole(root, "button", { name: da.remove(julyName()) });
+    fireEvent.click(getByRole(viewSwitch(root), "button", { name: da.difference }));
     await settle(app);
     expect(location.hash).toBe(`#${CHOSEN}`);
     expect(getByRole(viewSwitch(root), "button", { name: da.difference }).getAttribute("aria-pressed")).toBe("true");
@@ -137,7 +142,7 @@ describe("screen 4, a chosen unit", () => {
 
     fireEvent.click(julyBar(root));
     await settle(app);
-    expect(location.hash).toBe(`#${CHOSEN}`);
+    expect(location.hash).toBe("#unit=2026-07-01&card=postings");
     fireEvent.click(getByRole(viewSwitch(root), "button", { name: da.bars }));
     await settle(app);
     expect(julyBar(root).getAttribute("aria-pressed")).toBe("true");

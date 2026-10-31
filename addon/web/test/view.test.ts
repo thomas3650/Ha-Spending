@@ -66,11 +66,18 @@ describe("the view state's hash", () => {
     expect(parseHash("view=elsewhere").screen).toBe("overview");
   });
 
-  it("reads the search, sort and amount only on Alle posteringer", () => {
-    expect(parseHash("q=pizza").search).toBe("");
-    expect(parseHash("sort=largest").sort).toBe(DEFAULT_STATE.sort);
-    expect(parseHash("min=100").amount).toBeNull();
-    expect(toHash({ ...DEFAULT_STATE, search: "pizza", sort: "largest" })).toBe("");
+  it("reads and writes the search on every screen", () => {
+    const s = parseHash("q=rema");
+    expect(s.screen).toBe("overview");
+    expect(s.search).toBe("rema");
+    expect(toHash(s)).toBe("q=rema");
+  });
+
+  it("reads the sort and amount only on Alle posteringer", () => {
+    const s = parseHash("q=rema&sort=largest&min=5&card=postings");
+    expect(s.sort).toBe("newest");
+    expect(s.amount).toBeNull();
+    expect(toHash({ ...DEFAULT_STATE, sort: "largest" })).toBe("");
   });
 
   it("tells no accounts from all accounts", () => {
