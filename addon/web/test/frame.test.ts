@@ -17,12 +17,12 @@ import { comparisonLabel, kr, rangeText, signedPercent } from "../src/format";
 import { da } from "../src/i18n/da";
 import { answerFor } from "./fixture";
 import { json, mount, settle, unmount } from "./mount";
+import { KEEP_NBSP } from "./text";
 
 const TODAY = "2026-10-30";
 const sep = unitAt("2026-09-01", "month", TODAY);
 const aug = unitAt("2026-08-01", "month", TODAY);
 /** Keeps Intl's no-break space, which the default normalizer turns into a space. */
-const exact = (text: string) => text.trim();
 const escaped = (text: string) => new RegExp(text.replace(/[()]/g, "\\$&"));
 
 afterEach(unmount);
@@ -66,7 +66,7 @@ describe("the frame", () => {
     getByText(second, kr(1159444));
     getByText(second, da.unitCount(9, "month"));
     const third = getByRole(root, "group", { name: comparisonLabel(sep, aug, "month") });
-    getByText(third, signedPercent(change(1150000, 1100000)!), { normalizer: exact });
+    getByText(third, signedPercent(change(1150000, 1100000)!), KEEP_NBSP);
     getByText(third, `${da.up} ${kr(50000)}`);
   });
 

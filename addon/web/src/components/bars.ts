@@ -188,10 +188,13 @@ export class Bars extends LitElement {
                   symbol: "none",
                   lineStyle: { type: "dashed", color: muted, width: 1 },
                   label: {
-                    position: "insideStartTop",
+                    // At the right end, above the line, so the label never covers a bar's top.
+                    position: "insideEndTop",
                     formatter: this.average.label,
                     color: muted,
                     fontSize: 11,
+                    backgroundColor: token("--hs-card"),
+                    padding: [2, 4],
                   },
                   data: [{ yAxis: this.average.amount }],
                 },

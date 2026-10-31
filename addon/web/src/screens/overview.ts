@@ -188,7 +188,7 @@ export const overviewStyles = css`
   }
   .chip:hover .x,
   .chip:focus-visible .x {
-    color: #fff;
+    color: var(--hs-card);
     background: var(--hs-accent-text);
   }
   .chip:focus-visible {

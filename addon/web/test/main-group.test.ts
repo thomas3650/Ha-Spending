@@ -5,7 +5,6 @@ import {
   getAllByText,
   getByRole,
   getByText,
-  getDefaultNormalizer,
   queryByRole,
 } from "@testing-library/dom";
 import { afterEach, describe, expect, it } from "vitest";
@@ -14,14 +13,12 @@ import { comparisonLabel, kr, partLabel, percent } from "../src/format";
 import { da } from "../src/i18n/da";
 import { partName } from "../src/model/context";
 import { mount, settle, unmount } from "./mount";
+import { KEEP_NBSP } from "./text";
 
 const TODAY = "2026-10-30";
 const TOTAL = 11566012;
 const MAD = 3281012;
 const CAFE = 131012;
-
-/** Percentages carry a no-break space, which the default normalizer would turn into a plain one. */
-const KEEP_NBSP = { normalizer: getDefaultNormalizer({ collapseWhitespace: false }) };
 
 afterEach(unmount);
 
@@ -127,6 +124,28 @@ describe("screen 2, a main group", () => {
     const card = circleCard(root);
     expect(getAllByRole(card, "button")).toEqual([getByRole(card, "button", { name: partLabel("Café", CAFE, 1) })]);
     expect(getAllByText(card, kr(CAFE))).toHaveLength(2);
+  });
+
+  it("filters to Uden kategori with its chip", async () => {
+    const { app, root } = await mount("group=");
+    const button = () => getByRole(circleCard(root), "button", { name: new RegExp(`^${da.noCategory},`) });
+    fireEvent.click(button());
+    await settle(app);
+    getByRole(root, "heading", { level: 1, name: da.noCategory });
+    expect(button().getAttribute("aria-pressed")).toBe("true");
+    expect(location.hash).toBe("#group=&category=");
+    const right = getByRole(root, "region", { name: da.levelPer(da.noCategory, "month") });
+    getByRole(right, "button", { name: da.remove(da.noCategory) });
+  });
+
+  it("keeps the chosen unit while filtering to a category", async () => {
+    const { app, root } = await mount("group=Mad&unit=2026-09-01");
+    fireEvent.click(cafeButton(root));
+    await settle(app);
+    getByRole(root, "heading", { level: 1, name: "Café" });
+    const params = new URLSearchParams(location.hash.slice(1));
+    expect(params.get("category")).toBe("Café");
+    expect(params.get("unit")).toBe("2026-09-01");
   });
 
   it("shows Uden hovedgruppe with its categories", async () => {
