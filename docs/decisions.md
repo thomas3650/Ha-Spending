@@ -39,7 +39,7 @@ to set their status to `superseded by D<n>`, or to name a part a later decision 
   [technical spec](superpowers/specs/2026-10-30-technical-design.md) §2, §5
 
 ### D5: Ingress only, by the peer address
-- **Date:** 2026-10-30 · **Status:** active
+- **Date:** 2026-10-30 · **Status:** active; port 8100 superseded by D29
 - **Decision:** The server answers only the peer address `172.30.32.2`, also in its IPv4-mapped IPv6 form
   `::ffff:172.30.32.2`; everything else gets 403. `HA_SPENDING_DEV=1` turns the check off, for the fast loop. The
   port is 8099, not published.
@@ -277,3 +277,32 @@ to set their status to `superseded by D<n>`, or to name a part a later decision 
   overlapped (#28). The list was the hidden button list already there for keyboard and screen readers. The margin
   leaves room for a chosen piece's label, which moves out with its piece after the labels are spread.
 - **Source:** Claude, for #28 (Thomas: "Yes, fix #28", 2026-10-31)
+
+### D29: The sorter's endpoint: MCP on port 8100, behind a key
+- **Date:** 2026-10-31 · **Status:** active
+- **Decision:** When `sorter_key` is set, the server also listens on port 8100, unpublished and without the ingress
+  check, for an MCP endpoint with two tools, `start` and `set_category`. Every request needs the key, compared as
+  SHA-256 digests in constant time, and a key under 32 characters stops the add-on. It answers JSON-RPC as plain JSON,
+  written by hand, with no MCP SDK. `start` leaves the inbox category out of
+  the categories that must be listed, and a list that names it is a problem. `set_category` takes 1 to 100
+  assignments per call. With D30 it replaces the technical spec's promises that the add-on never writes to Firefly III
+  (§1) and that nothing but the page's routes is served and no route writes (§5).
+- **Why:** An AI sorter in another add-on sets categories without holding the Firefly III token, and the limits are in
+  this code, not in its prompt. A hand-written JSON answer needs no new dependency. The inbox is never chosen, but the
+  rule group may map it to a tag of its own. The batch keeps a backlog of over a thousand postings within the agent's
+  turns.
+- **Source:** Thomas, 2026-10-31, the design of the AI sorting agreed in the house session; the batch: the house
+  session, 2026-10-31; the inbox rule and the key's length: Claude
+
+### D30: The sorter's one write
+- **Date:** 2026-10-31 · **Status:** active
+- **Decision:** `set_category` re-reads the posting's whole group right before it writes, and writes with one PUT of
+  the group: the posting's `category_id` and `tags`, only `transaction_journal_id` for every other split, the
+  `group_title` of a split group, and `apply_rules: false`. The tags lose every tag an active rule of the rule group adds,
+  also the losing tag of a conflict, and gain the category's main group. A failed write stops the batch. It replaces the technical spec's promise that the Firefly client has a
+  `get` and nothing else (§5). Firefly III has no conditional update, so a hand change in the moment between the
+  re-read and the PUT can still be overwritten.
+- **Why:** Firefly III's update deletes the splits it does not list, refuses a split group without its title, and
+  would run its rules. The integration tests check on 6.7.9 that the other split, the amount, the date and the notes
+  stay. The re-read keeps a hand correction made since `start`.
+- **Source:** Claude, for D29; the re-read and the fields written: Thomas, 2026-10-31, the design of the AI sorting

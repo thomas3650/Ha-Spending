@@ -65,6 +65,19 @@ describe("mapCategories", () => {
   });
 });
 
+describe("mapCategories' tags", () => {
+  it("lists every tag an active rule adds, also a conflict's losing tag", () => {
+    const rules = [
+      rule(1, [category("Streaming")], [tag("Fritid")]),
+      rule(2, [category("Streaming")], [tag("Abonnementer")]),
+      rule(3, [{ type: "description_contains", value: "Netto" }], [tag("Mad")]),
+      rule(4, [category("Gaver")], [tag("Gaveudgifter")], false),
+      rule(5, [category("Tandlæge")], [tag("Tand", false), tag("Sundhed")]),
+    ];
+    expect([...mapCategories(rules).tags].sort()).toEqual(["Abonnementer", "Fritid", "Mad", "Sundhed"]);
+  });
+});
+
 describe("findRuleGroup", () => {
   it("finds the rule group by its exact title, active or not", () => {
     const groups = [group("1", "Andet"), group("2", "Hovedgrupper", false)];

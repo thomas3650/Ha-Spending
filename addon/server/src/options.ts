@@ -6,7 +6,12 @@ export interface Options {
   fireflyLinkUrl: string | null;
   mainGroupRuleGroup: string;
   excludedMainGroups: string[];
+  /** When set, the sorter's endpoint runs (D29). */
+  sorterKey: string | null;
+  sorterInboxCategory: string;
 }
+
+export const MIN_SORTER_KEY_LENGTH = 32;
 
 /** The message names the option or the file, never a value: a value may be the token. */
 export class OptionsError extends Error {
@@ -66,11 +71,20 @@ export function readOptions(path: string): Options {
   const fireflyUrl = withoutTrailingSlash(required(options, "firefly_url"));
   const fireflyToken = required(options, "firefly_token");
   const link = optional(options, "firefly_link_url");
+  const sorterKey = optional(options, "sorter_key");
+  if (sorterKey !== null && sorterKey.length < MIN_SORTER_KEY_LENGTH) {
+    throw new OptionsError(`The option sorter_key is shorter than ${MIN_SORTER_KEY_LENGTH} characters`);
+  }
+  const sorterInboxCategory = optional(options, "sorter_inbox_category") ?? "Til sortering";
+  // The name goes into a Firefly III search between double quotes.
+  if (sorterInboxCategory.includes('"')) throw new OptionsError("The option sorter_inbox_category holds a double quote");
   return {
     fireflyUrl,
     fireflyToken,
     fireflyLinkUrl: link === null ? null : withoutTrailingSlash(link),
     mainGroupRuleGroup: optional(options, "main_group_rule_group") ?? "Hovedgrupper",
     excludedMainGroups: list(options, "excluded_main_groups") ?? ["Penge ind og ud"],
+    sorterKey,
+    sorterInboxCategory,
   };
 }

@@ -26,6 +26,8 @@ export interface WireSplit {
   destination_type: string;
   category_id: string | null;
   category_name: string | null;
+  tags: string[];
+  notes: string | null;
 }
 
 export interface WireGroup {

@@ -38,6 +38,8 @@ describe("readOptions", () => {
       firefly_link_url: "http://firefly.test/",
       main_group_rule_group: "Grupper",
       excluded_main_groups: ["A", "B"],
+      sorter_key: "k".repeat(32),
+      sorter_inbox_category: "Indbakke",
     });
     expect(readOptions(path)).toEqual({
       fireflyUrl: "http://firefly.test:8080",
@@ -45,6 +47,8 @@ describe("readOptions", () => {
       fireflyLinkUrl: "http://firefly.test",
       mainGroupRuleGroup: "Grupper",
       excludedMainGroups: ["A", "B"],
+      sorterKey: "k".repeat(32),
+      sorterInboxCategory: "Indbakke",
     });
   });
 
@@ -56,6 +60,8 @@ describe("readOptions", () => {
       fireflyLinkUrl: null,
       mainGroupRuleGroup: "Hovedgrupper",
       excludedMainGroups: ["Penge ind og ud"],
+      sorterKey: null,
+      sorterInboxCategory: "Til sortering",
     });
   });
 
@@ -92,5 +98,20 @@ describe("readOptions", () => {
   it("reads an empty rule group as the default", () => {
     const path = file({ firefly_url: "http://firefly.test", firefly_token: "t0ken-made-up", main_group_rule_group: "" });
     expect(readOptions(path).mainGroupRuleGroup).toBe("Hovedgrupper");
+  });
+
+  it("reads an empty sorter key as none", () => {
+    const path = file({ firefly_url: "http://firefly.test", firefly_token: "t0ken-made-up", sorter_key: "" });
+    expect(readOptions(path).sorterKey).toBeNull();
+  });
+
+  it("refuses a short sorter key without showing it, and an inbox name with a double quote", () => {
+    const base = { firefly_url: "http://firefly.test", firefly_token: "t0ken-made-up" };
+    const short = refusal(file({ ...base, sorter_key: "short-made-up-key" }));
+    expect(short.message).toContain("sorter_key");
+    expect(short.message).not.toContain("short-made-up-key");
+    expect(refusal(file({ ...base, sorter_inbox_category: 'Til "sortering"' })).message).toContain(
+      "sorter_inbox_category",
+    );
   });
 });

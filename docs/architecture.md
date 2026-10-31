@@ -8,7 +8,7 @@ source for the details.
 
 | Part | Folder | Owns |
 | --- | --- | --- |
-| Server | `addon/server/` | The routes, the ingress check, reading Firefly III, serving the page's files |
+| Server | `addon/server/` | The routes, the ingress check, reading Firefly III, serving the page's files, the sorter's endpoint |
 | Page | `addon/web/` | What the browser shows; its texts in `src/i18n/da.ts` |
 | Shared | `addon/shared/` | The types the server answers with and the page reads, and the money and date rules |
 | Dev | `addon/dev/` | A fake Firefly III, the example data and the compose file for a real one ([D11](decisions.md)); test and dev only, never in the image |
@@ -31,8 +31,12 @@ The server reads Firefly III and answers `/api/data`; the page fetches it and sh
   - `charts/echarts.ts`: the one wrapper around ECharts, which the component tests mock ([D19](decisions.md));
   - `data/api.ts`: the fetch of `api/data`.
   The build is one JS chunk ([D19](decisions.md)).
-- **The Firefly III client** (`addon/server/src/firefly/`) has one method, `get`, so nothing is ever written. It pages
-  through the answers and maps them to postings ([D12](decisions.md), [D15](decisions.md)).
+- **The Firefly III client** (`addon/server/src/firefly/`) has a `get` and a `put`. It pages through the answers and
+  maps them to postings ([D12](decisions.md), [D15](decisions.md)). Only the sorter's `set_category` calls `put`
+  ([D29](decisions.md)).
+- **The sorter's endpoint** (`addon/server/src/sorter/`) is a second Hono app on port 8100, started only when
+  `sorter_key` is set ([D29](decisions.md)): `http.ts` holds the key check and MCP's JSON-RPC, `tools.ts` the tools
+  `start` and `set_category` and their limits. Their contract is in [`addon/DOCS.md`](../addon/DOCS.md#the-sorters-endpoint).
 - **The options** are read once at start from `/data/options.json`, or from `HA_SPENDING_OPTIONS`. Without a Firefly III
   address and token the server logs what is missing and exits 1.
 - **The cache** keeps an answer per period for a few minutes (`addon/server/src/cache.ts`).
@@ -48,11 +52,13 @@ The server reads Firefly III and answers `/api/data`; the page fetches it and sh
 | any other `/api/…` | 404 |
 | `GET /` and `GET /web/*` | the page's built files |
 
-No route writes. Every URL the page uses is relative (`./web/…`, `api/data`), so it works under the ingress path.
+No route on port 8099 writes. Every URL the page uses is relative (`./web/…`, `api/data`), so it works under the ingress path.
 
 ## Ingress
 
 - The server listens on port 8099, Home Assistant's default ingress port. `addon/config.yaml` publishes no port.
-- It answers only Home Assistant's ingress address; any other peer gets 403 ([D5](decisions.md)).
+- Port 8099 answers only Home Assistant's ingress address; any other peer gets 403 ([D5](decisions.md)).
+- Port 8100, the sorter's endpoint, has no ingress check: other add-ons reach it on the internal network, with the key
+  ([D29](decisions.md)). Port 8099 does not serve it.
 - `HA_SPENDING_DEV=1` turns the check off, and binds `127.0.0.1` only ([D13](decisions.md)). The add-on never sets
   it; the fast loop does ([`testing.md`](testing.md#fast-loop)).

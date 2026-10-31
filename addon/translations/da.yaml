@@ -6,7 +6,7 @@ configuration:
   firefly_token:
     name: Firefly III-nøgle
     description: >-
-      En Personal Access Token fra Firefly III. Tilføjelsen læser kun med den.
+      En Personal Access Token fra Firefly III. Tilføjelsen læser med den, og sorteringen skriver med den.
   firefly_link_url:
     name: Firefly III-linkadresse
     description: >-
@@ -20,3 +20,13 @@ configuration:
     name: Udeladte hovedgrupper
     description: >-
       Hovedgrupper, der ikke er forbrug, for eksempel penge ind og ud. Deres posteringer er udeladt.
+  sorter_key:
+    name: Sorteringens nøgle
+    description: >-
+      Når den er sat, svarer sorteringens endepunkt andre tilføjelser på port 8100, på en forespørgsel med denne
+      nøgle. Mindst 32 tegn. Når den er tom, er endepunktet slået fra.
+  sorter_inbox_category:
+    name: Sorteringens indbakke
+    description: >-
+      Den kategori i Firefly III, som posteringer, der endnu ikke er sorteret, har. Sorteringen tager posteringer
+      derfra og lægger aldrig en i den.

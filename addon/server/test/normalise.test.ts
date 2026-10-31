@@ -31,6 +31,8 @@ function split(fields: Partial<WireSplit>): WireSplit {
     destination_type: "Expense account",
     category_id: "10",
     category_name: "Dagligvarer",
+    tags: [],
+    notes: null,
     ...fields,
   };
 }

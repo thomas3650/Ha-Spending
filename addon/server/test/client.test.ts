@@ -23,10 +23,30 @@ async function failure(promise: Promise<unknown>): Promise<FireflyError> {
 }
 
 describe("the Firefly III client", () => {
-  it("has a get and nothing else", () => {
+  it("has a get and a put, and nothing else", () => {
     const fake = createFakeFirefly(exampleSeed);
     const client = createFireflyClient({ baseUrl: "http://f", token: "fake-token", fetch: fake.fetch });
-    expect(Object.keys(client)).toEqual(["get"]);
+    expect(Object.keys(client)).toEqual(["get", "put"]);
+  });
+
+  it("puts a JSON body with the token, and maps the put's errors as the get's", async () => {
+    const sent: Request[] = [];
+    const answer = (status: number, body: unknown) => async (input: string | URL | Request, init?: RequestInit) => {
+      sent.push(new Request(input, init));
+      return Response.json(body, { status });
+    };
+    const ok = createFireflyClient({ baseUrl: "http://f", token: "fake-token", fetch: answer(200, { data: {} }) });
+    expect(await ok.put("transactions/7", { transactions: [] })).toEqual({ data: {} });
+    expect(sent[0].method).toBe("PUT");
+    expect(sent[0].url).toBe("http://f/api/v1/transactions/7");
+    expect(sent[0].headers.get("Authorization")).toBe("Bearer fake-token");
+    expect(sent[0].headers.get("Content-Type")).toBe("application/json");
+    expect(await sent[0].json()).toEqual({ transactions: [] });
+
+    const refused = createFireflyClient({ baseUrl: "http://f", token: "nope", fetch: answer(401, {}) });
+    expect((await failure(refused.put("transactions/7", {}))).reason).toBe("refused");
+    const invalid = createFireflyClient({ baseUrl: "http://f", token: "fake-token", fetch: answer(422, {}) });
+    expect((await failure(invalid.put("transactions/7", {}))).reason).toBe("unreachable");
   });
 
   it("sends the token and only GETs", async () => {

@@ -8,7 +8,8 @@ export type Fault = "refused" | "error" | "slow" | null;
 export interface FakeFirefly {
   /** Honours `init.signal`. */
   fetch: (input: string | URL | Request, init?: RequestInit) => Promise<Response>;
-  requests: { method: string; path: string }[];
+  /** A PUT also records the body it sent. */
+  requests: { method: string; path: string; body?: unknown }[];
   /** `refused` answers 401, `error` 500, `slow` after 60 s. */
   fault: Fault;
 }
@@ -131,7 +132,8 @@ function buildData(data: SeedData) {
           destination_type: destinationType,
           category_id: categoryId,
           category_name: s.category ?? null,
-          tags: [],
+          tags: s.tags ?? [],
+          notes: s.notes ?? null,
         };
       }),
     },
@@ -154,6 +156,83 @@ function buildData(data: SeedData) {
   }));
 
   return { assets, categories, groups, ruleGroups };
+}
+
+type FakeSplit = ReturnType<typeof buildData>["groups"][number]["attributes"]["transactions"][number];
+
+const SEARCH_TERM = /^(-?)([a-z_]+):(?:"([^"]*)"|(\S+))$/;
+
+/** The few search operators the add-on sends; `null` for anything else, so a typo in a query fails a test. */
+function searchFilter(query: string): ((split: FakeSplit) => boolean) | null {
+  const terms = query.match(/-?[a-z_]+:(?:"[^"]*"|\S+)/g) ?? [];
+  if (terms.length === 0 || terms.join(" ") !== query.trim().replace(/\s+/g, " ")) return null;
+  const tests: ((split: FakeSplit) => boolean)[] = [];
+  for (const term of terms) {
+    const [, negated, operator, quoted, bare] = SEARCH_TERM.exec(term)!;
+    const value = quoted ?? bare;
+    let test: (split: FakeSplit) => boolean;
+    if (operator === "has_any_category" && value === "true") test = (s) => s.category_id !== null;
+    else if (operator === "category_is") test = (s) => s.category_name === value;
+    else if (operator === "journal_id" && /^[0-9]+$/.test(value)) test = (s) => s.transaction_journal_id === value;
+    else if (operator === "type") test = (s) => s.type === value;
+    else return null;
+    tests.push(negated ? (s) => !test(s) : test);
+  }
+  return (split) => tests.every((t) => t(split));
+}
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null && !Array.isArray(value);
+
+const GROUP_KEYS = new Set(["apply_rules", "fire_webhooks", "group_title", "transactions"]);
+const SPLIT_KEYS = new Set(["transaction_journal_id", "category_id", "tags"]);
+
+/**
+ * Firefly III's update of a group, for the fields the sorter sends; any other field is refused, so a test sees one
+ * sent. As in Firefly III, a split the body does not list is deleted, and `tags` replaces the split's tags.
+ */
+function updateGroup(
+  group: { group_title: string | null; transactions: FakeSplit[] },
+  body: unknown,
+  categories: { id: string; name: string }[],
+): string | null {
+  if (!isRecord(body) || !Array.isArray(body.transactions)) return "The body has no transactions.";
+  const extra = Object.keys(body).find((key) => !GROUP_KEYS.has(key));
+  if (extra !== undefined) return `The fake does not take ${extra}.`;
+  const entries = body.transactions as unknown[];
+  if (entries.length > 1 && typeof body.group_title !== "string") {
+    return "A group title is mandatory when there is more than one transaction.";
+  }
+  const single = entries.length === 1 && group.transactions.length === 1;
+  const updates: { split: FakeSplit; entry: Record<string, unknown> }[] = [];
+  for (const entry of entries) {
+    if (!isRecord(entry)) return "A transaction is not an object.";
+    const field = Object.keys(entry).find((key) => !SPLIT_KEYS.has(key));
+    if (field !== undefined) return `The fake does not take ${field}.`;
+    const split = single
+      ? group.transactions[0]
+      : group.transactions.find((s) => s.transaction_journal_id === entry.transaction_journal_id);
+    if (!split) return "The fake does not create splits.";
+    if (entry.category_id !== undefined && !categories.some((x) => x.id === entry.category_id)) {
+      return "Unknown category.";
+    }
+    const tags = entry.tags;
+    if (tags !== undefined && !(Array.isArray(tags) && tags.every((t) => typeof t === "string"))) {
+      return "The tags are not a list of text.";
+    }
+    updates.push({ split, entry });
+  }
+  if (typeof body.group_title === "string") group.group_title = body.group_title;
+  for (const { split, entry } of updates) {
+    if (entry.category_id !== undefined) {
+      split.category_id = entry.category_id as string;
+      split.category_name = categories.find((x) => x.id === entry.category_id)!.name;
+    }
+    if (entry.tags !== undefined) split.tags = [...(entry.tags as string[])];
+  }
+  group.transactions = updates.map((u) => u.split).sort((a, b) =>
+    group.transactions.indexOf(a) - group.transactions.indexOf(b));
+  return null;
 }
 
 export function createFakeFirefly(data: SeedData, options: FakeOptions = {}): FakeFirefly {
@@ -207,8 +286,14 @@ export function createFakeFirefly(data: SeedData, options: FakeOptions = {}): Fa
   }
 
   app.use(async (c, next) => {
-    fake.requests.push({ method: c.req.method, path: c.req.path });
-    if (c.req.method !== "GET") return c.json({ message: "Method not allowed." }, 405);
+    const { method, path } = c.req;
+    if (method === "PUT") {
+      fake.requests.push({ method, path, body: await c.req.raw.clone().json().catch(() => null) });
+    } else {
+      fake.requests.push({ method, path });
+    }
+    const writable = method === "PUT" && /^\/api\/v1\/transactions\/[0-9]+$/.test(path);
+    if (method !== "GET" && !writable) return c.json({ message: "Method not allowed." }, 405);
     await next();
   });
 
@@ -242,6 +327,31 @@ export function createFakeFirefly(data: SeedData, options: FakeOptions = {}): Fa
       (g) => g.date >= start && g.date <= end && (type === "all" || g.attributes.transactions[0].type === type),
     );
     return page(c, inside.map((g) => ({ id: g.id, attributes: g.attributes })));
+  });
+
+  app.get("/api/v1/search/transactions", (c) => {
+    const matches = searchFilter(c.req.query("query") ?? "");
+    if (matches === null) return c.json({ message: "The fake does not know this query.", errors: {} }, 422);
+    // As Firefly III does: a group comes with the splits that match, not with all of its splits.
+    const hits = built.groups
+      .map((g) => ({ id: g.id, attributes: { ...g.attributes, transactions: g.attributes.transactions.filter(matches) } }))
+      .filter((g) => g.attributes.transactions.length > 0);
+    return page(c, hits);
+  });
+
+  app.get("/api/v1/transactions/:id{[0-9]+}", (c) => {
+    const group = built.groups.find((g) => g.id === c.req.param("id"));
+    if (!group) return c.json({ message: "Resource not found", exception: "NotFoundHttpException" }, 404);
+    return c.json({ data: { id: group.id, attributes: group.attributes } });
+  });
+
+  app.put("/api/v1/transactions/:id{[0-9]+}", async (c) => {
+    const group = built.groups.find((g) => g.id === c.req.param("id"));
+    if (!group) return c.json({ message: "Resource not found", exception: "NotFoundHttpException" }, 404);
+    const body = await c.req.json<unknown>().catch(() => null);
+    const outcome = updateGroup(group.attributes, body, built.categories);
+    if (typeof outcome === "string") return c.json({ message: outcome, errors: {} }, 422);
+    return c.json({ data: { id: group.id, attributes: group.attributes } });
   });
 
   app.get("/api/v1/accounts", (c) => {

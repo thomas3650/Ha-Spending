@@ -32,7 +32,9 @@ Each spec and each plan before it is approved, and each branch before its PR mer
 
 1. **Security and privacy:** no token, hostname, IP, account name or real posting anywhere in the public repo
    (`CLAUDE.md` hard rules 2 and 3); the Firefly III token never reaches the browser, a log line or an answer; the
-   Firefly III client sends GETs only; the server answers ingress only (`docs/decisions.md` D5; technical spec §5).
+   Firefly III client writes only through the sorter's `set_category`, and only a posting's category and main-group tag;
+   port 8099 answers ingress only and port 8100 the sorter's key only (`docs/decisions.md` D5, D29; technical spec
+   §5).
 2. **Correctness against the specs:** the money rules, the rule mapping, the state and the clicks
    (`docs/superpowers/specs/2026-10-30-ui-ux-design.md`; technical spec §3, §4, §6).
 3. **Tests:** they check behaviour through public interfaces with made-up data, can fail, are not skipped, and cover
