@@ -15,8 +15,11 @@ interface Split {
   foreign_currency_code: string | null;
   source_type: string;
   destination_type: string;
+  category_id: string | null;
   category_name: string | null;
   description: string;
+  tags: string[];
+  notes: string | null;
 }
 
 interface Group {
@@ -171,11 +174,91 @@ describe("the fake Firefly III", () => {
     expect(wrong.status).toBe(401);
   });
 
-  it("refuses anything but GET and records it", async () => {
+  it("refuses anything but GET and a group's PUT, and records it", async () => {
     const { fake, get } = client();
     const res = await get("transactions", { method: "POST", body: "{}" });
     expect(res.status).toBe(405);
     expect(fake.requests.at(-1)).toEqual({ method: "POST", path: "/api/v1/transactions" });
+    expect((await get("categories/1", { method: "PUT", body: "{}" })).status).toBe(405);
+  });
+
+  it("searches by no category, a category, a journal and a type", async () => {
+    const { json } = client();
+    const search = async (query: string) =>
+      (await json<Page<Group>>(`search/transactions?query=${encodeURIComponent(query)}`)).data
+        .flatMap((g) => g.attributes.transactions)
+        .map((s) => s.description);
+    expect(await search("-has_any_category:true")).toEqual([
+      "Kiosk",
+      "Overførsel til Konto B",
+      "Løn",
+      "Første overførsel",
+    ]);
+    expect(await search("-has_any_category:true type:deposit")).toEqual(["Løn"]);
+    expect(await search('category_is:"Café"')).toEqual(["Hotel i Berlin", "Kaffe og kage"]);
+    const bilka = byDescription(await allGroups(), "Bilka gave").attributes.transactions[1];
+    expect(await search(`journal_id:${bilka.transaction_journal_id}`)).toEqual(["Bilka gave"]);
+  });
+
+  it("refuses a search it does not know", async () => {
+    const { get } = client();
+    for (const query of ["Netto", "has_no_category:true", "category_is:Café extra"]) {
+      expect((await get(`search/transactions?query=${encodeURIComponent(query)}`)).status).toBe(422);
+    }
+  });
+
+  it("answers one group with all its splits", async () => {
+    const { json, get } = client();
+    const bilka = byDescription(await allGroups(), "Bilka mad");
+    const one = await json<{ data: Group }>(`transactions/${bilka.id}`);
+    expect(one.data).toEqual({ id: bilka.id, attributes: bilka.attributes });
+    expect((await get("transactions/99999")).status).toBe(404);
+  });
+
+  it("puts a category and tags, and deletes a split the put does not list, as Firefly III does", async () => {
+    const { fake, json, get } = client();
+    const categories = (await json<Page<{ id: string; attributes: { name: string } }>>("categories")).data;
+    const tandlaege = categories.find((c) => c.attributes.name === "Tandlæge")!.id;
+    const bilka = byDescription(await allGroups(), "Bilka mad");
+    const [food, gift] = bilka.attributes.transactions;
+    const put = (body: unknown) =>
+      get(`transactions/${bilka.id}`, {
+        method: "PUT",
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+
+    expect((await put({ transactions: [{ transaction_journal_id: food.transaction_journal_id, amount: "1" }] })).status)
+      .toBe(422);
+    expect((await put({ transactions: [{ transaction_journal_id: "99999" }] })).status).toBe(422);
+
+    const untitled = {
+      transactions: [
+        { transaction_journal_id: food.transaction_journal_id, category_id: tandlaege },
+        { transaction_journal_id: gift.transaction_journal_id },
+      ],
+    };
+    expect((await put(untitled)).status).toBe(422);
+
+    const body = {
+      apply_rules: false,
+      group_title: "Indkøb",
+      transactions: [
+        { transaction_journal_id: food.transaction_journal_id, category_id: tandlaege, tags: ["Sundhed"] },
+        { transaction_journal_id: gift.transaction_journal_id },
+      ],
+    };
+    expect((await put(body)).status).toBe(200);
+    expect(fake.requests.at(-1)).toEqual({ method: "PUT", path: `/api/v1/transactions/${bilka.id}`, body });
+    let after = (await json<{ data: Group }>(`transactions/${bilka.id}`)).data.attributes.transactions;
+    expect(after.map((s) => [s.category_name, s.tags, s.amount])).toEqual([
+      ["Tandlæge", ["Sundhed"], food.amount],
+      [gift.category_name, gift.tags, gift.amount],
+    ]);
+
+    expect((await put({ transactions: [{ transaction_journal_id: gift.transaction_journal_id }] })).status).toBe(200);
+    after = (await json<{ data: Group }>(`transactions/${bilka.id}`)).data.attributes.transactions;
+    expect(after.map((s) => s.description)).toEqual(["Bilka gave"]);
   });
 
   it("answers the faults", async () => {

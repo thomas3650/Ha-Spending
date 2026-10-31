@@ -40,7 +40,11 @@ export async function earliestPostingDate(
   return dates.length === 0 ? null : dates.reduce((a, b) => (a < b ? a : b));
 }
 
-async function readMainGroups(client: FireflyClient, settings: ReadSettings, signal: AbortSignal) {
+export async function readMainGroups(
+  client: FireflyClient,
+  settings: Pick<ReadSettings, "mainGroupRuleGroup" | "pageSize">,
+  signal: AbortSignal,
+) {
   const groups = await getAllPages<WireRuleGroup>(client, "rule-groups", {}, settings.pageSize, signal);
   const group = findRuleGroup(groups, settings.mainGroupRuleGroup);
   if (group === null) return { found: false, ...mapCategories([]) };

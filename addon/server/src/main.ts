@@ -6,6 +6,8 @@ import { serverEnv } from "./env";
 import { createFireflyClient, FireflyError } from "./firefly/client";
 import { READ_TIMEOUT_MS, type ReadSettings, readSpendingData, readVersion } from "./firefly/read";
 import { type Options, OptionsError, readOptions } from "./options";
+import { createSorterApp, SORTER_PORT } from "./sorter/http";
+import { createSorterTools } from "./sorter/tools";
 import { VERSION } from "./version";
 
 const PORT = 8099;
@@ -48,3 +50,17 @@ serve({ fetch: app.fetch, port: PORT, hostname: env.hostname }, () => {
       console.error(`Firefly III's version not read: ${error instanceof FireflyError ? error.reason : "internal"}`),
   );
 });
+
+if (options.sorterKey !== null) {
+  const tools = createSorterTools(client, {
+    mainGroupRuleGroup: options.mainGroupRuleGroup,
+    excludedMainGroups: options.excludedMainGroups,
+    inboxCategory: options.sorterInboxCategory,
+    pageSize: 500,
+    timeoutMs: READ_TIMEOUT_MS,
+  });
+  const sorter = createSorterApp({ key: options.sorterKey, tools });
+  serve({ fetch: sorter.fetch, port: SORTER_PORT, hostname: env.hostname }, () => {
+    console.log(`The sorter's endpoint listening on ${env.hostname ?? "all addresses"}, port ${SORTER_PORT}`);
+  });
+}

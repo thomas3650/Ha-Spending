@@ -142,6 +142,13 @@ describe("createApp", () => {
     expect(await answer(new Error())).toEqual({ status: 500, body: { error: "internal" } });
   });
 
+  it("does not serve the sorter's endpoint on the ingress port", async () => {
+    const app = createApp({ webDir, dev: false });
+    const body = { method: "POST", body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "tools/list" }) };
+    expect((await app.request("/mcp", body, from("192.0.2.10"))).status).toBe(403);
+    expect((await app.request("/mcp", body, ingress)).status).toBe(404);
+  });
+
   it("guards the data like every route", async () => {
     const loadData = vi.fn(async () => D);
     const app = createApp({ webDir, dev: false, loadData });

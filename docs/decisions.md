@@ -277,3 +277,28 @@ to set their status to `superseded by D<n>`, or to name a part a later decision 
   overlapped (#28). The list was the hidden button list already there for keyboard and screen readers. The margin
   leaves room for a chosen piece's label, which moves out with its piece after the labels are spread.
 - **Source:** Claude, for #28 (Thomas: "Yes, fix #28", 2026-10-31)
+
+### D29: The sorter's endpoint: MCP on port 8100, behind a key
+- **Date:** 2026-10-31 · **Status:** active
+- **Decision:** When `sorter_key` is set, the server also listens on port 8100, unpublished and without the ingress
+  check, for an MCP endpoint with two tools, `start` and `set_category`. Every request needs the key, compared as
+  SHA-256 digests in constant time; a key under 32 characters stops the add-on, and a request with an `Origin` gets
+  403. It answers JSON-RPC as plain JSON, written by hand, with no MCP SDK. `start` leaves the inbox category out of
+  the categories that must be listed, and a list that names it is a problem. `set_category` takes 1 to 100
+  assignments per call.
+- **Why:** An AI sorter in another add-on sets categories without holding the Firefly III token, and the limits are in
+  this code, not in its prompt. A hand-written JSON answer needs no new dependency. The inbox is never chosen, but the
+  rule group may map it to a tag of its own. The batch keeps a run of some 1,100 postings within the agent's turns.
+- **Source:** Thomas, 2026-10-31, the design of the AI sorting agreed in the house session; the batch: the house
+  session, 2026-10-31; the inbox rule, the key's length and the `Origin` check: Claude
+
+### D30: The sorter's one write
+- **Date:** 2026-10-31 · **Status:** active
+- **Decision:** `set_category` re-reads the posting's whole group right before it writes, and writes with one PUT of
+  the group: the posting's `category_id` and `tags`, only `transaction_journal_id` for every other split, the
+  `group_title` of a split group, and `apply_rules: false`. The tags lose every value of the rule group's mapping and
+  gain the category's main group. A failed write stops the batch.
+- **Why:** Firefly III's update deletes the splits it does not list, refuses a split group without its title, and
+  would run its rules. The integration tests check on 6.7.9 that the other split, the amount, the date and the notes
+  stay. The re-read keeps a hand correction made since `start`.
+- **Source:** Claude, for D29; the re-read and the fields written: Thomas, 2026-10-31, the design of the AI sorting

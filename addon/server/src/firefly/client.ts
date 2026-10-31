@@ -17,6 +17,8 @@ export class FireflyError extends Error {
 
 export interface FireflyClient {
   get(path: string, query: Record<string, string>, signal?: AbortSignal): Promise<unknown>;
+  /** Only the sorter's `set_category` writes (D29). */
+  put(path: string, body: unknown, signal?: AbortSignal): Promise<unknown>;
 }
 
 /** `baseUrl` comes without a trailing slash: options.ts strips it. */
@@ -24,33 +26,40 @@ export function createFireflyClient(options: { baseUrl: string; token: string; f
   const { baseUrl: base, token } = options;
   const fetch = options.fetch ?? globalThis.fetch;
 
+  async function send(url: string, init: RequestInit): Promise<unknown> {
+    let response: Response;
+    try {
+      response = await fetch(url, {
+        ...init,
+        headers: { Authorization: `Bearer ${token}`, Accept: "application/vnd.api+json", ...init.headers },
+        redirect: "error",
+      });
+    } catch {
+      throw new FireflyError("unreachable");
+    }
+    if (!response.ok) {
+      await response.body?.cancel().catch(() => {});
+      throw new FireflyError(response.status === 401 || response.status === 403 ? "refused" : "unreachable");
+    }
+    let body: unknown;
+    try {
+      body = await response.json();
+    } catch {
+      throw new FireflyError("unreachable");
+    }
+    if (typeof body !== "object" || body === null || !("data" in body)) throw new FireflyError("unreachable");
+    return body;
+  }
+
   return {
-    async get(path, query, signal) {
-      const url = `${base}/api/v1/${path}?${new URLSearchParams(query)}`;
-      let response: Response;
-      try {
-        response = await fetch(url, {
-          method: "GET",
-          headers: { Authorization: `Bearer ${token}`, Accept: "application/vnd.api+json" },
-          signal,
-          redirect: "error",
-        });
-      } catch {
-        throw new FireflyError("unreachable");
-      }
-      if (!response.ok) {
-        await response.body?.cancel().catch(() => {});
-        throw new FireflyError(response.status === 401 || response.status === 403 ? "refused" : "unreachable");
-      }
-      let body: unknown;
-      try {
-        body = await response.json();
-      } catch {
-        throw new FireflyError("unreachable");
-      }
-      if (typeof body !== "object" || body === null || !("data" in body)) throw new FireflyError("unreachable");
-      return body;
-    },
+    get: (path, query, signal) => send(`${base}/api/v1/${path}?${new URLSearchParams(query)}`, { method: "GET", signal }),
+    put: (path, body, signal) =>
+      send(`${base}/api/v1/${path}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+        signal,
+      }),
   };
 }
 

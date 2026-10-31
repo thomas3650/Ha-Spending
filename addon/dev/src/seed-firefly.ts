@@ -64,6 +64,8 @@ export async function seedFirefly(baseUrl: string, token: string, data: SeedData
     ...(s.category === undefined ? {} : { category_name: s.category }),
     ...(s.foreignAmount === undefined ? {} : { foreign_amount: s.foreignAmount }),
     ...(s.foreignCurrency === undefined ? {} : { foreign_currency_code: s.foreignCurrency }),
+    ...(s.notes === undefined ? {} : { notes: s.notes }),
+    ...(s.tags === undefined ? {} : { tags: s.tags }),
   });
   for (const group of data.transactions) {
     await send("POST", "transactions", {

@@ -9,6 +9,8 @@ export interface SeedSplit {
   category?: string;
   foreignAmount?: string;
   foreignCurrency?: string;
+  notes?: string;
+  tags?: string[];
 }
 
 export interface SeedRule {

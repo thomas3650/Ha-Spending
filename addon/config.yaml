@@ -17,6 +17,7 @@ options:
   main_group_rule_group: Hovedgrupper
   excluded_main_groups:
     - Penge ind og ud
+  sorter_inbox_category: Til sortering
 schema:
   firefly_url: url
   firefly_token: password
@@ -24,3 +25,5 @@ schema:
   main_group_rule_group: str
   excluded_main_groups:
     - str
+  sorter_key: password?
+  sorter_inbox_category: str

@@ -1,10 +1,12 @@
 import { exampleSeed, seedFirefly } from "@ha-spending/dev";
 import { classify, parts, type SpendingData } from "@ha-spending/shared";
 import { beforeAll, describe, expect, it, vi } from "vitest";
+import { createSorterApp } from "../src/sorter/http";
+import { createSorterTools } from "../src/sorter/tools";
 import { createApp } from "../src/app";
 import { createFireflyClient, type FetchLike, type FireflyClient, FireflyError } from "../src/firefly/client";
 import { type ReadSettings, readSpendingData, readVersion } from "../src/firefly/read";
-import type { WireAccount, WirePage } from "../src/firefly/wire";
+import type { WireAccount, WireCategory, WireGroup, WirePage, WireSplit } from "../src/firefly/wire";
 
 const settings: ReadSettings = {
   mainGroupRuleGroup: "Hovedgrupper",
@@ -158,5 +160,142 @@ describe("a real Firefly III", () => {
     await expect(refused).rejects.toMatchObject({ reason: "refused" });
     const away = readVersion(createFireflyClient({ baseUrl: "http://127.0.0.1:1", token }));
     await expect(away).rejects.toMatchObject({ reason: "unreachable" });
+  });
+});
+
+// After the reads above, which count the example dataset: these postings are dated after their periods.
+describe("the sorter's tools on a real Firefly III", () => {
+  const KEY = "made-up-sorter-key-made-up-sorter-key";
+  let call: (name: string, args: unknown) => Promise<{ isError: boolean; value: Record<string, unknown> }>;
+  let ids: Map<string, number>;
+
+  const splits = async () => {
+    const query = { start: "2026-11-01", end: "2026-11-30", type: "all", limit: "50" };
+    const page = (await client.get("transactions", query)) as WirePage<WireGroup>;
+    return new Map<string, WireSplit>(page.data.flatMap((g) => g.attributes.transactions.map((t) => [t.description, t])));
+  };
+  const posting = async (description: string) => Number((await splits()).get(description)!.transaction_journal_id);
+
+  beforeAll(async () => {
+    const tagRule = (category: string, tag: string) => ({
+      title: `Sortering: ${category} → ${tag}`,
+      active: true,
+      triggers: [{ type: "category_is", value: category }],
+      actions: [{ type: "add_tag", value: tag }],
+    });
+    await seedFirefly(url, token, {
+      accounts: [],
+      categories: ["Til sortering"],
+      ruleGroups: [
+        {
+          title: "Sorteringsgrupper",
+          rules: [tagRule("Dagligvarer", "Mad"), tagRule("Husleje", "Bolig"), tagRule("Til sortering", "Til sortering")],
+        },
+      ],
+      transactions: [
+        { splits: [{ type: "withdrawal", date: "2026-11-02", amount: "99.95", description: "Integration køb",
+          source: "Konto A", destination: "Butik X", notes: "Banken: Dagligvarer", tags: ["Kvittering", "Bolig"] }] },
+        { splits: [{ type: "deposit", date: "2026-11-03", amount: "10.00", description: "Integration refusion",
+          source: "Butik Y", destination: "Konto B", category: "Til sortering" }] },
+        {
+          groupTitle: "Integration delt",
+          splits: [
+            { type: "withdrawal", date: "2026-11-04", amount: "20.00", description: "Integration del 1",
+              source: "Konto A", destination: "Butik Z" },
+            { type: "withdrawal", date: "2026-11-04", amount: "30.00", description: "Integration del 2",
+              source: "Konto A", destination: "Butik Z", tags: ["Ferie"] },
+          ],
+        },
+        { splits: [{ type: "transfer", date: "2026-11-05", amount: "70.00", description: "Integration overførsel",
+          source: "Konto A", destination: "Konto B" }] },
+      ],
+    });
+    const tools = createSorterTools(client, {
+      mainGroupRuleGroup: "Sorteringsgrupper",
+      excludedMainGroups: ["Penge ind og ud"],
+      inboxCategory: "Til sortering",
+      pageSize: 5,
+      timeoutMs: 30_000,
+    }, () => {});
+    const app = createSorterApp({ key: KEY, tools, log: () => {} });
+    call = async (name, args) => {
+      const res = await app.request("/mcp", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${KEY}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "tools/call", params: { name, arguments: args } }),
+      });
+      const body = (await res.json()) as { result: { content: { text: string }[]; isError?: boolean } };
+      return { isError: body.result.isError === true, value: JSON.parse(body.result.content[0].text) };
+    };
+    const categories = (await client.get("categories", { limit: "50" })) as WirePage<WireCategory>;
+    ids = new Map(categories.data.map((c) => [c.attributes.name, Number(c.id)]));
+  });
+
+  const tree = () => [
+    { id: ids.get("Dagligvarer")!, name: "Dagligvarer", group: "Mad" },
+    { id: ids.get("Husleje")!, name: "Husleje", group: "Bolig" },
+  ];
+
+  it("finds the inbox with Firefly III's search, oldest first, without transfers", async () => {
+    const { isError, value } = await call("start", { categories: tree() });
+    expect(isError).toBe(false);
+    expect(value.ok).toBe(true);
+    const postings = value.postings as Record<string, unknown>[];
+    expect(postings.map((p) => p.description)).toEqual([
+      "Løn",
+      "Kiosk",
+      "Integration køb",
+      "Integration refusion",
+      "Integration del 1",
+      "Integration del 2",
+    ]);
+    expect(postings[2]).toEqual({
+      posting_id: await posting("Integration køb"),
+      date: "2026-11-02",
+      description: "Integration køb",
+      amount: "99.95",
+      type: "withdrawal",
+      account: "Konto A",
+      notes: "Banken: Dagligvarer",
+    });
+    expect(postings[3]).toMatchObject({ type: "deposit", account: "Konto B", amount: "10.00" });
+  });
+
+  it("writes the category and the main group's tag only, and keeps the other split", async () => {
+    const before = await splits();
+    const assignments = [
+      ["Integration køb", "Dagligvarer"],
+      ["Integration del 1", "Husleje"],
+      ["Integration overførsel", "Dagligvarer"],
+      ["Integration refusion", "Husleje"],
+    ].map(([d, c]) => ({ posting_id: Number(before.get(d)!.transaction_journal_id), category_id: ids.get(c)! }));
+    const { isError, value } = await call("set_category", { assignments });
+    expect(isError).toBe(false);
+    expect((value.results as { ok: boolean; reason?: string }[]).map((r) => r.reason ?? r.ok)).toEqual([
+      true,
+      true,
+      "transfer",
+      true,
+    ]);
+
+    const after = await splits();
+    const unchanged = (s: WireSplit) => [s.amount, s.date, s.description, s.notes, s.source_id, s.destination_id];
+    const buy = after.get("Integration køb")!;
+    expect(buy.category_name).toBe("Dagligvarer");
+    expect([...buy.tags].sort()).toEqual(["Kvittering", "Mad"]);
+    expect(unchanged(buy)).toEqual(unchanged(before.get("Integration køb")!));
+    expect(after.get("Integration del 1")).toMatchObject({ category_name: "Husleje", tags: ["Bolig"] });
+    const second = after.get("Integration del 2")!;
+    expect(second).toMatchObject({ category_name: null, tags: ["Ferie"] });
+    expect(unchanged(second)).toEqual(unchanged(before.get("Integration del 2")!));
+    expect(after.get("Integration refusion")).toMatchObject({ category_name: "Husleje", tags: ["Bolig"] });
+    expect(after.get("Integration overførsel")!.category_name).toBeNull();
+
+    const again = await call("start", { categories: tree() });
+    expect((again.value.postings as { description: string }[]).map((p) => p.description)).toEqual([
+      "Løn",
+      "Kiosk",
+      "Integration del 2",
+    ]);
   });
 });

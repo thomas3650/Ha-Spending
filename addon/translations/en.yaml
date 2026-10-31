@@ -6,7 +6,7 @@ configuration:
   firefly_token:
     name: Firefly III token
     description: >-
-      A Personal Access Token from Firefly III. The add-on only reads with it.
+      A Personal Access Token from Firefly III. The add-on reads with it, and the sorter writes with it.
   firefly_link_url:
     name: Firefly III link address
     description: >-
@@ -20,3 +20,13 @@ configuration:
     name: Excluded main groups
     description: >-
       Main groups that are not spending, such as money moved in and out. Their postings are left out.
+  sorter_key:
+    name: Sorter key
+    description: >-
+      When set, the sorter's endpoint answers other add-ons on port 8100, to a request with this key. At least 32
+      characters. When empty, the endpoint is off.
+  sorter_inbox_category:
+    name: Sorter inbox category
+    description: >-
+      The Firefly III category of the postings still to be sorted. The sorter takes postings from it and never puts
+      one into it.
