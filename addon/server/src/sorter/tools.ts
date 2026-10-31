@@ -13,10 +13,12 @@ export interface SorterSettings {
 }
 
 /** Small enough that a full answer stays well under the size Claude Code passes on as one tool result. */
-export const INBOX_LIMIT = 100;
+export const INBOX_LIMIT = 50;
 /** A description or notes longer than this is cut, for the same reason. */
 export const TEXT_LIMIT = 150;
 export const MAX_ASSIGNMENTS = 100;
+/** How long after `start` gave a posting out `set_category` takes it. */
+export const GIVEN_OUT_MS = 30 * 60 * 1000;
 const MAX_CATEGORIES = 1000;
 
 /** A tool's failure, answered as a tool error. `detail` carries codes and ids only, never a posting's text. */
@@ -57,7 +59,9 @@ export type Refusal =
   | "unknown-posting"
   | "transfer"
   | "not-withdrawal-or-deposit"
-  | "not-in-inbox";
+  | "not-in-inbox"
+  | "not-given-out"
+  | "amount-mismatch";
 
 export type AssignmentResult = { posting_id: number; ok: true } | { posting_id: number; ok: false; reason: Refusal };
 
@@ -210,7 +214,11 @@ function compare(given: GivenCategory[], catalog: Catalog, settings: SorterSetti
 interface Assignment {
   posting_id: number;
   category_id: number;
+  /** The amount as `start` gave it: a posting id copied wrong is refused unless the amount matches too. */
+  amount: string;
 }
+
+const AMOUNT = /^[0-9]+\.[0-9]{2}$/;
 
 function givenAssignments(args: unknown): Assignment[] {
   const list = isRecord(args) ? args.assignments : undefined;
@@ -224,11 +232,14 @@ function givenAssignments(args: unknown): Assignment[] {
     if (!isRecord(item) || !isId(item.posting_id) || !isId(item.category_id)) {
       throw new ToolFailure("bad-arguments", { reason: "an assignment is not two positive whole ids" });
     }
+    if (typeof item.amount !== "string" || !AMOUNT.test(item.amount)) {
+      throw new ToolFailure("bad-arguments", { reason: "an assignment has no amount as start gave it" });
+    }
     if (seen.has(item.posting_id)) {
       throw new ToolFailure("bad-arguments", { reason: `posting ${item.posting_id} is given more than once` });
     }
     seen.add(item.posting_id);
-    return { posting_id: item.posting_id, category_id: item.category_id };
+    return { posting_id: item.posting_id, category_id: item.category_id, amount: item.amount };
   });
 }
 
@@ -268,6 +279,7 @@ async function assign(
   settings: SorterSettings,
   catalog: Catalog,
   assignment: Assignment,
+  givenOut: (postingId: number) => boolean,
 ): Promise<AssignmentResult> {
   const { posting_id } = assignment;
   const category = categoryRefusal(assignment.category_id, catalog, settings);
@@ -280,6 +292,8 @@ async function assign(
   if (split.type === "transfer") return { posting_id, ok: false, reason: "transfer" };
   if (!isWithdrawalOrDeposit(split)) return { posting_id, ok: false, reason: "not-withdrawal-or-deposit" };
   if (!inInbox(split, settings.inboxCategory)) return { posting_id, ok: false, reason: "not-in-inbox" };
+  if (!givenOut(posting_id)) return { posting_id, ok: false, reason: "not-given-out" };
+  if (kroner(split.amount) !== assignment.amount) return { posting_id, ok: false, reason: "amount-mismatch" };
 
   const tags = [...(split.tags ?? []).filter((t) => !catalog.mainGroupTags.has(t)), category.group];
   await client.put(
@@ -312,7 +326,12 @@ export function createSorterTools(
   client: FireflyClient,
   settings: SorterSettings,
   log: (message: string) => void = console.log,
+  now: () => number = Date.now,
 ): Tool[] {
+  // The postings `start` gave out, with when that ends: `set_category` writes no other posting.
+  const givenOutUntil = new Map<number, number>();
+  const givenOut = (postingId: number) => (givenOutUntil.get(postingId) ?? 0) > now();
+
   const start: Tool = {
     name: "start",
     description:
@@ -350,6 +369,8 @@ export function createSorterTools(
         return { ok: false, problems };
       }
       const { postings, more } = await readInbox(client, settings, timeout(settings));
+      for (const [id, until] of givenOutUntil) if (until <= now()) givenOutUntil.delete(id);
+      for (const posting of postings) givenOutUntil.set(posting.posting_id, now() + GIVEN_OUT_MS);
       log(`sorter: start: ok, ${postings.length} postings${more ? ", more left" : ""}`);
       return { ok: true, postings, more };
     },
@@ -359,8 +380,10 @@ export function createSorterTools(
     name: "set_category",
     description:
       `Set the category of up to ${MAX_ASSIGNMENTS} inbox postings, one result per assignment, in order. Each ` +
-      "posting is read again before it is written, and refused with a reason when it is no longer in the inbox, is a " +
-      "transfer, or when the category is not one to choose. Only the category and its main group's tag are written.",
+      "assignment gives the posting's amount exactly as start gave it. Each posting is read again before it is " +
+      "written, and refused with a reason when it is no longer in the inbox, is a transfer, was not given out by start " +
+      "in the last 30 minutes, has another amount, or when the category is not one to choose. Only the category and " +
+      "its main group's tag are written. On not-given-out, call start again.",
     inputSchema: {
       type: "object",
       properties: {
@@ -373,8 +396,9 @@ export function createSorterTools(
             properties: {
               posting_id: { type: "integer", minimum: 1 },
               category_id: { type: "integer", minimum: 1 },
+              amount: { type: "string", pattern: "^[0-9]+\\.[0-9]{2}$" },
             },
-            required: ["posting_id", "category_id"],
+            required: ["posting_id", "category_id", "amount"],
             additionalProperties: false,
           },
         },
@@ -391,7 +415,7 @@ export function createSorterTools(
       });
       for (const assignment of assignments) {
         try {
-          results.push(await assign(client, settings, catalog, assignment));
+          results.push(await assign(client, settings, catalog, assignment, givenOut));
         } catch (error) {
           if (!(error instanceof FireflyError)) throw error;
           // The results so far stand; the assignments after this one are not tried.
