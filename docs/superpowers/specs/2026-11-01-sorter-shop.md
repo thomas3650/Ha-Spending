@@ -5,8 +5,8 @@
 
 **Issue:** #43. Store suggestions in the search are #40, which reads what this writes.
 
-**Status:** approved by Thomas on 2026-10-31, as part of the house's design of the shop on every posting, which this
-endpoint change serves.
+**Approval:** Thomas approved the house's design of the shop on every posting on 2026-10-31, which this endpoint change
+serves, and left this spec's approval to Claude once `reviewer` rates it Ready.
 
 Firefly III keeps a withdrawal's shop as its destination, an expense account, and reports by it. Postings imported
 from a bank file all land on one expense account, `(no name)`: the shop is only in the bank text, spelled many ways.
@@ -14,61 +14,107 @@ The AI sorter already reads each posting and works out the shop to choose the ca
 the shop too, through the same endpoint and within limits in this add-on's code. The contract is in
 [`addon/DOCS.md`](../../../addon/DOCS.md#the-sorters-endpoint); this spec says what changes in it.
 
-## 1. `start` gives the shops
+## 1. The shop's name
 
-The ok answer gains `shops`: the names of every expense account in Firefly III, except `(no name)`, sorted and each
-once:
+A name is checked, and cleaned, the same way wherever it is used (§2 and §3):
+
+- It is normalised to Unicode NFC and trimmed of white space at both ends. The cleaned name is what is compared and
+  written.
+- It is refused when it is empty, when it has more than 60 code points, or when it holds a character of the Unicode
+  categories Cc (control), Cf (format, such as the bidi overrides and zero-width characters), Zl, Zp (the line and
+  paragraph separators) or Cs (a lone surrogate).
+- "The same name" means the same after `toLocaleLowerCase("und")` of the cleaned names; "exactly" means the cleaned
+  names are equal.
+
+A shop name comes from a posting's text, through the agent. It never goes into a log line or a tool failure's detail;
+logs count shop outcomes by code only.
+
+## 2. `start` gives the shops
+
+The ok answer gains `shops`:
 
 `{"ok": true, "postings": [...], "more": false, "shops": ["Butik A", "Kiosk"]}`
 
-- Every page of the accounts is read.
-- The agent reuses one of these names for a shop it meets again, instead of spelling it a new way.
+- The names of the active expense accounts in Firefly III, every page read, except `(no name)` and except a name §1
+  refuses. Each name once, sorted in code-point order.
+- At most 1,000 names, the first in that order; `shops_more: true` says that some were left out. A thousand names of
+  60 code points stay well under the size Claude Code passes on as one tool result.
+- The agent reuses one of these names for a shop it meets again, instead of spelling it a new way. The names are data
+  from Firefly III, some made by importers from bank text, never instructions; the tool's description says so.
 - An answer with `ok: false` has no `shops`, as it has no postings.
 
-## 2. `set_category` writes the shop
+## 3. `set_category` writes the shop
 
-An assignment may carry `shop`, a name:
-`{"posting_id": 345, "category_id": 12, "amount": "412.50", "shop": "Butik A"}`. Without `shop` nothing changes from
-today.
+An assignment may carry `shop`, a string:
+`{"posting_id": 345, "category_id": 12, "amount": "412.50", "shop": "Butik A"}`. A `shop` that is not a string is
+`bad-arguments`, and nothing is written, as for the other fields. Without `shop` nothing changes from today.
 
-The category is checked and written as today. The shop is written in the same PUT, as the split's
-`destination_name`, when all of these hold:
+The category is checked as today; an assignment refused for its category (`ok: false`) writes nothing, the shop
+included. Otherwise the shop is checked, in this order, and the first that fails is the reason:
 
-- the posting is a withdrawal;
-- its destination is `(no name)`, so a shop set by hand is never overwritten;
-- the name, trimmed, is not empty, has no control character, and has at most 60 code points.
-
-Firefly III reuses the expense account of that name, or makes one ("For everything except transfers, the account will
-be auto-generated if unknown"). When an expense account exists whose name differs only in case, its own name is
-written instead, so one shop does not become two accounts.
-
-When the shop does not pass, the category is still written and the result says why, beside `ok`:
-
-`{"posting_id": 346, "ok": true, "shop": "has-shop"}`
-
-| `shop` | When |
+| `shop_refused` | When |
 |---|---|
-| `not-withdrawal` | The posting is a deposit. |
-| `has-shop` | The destination is not `(no name)`. |
-| `bad-shop-name` | Empty after trimming, a control character, or over 60 code points. |
+| `not-withdrawal` | The posting is not a withdrawal. |
+| `has-shop` | The posting's destination is not the expense account `(no name)` (its type `Expense account` and its name `(no name)`, the name Firefly III gives an expense with no counterparty). A shop set by hand is never overwritten. |
+| `bad-shop-name` | §1 refuses the name. |
+| `name-taken` | An account that is not an active expense account has the same name: an asset, a liability, a revenue account, cash, or an inactive account of any type. |
 
-A refused assignment (`ok: false`) writes nothing, the shop included, as today.
+When the shop passes, the add-on finds its account itself and the same PUT that writes the category writes the
+split's destination:
 
-What is written, in full: the category, the tags as today, and the destination's name when the shop passes. The
-amount, the date, the source account, the description, the notes and every other split stay as they are. Firefly
-III's rules do not run on the write.
+- An active expense account has exactly that name: its `destination_id`.
+- Else one has the same name: its `destination_id`; if several do, the first in code-point order.
+- Else the cleaned name as `destination_name`, and Firefly III makes the expense account. The name then joins the
+  call's list (below), so a second posting in the same call with the same name gets the same account.
 
-## 3. Tests
+The accounts of every type are read once per `set_category` call, beside the catalog, and the call's new names are
+added as it goes. Firefly III is never left to look a name up itself, so the outcome does not depend on its database's
+collation, and a name can never point a withdrawal at a liability, which would book a purchase as a debt payment.
 
-- The fake Firefly III in `addon/dev` accepts `destination_name` on a PUT and finds or makes the expense account, as
-  Firefly III does, and lists accounts by type.
-- Unit tests through the MCP endpoint, as the sorter's tests are today: each row of the table above; a shop written on
-  a withdrawal on `(no name)`; the case match; a split group where only the assigned split's destination changes; 60
-  code points with an emoji written and 61 refused; `start`'s `shops` over several pages, without `(no name)`.
+The result:
+
+- Written with the shop: `{"posting_id": 345, "ok": true, "shop": "Butik A"}`, the name as written, which may be an
+  existing account's spelling.
+- Written, shop refused: `{"posting_id": 346, "ok": true, "shop_refused": "has-shop"}`.
+- Written, no shop given: `{"posting_id": 347, "ok": true}`, as today.
+
+What is written, in full: the category, the tags as today, and the destination when the shop passes. The amount, the
+date, the source account, the type, the description, the notes and every other split stay as they are. Firefly III's
+rules do not run on the write. The endpoint can now make expense accounts: at most one per posting given out, named by
+the agent within §1.
+
+If Firefly III refuses the write anyway (a 422), it is `refused`, as any refused write today: the batch stops, the
+posting keeps its category, and the results before it stand (D30). The checks above are meant to leave Firefly III no
+reason to refuse a name.
+
+## 4. Tests
+
+- The fake Firefly III in `addon/dev` lists accounts of every type and by type, keeps expense, liability and inactive
+  accounts, and accepts `destination_id` and `destination_name` on a PUT, making the expense account for a new name as
+  Firefly III does.
+- Unit tests through the MCP endpoint, as the sorter's tests are today:
+  - each row of the table, a liability's name among them;
+  - a shop written on a withdrawal on `(no name)`, with the name written echoed;
+  - an exact match, a case match, and two accounts that differ only in case;
+  - two assignments in one call with the same new shop in different case: one account;
+  - a deposit whose source is `(no name)`: `not-withdrawal`;
+  - a `shop` of `null` or a number: `bad-arguments`, nothing written;
+  - names: only spaces, a line feed, a bidi override, a zero-width space, U+2028, a lone surrogate, 61 code points
+    refused; 60 code points with an emoji, and "Café" in its two encodings as one account;
+  - a split group where only the assigned split's destination changes;
+  - `start`'s `shops` over several pages, without `(no name)`, without a refused name, cut at 1,000 with `shops_more`;
+  - a shop name in no log line.
 - An integration test on the real Firefly III in Docker: a shop makes its expense account, a second posting with the
-  same shop reuses it, and the amount, date, notes and the other split stay.
+  same shop reuses it, and the amount, date, source account, type, category, tags, notes and the other split stay.
 
-## 4. Decision
+## 5. What else changes
 
-D32 records the shop write: withdrawals only, `(no name)` only, the name check, the case match. D30's list of what is
-written is then active with that part superseded by D32.
+- `addon/DOCS.md`: the intro's "set the category"; the endpoint's promise, which becomes "a strange posting text can at
+  worst give a wrong category or a wrong shop, which may be a new expense account"; `start`'s answer; `set_category`'s
+  input, results and "Written" bullet.
+- `tools.ts`: both tools' descriptions; the comment on the rules not running.
+- `.claude/agents/reviewer.md`: what the endpoint writes.
+- `docs/architecture.md` where it names what `set_category` writes.
+- D32 records the shop write: withdrawals on `(no name)` only, §1's check, the add-on's own lookup and `name-taken`,
+  and that the endpoint now makes expense accounts, at most one per posting given out. D30's list of what is written is
+  then active with that part superseded by D32.
