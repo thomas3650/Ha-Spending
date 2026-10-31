@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.0](https://github.com/thomas3650/Ha-Spending/compare/v0.2.2...v0.3.0) (2026-10-31)
+
+
+### Features
+
+* a bar opens Posteringer, and Posteringer has a search ([#41](https://github.com/thomas3650/Ha-Spending/issues/41)) ([e6579c4](https://github.com/thomas3650/Ha-Spending/commit/e6579c432b233bc57480b194e65b1cf9b9c76ced))
+
 ## [0.2.2](https://github.com/thomas3650/Ha-Spending/compare/v0.2.1...v0.2.2) (2026-10-31)
 
 
