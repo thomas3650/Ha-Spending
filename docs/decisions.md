@@ -232,7 +232,7 @@ to set their status to `superseded by D<n>`, or to name a part a later decision 
   [D16](decisions.md) for the partial unit
 
 ### D24: The halves stack below 1024 px, and are equal below 1280 px
-- **Date:** 2026-10-31 · **Status:** active
+- **Date:** 2026-10-31 · **Status:** active; ring and name size superseded by D27
 - **Decision:**
   - The two halves stack when the page's frame is narrower than 1024 px.
   - From 1024 px to 1279 px they are equal, `minmax(0, 1fr) minmax(0, 1fr)`. From 1280 px they are 5 : 7.

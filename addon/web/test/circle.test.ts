@@ -158,8 +158,8 @@ describe("the circle", () => {
         {
           overflow: "break",
           width,
-          font: "12px sans-serif",
-          rich: { name: { font: "12px sans-serif" }, sub: { font: "10px sans-serif" } },
+          font: "14px sans-serif",
+          rich: { name: { font: "14px sans-serif" }, sub: { font: "12px sans-serif" } },
         },
         null,
         null,

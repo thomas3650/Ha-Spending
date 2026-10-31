@@ -131,14 +131,12 @@ export class Circle extends LitElement {
         this.chartStale = true;
         this.requestUpdate();
       });
-      if (typeof ResizeObserver !== "undefined") {
-        this.resizeObserver = new ResizeObserver(() => {
-          if (`${el.clientWidth}x${el.clientHeight}` === this.ringSize) return;
-          this.chartStale = true;
-          this.requestUpdate();
-        });
-        this.resizeObserver.observe(el);
-      }
+      this.resizeObserver = new ResizeObserver(() => {
+        if (`${el.clientWidth}x${el.clientHeight}` === this.ringSize) return;
+        this.chartStale = true;
+        this.requestUpdate();
+      });
+      this.resizeObserver.observe(el);
     }
     if (fresh || this.chartStale || changed.has("items") || changed.has("selected") || changed.has("selectable")) {
       this.chartStale = false;
