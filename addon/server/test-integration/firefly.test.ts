@@ -159,27 +159,36 @@ describe("a real Firefly III", () => {
       const app = createApp({ webDir: "/nowhere", dev: true, loadData: (r) => read(r), log: () => {} });
       const res = await app.request("/api/data?start=2025-12-01&end=2026-07-31");
       expect(res.status).toBe(200);
-      return ((await res.json()) as SpendingData).subscriptions;
+      return (await res.json()) as SpendingData;
     };
-    const withoutId = (list: SpendingData["subscriptions"]) => list.map((s) => ({ ...s, id: "" }));
+    // Ids differ between the fake and Firefly III: compare the bill and the account by name.
+    const byName = (d: SpendingData) => {
+      const names = new Map(d.accounts.map((a) => [a.id, a.name]));
+      return d.subscriptions.map((s) => ({
+        ...s,
+        id: "",
+        lastPayment: s.lastPayment && { ...s.lastPayment, account: names.get(s.lastPayment.account) },
+      }));
+    };
 
     it("gives the same subscriptions as the fake does for the same seed, ids apart", async () => {
-      const fakeClient = createFireflyClient({ baseUrl: "http://f", token: "fake-token", fetch: createFakeFirefly(exampleSeed).fetch });
-      const expected = (await readSpendingData(fakeClient, settings, R1, { today, warn: () => {} })).subscriptions;
+      const fakeClient = createFireflyClient({
+        baseUrl: "http://f",
+        token: "fake-token",
+        fetch: createFakeFirefly(exampleSeed).fetch,
+      });
+      const expected = await readSpendingData(fakeClient, settings, R1, { today, warn: () => {} });
       const actual = await served();
-      expect(actual.length).toBeGreaterThan(0);
-      expect(withoutId(actual)).toEqual(withoutId(expected));
+      expect(actual.subscriptions.length).toBeGreaterThan(0);
+      expect(byName(actual)).toEqual(byName(expected));
     });
 
     it("gives Husleje's last payment in øre with its category and account, and leaves an inactive one out", async () => {
-      const list = await served();
-      const husleje = list.find((s) => s.name === "Husleje")!;
-      expect(husleje.lastPayment).toMatchObject({ category: "Husleje" });
-      expect(husleje.lastPayment!.amount).toBeGreaterThan(0);
-      expect(Number.isInteger(husleje.lastPayment!.amount)).toBe(true);
-      const accounts = (await read(R1)).accounts;
-      expect(husleje.lastPayment!.account).toBe(accounts.find((a) => a.name === "Konto A")!.id);
-      expect(list.map((s) => s.name)).not.toContain("Avis");
+      const d = await served();
+      const husleje = d.subscriptions.find((s) => s.name === "Husleje")!;
+      const kontoA = d.accounts.find((a) => a.name === "Konto A")!.id;
+      expect(husleje.lastPayment).toEqual({ date: "2025-12-30", amount: 800000, category: "Husleje", account: kontoA });
+      expect(d.subscriptions.map((s) => s.name)).not.toContain("Avis");
     });
 
     it("lists a bill's paid dates only inside the window asked for", async () => {
