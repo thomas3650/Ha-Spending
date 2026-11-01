@@ -1,4 +1,4 @@
-import type { Level, SpendingData } from "@ha-spending/shared";
+import type { Level, SpendingData, Subscription } from "@ha-spending/shared";
 import { describe, expect, it } from "vitest";
 import {
   chooseUnit,
@@ -17,9 +17,11 @@ import {
   setPeriod,
   setSearch,
   setSort,
+  toggleSubscriptions,
   trailLevel,
 } from "../src/state/actions";
 import { DEFAULT_STATE, type ViewState } from "../src/state/view";
+import { answerFor } from "./fixture";
 
 const mad: Level = { kind: "mainGroup", mainGroup: "Mad" };
 const cafe: Level = { kind: "category", mainGroup: "Mad", category: "Café" };
@@ -150,6 +152,33 @@ describe("the actions", () => {
   });
 });
 
+describe("the subscriptions card", () => {
+  const subs: ViewState = { ...DEFAULT_STATE, card: "subscriptions" };
+
+  it("toggles on and back to the bars", () => {
+    expect(toggleSubscriptions(DEFAULT_STATE).card).toBe("subscriptions");
+    expect(toggleSubscriptions({ ...DEFAULT_STATE, card: "postings" }).card).toBe("subscriptions");
+    expect(toggleSubscriptions(subs).card).toBe("bars");
+  });
+
+  it("survives the period, the grouping, the accounts and the level", () => {
+    expect(setPeriod(subs, { preset: "lastMonth" }).card).toBe("subscriptions");
+    expect(setGrouping(subs, "week").card).toBe("subscriptions");
+    expect(setAccounts(subs, ["1"], ["1", "2"]).card).toBe("subscriptions");
+    expect(openPart(subs, "Mad").card).toBe("subscriptions");
+    expect(trailLevel(at(cafe), 0).card).toBe("bars");
+    expect(trailLevel(subs, 0).card).toBe("subscriptions");
+    expect(removeCategory({ ...subs, level: cafe }).card).toBe("subscriptions");
+  });
+
+  it("survives a unit toggled off, and a chosen unit gives the postings", () => {
+    const withUnit: ViewState = { ...subs, unit: "2026-07-01" };
+    expect(removeUnit(withUnit).card).toBe("subscriptions");
+    expect(chooseUnit(withUnit, "2026-07-01").card).toBe("subscriptions");
+    expect(chooseUnit(subs, "2026-07-01").card).toBe("postings");
+  });
+});
+
 describe("normalise", () => {
   const today = "2026-10-30";
   const data: SpendingData = {
@@ -224,5 +253,30 @@ describe("normalise", () => {
   it("shows the bars instead of Forskel without a unit", () => {
     expect(norm({ card: "difference" }).card).toBe("bars");
     expect(norm({ card: "postings" }).card).toBe("postings");
+  });
+
+  describe("the subscriptions card", () => {
+    const one: Subscription = {
+      id: "1",
+      name: "Streaming",
+      repeat: "monthly",
+      skip: 0,
+      start: "2026-01-05",
+      end: null,
+      amountMin: 9900,
+      amountMax: 9900,
+      lastPayment: null,
+    };
+    const range = { start: "2026-01-01", end: today };
+    const withOne = { ...answerFor(range), subscriptions: [one] };
+    const state: ViewState = { ...DEFAULT_STATE, card: "subscriptions" };
+
+    it("falls back to the bars without subscriptions", () => {
+      expect(normalise(state, answerFor(range), today).card).toBe("bars");
+    });
+
+    it("keeps the card with a subscription", () => {
+      expect(normalise(state, withOne, today).card).toBe("subscriptions");
+    });
   });
 });
