@@ -11,66 +11,93 @@ Firefly III keeps subscriptions (its API still calls them bills). Each has an am
 and the postings linked to it. The page shows none of that today. This spec adds them to the overview. It changes the
 [UI and UX spec](2026-10-30-ui-ux-design.md) where it says so; everything else there holds.
 
+**Claude's calls, for Thomas to see before approving** (each differs from the mockup or the issue, or settles an open
+point):
+
+- A row opens the subscription in Firefly III, not its postings on this page (§1.2). Filtering the postings by
+  subscription becomes a new issue.
+- "Steget" compares the last payment with the top of the amount range set in Firefly III, not with the payment before
+  it (§2.3). Raising the range in Firefly III clears it.
+- A subscription is shown with the category, main group and account of its last payment (§1.3).
+- A subscription whose last payment is not a withdrawal from an asset account is left out, as such a posting is not
+  spending on this page (§3).
+- If Firefly III fails to answer the subscriptions, the whole answer fails, as for any other read (§3, D33).
+
 ## 1. What the page shows
 
 ### 1.1 The key number "Abonnementer pr. måned"
 
-- A fourth key number beside the three of today, on screens 1 and 2 (the overview), not on Alle posteringer.
-- **Its value** is the sum of the shown subscriptions' amount per month (§2.1). **Its sub-line** is "{n} abonnementer ·
-  {the value × 12} om året".
-- **What it follows:** the level and the accounts, as §1.3 says. It does not follow the period, the chosen unit or the
+**Changes the UI spec** §3.1 ("the three key numbers"): with subscriptions there are four.
+
+- A fourth key number after the three of today, on the overview (screens 1 and 2), not on Alle posteringer.
+- **Its value** is the sum of the shown subscriptions' amount per month (§2.1), in whole kroner as the other key
+  numbers. **Its sub-line** is "{n} abonnementer · {the value × 12} om året", with "1 abonnement" for one.
+- **What it follows:** the level and the accounts (§1.3). It does not follow the period, the chosen unit or the
   search: it says what the subscriptions cost now.
-- **It is a button.** A click switches the right card to Abonnementer. Its accessible name is its label; it is
-  pressed (`aria-pressed`) while the card shows Abonnementer.
-- **The layout:** four columns from 1024 px of frame width, two from 600 px, one below, as the halves stack
-  ([D24](../../decisions.md)).
+- **It is a toggle button.** A click switches the right card to Abonnementer; a click while the card shows
+  Abonnementer switches it to Søjler. It has `aria-pressed`, true while the card shows Abonnementer. Its accessible
+  name is its text: the label, the value and the sub-line.
+- **The layout:** four columns from 1024 px of frame width, two from 600 px, one below 600 px. The halves stack below
+  1024 px ([D24](../../decisions.md)).
+- **While loading,** the placeholder keeps its three bones. The fourth number appears with the answer.
 
 ### 1.2 The Abonnementer card
 
-**Changes the UI spec** §4.2 and §4.4: the right card's switch gains a choice, after the others: Søjler / Posteringer /
-Forskel / Abonnementer (Forskel only while a unit is chosen, as today).
+**Changes the UI spec** §4.2 and §4.4: the right card's switch gains a last choice: Søjler / Posteringer / Forskel /
+Abonnementer (Forskel only while a unit is chosen, as today).
 
-- **The title** is "Abonnementer" on Alt forbrug and "Abonnementer i {level}" on a main group or a category, with "{the
-  key number's value} pr. måned" on the right.
+- **The title** is "Abonnementer" on Alt forbrug and "Abonnementer i {level}" on a main group or a category. "{the key
+  number's value} pr. måned" is on the right.
+- **The head wraps:** when the title, the chips and the four buttons do not fit on one line (a half at 1024 px, the
+  stacked card at 420 px), the switch goes on its own line under the title.
+- **The chips:** the category chip shows, as the card follows the category. The chosen unit's chip does not show, as
+  the card does not follow the unit. The unit stays chosen: Søjler, Posteringer and Forskel still use it.
 - **A row per subscription:**
-  - its name, and under it the repeat (§2.3) and "næste {date}" when there is a next date;
-  - its amount per month, right-aligned;
-  - its status (§2.2) as a coloured label with text, so the colour is never the only sign.
-- **The order:** Ikke set, then Steget, then Forventes, then Betalt; within each, by the next date, then by name
-  (`localeCompare(…, "da")`). The ones to look at come first.
-- **A click on a row** opens the subscription in Firefly III, at `{fireflyLinkUrl}/bills/show/{id}`, as a posting's
-  link does. Without `fireflyLinkUrl` the rows are not links. A filter of the postings by subscription is a later
-  issue.
+  - its name, and under it the repeat (§2.4) and "næste {date}" when there is a next date;
+  - its amount per month in whole kroner, right-aligned;
+  - its status (§2.3) as a coloured label with text, so the colour is never the only sign.
+- **The order:** Ikke set, then Steget, then Forventes, then Betalt; within each, by the next date (none last), then by
+  name (`localeCompare(…, "da")`).
+- **A click on a row** opens the subscription in Firefly III at `{fireflyLinkUrl}/bills/show/{id}`, as a posting's
+  link opens its posting. Without `fireflyLinkUrl` the rows are not links.
 - **Nothing to show** on a level with no subscription: "Ingen abonnementer i {level}".
 - **The foot:** "Fra Firefly III. Pr. måned er gennemsnittet af beløbet, regnet om til en måned."
+- **Dates** are written as "1. nov", with the year when it is not today's year ("1. jan 2027").
 - The period, the chosen unit and the search do not change the card, as for the key number.
 
 ### 1.3 Which subscriptions are shown
 
-- Only active ones whose end date, if any, is today or later.
-- **A subscription's category, main group and account are its last payment's** (§3): the category and the source
-  account of the latest posting linked to it in the year before today. Firefly III gives a subscription no category
-  of its own.
-- **The level:** on Alt forbrug every subscription; on a main group those whose main group it is; on a category those
-  whose category it is. One with no payment in that year has no category and no account: it is in Uden kategori in
-  Uden hovedgruppe ([D15](../../decisions.md)).
+The server sends only the subscriptions §3 keeps. Of those, the page shows:
+
+- **A subscription's category, main group and account are its last payment's:** the category and the source account of
+  the latest posting linked to it (§3). Firefly III gives a subscription no category of its own. The main group comes
+  from the category through the answer's `categories`, as for postings.
+- **The level:** on Alt forbrug every subscription; on a main group those of that main group; on a category those of
+  that category. One with no payment has no category and no account: it is in Uden kategori in Uden hovedgruppe
+  ([D15](../../decisions.md)).
 - **The accounts:** a subscription whose last payment's account is not chosen is left out. One with no payment is
   never left out by the accounts.
-- **The excluded main groups** (`excluded_main_groups`) leave out a subscription in them, as they leave out postings.
 
 ### 1.4 When the household has no subscriptions
 
-When Firefly III has no subscription that §1.3's first bullet keeps, the page is as today: three key numbers, no
-Abonnementer choice. A hash with `card=subscriptions` then shows Søjler, as a card the page cannot show does today.
+When the answer's `subscriptions` is empty, the page is as today: three key numbers and no Abonnementer choice. A hash
+with `card=subscriptions` then shows Søjler, as `card=difference` without a chosen unit does today.
+
+### 1.5 What keeps the card
+
+The card is in the hash as `card=subscriptions` (§4). Changing the period, the grouping or the accounts, opening a part
+of the circle, a trail link, a bar and a chip's ✕ keep it, as they keep Posteringer
+(`addon/web/src/state/actions.ts`). A bar click still switches to Posteringer, as the postings search spec says.
 
 ## 2. The rules
 
-Pure functions in `addon/shared/`, beside the money rules, with `today` passed in.
+Pure functions in `addon/shared/`, beside the money rules. `today` is the answer's `today`, the day the subscriptions
+were read, so the statuses match the data.
 
 ### 2.1 Amount per month
 
-The middle of the amount range, `(min + max) / 2` (Firefly III's `amount_avg`), times the repeat's factor, divided by
-`skip + 1`, rounded to whole øre:
+The middle of the amount range, `(min + max) / 2`, times the repeat's factor, divided by `skip + 1`, rounded to whole
+øre:
 
 | Repeat | Firefly III | Factor |
 | --- | --- | --- |
@@ -82,41 +109,60 @@ The middle of the amount range, `(min + max) / 2` (Firefly III's `amount_avg`), 
 
 `skip` is how many periods Firefly III leaves out between payments: `monthly` with `skip` 1 is every second month.
 
-### 2.2 The status
+### 2.2 The due dates and the next date
 
-From the next date, the last payment and today. The first that holds wins:
+- **The due dates** are the start date, then every `skip + 1` periods after it: 7 days for `weekly`; 1, 3, 6 or 12
+  months for the others, on the start date's day of the month, or the month's last day when it has fewer days.
+- **Early and late:** a payment may come up to E days before its due date, and is late after L days. E and L are
+  7 and 5 days; for `weekly`, 2 and 2.
+- **The next date** with a last payment P: the first due date more than E days after P's date. So a payment drawn a few
+  days early (rent on 31 October for 1 November) covers its due date, and a late one (4 November) does too.
+- **The next date** with no payment: the latest due date on or before today, or the start date when it is after today.
+- **The end date:** a next date after the subscription's end date is no next date (`null`).
+
+### 2.3 The status
+
+The first that holds wins:
 
 | Status | When | Text |
 | --- | --- | --- |
-| Ikke set | the next date is more than 5 days before today | "Ikke set · ventet {next date}" |
-| Steget | the last payment's amount is above the range's max | "{max} → {paid} kr." |
-| Betalt | the last payment is at most 7 days before today | "Betalt {date}" |
-| Forventes | otherwise | "Forventes {next date}", or "Forventes ikke" with no next date |
+| Ikke set | the next date is more than L days before today | "Ikke set · ventet {next date}" |
+| Steget | P's amount is above the range's max | "Steget · {max} → {paid}" |
+| Forventes | there is a next date at most 7 days after today, or there is no P | "Forventes {next date}", or "Forventes ikke" with no next date |
+| Betalt | otherwise | "Betalt {P's date}" |
 
-- **The next date** is the first date Firefly III expects a payment after the last one (§3). So a payment that is late
-  keeps its expected date, and becomes Ikke set after 5 days.
-- The 5 and 7 days allow a payment drawn a few days early or late.
-- Dates are written as the page writes them today.
+- "Betalt" so means the current period is paid and the next payment is more than a week away. A quarterly one paid on
+  1 October reads "Betalt 1. okt" until late December.
+- In "Steget", both amounts are in whole kroner when both are whole, else both with two decimals ("149,50 → 149,75
+  kr."), so the two never look equal.
 
-### 2.3 The repeat's text
+### 2.4 The repeat's text
 
-Ugentlig, Månedlig, Kvartalsvis, Halvårlig or Årlig. With `skip` above 0: "Hver {skip + 1}. uge", "Hver {skip + 1}.
-måned", "Hver {skip + 1}. kvartal", "Hvert {(skip + 1) × 6}. måned" or "Hvert {skip + 1}. år".
+Ugentlig, Månedlig, Kvartalsvis, Halvårlig or Årlig. With `skip` above 0, n = `skip + 1`: "Hver {n}. uge", "Hver {n}.
+måned", "Hvert {n}. kvartal", "Hver {6n}. måned" (half-year) or "Hvert {n}. år".
 
 ## 3. The server
 
 `/api/data` reads the subscriptions beside what it reads today, in the same `Promise.all`, with the same timeout and
 the same stop on a failure.
 
-- **`GET /api/v1/bills`** with `start` 366 days before today and `end` 366 days after it, every page. In that window
-  Firefly III answers per subscription `paid_dates` (the linked payments: date, amount, `transaction_group_id`,
-  `transaction_journal_id`) and `pay_dates` (the expected dates after the last payment). Firefly III 6.7.9 does this;
-  the integration tests check it.
-- **The next date** is the first of `pay_dates` (none: `null`). **The last payment** is the latest of `paid_dates`.
-- **The last payment's posting:** for each subscription with a last payment, `GET /api/v1/transactions/{group id}`,
-  and in it the split with that journal id: its `category_name` and its `source_id`. These calls run in parallel. A
-  failed one fails the answer, as any failed read does today ([D18](../../decisions.md)).
-- **Amounts** become øre as postings' do. The range's `min` and `max` come from `amount_min` and `amount_max`.
+- **`GET /api/v1/bills`** with `start` 400 days before today and `end` today, every page. For that window Firefly III
+  answers each subscription's `paid_dates`: the linked payments, each with `date`, `amount`,
+  `transaction_group_id` and `transaction_journal_id`. Nothing is read from Firefly III's own clock: not `pay_dates`,
+  not `next_expected_match`. The window comes from the server's `today`, which the tests inject.
+- **The server keeps** a subscription only when:
+  - it is `active`;
+  - its `end_date`, if any, is today or later;
+  - its `repeat_freq` is one of the five in §2.1 (else it is logged by its id, never its name, once per read);
+  - its last payment, if any, is a withdrawal from an asset account whose category is not in an excluded main group
+    (`excluded_main_groups`), as for postings.
+- **The last payment** is the latest `paid_dates` entry dated today or earlier. Its amount is taken as a positive
+  number of øre, as postings' amounts are.
+- **The last payment's posting:** for each subscription with a last payment, `GET /api/v1/transactions/{group id}`
+  (the id passed through `encodeURIComponent`), at most 5 at a time, and in it the split with that journal id: its
+  type, its source, its `category_name` and its `source_id`.
+- **A failed read** of the subscriptions or of one group fails the answer, as any failed read does today
+  ([D18](../../decisions.md)).
 - **The answer** gains `subscriptions`, sorted by name, typed in `addon/shared/`:
 
   ```ts
@@ -125,65 +171,78 @@ the same stop on a failure.
     name: string;
     repeat: "weekly" | "monthly" | "quarterly" | "half-year" | "yearly";
     skip: number;
+    /** The first due date. */
+    start: string;
+    /** null: no end date. */
+    end: string | null;
     /** In øre. */
     amountMin: number;
     amountMax: number;
-    /** The first expected date after the last payment; null when Firefly III expects none. */
-    next: string | null;
-    /** The latest linked payment in the year before today, with its posting's category and account. */
+    /** The latest linked payment on or before today, with its posting's category and account. */
     lastPayment: { date: string; amount: number; category: string | null; account: string } | null;
   }
   ```
 
-  The main group comes from the category through the answer's `categories`, as for postings. A subscription whose
-  repeat is none of the five is left out and logged once by its id, never by its name.
 - The answer is cached per period as today. The subscriptions in it are those of the day it was read.
 
 ## 4. The hash
 
 `card=subscriptions` is a new value of the `card` key ([D20](../../decisions.md)). D20's keys and their order do not
-change. This is new decision D33: the subscriptions' card, its rules (§2) and where a subscription's category comes
-from (§1.3).
+change. New decision D33 records the subscriptions: the card, the rules in §2, where a subscription's category comes
+from, and why a failed subscriptions read fails the whole answer (one answer, one error path: the same Firefly III and
+token serve every read, and a page with the subscriptions silently missing would read as "none").
 
 ## 5. The fake Firefly III and the example data
 
-- `addon/dev`'s fake answers `GET /api/v1/bills` with `start` and `end`, paged, with `paid_dates` and `pay_dates`
-  worked out from its own postings and the repeat, as Firefly III does for the cases the example data holds.
-- A posting's split carries `bill_id` and `bill_name`.
-- The example data gains made-up subscriptions that show every status: a monthly rent paid this month, monthly ones
-  expected in the coming days, a streaming service whose last payment is above its range, a quarterly one not seen,
-  a yearly insurance, one inactive and one ended. The generated postings are linked to them.
+- **The seed:** `SeedData` gains `subscriptions` (name, amount range, start date, repeat, skip, active, end date), and a
+  `SeedSplit` may name its subscription.
+- **The real Firefly III:** `seed-firefly.ts` posts the subscriptions (`POST /api/v1/bills`) before the postings, and
+  a posting names its subscription with `bill_name`.
+- **The fake:** `addon/dev`'s fake answers `GET /api/v1/bills` with `start` and `end`, paged, with `paid_dates` from
+  the linked splits dated in the window, amounts positive. Its transactions answer is unchanged.
+- **The example data** gains made-up subscriptions that show every status: a monthly rent paid this month (one month
+  drawn the day before its due date), monthly ones due in the coming days, a streaming service whose last payment is
+  above its range, a quarterly one not seen, a yearly insurance, a weekly one, one every second month, one inactive,
+  one ended and one paid from no asset account. The generated postings are linked to them.
 
 ## 6. Tests
 
 By behaviour through the public interfaces (hard rule 5), with made-up data only.
 
-- **Shared:** the amount per month for each repeat and for `skip` 1; each status and each boundary (5 and 6 days late,
-  7 and 8 days since a payment, a payment above the max that is also late, no next date); the repeat texts.
-- **Server, against the fake:** the answer's `subscriptions`: inactive and ended ones left out; the next date and the
-  last payment; the category and account from the last payment's split in a split group; amounts in øre; a
-  subscription with no payment; a failed bills read and a failed group read answer the error code; an unknown repeat
-  left out and logged without the name.
+- **Shared:**
+  - the amount per month for each repeat and for `skip` 1;
+  - the due dates on the 31st of a month (February), and every second month;
+  - the next date after an early payment (1 day before), a late one (4 days after), with no payment, a start after
+    today, and past the end date; for `weekly`, a payment 2 and 3 days early;
+  - each status and its boundaries: next date 5 and 6 days past (2 and 3 for `weekly`); next date 7 and 8 days ahead;
+    a payment above the max that is also late; no next date with and without a payment;
+  - the repeat texts with and without `skip`; "Steget" with whole and with øre amounts.
+- **Server, against the fake:** inactive left out; an end date of today kept and of yesterday left out; an unknown
+  repeat left out and logged without its name; a last payment in an excluded main group left out; a last payment from
+  a liability left out; a future-dated payment not taken as the last; the category and account from the right split
+  in a split group; amounts in øre; a subscription with no payment; a failed bills read and a failed group read answer
+  the error code.
 - **Page, by role, accessible name and text:**
-  - the key number with its value and sub-line; its button opens the card and is pressed;
-  - the switch's fourth button and the card's rows, order, status texts and title on each level;
-  - a main group, a category and the accounts filter the rows and the key number; the period and a chosen unit do
-    not;
+  - the key number's text; its button opens the card and is pressed; a second click shows Søjler;
+  - the switch's fourth button; the card's title, rows, order and status texts on each level;
+  - a main group, a category and the accounts filter the rows and the key number; the period and a chosen unit do not;
+  - the card is kept across a period change and a level change; the category chip shows and the unit chip does not;
   - a row's link to Firefly III, and no link without `fireflyLinkUrl`;
   - "Ingen abonnementer i {level}";
-  - no subscriptions: three key numbers, no fourth button, and `#card=subscriptions` shows Søjler;
+  - an empty `subscriptions`: three key numbers, no fourth button, and `#card=subscriptions` shows Søjler;
   - a deep link `#card=subscriptions` shows the card.
-- **Integration, on the real Firefly III:** seeded subscriptions with linked postings give the expected next date,
-  last payment, category and account; an inactive one is left out.
-- **The Chrome check** ([`testing.md`](../../testing.md#chrome-check)): the overview with the card at 1440 and 1728 px
-  and at 420 px, on Alt forbrug and on a main group.
+- **Integration, on the real Firefly III 6.7.9:** the seeded subscriptions give, through `/api/data`, the expected last
+  payment with a positive amount, its category and account; `paid_dates` holds only payments in the window; an
+  inactive subscription is left out. The test's injected `today` sets the window.
+- **The Chrome check** ([`testing.md`](../../testing.md#chrome-check)): the card on Alt forbrug and on a main group at
+  1440, 1728, 1024 (four key numbers in a row), 900 (two by two) and 420 px.
 
 ## 7. Docs in the same PR
 
 - `docs/decisions.md`: D33.
-- `docs/domain-language.md`: Subscription (abonnement, `subscription`), next date, last payment, status.
+- `docs/domain-language.md`: Subscription (abonnement, `subscription`), due date, next date, last payment, status; and
+  `"subscriptions"` in the Card row.
 - `docs/architecture.md`: what `/api/data` reads and answers.
-- `addon/DOCS.md`: what the card shows, and that it needs subscriptions in Firefly III with their postings linked
-  (Firefly III links them by its own rules).
-- `docs/testing.md`: the new screens of the Chrome check.
+- `addon/DOCS.md`: what the card shows, and that it needs subscriptions in Firefly III with their postings linked.
+- `docs/testing.md`: screens `30-1024`, `31-900` and `32-420` now show four key numbers; the new screens of the card.
 - `docs/README.md`: this spec and its plan.
