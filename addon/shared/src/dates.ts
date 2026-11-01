@@ -28,6 +28,16 @@ export function addDays(date: string, days: number): string {
   return fromUtc(toUtc(date) + days * DAY_MS);
 }
 
+/** Same day of the month, or the month's last day when it has fewer. Computed from `date`, not step by step. */
+export function addMonths(date: string, months: number): string {
+  const [year, month, day] = date.split("-").map(Number);
+  const index = year * 12 + (month - 1) + months;
+  const targetYear = Math.floor(index / 12);
+  const targetMonth = index - targetYear * 12;
+  const lastDay = new Date(Date.UTC(targetYear, targetMonth + 1, 0)).getUTCDate();
+  return `${pad(targetYear, 4)}-${pad(targetMonth + 1)}-${pad(Math.min(day, lastDay))}`;
+}
+
 /** Monday 1, Sunday 7. */
 export function isoWeekday(date: string): number {
   return new Date(toUtc(date)).getUTCDay() || 7;
