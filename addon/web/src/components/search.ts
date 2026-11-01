@@ -35,11 +35,6 @@ export class Search extends LitElement {
   declare private active: number;
 
   private readonly idBase = `hs-search-${++instances}`;
-  /** A tap moves the focus off the field before its click lands, so the list must outlive that focusout. */
-  private pointerDown = false;
-  private readonly onPointerEnd = (): void => {
-    this.pointerDown = false;
-  };
 
   constructor() {
     super();
@@ -53,18 +48,6 @@ export class Search extends LitElement {
 
   protected override createRenderRoot(): HTMLElement {
     return this;
-  }
-
-  override connectedCallback(): void {
-    super.connectedCallback();
-    document.addEventListener("pointerup", this.onPointerEnd);
-    document.addEventListener("pointercancel", this.onPointerEnd);
-  }
-
-  override disconnectedCallback(): void {
-    document.removeEventListener("pointerup", this.onPointerEnd);
-    document.removeEventListener("pointercancel", this.onPointerEnd);
-    super.disconnectedCallback();
   }
 
   private get open(): boolean {
@@ -98,7 +81,6 @@ export class Search extends LitElement {
   }
 
   private onFocusOut(): void {
-    if (this.pointerDown) return;
     this.focused = false;
     this.active = -1;
   }
@@ -185,7 +167,6 @@ export class Search extends LitElement {
         aria-label=${da.suggestions}
         ?hidden=${!open}
         @mousedown=${(e: Event) => e.preventDefault()}
-        @pointerdown=${() => (this.pointerDown = true)}
       >
         ${open ? this.options() : nothing}
       </ul>`;

@@ -166,7 +166,7 @@ describe("the postings list", () => {
     const el = await render(listOf());
     const cell = getAllByRole(el, "cell", { name: "Netto" })[0];
     expect(cell.getAttribute("title")).toBe("DK NETTO 4521");
-    expect(cell.querySelector("a")?.getAttribute("href")).toMatch(/^http:\/\/firefly\.test\/transactions\/show\//);
+    expect(getByRole(cell, "link").getAttribute("href")).toMatch(/^http:\/\/firefly\.test\/transactions\/show\//);
 
     const data = { ...answerFor(THIS_YEAR), fireflyLinkUrl: null };
     document.body.replaceChildren();

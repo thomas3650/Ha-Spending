@@ -1,8 +1,7 @@
 import { toOre } from "../firefly/amount";
 import { type FireflyClient, FireflyError, getAllPages } from "../firefly/client";
 import { readMainGroups } from "../firefly/read";
-import type { WireCategory, WireGroup, WireSplit } from "../firefly/wire";
-import { EXPENSE } from "../firefly/wire";
+import { EXPENSE, type WireCategory, type WireGroup, type WireSplit } from "../firefly/wire";
 import { byCodePoint, cleanShop, NO_SHOP, sameShop } from "./shop";
 
 export interface SorterSettings {
@@ -85,8 +84,6 @@ const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null && !Array.isArray(value);
 
 const isId = (value: unknown): value is number => Number.isSafeInteger(value) && (value as number) > 0;
-
-/** A split's `destination_type` for an expense account, in Firefly III's long form. */
 
 function kroner(amount: string): string {
   const ore = Math.abs(toOre(amount));

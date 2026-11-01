@@ -50,6 +50,26 @@ function list(el: HTMLElement): HTMLElement | null {
   return queryByRole(el, "listbox", { name: da.suggestions });
 }
 
+/** Moves the real focus to another button on the page. */
+async function focusElsewhere(el: Search): Promise<HTMLElement> {
+  const other = document.createElement("button");
+  other.textContent = "Elsewhere";
+  document.body.append(other);
+  getByRole(document.body, "button", { name: "Elsewhere" }).focus();
+  await el.updateComplete;
+  return other;
+}
+
+/** The list opens again although the real focus stays elsewhere, so a choice must bring the focus back itself. */
+async function openWithFocusElsewhere(el: Search): Promise<HTMLElement> {
+  await focus(el);
+  const other = await focusElsewhere(el);
+  fireEvent.focus(field(el));
+  await el.updateComplete;
+  expect(document.activeElement).toBe(other);
+  return other;
+}
+
 function highlighted(el: HTMLElement): HTMLElement | null {
   return queryByRole(el, "option", { selected: true });
 }
@@ -104,6 +124,15 @@ describe("the search field with shop suggestions", () => {
     expect(list(el)).toBeNull();
   });
 
+  it("closes when the focus moves elsewhere with no choice", async () => {
+    const { el, fired } = await render();
+    await focus(el);
+    await focusElsewhere(el);
+    expect(list(el)).toBeNull();
+    expect(field(el).getAttribute("aria-expanded")).toBe("false");
+    expect(fired).toEqual([]);
+  });
+
   it("fires the typed text", async () => {
     const { el, fired } = await render();
     fireEvent.input(field(el), { target: { value: "ne" } });
@@ -128,6 +157,14 @@ describe("the search field with shop suggestions", () => {
     await key(el, "ArrowUp");
     await key(el, "Enter");
     expect(fired).toEqual([{ name: "shop-choose", detail: "Nordisk Café" }]);
+  });
+
+  it("focuses the field again after a choice with Enter", async () => {
+    const { el, fired } = await render();
+    await openWithFocusElsewhere(el);
+    await key(el, "ArrowDown");
+    await key(el, "Enter");
+    expect(fired).toEqual([{ name: "shop-choose", detail: "Netto" }]);
     expect(document.activeElement).toBe(field(el));
   });
 
@@ -152,38 +189,28 @@ describe("the search field with shop suggestions", () => {
 
   it("chooses an option on a click and focuses the field again", async () => {
     const { el, fired } = await render();
-    await focus(el);
+    await openWithFocusElsewhere(el);
     fireEvent.click(getByRole(el, "option", { name: da.shopOption("Netto", kr(315000)) }));
     expect(fired).toEqual([{ name: "shop-choose", detail: "Netto" }]);
     expect(document.activeElement).toBe(field(el));
   });
 
-  it("chooses an option on a tap although the field loses focus first", async () => {
+  it("chooses an option once on a tap's pointer, mouse and click events", async () => {
     const { el, fired } = await render();
     await focus(el);
     const option = getByRole(el, "option", { name: da.shopOption("Netto", kr(315000)) });
     fireEvent.pointerDown(option);
-    fireEvent.focusOut(field(el));
-    await el.updateComplete;
-    fireEvent.click(getByRole(el, "option", { name: da.shopOption("Netto", kr(315000)) }));
+    fireEvent.pointerUp(option);
+    expect(fireEvent.mouseDown(option)).toBe(false);
+    fireEvent.click(option);
     expect(fired).toEqual([{ name: "shop-choose", detail: "Netto" }]);
   });
 
-  it("keeps the focus in the field when the list is pressed", async () => {
+  it("prevents the default of a press on the list", async () => {
     const { el } = await render();
     await focus(el);
     const option = getByRole(el, "option", { name: da.shopOption("Netto", kr(315000)) });
     expect(fireEvent.mouseDown(option)).toBe(false);
-  });
-
-  it("closes on a focus loss after the pointer is lifted", async () => {
-    const { el } = await render();
-    await focus(el);
-    fireEvent.pointerDown(getByRole(el, "option", { name: da.shopOption("Netto", kr(315000)) }));
-    fireEvent.pointerUp(document.body);
-    fireEvent.focusOut(field(el));
-    await el.updateComplete;
-    expect(list(el)).toBeNull();
   });
 
   describe("with a chosen shop", () => {
@@ -198,6 +225,15 @@ describe("the search field with shop suggestions", () => {
       const { el, fired } = await render({ search: "", shop: "Netto" });
       fireEvent.click(getByRole(el, "button", { name: da.remove(da.shopChip("Netto")) }));
       expect(fired).toEqual([{ name: "shop-remove", detail: "click" }]);
+    });
+
+    it("focuses the field again after the chip's remove", async () => {
+      const { el } = await render({ search: "", shop: "Netto" });
+      const remove = getByRole(el, "button", { name: da.remove(da.shopChip("Netto")) });
+      remove.focus();
+      expect(document.activeElement).toBe(remove);
+      fireEvent.click(remove);
+      expect(document.activeElement).toBe(field(el));
     });
 
     it("removes the shop on Backspace in an empty field only", async () => {
