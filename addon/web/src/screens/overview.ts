@@ -98,10 +98,14 @@ export class Overview extends LitElement {
     const ctx = this.ctx;
     const search = ctx.state.search;
     const chosen = ctx.chosen;
-    const postings = within(ctx.shown, chosen ?? ctx.timeline.period).filter((p) => matches(p, search, ctx.state.shop));
+    const shop = ctx.state.shop;
+    const postings = within(ctx.shown, chosen ?? ctx.timeline.period).filter((p) => matches(p, search, shop));
     const g = ctx.timeline.grouping;
     let body: unknown;
-    if (postings.length === 0) body = html`<p class="empty">${search.trim() === "" && ctx.state.shop === null ? da.noSpending : da.noMatch}</p>`;
+    if (postings.length === 0) {
+      const unfiltered = search.trim() === "" && ctx.state.shop === null;
+      body = html`<p class="empty">${unfiltered ? da.noSpending : da.noMatch}</p>`;
+    }
     else {
       const list = groupedPostings(postings, chosen === null ? ctx.units : [chosen], ctx, true, categoryColours(ctx));
       body = html`<hs-postings .list=${list} .query=${search} .grouping=${g}></hs-postings>

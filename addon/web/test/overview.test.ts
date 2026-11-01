@@ -191,6 +191,13 @@ describe("the search on Posteringer", () => {
     summary(root, 2, 81012);
   });
 
+  it("says nothing matches for a chosen shop that has no posting", async () => {
+    const { root } = await mount("card=postings&shop=Ukendt");
+    getByText(root, da.noMatch);
+    expect(root.textContent).not.toContain(da.noSpending);
+    summary(root, 0, 0);
+  });
+
   it("says when nothing matches and keeps the focus in the field", async () => {
     const { app, root } = await mount("card=postings");
     const box = searchbox(root);
