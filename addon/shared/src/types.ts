@@ -71,6 +71,8 @@ export interface SpendingData {
   mainGroupsFound: boolean;
   /** A posting opens at `${fireflyLinkUrl}/transactions/show/${groupId}`. */
   fireflyLinkUrl: string | null;
+  /** Kept as §3 of the subscriptions spec says, by name. */
+  subscriptions: Subscription[];
 }
 
 export type DataErrorCode = "unreachable" | "refused" | "bad-request" | "internal";

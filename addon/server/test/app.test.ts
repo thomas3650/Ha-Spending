@@ -46,6 +46,7 @@ const D: SpendingData = {
   mainGroups: ["Home"],
   mainGroupsFound: true,
   fireflyLinkUrl: null,
+  subscriptions: [],
 };
 
 const unused: DataLoader = () => Promise.reject(new Error("not used"));

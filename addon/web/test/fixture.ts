@@ -55,5 +55,6 @@ export function answerFor(range: Period, today = "2026-10-30"): SpendingData {
     mainGroups: ["Bil", "Bolig", "Mad"],
     mainGroupsFound: true,
     fireflyLinkUrl: LINK,
+    subscriptions: [],
   };
 }

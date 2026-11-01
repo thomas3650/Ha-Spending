@@ -171,6 +171,7 @@ describe("normalise", () => {
     mainGroups: ["Bil", "Bolig", "Mad"],
     mainGroupsFound: true,
     fireflyLinkUrl: null,
+    subscriptions: [],
   };
   const norm = (s: Partial<ViewState>) => normalise({ ...DEFAULT_STATE, ...s }, data, today);
 
