@@ -19,13 +19,22 @@ import type { Card } from "../state/view";
 
 const LEFT_TITLE = "hs-left-title";
 const RIGHT_TITLE = "hs-right-title";
+const EXPAND = "M14 4h6v6M20 4l-7 7M10 20H4v-6M4 20l7-7";
+const COLLAPSE = "M14 4v6h6M14 10l7-7M10 20v-6H4M10 14l-7 7";
 
 export class Overview extends LitElement {
   static override properties = {
     ctx: { attribute: false },
+    fullScreen: { attribute: false },
   };
 
   declare ctx: ViewContext;
+  declare fullScreen: boolean;
+
+  constructor() {
+    super();
+    this.fullScreen = false;
+  }
 
   protected override createRenderRoot(): HTMLElement {
     return this;
@@ -190,10 +199,23 @@ export class Overview extends LitElement {
         ${card === "subscriptions"
           ? html`<span class="half-sum">${da.perYear(kr(subscriptionsYear(ctx)))}</span>`
           : nothing}
-        <div class="card-switch" role="group" aria-label=${da.view}>
-          ${this.switchButton("bars", da.bars)} ${this.switchButton("postings", da.postings)}
-          ${ctx.chosen === null ? nothing : this.switchButton("difference", da.difference)}
-          ${ctx.data.subscriptions.length === 0 ? nothing : this.switchButton("subscriptions", da.subscriptions)}
+        <div class="card-tools">
+          <div class="card-switch" role="group" aria-label=${da.view}>
+            ${this.switchButton("bars", da.bars)} ${this.switchButton("postings", da.postings)}
+            ${ctx.chosen === null ? nothing : this.switchButton("difference", da.difference)}
+            ${ctx.data.subscriptions.length === 0 ? nothing : this.switchButton("subscriptions", da.subscriptions)}
+          </div>
+          <button
+            type="button"
+            class="full-screen"
+            aria-label=${da.fullScreen}
+            aria-pressed=${String(this.fullScreen)}
+            @click=${() => fire(this, "full-screen-toggle")}
+          >
+            <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false">
+              <path d=${this.fullScreen ? COLLAPSE : EXPAND} />
+            </svg>
+          </button>
         </div>
       </div>
       ${body}
@@ -201,7 +223,8 @@ export class Overview extends LitElement {
   }
 
   override render() {
-    return html`<div class="halves">${this.left()} ${this.right()}</div>`;
+    const single = this.fullScreen;
+    return html`<div class="halves ${single ? "single" : ""}">${single ? nothing : this.left()} ${this.right()}</div>`;
   }
 }
 
@@ -236,6 +259,36 @@ export const overviewStyles = css`
     flex: none;
     color: var(--hs-muted);
     font-variant-numeric: tabular-nums;
+  }
+  .card-tools {
+    flex: none;
+    display: flex;
+    gap: 8px;
+  }
+  .card-tools .full-screen {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 8px;
+    color: var(--hs-text);
+    background: var(--hs-card);
+    border: 1px solid var(--hs-field);
+    border-radius: 6px;
+    cursor: pointer;
+  }
+  .card-tools .full-screen svg {
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+  .card-tools .full-screen:hover {
+    border-color: var(--hs-accent-text);
+  }
+  .card-tools .full-screen:focus-visible {
+    outline: 2px solid var(--hs-accent-text);
+    outline-offset: -2px;
   }
   .card-switch {
     flex: none;

@@ -112,6 +112,7 @@ export class Search extends LitElement {
         if (!open) return;
         // A search field clears its text on Escape; the spec keeps the text.
         e.preventDefault();
+        e.stopPropagation();
         this.close();
         return;
       case "Backspace":
