@@ -1,5 +1,5 @@
 import { createFakeFirefly, exampleSeed, generateSeed, type SeedSplit } from "@ha-spending/dev";
-import { classify, fetchRange, parts, within } from "@ha-spending/shared";
+import { classify, fetchRange, parts, subscriptionStatus, within } from "@ha-spending/shared";
 import { describe, expect, it, vi } from "vitest";
 import { createFireflyClient } from "../src/firefly/client";
 import { earliestPostingDate, type ReadSettings, readSpendingData, readVersion } from "../src/firefly/read";
@@ -155,6 +155,8 @@ describe("readSpendingData", () => {
     expect(d.earliestPostingDate! >= "2025-08-01" && d.earliestPostingDate! <= "2025-08-15").toBe(true);
     const shown = parts(within(classify(d.postings, d.categories), year), { kind: "all" });
     expect(shown.filter((p) => p.amount > 0).length).toBeGreaterThan(8);
+    const kinds = new Set(d.subscriptions.map((x) => subscriptionStatus(x, d.today).kind));
+    expect([...kinds].sort()).toEqual(["expected", "notSeen", "paid", "risen"]);
   });
 });
 
