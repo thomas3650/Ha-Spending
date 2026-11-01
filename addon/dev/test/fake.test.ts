@@ -62,12 +62,12 @@ describe("the fake Firefly III", () => {
   it("pages the transactions newest first", async () => {
     const { json } = client();
     const first = await json<Page<Group>>(`${allTransactions}&limit=5&page=1`);
-    expect(first.meta.pagination).toEqual({ total: 16, count: 5, per_page: 5, current_page: 1, total_pages: 4 });
-    expect(first.data[0].attributes.transactions[0].date).toBe("2026-07-01T00:00:00+02:00");
+    expect(first.meta.pagination).toEqual({ total: 18, count: 5, per_page: 5, current_page: 1, total_pages: 4 });
+    expect(first.data[0].attributes.transactions[0].date).toBe("2026-09-15T00:00:00+02:00");
 
     const last = await json<Page<Group>>(`${allTransactions}&limit=5&page=4`);
-    expect(last.meta.pagination.count).toBe(1);
-    expect(last.data).toHaveLength(1);
+    expect(last.meta.pagination.count).toBe(3);
+    expect(last.data).toHaveLength(3);
 
     const past = await json<Page<Group>>(`${allTransactions}&limit=5&page=5`);
     expect(past.data).toEqual([]);
@@ -461,16 +461,108 @@ describe("the fake Firefly III", () => {
   });
 
   it.each([
-    ["withdrawal", 11],
+    ["withdrawal", 13],
     ["deposit", 4],
     ["transfer", 2],
-    ["all", 17],
+    ["all", 19],
   ])("filters the transactions by type %s", async (type, count) => {
     const page = await client().json<Page<Group>>(`transactions?start=1900-01-01&end=2026-12-31&type=${type}`);
     expect(page.data).toHaveLength(count);
     if (type !== "all") {
       expect(page.data.every((g) => g.attributes.transactions.every((s) => s.type === type))).toBe(true);
     }
+  });
+
+  describe("subscriptions", () => {
+    interface Bill {
+      id: string;
+      attributes: {
+        name: string;
+        amount_min: string;
+        amount_max: string;
+        date: string;
+        end_date: string | null;
+        repeat_freq: string;
+        skip: number;
+        active: boolean;
+        paid_dates: { transaction_group_id: string; transaction_journal_id: string; date: string; amount: string }[];
+      };
+    }
+    const bills = (query = "start=2025-01-01&end=2026-10-30") => client().json<Page<Bill>>(`bills?${query}`);
+    const named = (page: Page<Bill>, name: string) => page.data.find((b) => b.attributes.name === name)!;
+
+    it("pages the bills", async () => {
+      const first = await bills("start=2025-01-01&end=2026-10-30&limit=4&page=1");
+      expect(first.meta.pagination).toEqual({ total: 11, count: 4, per_page: 4, current_page: 1, total_pages: 3 });
+      expect(first.data[0].attributes).toMatchObject({
+        name: "Husleje",
+        amount_min: "8000.000000000000",
+        amount_max: "8000.000000000000",
+        date: "2025-01-31T00:00:00+01:00",
+        end_date: null,
+        repeat_freq: "monthly",
+        skip: 0,
+        active: true,
+      });
+    });
+
+    it("lists the linked splits dated from start to end, with positive amounts", async () => {
+      const page = await bills();
+      const groups = await allGroups();
+      const rent = named(page, "Husleje").attributes.paid_dates;
+      expect(rent).toEqual([
+        {
+          transaction_group_id: byDescription(groups, "Husleje januar").id,
+          transaction_journal_id: byDescription(groups, "Husleje januar").attributes.transactions[0].transaction_journal_id,
+          date: "2025-12-30T00:00:00+01:00",
+          amount: "8000.000000000000",
+        },
+      ]);
+      expect(named(page, "Indboforsikring").attributes.paid_dates.map((p) => p.date)).toEqual([
+        "2026-09-15T00:00:00+02:00",
+      ]);
+      expect(named(page, "Avis").attributes.paid_dates).toEqual([]);
+
+      const later = await bills("start=2025-01-01&end=2027-12-31");
+      expect(named(later, "Indboforsikring").attributes.paid_dates).toHaveLength(2);
+      const before = await bills("start=2026-01-03&end=2026-10-30");
+      expect(named(before, "Netflix").attributes.paid_dates).toEqual([]);
+    });
+
+    it("gives a split of a group its own journal id", async () => {
+      const group = byDescription(await allGroups(), "Bilka mad");
+      const mad = group.attributes.transactions.find((s) => s.description === "Bilka mad")!;
+      const paid = named(await bills(), "Bilka").attributes.paid_dates;
+      expect(paid).toEqual([
+        {
+          transaction_group_id: group.id,
+          transaction_journal_id: mad.transaction_journal_id,
+          date: "2026-01-10T00:00:00+01:00",
+          amount: "200.000000000000",
+        },
+      ]);
+    });
+
+    it("lists an inactive and an ended bill", async () => {
+      const page = await bills();
+      expect(named(page, "Avis").attributes.active).toBe(false);
+      expect(named(page, "Fitness").attributes.end_date).toBe("2026-10-30T00:00:00+01:00");
+      expect(named(page, "Gammel forsikring").attributes.end_date).toBe("2026-10-29T00:00:00+01:00");
+      expect(named(page, "Hver tredje år").attributes.skip).toBe(2);
+    });
+
+    it("takes a withdrawal from a liability as one from a Loan", async () => {
+      const loan = byDescription(await allGroups(), "Billån august").attributes.transactions[0];
+      expect(loan).toMatchObject({ type: "withdrawal", source_type: "Loan", destination_type: "Expense account" });
+    });
+
+    it("refuses a split that names an unknown subscription", () => {
+      const split = { type: "withdrawal" as const, date: "2026-01-01", amount: "1", description: "x",
+        source: "Konto A", destination: "Netto", subscription: "Findes ikke" };
+      expect(() => createFakeFirefly({ ...exampleSeed, transactions: [{ splits: [split] }] })).toThrow(
+        /subscription/,
+      );
+    });
   });
 
   it("tells its version", async () => {

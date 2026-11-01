@@ -47,6 +47,10 @@ export function setCard(s: ViewState, card: Card): ViewState {
   return { ...s, card };
 }
 
+export function toggleSubscriptions(s: ViewState): ViewState {
+  return { ...s, card: s.card === "subscriptions" ? "bars" : "subscriptions" };
+}
+
 export function openAllPostings(s: ViewState): ViewState {
   return { ...s, screen: "allPostings", sort: "newest", amount: null };
 }
@@ -107,6 +111,9 @@ export function normalise(s: ViewState, data: SpendingData, today: string): View
   const accounts = s.accounts && s.accounts.filter((id) => data.accounts.some((a) => a.id === id));
   const units = unitsOf(periodOf(s.period, today), s.grouping, today);
   const unit = s.unit !== null && units.some((u) => u.fullStart === s.unit) ? s.unit : null;
-  const card = s.card === "difference" && unit === null ? "bars" : s.card;
+  const card =
+    (s.card === "difference" && unit === null) || (s.card === "subscriptions" && data.subscriptions.length === 0)
+      ? "bars"
+      : s.card;
   return { ...s, accounts, level: knownLevel(s.level, data), unit, card };
 }

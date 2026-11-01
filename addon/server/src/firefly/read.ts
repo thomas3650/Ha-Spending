@@ -2,6 +2,7 @@ import { type Account, type Category, compareKeys, type Period, type SpendingDat
 import { type FireflyClient, FireflyError, getAllPages } from "./client";
 import { findRuleGroup, mapCategories } from "./main-groups";
 import { toPostings } from "./normalise";
+import { keepSubscriptions, readSubscriptions } from "./subscriptions";
 import { ASSET, type WireAbout, type WireAccount, type WireCategory, type WireGroup, type WirePage, type WireRule,
   type WireRuleGroup } from "./wire";
 
@@ -79,12 +80,13 @@ export async function readSpendingData(
       throw error;
     });
 
-  const [groups, listed, wireCategories, mainGroups, earliest] = await Promise.all([
+  const [groups, listed, wireCategories, mainGroups, earliest, rawSubscriptions] = await Promise.all([
     stopOnFailure(all<WireGroup>("transactions", { start: range.start, end: range.end, type: "all" })),
     stopOnFailure(all<WireAccount>("accounts", { type: "asset" })),
     stopOnFailure(all<WireCategory>("categories")),
     stopOnFailure(readMainGroups(client, settings, signal)),
     stopOnFailure(earliestPostingDate(client, context.today, signal)),
+    stopOnFailure(readSubscriptions(client, settings, context.today, signal)),
   ]);
 
   for (const category of mainGroups.conflicts) {
@@ -95,6 +97,7 @@ export async function readSpendingData(
     category === null ? null : (mainGroups.mapping.get(category) ?? null);
   const excluded = new Set(settings.excludedMainGroups);
   const postings = toPostings(groups, mainGroupOf, excluded);
+  const subscriptions = keepSubscriptions(rawSubscriptions, mainGroupOf, excluded, context.today, context.warn);
 
   const accounts = new Map<string, Account>(listed.map((a) => [a.id, { id: a.id, name: a.attributes.name }]));
   const names = assetNames(groups);
@@ -118,6 +121,7 @@ export async function readSpendingData(
     mainGroups: [...groupNames].sort(compareKeys),
     mainGroupsFound: mainGroups.found,
     fireflyLinkUrl: settings.fireflyLinkUrl,
+    subscriptions,
   };
 }
 

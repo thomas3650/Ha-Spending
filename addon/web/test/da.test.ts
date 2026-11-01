@@ -26,4 +26,27 @@ describe("da", () => {
     expect(da.differenceTitle("Juli 2026", "month")).toBe("Juli 2026 mod en gennemsnitlig måned");
     expect(da.differenceTitle("2025", "year")).toBe("2025 mod et gennemsnitligt år");
   });
+  it("words a subscription's repeat", () => {
+    expect(da.repeatText("weekly", 0)).toBe("pr. uge");
+    expect(da.repeatText("monthly", 0)).toBe("pr. måned");
+    expect(da.repeatText("quarterly", 0)).toBe("pr. kvartal");
+    expect(da.repeatText("half-year", 0)).toBe("pr. halvår");
+    expect(da.repeatText("yearly", 0)).toBe("om året");
+    expect(da.repeatText("weekly", 2)).toBe("hver 3. uge");
+    expect(da.repeatText("monthly", 1)).toBe("hver 2. måned");
+    expect(da.repeatText("quarterly", 1)).toBe("hvert 2. kvartal");
+    expect(da.repeatText("half-year", 1)).toBe("hver 12. måned");
+    expect(da.repeatText("yearly", 1)).toBe("hvert 2. år");
+  });
+  it("words a subscription's status", () => {
+    expect(da.status.notSeen("5. jul")).toBe("Ikke set · ventet 5. jul");
+    expect(da.status.risen("149,50", "149,75")).toBe("Steget · 149,50 → 149,75 kr.");
+    expect(da.status.expected("1. nov")).toBe("Forventes 1. nov");
+    expect(da.status.expected(null)).toBe("Forventes ikke");
+    expect(da.status.paid("1. mar")).toBe("Betalt 1. mar");
+  });
+  it("counts subscriptions", () => {
+    expect(da.subscriptionCount(1)).toBe("1 abonnement");
+    expect(da.subscriptionCount(5)).toBe("5 abonnementer");
+  });
 });

@@ -33,6 +33,24 @@ export interface Period {
   end: string;
 }
 
+export interface Subscription {
+  id: string;
+  name: string;
+  repeat: "weekly" | "monthly" | "quarterly" | "half-year" | "yearly";
+  skip: number;
+  /** The first due date. */
+  start: string;
+  /** null: no end date. */
+  end: string | null;
+  /** In øre. */
+  amountMin: number;
+  amountMax: number;
+  /** The latest linked payment on or before today, with its posting's category and account. */
+  lastPayment: { date: string; amount: number; category: string | null; account: string } | null;
+}
+
+export type Repeat = Subscription["repeat"];
+
 /** The answer of `/api/data`. "By name" means sorted with `localeCompare(…, "da")`. */
 export interface SpendingData {
   /** As asked. */
@@ -53,6 +71,8 @@ export interface SpendingData {
   mainGroupsFound: boolean;
   /** A posting opens at `${fireflyLinkUrl}/transactions/show/${groupId}`. */
   fireflyLinkUrl: string | null;
+  /** Kept as §3 of the subscriptions spec says, by name. */
+  subscriptions: Subscription[];
 }
 
 export type DataErrorCode = "unreachable" | "refused" | "bad-request" | "internal";

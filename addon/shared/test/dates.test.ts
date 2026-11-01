@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { addDays, isDate, isoWeek, localToday } from "../src/dates";
+import { addDays, addMonths, isDate, isoWeek, localToday } from "../src/dates";
 
 describe("addDays", () => {
   it("steps over a month end", () => {
@@ -10,6 +10,17 @@ describe("addDays", () => {
     expect(addDays("2026-04-05", 1)).toBe("2026-04-06");
     expect(addDays("2026-09-27", -1)).toBe("2026-09-26");
     expect(addDays("2026-09-26", 1)).toBe("2026-09-27");
+  });
+});
+
+describe("addMonths", () => {
+  it.each([
+    ["2026-01-31", 1, "2026-02-28"],
+    ["2026-01-31", 2, "2026-03-31"],
+    ["2028-01-31", 1, "2028-02-29"],
+    ["2026-11-15", 3, "2027-02-15"],
+  ])("%s plus %i months is %s", (date, months, expected) => {
+    expect(addMonths(date, months)).toBe(expected);
   });
 });
 

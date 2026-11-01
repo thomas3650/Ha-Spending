@@ -50,6 +50,20 @@ export async function seedFirefly(baseUrl: string, token: string, data: SeedData
 
   for (const name of data.categories) await send("POST", "categories", { name });
 
+  for (const sub of data.subscriptions ?? []) {
+    await send("POST", "bills", {
+      name: sub.name,
+      amount_min: sub.amountMin,
+      amount_max: sub.amountMax,
+      date: sub.start,
+      repeat_freq: sub.repeat,
+      skip: sub.skip ?? 0,
+      active: sub.active ?? true,
+      ...(sub.end === undefined ? {} : { end_date: sub.end }),
+      currency_code: "DKK",
+    });
+  }
+
   for (const group of data.ruleGroups) {
     await send("POST", "rule-groups", { title: group.title });
     for (const rule of group.rules) {
@@ -80,6 +94,7 @@ export async function seedFirefly(baseUrl: string, token: string, data: SeedData
     ...(s.foreignCurrency === undefined ? {} : { foreign_currency_code: s.foreignCurrency }),
     ...(s.notes === undefined ? {} : { notes: s.notes }),
     ...(s.tags === undefined ? {} : { tags: s.tags }),
+    ...(s.subscription === undefined ? {} : { bill_name: s.subscription }),
   });
   for (const group of data.transactions) {
     await send("POST", "transactions", {

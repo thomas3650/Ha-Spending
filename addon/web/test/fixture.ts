@@ -1,4 +1,4 @@
-import type { Period, Posting, SpendingData } from "@ha-spending/shared";
+import type { Period, Posting, SpendingData, Subscription } from "@ha-spending/shared";
 
 export const LINK = "http://firefly.test";
 
@@ -55,5 +55,68 @@ export function answerFor(range: Period, today = "2026-10-30"): SpendingData {
     mainGroups: ["Bil", "Bolig", "Mad"],
     mainGroupsFound: true,
     fireflyLinkUrl: LINK,
+    subscriptions: [],
   };
+}
+
+export const SUBSCRIPTIONS: Subscription[] = [
+  {
+    id: "b1",
+    name: "Husleje",
+    repeat: "monthly",
+    skip: 0,
+    start: "2025-01-01",
+    end: null,
+    amountMin: 800000,
+    amountMax: 800000,
+    lastPayment: { date: "2026-10-01", amount: 800000, category: "Husleje", account: "1" },
+  },
+  {
+    id: "b2",
+    name: "Streaming",
+    repeat: "monthly",
+    skip: 0,
+    start: "2025-01-15",
+    end: null,
+    amountMin: 9900,
+    amountMax: 12900,
+    lastPayment: { date: "2026-10-15", amount: 14900, category: "Café", account: "2" },
+  },
+  {
+    id: "b3",
+    name: "Indboforsikring",
+    repeat: "quarterly",
+    skip: 0,
+    start: "2025-01-05",
+    end: null,
+    amountMin: 90000,
+    amountMax: 90000,
+    lastPayment: { date: "2026-04-05", amount: 90000, category: "Husleje", account: "1" },
+  },
+  {
+    id: "b4",
+    name: "Bilforsikring",
+    repeat: "yearly",
+    skip: 0,
+    start: "2025-03-01",
+    end: null,
+    amountMin: 480000,
+    amountMax: 480000,
+    lastPayment: { date: "2026-03-01", amount: 480000, category: "Brændstof", account: "2" },
+  },
+  {
+    id: "b5",
+    name: "Avis",
+    repeat: "monthly",
+    skip: 1,
+    start: "2026-11-20",
+    end: null,
+    amountMin: 20000,
+    amountMax: 20000,
+    lastPayment: null,
+  },
+];
+
+export function withSubscriptions(answer: SpendingData, subscriptions = SUBSCRIPTIONS): SpendingData {
+  return { ...answer, subscriptions };
 }

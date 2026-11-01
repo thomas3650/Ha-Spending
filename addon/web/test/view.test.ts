@@ -24,6 +24,13 @@ describe("the view state's hash", () => {
     expect(parseHash("#" + toHash(s))).toEqual(s);
   });
 
+  it("round-trips the subscriptions card", () => {
+    expect(parseHash("card=subscriptions").card).toBe("subscriptions");
+    const s: ViewState = { ...DEFAULT_STATE, card: "subscriptions" };
+    expect(toHash(s)).toBe("card=subscriptions");
+    expect(parseHash("#" + toHash(s))).toEqual(s);
+  });
+
   it("round-trips a preset, several accounts and both amount bounds", () => {
     const s: ViewState = {
       ...DEFAULT_STATE,

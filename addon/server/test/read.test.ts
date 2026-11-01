@@ -1,5 +1,5 @@
 import { createFakeFirefly, exampleSeed, generateSeed, type SeedSplit } from "@ha-spending/dev";
-import { classify, fetchRange, parts, within } from "@ha-spending/shared";
+import { classify, fetchRange, parts, subscriptionStatus, within } from "@ha-spending/shared";
 import { describe, expect, it, vi } from "vitest";
 import { createFireflyClient } from "../src/firefly/client";
 import { earliestPostingDate, type ReadSettings, readSpendingData, readVersion } from "../src/firefly/read";
@@ -16,6 +16,11 @@ const today = "2026-10-30";
 
 function clientOf(fake = createFakeFirefly(exampleSeed)) {
   return createFireflyClient({ baseUrl: "http://f", token: "fake-token", fetch: fake.fetch });
+}
+
+async function everyThirdYearId(): Promise<string> {
+  const bills = (await clientOf().get("bills", { limit: "100" })) as { data: { id: string; attributes: { name: string } }[] };
+  return bills.data.find((b) => b.attributes.name === "Hver tredje år")!.id;
 }
 
 const sum = (amounts: { amount: number }[]) => amounts.reduce((s, p) => s + p.amount, 0);
@@ -42,7 +47,7 @@ describe("readSpendingData", () => {
     ]);
     expect(d.mainGroups).toEqual(["Abonnementer", "Bil", "Bolig", "Mad", "Sundhed"]);
     expect(d.mainGroupsFound).toBe(true);
-    expect(warn).toHaveBeenCalledTimes(1);
+    expect(warn).toHaveBeenCalledTimes(2);
     expect(warn.mock.calls[0][0]).toContain("Streaming");
   });
 
@@ -118,7 +123,8 @@ describe("readSpendingData", () => {
     expect(d.categories.length).toBeGreaterThan(0);
     expect(d.categories.every((c) => c.mainGroup === null)).toBe(true);
     expect(d.mainGroups).toEqual([]);
-    expect(warn).not.toHaveBeenCalled();
+    expect(warn).toHaveBeenCalledTimes(1);
+    expect(warn.mock.calls[0][0]).toContain(await everyThirdYearId());
 
     const january = await readSpendingData(clientOf(), missing, { start: "2026-01-01", end: "2026-01-31" }, {
       today,
@@ -149,6 +155,8 @@ describe("readSpendingData", () => {
     expect(d.earliestPostingDate! >= "2025-08-01" && d.earliestPostingDate! <= "2025-08-15").toBe(true);
     const shown = parts(within(classify(d.postings, d.categories), year), { kind: "all" });
     expect(shown.filter((p) => p.amount > 0).length).toBeGreaterThan(8);
+    const kinds = new Set(d.subscriptions.map((x) => subscriptionStatus(x, d.today).kind));
+    expect([...kinds].sort()).toEqual(["expected", "notSeen", "paid", "risen"]);
   });
 });
 

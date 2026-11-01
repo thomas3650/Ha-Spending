@@ -31,3 +31,30 @@ One screen at a time, three variants each, one chosen. Under [`v2/`](v2/).
 | [5](v2/5-oevrige-a.png) | dropped | A click on Øvrige. Dropped once screen 1 showed every main group: there is no Øvrige. Tried: [A](v2/5-oevrige-a.png), [B](v2/5-oevrige-b.png), [C](v2/5-oevrige-c.png) |
 
 Every circle follows screen 1: a piece for every group, eight colours then greys, the names clickable. Screens 2 and 4 were drawn before that rule and still show five pieces and Øvrige.
+
+## Subscriptions
+
+Three ideas for showing Firefly III's subscriptions; A reached as A2 is chosen. Under
+[`v3/`](v3/abonnementer.html); open it with `?v=a`, `b` or `c`. A's list is reached in one of two ways, `?v=a2` or
+`a3`; `?v=a2-bolig` shows the first in a main group.
+
+| Variant | Shows |
+| --- | --- |
+| [A](v3/abonnementer-a-liste.png) | The overview as today, with a key number for the subscriptions per month and a card listing them: repeat, amount, per month, next date and a status (paid, expected, not seen, gone up) |
+| [B](v3/abonnementer-b-fast-variabel.png) | Every amount split in fixed (paid through a subscription) and variable: key numbers, the main groups as split bars, the months stacked, and Alt / Faste / Variable at the top |
+| [C](v3/abonnementer-c-kalender.png) | Subscriptions as their own screen beside Forbrug: the coming month as a calendar, what to look at (a price that went up, a payment not seen) and every subscription per month |
+| [A2](v3/abonnementer-a2-kort.png) | A's list as a fourth choice on the right card, Søjler / Posteringer / Forskel / Abonnementer; the key number opens it too. [In Bolig](v3/abonnementer-a2-kort-bolig.png) it shows only Bolig's subscriptions |
+| [A3](v3/abonnementer-a3-niveau.png) | A's list as a level of its own, "Alt forbrug › Abonnementer", reached by a click on the key number: the whole table, with what was paid in the period |
+
+## Budget
+
+Five ideas for a page of its own with Firefly III's budgets, none chosen yet. Under [`v4/`](v4/budget.html); open it
+with `?v=a` to `e`. "Today" in them is 20 October 2026.
+
+| Variant | Shows |
+| --- | --- |
+| [A](v4/budget-a-maaned.png) | This month: a bar per budget against its amount, a line for how far the month has come, what is left, and what may be spent per day |
+| [B](v4/budget-b-aar.png) | The year: a cell per budget per month, coloured by how much of the budget was used |
+| [C](v4/budget-c-prognose.png) | Will the month hold: spending day by day against the budget, run on to the month's end, and a small chart per budget |
+| [D](v4/budget-d-firefly.png) | After Firefly III's own budget page: the month's available amount split in spent, left and not assigned; a row per budget with its amount, carry-over and auto-budget, a bar, spent and left per day; Uden budget beside it |
+| [E](v4/budget-e-hovedgrupper.png) | D with a budget per main group: a Firefly III budget named as the main group sets the amount, the main group's own sum is what is spent, the part paid through a subscription is dark, and a main group without a budget is under Uden budget |

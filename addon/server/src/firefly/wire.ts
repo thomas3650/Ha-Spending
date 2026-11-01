@@ -61,6 +61,29 @@ export interface WireRule {
   attributes: { title: string; order: number; active: boolean; triggers: WireRulePart[]; actions: WireRulePart[] };
 }
 
+export interface WirePaidDate {
+  transaction_group_id: string;
+  transaction_journal_id: string;
+  date: string;
+  amount: string;
+}
+
+export interface WireBill {
+  id: string;
+  attributes: {
+    name: string;
+    amount_min: string;
+    amount_max: string;
+    date: string;
+    end_date: string | null;
+    repeat_freq: string;
+    skip: number;
+    active: boolean;
+    /** Only the payments within the asked start and end. */
+    paid_dates: WirePaidDate[];
+  };
+}
+
 export interface WireAbout {
   data: { version: string };
 }

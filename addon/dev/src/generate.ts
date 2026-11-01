@@ -1,5 +1,5 @@
-import { addDays, firstOfMonth } from "@ha-spending/shared";
-import type { SeedData, SeedRule, SeedSplit } from "./seed-types";
+import { addDays, addMonths, firstOfMonth } from "@ha-spending/shared";
+import type { SeedData, SeedRule, SeedSplit, SeedSubscription } from "./seed-types";
 
 /** A tiny seeded PRNG, so the same seed gives the same household. */
 function mulberry32(seed: number): () => number {
@@ -119,9 +119,16 @@ export function generateSeed(options: { today: string; seed: number }): SeedData
   const add = (split: SeedSplit, groupTitle?: string) => {
     if (split.date <= options.today) transactions.push({ ...(groupTitle ? { groupTitle } : {}), splits: [split] });
   };
-  const withdrawal = (date: string, source: string, destination: string, amount: string, category?: string) =>
+  const withdrawal = (
+    date: string,
+    source: string,
+    destination: string,
+    amount: string,
+    category?: string,
+    subscription?: string,
+  ) =>
     add({ type: "withdrawal", date, amount, description: destination, source, destination,
-      ...(category ? { category } : {}) });
+      ...(category ? { category } : {}), ...(subscription ? { subscription } : {}) });
 
   for (let m = startMonth; m <= year * 12 + month - 1; m++) {
     const first = firstOfMonth(Math.floor(m / 12), (m % 12) + 1);
@@ -129,7 +136,7 @@ export function generateSeed(options: { today: string; seed: number }): SeedData
     const day = (d: number) => addDays(first, d - 1);
     const anyDay = () => day(between(1, 28));
 
-    withdrawal(day(1), JOINT, "Udlejer", "9500.00", "Husleje");
+    withdrawal(day(1), JOINT, "Udlejer", "9500.00", "Husleje", "Husleje");
     add({ type: "transfer", date: day(1), amount: "6000.00", description: "Til budgetkontoen",
       source: JOINT, destination: BUDGET });
     withdrawal(day(5), JOINT, "Kommunen", kroner(2400, 2600), "Institution");
@@ -178,11 +185,56 @@ export function generateSeed(options: { today: string; seed: number }): SeedData
     }
   }
 
+  // Each one's last payment is placed relative to today, so every status shows on any day.
+  const subscriptions: SeedSubscription[] = [
+    { name: "Husleje", amountMin: "9500.00", amountMax: "9500.00",
+      start: firstOfMonth(Math.floor(startMonth / 12), (startMonth % 12) + 1), repeat: "monthly" },
+  ];
+  const recurring = (
+    sub: Omit<SeedSubscription, "start">,
+    last: string,
+    shop: string,
+    category: string,
+    payments: { date: string; amount: string }[],
+  ) => {
+    subscriptions.push({ ...sub, start: last });
+    for (const p of payments) withdrawal(p.date, BUDGET, shop, p.amount, category, sub.name);
+  };
+  const monthsBack = (date: string, amounts: string[]) =>
+    amounts.map((amount, i) => ({ date: addMonths(date, -i), amount }));
+  const soon = (days: number) => addMonths(addDays(options.today, days), -1);
+
+  recurring({ name: "Netflix", amountMin: "99.00", amountMax: "129.00", repeat: "monthly" }, soon(3), "Netflix",
+    "Streaming", monthsBack(soon(3), ["119.00", "119.00", "99.00"]));
+  recurring({ name: "Mobilabonnement", amountMin: "149.00", amountMax: "199.00", repeat: "monthly" }, soon(1),
+    "Teleselskabet", "Mobil", monthsBack(soon(1), ["179.00", "179.00"]));
+  recurring({ name: "Spotify", amountMin: "99.00", amountMax: "119.00", repeat: "monthly" },
+    addDays(options.today, -10), "Spotify", "Streaming",
+    monthsBack(addDays(options.today, -10), ["149.00", "109.00", "109.00"]));
+  recurring({ name: "Alarmselskabet", amountMin: "450.00", amountMax: "550.00", repeat: "quarterly" },
+    addMonths(options.today, -4), "Forsikringsselskabet", "Forsikring", [
+      { date: addMonths(options.today, -4), amount: "495.00" },
+      { date: addMonths(options.today, -7), amount: "495.00" },
+    ]);
+  recurring({ name: "Indboforsikring", amountMin: "2800.00", amountMax: "3400.00", repeat: "yearly" },
+    addMonths(options.today, -3), "Forsikringsselskabet", "Forsikring", [
+      { date: addMonths(options.today, -3), amount: "3100.00" },
+    ]);
+  recurring({ name: "Madkasse", amountMin: "250.00", amountMax: "350.00", repeat: "weekly" },
+    addDays(options.today, -1), "Netto", "Dagligvarer",
+    [1, 8, 15, 22].map((back) => ({ date: addDays(options.today, -back), amount: "299.00" })));
+  recurring({ name: "Havehjælp", amountMin: "700.00", amountMax: "900.00", repeat: "monthly", skip: 1 },
+    addDays(options.today, -40), "Byggemarkedet", "Vedligehold", [
+      { date: addDays(options.today, -40), amount: "800.00" },
+      { date: addMonths(addDays(options.today, -40), -2), amount: "800.00" },
+    ]);
+
   transactions.sort((a, b) => (a.splits[0].date < b.splits[0].date ? -1 : a.splits[0].date > b.splits[0].date ? 1 : 0));
 
   return {
     accounts: [JOINT, BUDGET, CARD].map((name) => ({ name, active: true })),
     categories,
+    subscriptions,
     ruleGroups: [{ title: "Hovedgrupper", rules }],
     transactions,
   };

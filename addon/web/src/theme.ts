@@ -20,6 +20,14 @@ export const theme = css`
     --hs-up: #c62828;
     --hs-more: #eb6834;
     --hs-less: #2a78d6;
+    --hs-not-seen: #b71c1c;
+    --hs-not-seen-soft: #fdecea;
+    --hs-risen: #9a4a00;
+    --hs-risen-soft: #fff1e0;
+    --hs-expected: #37474f;
+    --hs-expected-soft: #eceff1;
+    --hs-paid: #1b5e20;
+    --hs-paid-soft: #e8f5e9;
     --hs-font: Roboto, "Segoe UI", system-ui, sans-serif;
     font-size: 14px;
   }

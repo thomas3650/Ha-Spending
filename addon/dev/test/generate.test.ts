@@ -45,4 +45,19 @@ describe("generateSeed", () => {
       if (x.category) expect(s.categories).toContain(x.category);
     }
   });
+
+  it("has a quarterly, a yearly, a weekly and an every-second-month subscription", () => {
+    const subs = s.subscriptions ?? [];
+    expect(subs.some((x) => x.repeat === "quarterly")).toBe(true);
+    expect(subs.some((x) => x.repeat === "yearly")).toBe(true);
+    expect(subs.some((x) => x.repeat === "weekly")).toBe(true);
+    expect(subs.some((x) => x.repeat === "monthly" && x.skip === 1)).toBe(true);
+  });
+
+  it("links only to subscriptions it lists", () => {
+    const names = (s.subscriptions ?? []).map((x) => x.name);
+    const linked = splits.filter((x) => x.subscription !== undefined);
+    expect(linked.length).toBeGreaterThan(0);
+    for (const x of linked) expect(names).toContain(x.subscription);
+  });
 });

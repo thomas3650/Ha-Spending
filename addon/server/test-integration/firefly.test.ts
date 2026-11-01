@@ -1,4 +1,4 @@
-import { exampleSeed, seedFirefly } from "@ha-spending/dev";
+import { createFakeFirefly, exampleSeed, seedFirefly } from "@ha-spending/dev";
 import { classify, parts, type SpendingData } from "@ha-spending/shared";
 import { beforeAll, describe, expect, it, vi } from "vitest";
 import { createSorterApp } from "../src/sorter/http";
@@ -6,7 +6,7 @@ import { createSorterTools, readAccounts } from "../src/sorter/tools";
 import { createApp } from "../src/app";
 import { createFireflyClient, type FetchLike, type FireflyClient, FireflyError } from "../src/firefly/client";
 import { type ReadSettings, readSpendingData, readVersion } from "../src/firefly/read";
-import type { WireAccount, WireCategory, WireGroup, WirePage, WireSplit } from "../src/firefly/wire";
+import type { WireAccount, WireBill, WireCategory, WireGroup, WirePage, WireSplit } from "../src/firefly/wire";
 
 const settings: ReadSettings = {
   mainGroupRuleGroup: "Hovedgrupper",
@@ -60,15 +60,15 @@ describe("a real Firefly III", () => {
     ]);
     expect(d.mainGroups).toEqual(["Abonnementer", "Bil", "Bolig", "Mad", "Sundhed"]);
     expect(d.mainGroupsFound).toBe(true);
-    expect(warn).toHaveBeenCalledTimes(1);
-    expect(warn.mock.calls[0][0]).toContain("Streaming");
+    expect(warn).toHaveBeenCalledTimes(2);
+    expect(warn.mock.calls.map((c) => c[0]).join("\n")).toContain("Streaming");
   });
 
   it("filters the transactions by type as the fake does", async () => {
     const count = async (type: string) =>
       ((await client.get("transactions", { start: "1900-01-01", end: today, type, limit: "50" })) as WirePage<unknown>)
         .data.length;
-    expect(await count("withdrawal")).toBe(11);
+    expect(await count("withdrawal")).toBe(13);
     expect(await count("deposit")).toBe(4);
     expect(await count("transfer")).toBe(2);
   });
@@ -152,6 +152,55 @@ describe("a real Firefly III", () => {
     const february = await served("2026-02-01", "2026-02-28");
     expect(february.postings).toHaveLength(2);
     expect(sum(february.postings)).toBe(88333);
+  });
+
+  describe("subscriptions", () => {
+    const served = async () => {
+      const app = createApp({ webDir: "/nowhere", dev: true, loadData: (r) => read(r), log: () => {} });
+      const res = await app.request("/api/data?start=2025-12-01&end=2026-07-31");
+      expect(res.status).toBe(200);
+      return (await res.json()) as SpendingData;
+    };
+    // Ids differ between the fake and Firefly III: compare the bill and the account by name.
+    const byName = (d: SpendingData) => {
+      const names = new Map(d.accounts.map((a) => [a.id, a.name]));
+      return d.subscriptions.map((s) => ({
+        ...s,
+        id: "",
+        lastPayment: s.lastPayment && { ...s.lastPayment, account: names.get(s.lastPayment.account) },
+      }));
+    };
+
+    it("gives the same subscriptions as the fake does for the same seed, ids apart", async () => {
+      const fakeClient = createFireflyClient({
+        baseUrl: "http://f",
+        token: "fake-token",
+        fetch: createFakeFirefly(exampleSeed).fetch,
+      });
+      const expected = await readSpendingData(fakeClient, settings, R1, { today, warn: () => {} });
+      const actual = await served();
+      expect(actual.subscriptions.length).toBeGreaterThan(0);
+      expect(byName(actual)).toEqual(byName(expected));
+    });
+
+    it("gives Husleje's last payment in øre with its category and account, and leaves an inactive one out", async () => {
+      const d = await served();
+      const husleje = d.subscriptions.find((s) => s.name === "Husleje")!;
+      const kontoA = d.accounts.find((a) => a.name === "Konto A")!.id;
+      expect(husleje.lastPayment).toEqual({ date: "2025-12-30", amount: 800000, category: "Husleje", account: kontoA });
+      expect(d.subscriptions.map((s) => s.name)).not.toContain("Avis");
+    });
+
+    it("lists a bill's paid dates only inside the window asked for", async () => {
+      const inWindow = async (start: string, end: string) =>
+        ((await client.get("bills", { start, end, limit: "50" })) as WirePage<WireBill>).data.flatMap((b) =>
+          (b.attributes.paid_dates ?? []).map((p) => p.date.slice(0, 10)));
+      const wide = await inWindow("2025-01-01", "2026-12-31");
+      const narrow = await inWindow("2026-01-01", "2026-01-31");
+      expect(wide.length).toBeGreaterThan(narrow.length);
+      expect(narrow.length).toBeGreaterThan(0);
+      for (const d of narrow) expect(d >= "2026-01-01" && d <= "2026-01-31").toBe(true);
+    });
   });
 
   it("maps a refused token and an unreachable Firefly III", async () => {

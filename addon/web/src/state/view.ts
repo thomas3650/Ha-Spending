@@ -9,7 +9,7 @@ import {
 } from "@ha-spending/shared";
 
 export type PeriodChoice = { preset: Preset } | { preset: "custom"; start: string; end: string };
-export type Card = "bars" | "postings" | "difference";
+export type Card = "bars" | "postings" | "difference" | "subscriptions";
 export type Sort = "newest" | "oldest" | "largest" | "smallest";
 
 /** Whole kroner, both bounds included. */
@@ -48,7 +48,7 @@ export const DEFAULT_STATE: ViewState = {
 };
 
 const GROUPINGS: readonly Grouping[] = ["day", "week", "month", "quarter", "year"];
-const CARDS: readonly Card[] = ["bars", "postings", "difference"];
+const CARDS: readonly Card[] = ["bars", "postings", "difference", "subscriptions"];
 const SORTS: readonly Sort[] = ["newest", "oldest", "largest", "smallest"];
 const ALL_POSTINGS = "all-postings";
 

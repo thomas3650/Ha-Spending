@@ -104,16 +104,19 @@ The page's list. Every screenshot is at 1440×960 with the console free of error
     periode in 2020).
 15. `29-ingen-regelgruppe`: `scripts/develop` with `HA_SPENDING_OPTIONS` pointing at a copy of `addon/dev/options.json`
     in `local/` whose `main_group_rule_group` names a group that does not exist. The page shows `da.noRuleGroup` once.
-16. `30-1024`: the window at 1024×960. The frame is 1024 px or wider, so the halves sit side by side, equal
-    ([D24](decisions.md)). The circle's names neither overlap nor are cut.
-17. `31-900`: the window at 900×960. The halves stack.
+16. `30-1024`: the window at 1024×960 (four key numbers in a row). The frame is 1024 px or wider, so the
+    halves sit side by side, equal ([D24](decisions.md)). The circle's names neither overlap nor are cut.
+17. `31-900`: the window at 900×960. The halves stack, and the four key numbers sit two by two.
 18. `32-420`: the window at 420×900. The circle's chart is narrower than 400 px, so Alt forbrug and Mad show their parts
-    as a list under the ring, with no names beside it and no name broken inside a word, and the key numbers stack
-    ([D28](decisions.md)). Hover and Tab on a row bring its piece out; a click on a row chooses it, and the other rows
-    fade.
+    as a list under the ring, with no names beside it and no name broken inside a word, and the four key
+    numbers stack ([D28](decisions.md)). Hover and Tab on a row bring its piece out; a click on a row chooses it, and
+    the other rows fade.
 19. Back: three clicks, then back three times returns to the opening view.
 20. `33-posteringer-soeg`: screen 1 on Posteringer with a search typed. The search row, with "Vis alle" on its line,
     sits under the title; the count and the sum follow the search; the circle and the key numbers do not. Also at
     1728 and 420 px. Back after typing returns to the view before the first key.
 21. `34-posteringer-ingen-match`: a search nothing matches on the overview: the summary at 0 and `da.noMatch`, with
     the search row still there.
+22. `35-abonnementer`, `36-abonnementer-hovedgruppe`: the key number Abonnementer om året pressed, so the card shows
+    on Alt forbrug, then on a main group. Every status shows, the order is Ikke set, Steget, Forventes, Betalt, and the
+    names link to the fake. Also at 1728 and 420 px, where the head wraps; compare `docs/mockups/v3/`.
