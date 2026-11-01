@@ -153,7 +153,7 @@ export class Overview extends LitElement {
       <p class="half-foot">${da.differenceHint}</p>`;
   }
 
-  /** Abonnementer does not follow the chosen unit, so its chip does not show there; the unit stays chosen. */
+  /** Faste udgifter does not follow the chosen unit, so its chip does not show there; the unit stays chosen. */
   private chips() {
     const ctx = this.ctx;
     const level = ctx.state.level;

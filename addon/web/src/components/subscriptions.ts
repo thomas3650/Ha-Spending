@@ -2,7 +2,7 @@ import { css, html, LitElement, nothing } from "lit";
 import { da } from "../i18n/da";
 import type { SubscriptionRow } from "../model/subscriptions";
 
-/** Abonnementer's table (subscriptions spec §1.2). */
+/** The Faste udgifter card's table (subscriptions spec §1.2). */
 export class Subscriptions extends LitElement {
   static override properties = {
     rows: { attribute: false },

@@ -5,12 +5,12 @@ import { fire } from "./chip";
 
 export interface SubscriptionsKey {
   card: KeyCard;
-  /** The right card shows Abonnementer. */
+  /** The right card shows Faste udgifter. */
   pressed: boolean;
 }
 
 /**
- * The three key numbers, and Abonnementer om året as a fourth when there are subscriptions; their placeholder while
+ * The three key numbers, and Faste udgifter om året as a fourth when there are subscriptions; their placeholder while
  * `cards` is null.
  */
 export class KeyNumbers extends LitElement {
