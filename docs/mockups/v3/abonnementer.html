@@ -134,6 +134,48 @@ function spark(vals, W, H, hi){
 }
 const status = s => `<span class="st ${s[5]}">${s[6]}</span>`;
 
+const ordered = list => list.slice().sort((p, q) => ({miss: 0, up: 1, due: 2, ok: 3})[p[5]] - ({miss: 0, up: 1, due: 2, ok: 3})[q[5]]);
+const mainGroups = [['Bolig', 132000], ['Mad', 95800], ['Bil', 74500], ['Fritid', 65600], ['Børn', 42500], ['Sommerhus', 23100], ['Personligt', 19400], ['Forsikring og fagforening', 13200], ['Abonnementer', 9700], ['Andet', 6200], ['Transport', 5000]];
+// The key numbers with a fourth for the subscriptions; on, it has the accent border.
+function kpis4(sum, group, month, n, on){
+  return `<div class="kpis four">
+    <div class="card kpi"><div class="label">${group ? 'Forbrug på ' + group : 'Forbrug i perioden'}</div><div class="v">${kr(sum)}</div><div class="s">1. jan – 31. okt 2026</div></div>
+    <div class="card kpi"><div class="label">Gennemsnit pr. måned</div><div class="v">${kr(sum/10)}</div><div class="s">10 måneder</div></div>
+    <div class="card kpi"><div class="label">Oktober mod september</div><div class="v">-4 %</div><div class="s">▼ ${group ? '412' : '1.788'} kr.</div></div>
+    <div class="card kpi ${on ? 'new' : ''}"><div class="label">Abonnementer pr. måned</div><div class="v">${kr(month)}</div><div class="s">${n} abonnementer · ${kr(month*12)} om året</div></div>
+  </div>`;
+}
+// Screen 1's circle: every piece, eight colours then greys, names beside it.
+function circle(list, centre){
+  const eight = ['#2a78d6', '#eb6834', '#1baf7a', '#eda100', '#e87ba4', '#008300', '#6250d6', '#e34948'], greys = ['#8a8a8a', '#a8a8a8', '#c4c4c4'];
+  const t = list.reduce((a, x) => a + x[1], 0), W = 640, H = 440, cx = W/2, cy = H/2, r1 = 112, r0 = 68;
+  // Turn the ring so the small pieces sit around nine o'clock, where their names have room.
+  const before = list.slice(0, 5).reduce((a, x) => a + x[1], 0) / t;
+  let g = '', a = list.length > 6 ? Math.PI - 2*Math.PI*(before + (1 - before)/2) : -Math.PI/2; const labels = [];
+  list.forEach((x, i) => { const a1 = a + 2*Math.PI*x[1]/t, m = (a + a1)/2;
+    g += `<path d="${arc(cx, cy, r0, r1, a, a1)}" fill="${i < 8 ? eight[i] : greys[i-8]}" stroke="#fff" stroke-width="2"/>`;
+    labels.push({x, m, right: Math.cos(m) >= 0, y: cy + (r1 + 20)*Math.sin(m)}); a = a1; });
+  [true, false].forEach(side => {
+    const l = labels.filter(o => o.right === side).sort((p, q) => p.y - q.y);
+    for (let i = 1; i < l.length; i++) l[i].y = Math.max(l[i].y, l[i-1].y + 38);
+    const over = l.length ? l[l.length-1].y - (H - 24) : 0; if (over > 0) l.forEach(o => { o.y -= over; });
+    for (let i = l.length - 2; i >= 0; i--) if (l[i].y > l[i+1].y - 38) l[i].y = l[i+1].y - 38;
+    l.forEach(o => { const px = cx + (r1 + 4)*Math.cos(o.m), py = cy + (r1 + 4)*Math.sin(o.m), ex = cx + (side ? 1 : -1)*(r1 + 30), tx = ex + (side ? 8 : -8), an = side ? 'start' : 'end';
+      g += `<polyline points="${px},${py} ${cx + (r1 + 16)*Math.cos(o.m)},${o.y} ${ex},${o.y}" fill="none" stroke="#c4c4c4"/>`;
+      g += `<text x="${tx}" y="${o.y - 1}" text-anchor="${an}" style="fill:var(--text);font-size:13.5px">${o.x[0]}</text>`;
+      g += `<text x="${tx}" y="${o.y + 14}" text-anchor="${an}" style="font-size:12px">${kr(o.x[1])} · ${pct(o.x[1], t)}</text>`; }); });
+  g += `<text x="${cx}" y="${cy - 6}" text-anchor="middle" style="font-size:13px">${centre}</text><text x="${cx}" y="${cy + 18}" text-anchor="middle" style="fill:var(--text);font-size:20px">${kr(t)}</text>`;
+  return `<svg viewBox="0 0 ${W} ${H}" width="100%">${g}</svg>`;
+}
+function arc(cx, cy, r0, r1, a0, a1){
+  const p = (r, a) => `${(cx + r*Math.cos(a)).toFixed(1)} ${(cy + r*Math.sin(a)).toFixed(1)}`, l = a1 - a0 > Math.PI ? 1 : 0;
+  return `M${p(r1,a0)}A${r1} ${r1} 0 ${l} 1 ${p(r1,a1)}L${p(r0,a1)}A${r0} ${r0} 0 ${l} 0 ${p(r0,a0)}Z`;
+}
+// The list slimmed to half a page: name, repeat and next date under it, per month, status.
+function compact(list){
+  return `<table>${ordered(list).map(s => `<tr><td style="padding:7px 8px">${s[0]}<span class="sub">${s[2]} · næste ${s[4]}</span></td><td class="r" style="padding:7px 8px">${kr(monthly(s))}</td><td style="padding:7px 8px">${status(s)}</td></tr>`).join('')}</table>`;
+}
+
 let html = '';
 if (V === 'a') {
   // A: today's overview, plus a key number for the subscriptions and a card that lists them.
@@ -167,6 +209,36 @@ if (V === 'a') {
     <div class="card"><h2>Pr. måned<span class="legend"><span><span class="dot" style="background:var(--fixed)"></span>Fast</span><span><span class="dot" style="background:var(--var)"></span>Variabelt</span></span></h2>${bars([[fixedSeries, '#0277bd'], [varSeries, '#9fd8f7']], 640, 420, total/10)}
       <div class="foot">De faste udgifter ligger nederst, så det variable forbrug kan ses for sig. Toppe i jan og jul er halvårlige betalinger.</div></div>
   </div>`;
+} else if (V === 'a2' || V === 'a2-bolig') {
+  // A, reached as a fourth choice on the right card; the key number opens it too. In a main group it shows that group's subscriptions.
+  const bolig = V === 'a2-bolig';
+  const mine = bolig ? subs.filter(s => s[1].startsWith('Bolig')) : subs;
+  const month = mine.reduce((a, s) => a + monthly(s), 0);
+  html += header(bolig ? '<span style="color:#0277bd;font-weight:400">Alt forbrug</span> › Bolig' : 'Alt forbrug');
+  html += kpis4(bolig ? 132000 : mainGroups.reduce((a, x) => a + x[1], 0), bolig ? 'Bolig' : null, month, mine.length, true);
+  const list = bolig ? [['Husleje', 98000], ['Vedligehold', 14200], ['El', 9600], ['Møbler', 7210], ['Internet', 2990]] : mainGroups;
+  html += `<div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px">
+    <div class="card"><h2>${bolig ? 'Kategorier' : 'Hovedgrupper'}<small>${kr(bolig ? 132000 : mainGroups.reduce((a, x) => a + x[1], 0))}</small></h2>${circle(list, bolig ? 'Bolig' : 'Alt forbrug')}
+      <div class="foot">${bolig ? 'Klik på en kategori for kun den.' : 'Klik på et stykke eller et navn for at gå til hovedgruppen.'}</div></div>
+    <div class="card"><h2><span class="seg"><span>Søjler</span><span>Posteringer</span><span>Forskel</span><span class="on">Abonnementer</span></span><small>${kr(month)} pr. måned</small></h2>
+      ${compact(mine)}
+      <div class="foot">${bolig ? 'Kun Boligs abonnementer, fordi siden står i Bolig.' : 'Klik på et abonnement for dets posteringer.'} Det, der skal ses på, står øverst.</div></div>
+  </div>`;
+} else if (V === 'a3') {
+  // A as a level of its own: a click on the key number goes there, like a click on a main group.
+  html += header('<span style="color:#0277bd;font-weight:400">Alt forbrug</span> › Abonnementer');
+  const paid = s => ({'Månedlig': 10, 'Kvartalsvis': s[0] === 'El' ? 3 : 4, 'Halvårlig': 2, 'Årlig': 1})[s[2]] * s[3] - (s[0] === 'Streaming A' ? 40 : 0);
+  const paidTotal = subs.reduce((a, s) => a + paid(s), 0);
+  html += `<div class="kpis">
+    <div class="card kpi"><div class="label">Abonnementer pr. måned</div><div class="v">${kr(fixedMonth)}</div><div class="s">${subs.length} abonnementer · ${kr(fixedMonth*12)} om året</div></div>
+    <div class="card kpi"><div class="label">Betalt i perioden</div><div class="v">${kr(paidTotal)}</div><div class="s">${pct(paidTotal, total)} af forbruget · 1. jan – 31. okt 2026</div></div>
+    <div class="card kpi"><div class="label">Skal ses på</div><div class="v">2</div><div class="s"><span class="st up">1 steget</span> <span class="st miss">1 ikke set</span></div></div>
+  </div>`;
+  const rows = ordered(subs).map(s => `<tr><td>${s[0]}<span class="sub">${s[1]}</span></td><td>${s[2]}</td><td class="r">${kr(s[3])}</td><td class="r">${kr(monthly(s))}</td><td class="r">${kr(paid(s))}</td><td>${s[4]}</td><td>${status(s)}</td></tr>`).join('');
+  html += `<div class="card"><h2>Abonnementer<small>klik på et abonnement for dets posteringer</small></h2>
+    <table><tr><th>Abonnement</th><th>Gentages</th><th class="r">Beløb</th><th class="r">Pr. måned</th><th class="r">Betalt i perioden</th><th>Næste</th><th>Status</th></tr>${rows}
+    <tr><td style="font-weight:500">I alt</td><td></td><td></td><td class="r" style="font-weight:500">${kr(fixedMonth)}</td><td class="r" style="font-weight:500">${kr(paidTotal)}</td><td></td><td></td></tr></table>
+    <div class="foot">"Alt forbrug" i stien går tilbage til oversigten.</div></div>`;
 } else {
   // C: subscriptions as their own screen beside Forbrug: the coming month as a calendar, and what changed.
   html += header('Abonnementer', `<div class="seg"><span>Forbrug</span><span class="on">Abonnementer</span></div>`);
