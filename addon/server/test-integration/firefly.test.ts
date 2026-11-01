@@ -329,7 +329,7 @@ describe("the sorter's tools on a real Firefly III", () => {
       ["Integration refusion", "Husleje"],
     ].map(([d, c]) => {
       const posting_id = Number(before.get(d)!.transaction_journal_id);
-      // A transfer is never given out; it is refused before its amount is looked at.
+      // A transfer is never given out, so it is refused before it is read.
       return { posting_id, category_id: ids.get(c)!, amount: amounts.get(posting_id) ?? "1.00" };
     });
     const { isError, value } = await call("set_category", { assignments });
@@ -337,7 +337,7 @@ describe("the sorter's tools on a real Firefly III", () => {
     expect((value.results as { ok: boolean; reason?: string }[]).map((r) => r.reason ?? r.ok)).toEqual([
       true,
       true,
-      "transfer",
+      "not-given-out",
       true,
     ]);
 
