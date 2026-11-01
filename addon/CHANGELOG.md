@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.6.0](https://github.com/thomas3650/Ha-Spending/compare/v0.5.0...v0.6.0) (2026-11-01)
+
+
+### Features
+
+* search on the shop with suggestions, and faste udgifter on the page ([#58](https://github.com/thomas3650/Ha-Spending/issues/58)) ([12cc69a](https://github.com/thomas3650/Ha-Spending/commit/12cc69af124340858f7a9c145d5a811fd90554a5))
+* the right card in full screen, and Faste udgifter by group ([#61](https://github.com/thomas3650/Ha-Spending/issues/61)) ([537bb20](https://github.com/thomas3650/Ha-Spending/commit/537bb20a71321a1e7d8f715c34accf2d8b6ef7f1))
+
 ## [0.5.0](https://github.com/thomas3650/Ha-Spending/compare/v0.4.0...v0.5.0) (2026-11-01)
 
 
