@@ -22,6 +22,8 @@ point):
 - A subscription whose last payment is not a withdrawal from an asset account is left out, as such a posting is not
   spending on this page (§3).
 - If Firefly III fails to answer the subscriptions, the whole answer fails, as for any other read (§3, D33).
+- A subscription with more than 24 months between payments is left out (§3): the window that finds its last payment
+  would have to be longer.
 
 ## 1. What the page shows
 
@@ -86,8 +88,8 @@ with `card=subscriptions` then shows Søjler, as `card=difference` without a cho
 ### 1.5 What keeps the card
 
 The card is in the hash as `card=subscriptions` (§4). Changing the period, the grouping or the accounts, opening a part
-of the circle, a trail link, a bar and a chip's ✕ keep it, as they keep Posteringer
-(`addon/web/src/state/actions.ts`). A bar click still switches to Posteringer, as the postings search spec says.
+of the circle, a trail link and a chip's ✕ keep it, as they keep Posteringer
+(`addon/web/src/state/actions.ts`).
 
 ## 2. The rules
 
@@ -118,6 +120,7 @@ The middle of the amount range, `(min + max) / 2`, times the repeat's factor, di
 - **The next date** with a last payment P: the first due date more than E days after P's date. So a payment drawn a few
   days early (rent on 31 October for 1 November) covers its due date, and a late one (4 November) does too.
 - **The next date** with no payment: the latest due date on or before today, or the start date when it is after today.
+  The window in §3 is longer than any gap between payments the server keeps, so "no payment" means none in that gap.
 - **The end date:** a next date after the subscription's end date is no next date (`null`).
 
 ### 2.3 The status
@@ -127,14 +130,14 @@ The first that holds wins:
 | Status | When | Text |
 | --- | --- | --- |
 | Ikke set | the next date is more than L days before today | "Ikke set · ventet {next date}" |
-| Steget | P's amount is above the range's max | "Steget · {max} → {paid}" |
-| Forventes | there is a next date at most 7 days after today, or there is no P | "Forventes {next date}", or "Forventes ikke" with no next date |
+| Steget | P's amount is above the range's max | "Steget · {max} → {paid} kr." |
+| Forventes | there is a next date at most 7 days after today (3 for `weekly`), or there is no P | "Forventes {next date}", or "Forventes ikke" with no next date |
 | Betalt | otherwise | "Betalt {P's date}" |
 
 - "Betalt" so means the current period is paid and the next payment is more than a week away. A quarterly one paid on
   1 October reads "Betalt 1. okt" until late December.
-- In "Steget", both amounts are in whole kroner when both are whole, else both with two decimals ("149,50 → 149,75
-  kr."), so the two never look equal.
+- In "Steget", both amounts are in whole kroner when both are whole ("Steget · 149 → 169 kr."), else both with two
+  decimals ("Steget · 149,50 → 149,75 kr."), so the two never look equal.
 
 ### 2.4 The repeat's text
 
@@ -146,16 +149,20 @@ måned", "Hvert {n}. kvartal", "Hver {6n}. måned" (half-year) or "Hvert {n}. å
 `/api/data` reads the subscriptions beside what it reads today, in the same `Promise.all`, with the same timeout and
 the same stop on a failure.
 
-- **`GET /api/v1/bills`** with `start` 400 days before today and `end` today, every page. For that window Firefly III
+- **`GET /api/v1/bills`** with `start` 760 days before today (24 months and a month) and `end` today, every page. For that window Firefly III
   answers each subscription's `paid_dates`: the linked payments, each with `date`, `amount`,
   `transaction_group_id` and `transaction_journal_id`. Nothing is read from Firefly III's own clock: not `pay_dates`,
   not `next_expected_match`. The window comes from the server's `today`, which the tests inject.
 - **The server keeps** a subscription only when:
   - it is `active`;
   - its `end_date`, if any, is today or later;
-  - its `repeat_freq` is one of the five in §2.1 (else it is logged by its id, never its name, once per read);
+  - its `repeat_freq` is one of the five in §2.1, and its gap between payments (the period times `skip + 1`) is at most
+    24 months; else it is logged by its id, never its name, once per read;
   - its last payment, if any, is a withdrawal from an asset account whose category is not in an excluded main group
     (`excluded_main_groups`), as for postings.
+- **The fields:** `amountMin` and `amountMax` come from `amount_min` and `amount_max` through the postings' øre
+  conversion (an amount that does not read is `unreachable`, [D18](../../decisions.md)); `start` and `end` are the first
+  10 characters of `date` and `end_date`; `repeat` and `skip` are `repeat_freq` and `skip`.
 - **The last payment** is the latest `paid_dates` entry dated today or earlier. Its amount is taken as a positive
   number of øre, as postings' amounts are.
 - **The last payment's posting:** for each subscription with a last payment, `GET /api/v1/transactions/{group id}`
@@ -195,15 +202,21 @@ token serve every read, and a page with the subscriptions silently missing would
 ## 5. The fake Firefly III and the example data
 
 - **The seed:** `SeedData` gains `subscriptions` (name, amount range, start date, repeat, skip, active, end date), and a
-  `SeedSplit` may name its subscription.
+  `SeedSplit` may name its subscription. A withdrawal's source may be a liability (Firefly III's type `Loan`), in the
+  seed, the fake and `seed-firefly.ts`, so a payment from a liability can be seeded.
 - **The real Firefly III:** `seed-firefly.ts` posts the subscriptions (`POST /api/v1/bills`) before the postings, and
   a posting names its subscription with `bill_name`.
 - **The fake:** `addon/dev`'s fake answers `GET /api/v1/bills` with `start` and `end`, paged, with `paid_dates` from
   the linked splits dated in the window, amounts positive. Its transactions answer is unchanged.
-- **The example data** gains made-up subscriptions that show every status: a monthly rent paid this month (one month
-  drawn the day before its due date), monthly ones due in the coming days, a streaming service whose last payment is
-  above its range, a quarterly one not seen, a yearly insurance, a weekly one, one every second month, one inactive,
-  one ended and one paid from no asset account. The generated postings are linked to them.
+- **The fixed-date example** (`exampleSeed`, which the server and integration tests read) gains made-up subscriptions
+  for §6's server and integration cases: a monthly one drawn the day before its due date, one inactive, one ending on
+  the tests' today and one ended the day before, one whose last payment is in an excluded main group, one paid from a
+  liability, one with no payment, one with a payment dated after the tests' today, one paid in a split group, and one
+  with more than 24 months between payments.
+- **The generated data** (`generateSeed`, relative to today, which the fast loop and the Chrome check read) gains
+  made-up subscriptions that show every status: a monthly rent paid this month, monthly ones due in the coming days, a
+  streaming service whose last payment is above its range, a quarterly one not seen, a yearly insurance, a weekly one
+  and one every second month. The generated postings are linked to them.
 
 ## 6. Tests
 
@@ -214,11 +227,12 @@ By behaviour through the public interfaces (hard rule 5), with made-up data only
   - the due dates on the 31st of a month (February), and every second month;
   - the next date after an early payment (1 day before), a late one (4 days after), with no payment, a start after
     today, and past the end date; for `weekly`, a payment 2 and 3 days early;
-  - each status and its boundaries: next date 5 and 6 days past (2 and 3 for `weekly`); next date 7 and 8 days ahead;
+  - each status and its boundaries: next date 5 and 6 days past (2 and 3 for `weekly`); next date 7 and 8 days ahead
+    (3 and 4 for `weekly`);
     a payment above the max that is also late; no next date with and without a payment;
   - the repeat texts with and without `skip`; "Steget" with whole and with øre amounts.
 - **Server, against the fake:** inactive left out; an end date of today kept and of yesterday left out; an unknown
-  repeat left out and logged without its name; a last payment in an excluded main group left out; a last payment from
+  repeat and a gap over 24 months left out and logged without the name; a last payment in an excluded main group left out; a last payment from
   a liability left out; a future-dated payment not taken as the last; the category and account from the right split
   in a split group; amounts in øre; a subscription with no payment; a failed bills read and a failed group read answer
   the error code.
