@@ -345,3 +345,11 @@ to set their status to `superseded by D<n>`, or to name a part a later decision 
   value is no shop.
 - **Why:** Thomas wants a shop's postings and cost in the chosen period, and the link keeps what he chose.
 - **Source:** Thomas, 2026-11-01; [the shop search spec](superpowers/specs/2026-11-01-shop-search.md) §4
+
+### D35: The page calls subscriptions "faste udgifter"
+- **Date:** 2026-11-01 · **Status:** active
+- **Decision:** The page calls Firefly III's bills "faste udgifter". The code keeps `subscription`
+  ([D33](decisions.md) stays active).
+- **Why:** The bills include rent, loans, insurance and utilities, not only subscriptions, and a main group can itself
+  be named "Abonnementer".
+- **Source:** Thomas, 2026-11-01

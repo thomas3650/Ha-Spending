@@ -46,7 +46,7 @@ describe("da", () => {
     expect(da.status.paid("1. mar")).toBe("Betalt 1. mar");
   });
   it("counts subscriptions", () => {
-    expect(da.subscriptionCount(1)).toBe("1 abonnement");
-    expect(da.subscriptionCount(5)).toBe("5 abonnementer");
+    expect(da.subscriptionCount(1)).toBe("1 fast udgift");
+    expect(da.subscriptionCount(5)).toBe("5 faste udgifter");
   });
 });

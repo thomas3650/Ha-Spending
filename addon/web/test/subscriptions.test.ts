@@ -11,7 +11,7 @@ import { json, mount, settle, unmount } from "./mount";
 
 afterEach(unmount);
 
-const KEY_LABEL = "Abonnementer om året";
+const KEY_LABEL = "Faste udgifter om året";
 
 function mountWith(hash: string, subscriptions: Subscription[] = SUBSCRIPTIONS, link: string | null = LINK) {
   return mount(hash, {
@@ -55,14 +55,14 @@ describe("the subscriptions key number", () => {
     const { app, root } = await mountWith("");
     const button = keyNumber(root);
     expect(button.getAttribute("aria-pressed")).toBe("false");
-    getByRole(root, "button", { name: `${KEY_LABEL} 106.968 kr. 5 abonnementer` });
+    getByRole(root, "button", { name: `${KEY_LABEL} 106.968 kr. 5 faste udgifter` });
 
     fireEvent.click(button);
     await settle(app);
-    const region = card(root, "Abonnementer");
+    const region = card(root, "Faste udgifter");
     getByText(region, "106.968 kr. om året");
     expect(keyNumber(root).getAttribute("aria-pressed")).toBe("true");
-    expect(getByRole(viewSwitch(root), "button", { name: "Abonnementer" }).getAttribute("aria-pressed")).toBe("true");
+    expect(getByRole(viewSwitch(root), "button", { name: "Faste udgifter" }).getAttribute("aria-pressed")).toBe("true");
     expect(location.hash).toBe("#card=subscriptions");
 
     fireEvent.click(keyNumber(root));
@@ -72,27 +72,27 @@ describe("the subscriptions key number", () => {
     expect(location.hash).toBe("");
   });
 
-  it("adds Abonnementer to the switch", async () => {
+  it("adds Faste udgifter to the switch", async () => {
     const { app, root } = await mountWith("");
     const buttons = getAllByRole(viewSwitch(root), "button").map((b) => b.textContent?.trim());
-    expect(buttons).toEqual([da.bars, da.postings, "Abonnementer"]);
-    fireEvent.click(getByRole(viewSwitch(root), "button", { name: "Abonnementer" }));
+    expect(buttons).toEqual([da.bars, da.postings, "Faste udgifter"]);
+    fireEvent.click(getByRole(viewSwitch(root), "button", { name: "Faste udgifter" }));
     await settle(app);
-    card(root, "Abonnementer");
+    card(root, "Faste udgifter");
   });
 
   it("counts one subscription in the singular", async () => {
     const { root } = await mountWith("", [SUBSCRIPTIONS[0]]);
-    getByRole(root, "button", { name: `${KEY_LABEL} 96.000 kr. 1 abonnement` });
+    getByRole(root, "button", { name: `${KEY_LABEL} 96.000 kr. 1 fast udgift` });
   });
 });
 
 describe("the subscriptions card", () => {
   it("lists every subscription in the order of its status", async () => {
     const { root } = await mountWith("card=subscriptions");
-    const region = card(root, "Abonnementer");
+    const region = card(root, "Faste udgifter");
     expect(getAllByRole(region, "columnheader").map((h) => h.textContent?.trim())).toEqual([
-      "Abonnement",
+      "Fast udgift",
       "Beløb",
       "Om året",
       "Status",
@@ -113,17 +113,17 @@ describe("the subscriptions card", () => {
     ]);
     expect(cells(region, "Avis").slice(1)).toEqual(["200 kr. hver 2. måned", "1.200 kr.", "Forventes 20. nov"]);
     getByText(region, da.subscriptionsFoot);
-    const box = getByRole(region, "group", { name: "Abonnementer" });
+    const box = getByRole(region, "group", { name: "Faste udgifter" });
     expect(box.tabIndex).toBe(0);
     getByRole(box, "table");
   });
 
   it("shows a main group's subscriptions", async () => {
     const { root } = await mountWith("group=Bolig&card=subscriptions");
-    const region = card(root, "Abonnementer i Bolig");
+    const region = card(root, "Faste udgifter i Bolig");
     expect(rowNames(region)).toEqual(["Indboforsikring", "Husleje"]);
     getByText(region, "99.600 kr. om året");
-    getByRole(root, "button", { name: `${KEY_LABEL} 99.600 kr. 2 abonnementer` });
+    getByRole(root, "button", { name: `${KEY_LABEL} 99.600 kr. 2 faste udgifter` });
   });
 
   it("puts one with no payment, and one whose category is unknown, in Uden hovedgruppe", async () => {
@@ -137,46 +137,46 @@ describe("the subscriptions card", () => {
     };
     const all = [...SUBSCRIPTIONS, unknown];
     const { root } = await mountWith(`group=&card=subscriptions`, all);
-    expect(rowNames(card(root, `Abonnementer i ${da.noMainGroup}`))).toEqual(["Fitness", "Avis"]);
+    expect(rowNames(card(root, `Faste udgifter i ${da.noMainGroup}`))).toEqual(["Fitness", "Avis"]);
     unmount();
 
     const again = await mountWith("", all);
-    getByRole(again.root, "button", { name: `${KEY_LABEL} 110.568 kr. 6 abonnementer` });
+    getByRole(again.root, "button", { name: `${KEY_LABEL} 110.568 kr. 6 faste udgifter` });
   });
 
   it("leaves out those paid from an account not chosen, never one with no payment", async () => {
     const { root } = await mountWith("accounts=1&card=subscriptions");
-    expect(rowNames(card(root, "Abonnementer"))).toEqual(["Indboforsikring", "Husleje", "Avis"]);
-    getByRole(root, "button", { name: `${KEY_LABEL} 100.800 kr. 3 abonnementer` });
+    expect(rowNames(card(root, "Faste udgifter"))).toEqual(["Indboforsikring", "Husleje", "Avis"]);
+    getByRole(root, "button", { name: `${KEY_LABEL} 100.800 kr. 3 faste udgifter` });
   });
 
   it("shows a category's subscriptions and its chip", async () => {
     const { root } = await mountWith("group=Mad&category=Café&card=subscriptions");
-    const region = card(root, "Abonnementer i Café");
+    const region = card(root, "Faste udgifter i Café");
     expect(rowNames(region)).toEqual(["Streaming"]);
     getByRole(region, "button", { name: da.remove("Café") });
-    getByRole(root, "button", { name: `${KEY_LABEL} 1.368 kr. 1 abonnement` });
+    getByRole(root, "button", { name: `${KEY_LABEL} 1.368 kr. 1 fast udgift` });
   });
 
   it("does not follow the search", async () => {
     const { root } = await mountWith("q=Netto&card=subscriptions");
-    expect(rowNames(card(root, "Abonnementer"))).toEqual([
+    expect(rowNames(card(root, "Faste udgifter"))).toEqual([
       "Indboforsikring",
       "Streaming",
       "Husleje",
       "Avis",
       "Bilforsikring",
     ]);
-    getByRole(root, "button", { name: `${KEY_LABEL} 106.968 kr. 5 abonnementer` });
+    getByRole(root, "button", { name: `${KEY_LABEL} 106.968 kr. 5 faste udgifter` });
     expect(location.hash).toBe("#q=Netto&card=subscriptions");
   });
 
   it("does not follow a chosen unit or the period", async () => {
     const { app, root } = await mountWith("unit=2026-07-01&card=subscriptions");
-    const region = card(root, "Abonnementer");
+    const region = card(root, "Faste udgifter");
     expect(queryByRole(root, "button", { name: da.remove("Juli 2026") })).toBeNull();
     expect(rowNames(region)).toEqual(["Indboforsikring", "Streaming", "Husleje", "Avis", "Bilforsikring"]);
-    getByRole(root, "button", { name: `${KEY_LABEL} 106.968 kr. 5 abonnementer` });
+    getByRole(root, "button", { name: `${KEY_LABEL} 106.968 kr. 5 faste udgifter` });
     getByRole(viewSwitch(root), "button", { name: da.difference });
 
     fireEvent.click(getByRole(root, "button", { name: new RegExp(`^${da.period}`) }));
@@ -184,20 +184,20 @@ describe("the subscriptions card", () => {
     fireEvent.click(getByRole(getByRole(root, "group", { name: da.period }), "button", { name: da.presets.lastMonth }));
     await settle(app);
     expect(location.hash).toBe("#period=lastMonth&card=subscriptions");
-    expect(rowNames(card(root, "Abonnementer"))).toHaveLength(5);
-    getByRole(root, "button", { name: `${KEY_LABEL} 106.968 kr. 5 abonnementer` });
+    expect(rowNames(card(root, "Faste udgifter"))).toHaveLength(5);
+    getByRole(root, "button", { name: `${KEY_LABEL} 106.968 kr. 5 faste udgifter` });
   });
 
   it("shows its rows in a period with no postings", async () => {
     const { root } = await mountWith("period=custom&from=2025-01-01&to=2025-01-31&card=subscriptions");
-    const region = card(root, "Abonnementer");
+    const region = card(root, "Faste udgifter");
     expect(rowNames(region)).toHaveLength(5);
     expect(within(region).queryByText(da.noSpending)).toBeNull();
   });
 
   it("links a name to the subscription in Firefly III", async () => {
     const { root } = await mountWith("card=subscriptions");
-    const region = card(root, "Abonnementer");
+    const region = card(root, "Faste udgifter");
     const link = getByRole(region, "link", { name: "Husleje" });
     expect(link.getAttribute("href")).toBe(`${LINK}/bills/show/b1`);
     expect(link.getAttribute("target")).toBe("_blank");
@@ -207,15 +207,15 @@ describe("the subscriptions card", () => {
 
   it("has no links without the Firefly III address", async () => {
     const { root } = await mountWith("card=subscriptions", SUBSCRIPTIONS, null);
-    expect(queryByRole(card(root, "Abonnementer"), "link")).toBeNull();
+    expect(queryByRole(card(root, "Faste udgifter"), "link")).toBeNull();
   });
 
   it("says when a level has none", async () => {
     const { root } = await mountWith("accounts=1&group=Bil&card=subscriptions");
-    const region = card(root, "Abonnementer i Bil");
-    getByText(region, "Ingen abonnementer i Bil");
+    const region = card(root, "Faste udgifter i Bil");
+    getByText(region, "Ingen faste udgifter i Bil");
     expect(queryByRole(region, "table")).toBeNull();
-    getByRole(root, "button", { name: `${KEY_LABEL} 0 kr. 0 abonnementer` });
+    getByRole(root, "button", { name: `${KEY_LABEL} 0 kr. 0 faste udgifter` });
   });
 });
 
@@ -230,11 +230,11 @@ describe("the answer's today", () => {
 });
 
 describe("with no subscriptions", () => {
-  it("shows three key numbers and no Abonnementer", async () => {
+  it("shows three key numbers and no Faste udgifter", async () => {
     const { root } = await mount("card=subscriptions");
     expect(queryByRole(root, "button", { name: new RegExp(`^${KEY_LABEL}`) })).toBeNull();
     getByRole(root, "group", { name: da.spendingInPeriod });
-    expect(queryByRole(viewSwitch(root), "button", { name: "Abonnementer" })).toBeNull();
+    expect(queryByRole(viewSwitch(root), "button", { name: "Faste udgifter" })).toBeNull();
     card(root, da.per("month"));
     expect(location.hash).toBe("");
   });

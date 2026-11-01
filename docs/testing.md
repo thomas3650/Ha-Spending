@@ -117,6 +117,6 @@ The page's list. Every screenshot is at 1440×960 with the console free of error
     1728 and 420 px. Back after typing returns to the view before the first key.
 21. `34-posteringer-ingen-match`: a search nothing matches on the overview: the summary at 0 and `da.noMatch`, with
     the search row still there.
-22. `35-abonnementer`, `36-abonnementer-hovedgruppe`: the key number Abonnementer om året pressed, so the card shows
+22. `35-abonnementer`, `36-abonnementer-hovedgruppe`: the key number Faste udgifter om året pressed, so the card shows
     on Alt forbrug, then on a main group. Every status shows, the order is Ikke set, Steget, Forventes, Betalt, and the
     names link to the fake. Also at 1728 and 420 px, where the head wraps; compare `docs/mockups/v3/`.

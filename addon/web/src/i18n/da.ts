@@ -175,21 +175,21 @@ export const da = {
 
   periodClosed: (label: string, range: string) => `${label} · ${range}`,
 
-  subscriptionsPerYear: "Abonnementer om året",
-  subscriptionCount: (n: number) => `${n} ${n === 1 ? "abonnement" : "abonnementer"}`,
-  subscriptions: "Abonnementer",
-  subscriptionsIn: (name: string) => `Abonnementer i ${name}`,
+  subscriptionsPerYear: "Faste udgifter om året",
+  subscriptionCount: (n: number) => `${n} ${n === 1 ? "fast udgift" : "faste udgifter"}`,
+  subscriptions: "Faste udgifter",
+  subscriptionsIn: (name: string) => `Faste udgifter i ${name}`,
   perYear: (value: string) => `${value} om året`,
   subscriptionColumns: {
-    name: "Abonnement",
+    name: "Fast udgift",
     amount: "Beløb",
     perYear: "Om året",
     status: "Status",
   },
   nextOn: (date: string) => `næste ${date}`,
-  noSubscriptions: (name: string) => `Ingen abonnementer i ${name}`,
+  noSubscriptions: (name: string) => `Ingen faste udgifter i ${name}`,
   subscriptionsFoot:
-    "Fra Firefly III. Beløbet er midten af abonnementets beløbsinterval. Om året er det regnet om til et år.",
+    "Fra Firefly III. Beløbet er midten af den faste udgifts beløbsinterval. Om året er det regnet om til et år.",
   status: {
     notSeen: (date: string) => `Ikke set · ventet ${date}`,
     risen: (max: string, paid: string) => `Steget · ${max} → ${paid} ${da.kr}`,
