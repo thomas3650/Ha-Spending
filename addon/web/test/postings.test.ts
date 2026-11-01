@@ -162,6 +162,32 @@ describe("the postings list", () => {
     expect(queryAllByRole(el, "link")).toEqual([]);
   });
 
+  it("shows the shop, with the bank text as its title", async () => {
+    const el = await render(listOf());
+    const cell = getAllByRole(el, "cell", { name: "Netto" })[0];
+    expect(cell.getAttribute("title")).toBe("DK NETTO 4521");
+    expect(cell.querySelector("a")?.getAttribute("href")).toMatch(/^http:\/\/firefly\.test\/transactions\/show\//);
+
+    const data = { ...answerFor(THIS_YEAR), fireflyLinkUrl: null };
+    document.body.replaceChildren();
+    const plain = await render(listOf({}, data));
+    const unlinked = getAllByRole(plain, "cell", { name: "Netto" })[0];
+    expect(unlinked.getAttribute("title")).toBe("DK NETTO 4521");
+    expect(queryAllByRole(plain, "link")).toEqual([]);
+  });
+
+  it("shows the bank text of a posting with no shop, without a title", async () => {
+    const el = await render(listOf());
+    const cell = getAllByRole(el, "cell", { name: "Husleje" })[0];
+    expect(cell.hasAttribute("title")).toBe(false);
+  });
+
+  it("names the text column for the shop and the text", async () => {
+    const el = await render(listOf());
+    getByRole(el, "columnheader", { name: da.columns.text });
+    expect(da.columns.text).toBe("Butik / tekst");
+  });
+
   it("shows the category with its dot", async () => {
     const plain = await render(listOf());
     expect(queryByRole(plain, "columnheader", { name: da.columns.category })).toBeNull();
@@ -199,6 +225,27 @@ describe("the postings list", () => {
     expect(groupButtons(el)).toHaveLength(14);
 
     el.query = "x";
+    el.list = second;
+    await el.updateComplete;
+    expect(groupButtons(el).map((b) => b.getAttribute("aria-expanded"))).toEqual([
+      "true",
+      "true",
+      ...Array<string>(10).fill("false"),
+    ]);
+  });
+
+  it("starts over when the shop changes", async () => {
+    const full = listOf({ grouping: "week" });
+    if (full.kind !== "grouped") throw new Error("expected a grouped list");
+    const first = { ...full, groups: full.groups.slice(0, 14) };
+    const second = { ...full, groups: [full.groups[0], ...full.groups.slice(2, 15)] };
+    const el = await render(first, { grouping: "week" });
+    fireEvent.click(groupButtons(el)[2]);
+    fireEvent.click(getByRole(el, "button", { name: da.showOlder }));
+    await el.updateComplete;
+    expect(groupButtons(el)).toHaveLength(14);
+
+    el.shop = "Netto";
     el.list = second;
     await el.updateComplete;
     expect(groupButtons(el).map((b) => b.getAttribute("aria-expanded"))).toEqual([

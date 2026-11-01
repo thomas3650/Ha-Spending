@@ -121,7 +121,7 @@ export const da = {
 
   columns: {
     unitAndDate: (g: Grouping) => `${da.groupings[g].label} / dato`,
-    text: "Tekst",
+    text: "Butik / tekst",
     category: "Kategori",
     account: "Konto",
     amount: "Beløb",
