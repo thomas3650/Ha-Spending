@@ -38,6 +38,7 @@ const D: SpendingData = {
       account: "a1",
       category: "Food",
       kind: "spending",
+      shop: "Made-up shop",
       amount: 12345,
     },
   ],

@@ -150,6 +150,9 @@ describe("readSpendingData", () => {
     expect(d.mainGroups.length).toBeGreaterThan(8);
     expect(d.postings.some((p) => p.kind === "refund")).toBe(true);
     expect(d.postings.some((p) => p.category === null)).toBe(true);
+    expect(d.postings.some((p) => p.shop !== null)).toBe(true);
+    expect(d.postings.some((p) => p.shop === null)).toBe(true);
+    expect(d.postings.some((p) => p.kind === "refund" && p.shop !== null)).toBe(true);
     expect(d.categories.some((c) => c.mainGroup === null)).toBe(true);
     expect(d.accounts).toHaveLength(3);
     expect(d.earliestPostingDate! >= "2025-08-01" && d.earliestPostingDate! <= "2025-08-15").toBe(true);

@@ -12,6 +12,8 @@ export interface Posting {
   /** The category's name; null is Uden kategori. */
   category: string | null;
   kind: "spending" | "refund";
+  /** The shop's name; null when Firefly III has none. */
+  shop: string | null;
   /** In øre: spending positive, a refund negative. */
   amount: number;
 }

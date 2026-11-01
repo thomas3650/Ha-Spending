@@ -236,6 +236,7 @@ describe("the search on Posteringer", () => {
       account: "1",
       category: "Dagligvarer",
       kind: "spending",
+      shop: "ØL OG VAND",
       amount: 12500,
     };
     const answer = (range: { start: string; end: string }) => {

@@ -219,7 +219,7 @@ describe("screen 3, all postings", () => {
 });
 
 function posting(id: string, date: string, amount: number): ClassifiedPosting {
-  return { id, groupId: id, date, text: id, account: "1", category: null, kind: "spending", amount, mainGroup: null };
+  return { id, groupId: id, date, text: id, account: "1", category: null, kind: "spending", shop: id, amount, mainGroup: null };
 }
 
 describe("the filter rules", () => {

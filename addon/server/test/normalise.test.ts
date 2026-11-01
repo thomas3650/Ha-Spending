@@ -65,6 +65,7 @@ describe("toPostings", () => {
         account: "1",
         category: "Dagligvarer",
         kind: "spending",
+        shop: "Netto",
         amount: 10000,
       },
     ]);
@@ -96,6 +97,7 @@ describe("toPostings", () => {
         account: "1",
         category: "Dagligvarer",
         kind: "refund",
+        shop: "Netto",
         amount: -5025,
       },
     ]);
@@ -117,5 +119,29 @@ describe("toPostings", () => {
       foreign_currency_code: "EUR",
     });
     expect(toPostings([group("1", hotel)], mainGroupOf, excluded).map((p) => p.amount)).toEqual([74500]);
+  });
+
+  it("gives a withdrawal's expense account as its shop", () => {
+    const [p] = toPostings([group("1", split({ destination_name: "Netto" }))], mainGroupOf, excluded);
+    expect(p?.shop).toBe("Netto");
+  });
+
+  it("gives a refund's revenue account as its shop", () => {
+    const [p] = toPostings([group("1", deposit({ source_name: "Café Søde" }))], mainGroupOf, excluded);
+    expect(p).toMatchObject({ kind: "refund", shop: "Café Søde" });
+  });
+
+  it("gives no shop for (no name), in any case", () => {
+    const shops = ["(no name)", "(No Name)"].map(
+      (name) => toPostings([group("1", split({ destination_name: name }))], mainGroupOf, excluded)[0]?.shop,
+    );
+    expect(shops).toEqual([null, null]);
+  });
+
+  it("gives no shop for other account types", () => {
+    const cash = split({ destination_name: "Cash account", destination_type: "Cash account" });
+    const asset = deposit({ source_name: "Konto B", source_type: "Asset account" });
+    const postings = toPostings([group("1", cash), group("2", asset)], mainGroupOf, excluded);
+    expect(postings.map((p) => p.shop)).toEqual([null, null]);
   });
 });

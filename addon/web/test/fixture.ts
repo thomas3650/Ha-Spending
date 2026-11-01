@@ -29,6 +29,7 @@ const POSTINGS: Posting[] = rows.map(([category, text, amount, account, date], i
   text,
   account,
   category,
+  shop: text === "Husleje" || text === "Kiosken" ? null : text,
   kind: amount < 0 ? "refund" : "spending",
   amount,
 }));
