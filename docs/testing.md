@@ -119,7 +119,8 @@ The page's list. Every screenshot is at 1440×960 with the console free of error
     the search row still there.
 22. `35-abonnementer`, `36-abonnementer-hovedgruppe`: the key number Faste udgifter om året pressed, so the card shows
     on Alt forbrug, then on a main group. Every status shows, the order within each group is Ikke set, Steget,
-    Forventes, Betalt, and the names link to the fake. Also at 1728 and 420 px, where the head wraps; compare `docs/mockups/v3/`.
+    Forventes, Betalt, and the names link to the fake. Also at 1728 and 420 px, where the head wraps; compare
+    `docs/mockups/v3/`.
 23. `37-butik-forslag`: screen 1 on Posteringer with part of a shop's name typed. The suggestions open under the field,
     over the list, biggest sum first, each with its sum; rows show the shop, and a mouse-over shows the bank text. Also
     at 1728 and 420 px, and with touch emulation: a tap chooses, a scroll that starts on the list chooses nothing.
