@@ -98,7 +98,6 @@ export const subscriptionsStyles = css`
     padding: 2px 8px;
     border-radius: 10px;
     font-size: 12px;
-    white-space: nowrap;
   }
   .subscriptions .status-notSeen {
     color: #b71c1c;
