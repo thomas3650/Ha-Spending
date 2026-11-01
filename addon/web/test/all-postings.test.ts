@@ -51,7 +51,7 @@ describe("screen 3, all postings", () => {
     const { app, root } = await mount(CAFE);
     const replace = vi.spyOn(history, "replaceState");
     const push = vi.spyOn(history, "pushState");
-    const box = getByRole(root, "searchbox", { name: da.searchLabel });
+    const box = getByRole(root, "combobox", { name: da.searchLabel });
     expect(box.getAttribute("placeholder")).toBe(da.search);
     fireEvent.input(box, { target: { value: "roma" } });
     await settle(app);
@@ -188,11 +188,33 @@ describe("screen 3, all postings", () => {
     expect(params.has("min")).toBe(false);
   });
 
+  it("shows a chosen shop from a link as a chip with only its rows", async () => {
+    const { root } = await mount("view=all-postings&shop=Netto");
+    chip(root, da.shopChip("Netto"));
+    summary(root, 10, 3150000);
+    const texts = getAllByRole(getByRole(root, "table"), "link").map((a) => a.textContent?.trim());
+    expect(texts.length).toBeGreaterThan(0);
+    expect(texts.every((text) => text === "Netto")).toBe(true);
+  });
+
+  it("offers only the shops with postings in the amount range", async () => {
+    const { app, root } = await mount("view=all-postings&min=1000");
+    const box = getByRole(root, "combobox", { name: da.searchLabel });
+    box.focus();
+    fireEvent.input(box, { target: { value: "o" } });
+    await settle(app);
+    const list = getByRole(root, "listbox", { name: da.suggestions });
+    expect(getAllByRole(list, "option")).toEqual([
+      getByRole(list, "option", { name: da.shopOption("Netto", kr(3150000)) }),
+      getByRole(list, "option", { name: da.shopOption("Boghandlen", kr(120000)) }),
+    ]);
+  });
+
   it("shows a busy card while the answer is on its way", async () => {
     const { root } = await mount(CAFE, { answer: () => new Promise<Response>(() => {}) });
     const card = getByRole(root, "region", { name: da.loading });
     expect(card.getAttribute("aria-busy")).toBe("true");
-    expect(queryByRole(root, "searchbox")).toBeNull();
+    expect(queryByRole(root, "combobox", { name: da.searchLabel })).toBeNull();
   });
 
   it("closes + Filter when the view changes under it", async () => {

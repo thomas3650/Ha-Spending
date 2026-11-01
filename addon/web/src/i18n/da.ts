@@ -133,8 +133,11 @@ export const da = {
   postingsHint: (g: Grouping) => `Grupperet pr. ${da.groupings[g].one}, som "Gruppér pr.".`,
   postingOne: "postering",
   postingMany: "posteringer",
-  search: 'Søg i teksten, fx "pizza"',
+  search: 'Søg i butik og tekst, fx "Netto"',
   searchLabel: "Søg",
+  shopChip: (name: string) => `Butik: ${name}`,
+  shopOption: (name: string, sum: string) => `${name}, ${sum}`,
+  suggestions: "Butikker",
   sort: "Sortér",
   sorts: {
     newest: "Nyeste først",

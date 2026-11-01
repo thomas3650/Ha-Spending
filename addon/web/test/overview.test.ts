@@ -1,5 +1,13 @@
 import { type Posting, share, unitAt } from "@ha-spending/shared";
-import { fireEvent, getAllByRole, getAllByText, getByRole, getByText, queryByRole } from "@testing-library/dom";
+import {
+  fireEvent,
+  getAllByRole,
+  getAllByText,
+  getAllByTitle,
+  getByRole,
+  getByText,
+  queryByRole,
+} from "@testing-library/dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import type { SpendingApp } from "../src/app";
@@ -114,7 +122,7 @@ describe("the search on Posteringer", () => {
   const ALL = 28;
 
   function searchbox(root: HTMLElement): HTMLInputElement {
-    return getByRole(root, "searchbox", { name: da.searchLabel }) as HTMLInputElement;
+    return getByRole(root, "combobox", { name: da.searchLabel }) as HTMLInputElement;
   }
 
   async function type(app: SpendingApp, root: HTMLElement, text: string) {
@@ -191,11 +199,16 @@ describe("the search on Posteringer", () => {
     summary(root, 2, 81012);
   });
 
-  it("says nothing matches for a chosen shop that has no posting", async () => {
-    const { root } = await mount("card=postings&shop=Ukendt");
+  it("says nothing matches for a chosen shop that has no posting, and offers no shops", async () => {
+    const { app, root } = await mount("card=postings&shop=Ukendt");
+    const card = getByRole(root, "region", { name: da.postingsTitle });
+    getByRole(card, "button", { name: da.remove(da.shopChip("Ukendt")) });
     getByText(root, da.noMatch);
     expect(root.textContent).not.toContain(da.noSpending);
     summary(root, 0, 0);
+    searchbox(root).focus();
+    await type(app, root, "n");
+    expect(queryByRole(root, "listbox", { name: da.suggestions })).toBeNull();
   });
 
   it("says when nothing matches and keeps the focus in the field", async () => {
@@ -294,5 +307,122 @@ describe("the search on Posteringer", () => {
     await vi.waitFor(() => expect(location.hash).toBe(""));
     await settle(app);
     getByRole(root, "region", { name: da.per("month") });
+  });
+
+  describe("the shop", () => {
+    const ROMA = da.shopOption("Pizzeria Roma", kr(50000));
+    const CHIP = da.remove(da.shopChip("Pizzeria Roma"));
+
+    function card(root: HTMLElement): HTMLElement {
+      return getByRole(root, "region", { name: da.postingsTitle });
+    }
+
+    async function typeFocused(app: SpendingApp, root: HTMLElement, text: string) {
+      searchbox(root).focus();
+      await type(app, root, text);
+    }
+
+    function params(): URLSearchParams {
+      return new URLSearchParams(location.hash.slice(1));
+    }
+
+    it("finds the rows by their shop although the bank text says otherwise", async () => {
+      const { app, root } = await mount("card=postings");
+      await type(app, root, "roma");
+      expect(getAllByTitle(card(root), "MOBILEPAY 1234")).toHaveLength(2);
+      summary(root, 2, 50000);
+    });
+
+    it("finds a row with no shop by its text, and offers no shop", async () => {
+      const { app, root } = await mount("card=postings");
+      await typeFocused(app, root, "kiosk");
+      expect(postingTexts(card(root))).toEqual(["Kiosken"]);
+      expect(queryByRole(root, "listbox", { name: da.suggestions })).toBeNull();
+    });
+
+    it("offers the matching shop with its net sum", async () => {
+      const { app, root } = await mount("card=postings");
+      await typeFocused(app, root, "pizz");
+      const list = getByRole(root, "listbox", { name: da.suggestions });
+      expect(getAllByRole(list, "option")).toEqual([getByRole(list, "option", { name: ROMA })]);
+    });
+
+    async function expectChosen(app: SpendingApp, root: HTMLElement) {
+      expect(searchbox(root).value).toBe("");
+      getByRole(card(root), "button", { name: CHIP });
+      expect(postingTexts(card(root))).toEqual(["Pizzeria Roma", "Pizzeria Roma"]);
+      summary(root, 2, 50000);
+      expect(location.hash).toContain("shop=Pizzeria+Roma");
+      expect(params().has("q")).toBe(false);
+      history.back();
+      await vi.waitFor(() => expect(location.hash).toBe("#card=postings&q=pizz"));
+      await settle(app);
+      expect(searchbox(root).value).toBe("pizz");
+      expect(queryByRole(root, "button", { name: CHIP })).toBeNull();
+    }
+
+    it("chooses a shop by a click, and Back returns to the typed text", async () => {
+      const { app, root } = await mount("card=postings");
+      await typeFocused(app, root, "pizz");
+      fireEvent.click(getByRole(root, "option", { name: ROMA }));
+      await settle(app);
+      await expectChosen(app, root);
+    });
+
+    it("chooses a shop by ArrowDown and Enter, and Back returns to the typed text", async () => {
+      const { app, root } = await mount("card=postings");
+      await typeFocused(app, root, "pizz");
+      fireEvent.keyDown(searchbox(root), { key: "ArrowDown" });
+      await settle(app);
+      fireEvent.keyDown(searchbox(root), { key: "Enter" });
+      await settle(app);
+      await expectChosen(app, root);
+    });
+
+    it("shows only the rows of the chosen shop that match the text", async () => {
+      const { app, root } = await mount("card=postings&shop=Pizzeria+Roma");
+      await type(app, root, "kiosk");
+      getByText(root, da.noMatch);
+      summary(root, 0, 0);
+      await type(app, root, "1234");
+      expect(postingTexts(card(root))).toEqual(["Pizzeria Roma", "Pizzeria Roma"]);
+      summary(root, 2, 50000);
+    });
+
+    it("unchooses the shop from the chip with a history entry", async () => {
+      const { app, root } = await mount("card=postings&shop=Pizzeria+Roma");
+      const push = vi.spyOn(history, "pushState");
+      fireEvent.click(getByRole(root, "button", { name: CHIP }));
+      await settle(app);
+      expect(queryByRole(root, "button", { name: CHIP })).toBeNull();
+      summary(root, ALL, TOTAL);
+      expect(params().has("shop")).toBe(false);
+      expect(push).toHaveBeenCalled();
+    });
+
+    it("unchooses the shop on Backspace in an empty field, replacing the history entry", async () => {
+      const { app, root } = await mount("card=postings&shop=Pizzeria+Roma");
+      const push = vi.spyOn(history, "pushState");
+      const replace = vi.spyOn(history, "replaceState");
+      fireEvent.keyDown(searchbox(root), { key: "Backspace" });
+      await settle(app);
+      expect(queryByRole(root, "button", { name: CHIP })).toBeNull();
+      summary(root, ALL, TOTAL);
+      expect(params().has("shop")).toBe(false);
+      expect(replace).toHaveBeenCalled();
+      expect(push).not.toHaveBeenCalled();
+    });
+
+    it("leaves the key numbers and the circle as they are", async () => {
+      const { app, root } = await mount("card=postings");
+      const before = keyNumberTexts(root);
+      expect(before).toHaveLength(3);
+      await typeFocused(app, root, "pizz");
+      fireEvent.click(getByRole(root, "option", { name: ROMA }));
+      await settle(app);
+      summary(root, 2, 50000);
+      expect(keyNumberTexts(root)).toEqual(before);
+      expect(getAllByText(circleCard(root), kr(TOTAL))).toHaveLength(2);
+    });
   });
 });

@@ -1,18 +1,18 @@
 import { chosenUnitNumbers, differences, keyNumbers, total, type Unit, within } from "@ha-spending/shared";
 import { css, html, LitElement, nothing } from "lit";
-import { live } from "lit/directives/live.js";
 import "../components/bars";
 import { chip, fire } from "../components/chip";
 import "../components/circle";
 import "../components/difference";
 import type { DifferenceItem } from "../components/difference";
 import "../components/postings";
+import "../components/search";
 import "../components/subscriptions";
 import { count, kr, unitName } from "../format";
 import { da } from "../i18n/da";
 import { barItems, categoryColours, circleItems, circleSpan, circleTotal, partColours } from "../model/circle";
 import { levelName, partName, type ViewContext } from "../model/context";
-import { matches } from "../model/filter";
+import { matches, shopSuggestions } from "../model/filter";
 import { groupedPostings } from "../model/postings";
 import { subscriptionRows, subscriptionsYear } from "../model/subscriptions";
 import type { Card } from "../state/view";
@@ -99,27 +99,21 @@ export class Overview extends LitElement {
     const search = ctx.state.search;
     const chosen = ctx.chosen;
     const shop = ctx.state.shop;
-    const postings = within(ctx.shown, chosen ?? ctx.timeline.period).filter((p) => matches(p, search, shop));
+    const base = within(ctx.shown, chosen ?? ctx.timeline.period);
+    const postings = base.filter((p) => matches(p, search, shop));
     const g = ctx.timeline.grouping;
     let body: unknown;
     if (postings.length === 0) {
-      const unfiltered = search.trim() === "" && ctx.state.shop === null;
+      const unfiltered = search.trim() === "" && shop === null;
       body = html`<p class="empty">${unfiltered ? da.noSpending : da.noMatch}</p>`;
     }
     else {
       const list = groupedPostings(postings, chosen === null ? ctx.units : [chosen], ctx, true, categoryColours(ctx));
-      body = html`<hs-postings .list=${list} .query=${search} .grouping=${g}></hs-postings>
+      body = html`<hs-postings .list=${list} .query=${search} .shop=${shop} .grouping=${g}></hs-postings>
         <p class="half-foot">${da.postingsHint(g)}</p>`;
     }
     return html`<div class="postings-search-row">
-        <input
-          class="all-search"
-          type="search"
-          aria-label=${da.searchLabel}
-          placeholder=${da.search}
-          .value=${live(search)}
-          @input=${(e: Event) => fire(this, "search-input", (e.target as HTMLInputElement).value)}
-        />
+        <hs-search .search=${search} .shop=${shop} .suggestions=${shopSuggestions(base, search)}></hs-search>
         <button type="button" class="show-all" @click=${() => fire(this, "open-all-postings")}>${da.showAll}</button>
       </div>
       <p class="postings-summary">${da.summary(count(postings.length), kr(total(postings)))}</p>

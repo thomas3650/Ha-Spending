@@ -16,6 +16,7 @@ import { type CircleSelection, circleStyles } from "./components/circle";
 import { differenceStyles } from "./components/difference";
 import { periodPickerStyles } from "./components/period-picker";
 import { postingsStyles } from "./components/postings";
+import { searchStyles } from "./components/search";
 import { subscriptionsStyles } from "./components/subscriptions";
 import { topCardStyles } from "./components/top-card";
 import { LoadError, type LoadErrorCode, loadData } from "./data/api";
@@ -26,12 +27,14 @@ import { allPostingsStyles, type CategoryChoice } from "./screens/all-postings";
 import "./screens/overview";
 import { overviewStyles } from "./screens/overview";
 import {
+  chooseShop,
   chooseUnit,
   normalise,
   openAllPostings,
   openPart,
   removeCategory,
   removeMainGroup,
+  removeShop,
   removeUnit,
   setAccounts,
   setAmount,
@@ -87,6 +90,7 @@ export class SpendingApp extends LitElement {
     barsStyles,
     differenceStyles,
     postingsStyles,
+    searchStyles,
     subscriptionsStyles,
     overviewStyles,
     allPostingsStyles,
@@ -270,6 +274,19 @@ export class SpendingApp extends LitElement {
     this.apply(setAccounts(this.state, event.detail, all), "push");
   }
 
+  private onSearch(event: CustomEvent<string>): void {
+    this.apply(setSearch(this.state, event.detail), "replace");
+  }
+
+  private onShopChoose(event: CustomEvent<string>): void {
+    this.apply(chooseShop(this.state, event.detail), "push");
+  }
+
+  /** Backspace edits the search as typing does, so it replaces the history entry (D20). */
+  private onShopRemove(event: CustomEvent<"click" | "key">): void {
+    this.apply(removeShop(this.state), event.detail === "key" ? "replace" : "push");
+  }
+
   private push(next: ViewState): void {
     this.apply(next, "push");
   }
@@ -305,11 +322,15 @@ export class SpendingApp extends LitElement {
               @remove-unit=${() => this.push(removeUnit(this.state))}
               @remove-category=${() => this.push(removeCategory(this.state))}
               @open-all-postings=${() => this.push(openAllPostings(this.state))}
-              @search-input=${(e: CustomEvent<string>) => this.apply(setSearch(this.state, e.detail), "replace")}
+              @search-input=${this.onSearch}
+              @shop-choose=${this.onShopChoose}
+              @shop-remove=${this.onShopRemove}
             ></hs-overview>`
         : html`<hs-all-postings
             .ctx=${ctx}
-            @search-input=${(e: CustomEvent<string>) => this.apply(setSearch(this.state, e.detail), "replace")}
+            @search-input=${this.onSearch}
+            @shop-choose=${this.onShopChoose}
+            @shop-remove=${this.onShopRemove}
             @sort-change=${(e: CustomEvent<Sort>) => this.push(setSort(this.state, e.detail))}
             @remove-main-group=${() => this.push(removeMainGroup(this.state))}
             @remove-category=${() => this.push(removeCategory(this.state))}
