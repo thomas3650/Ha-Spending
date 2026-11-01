@@ -1,4 +1,6 @@
-export const NO_SHOP = "(no name)";
+import { NO_SHOP } from "../firefly/wire";
+
+export { NO_SHOP };
 export const SHOP_LIMIT = 60;
 
 // Control, format (bidi overrides, zero-width), line and paragraph separators, and lone surrogates.

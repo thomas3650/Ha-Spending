@@ -9,9 +9,9 @@ const GROUPS_STEP = 12;
 const ROWS_STEP = 100;
 const OPEN_AT_FIRST = 2;
 
-function resetKey(list: PostingList, query: string): string {
+function resetKey(list: PostingList, query: string, shop: string | null): string {
   const first = list.kind === "grouped" ? `grouped:${list.groups[0]?.key ?? ""}` : `flat:${list.rows[0]?.posting.id ?? ""}`;
-  return `${first}|${query}`;
+  return `${first}|${query}|${shop ?? ""}`;
 }
 
 /**
@@ -22,6 +22,7 @@ export class Postings extends LitElement {
   static override properties = {
     list: { attribute: false },
     query: { attribute: false },
+    shop: { attribute: false },
     showCategory: { attribute: false },
     grouping: { attribute: false },
     toggled: { state: true },
@@ -30,6 +31,7 @@ export class Postings extends LitElement {
 
   declare list: PostingList;
   declare query: string;
+  declare shop: string | null;
   declare showCategory: boolean;
   declare grouping: Grouping;
   /** The groups folded the other way from how they start. */
@@ -42,6 +44,7 @@ export class Postings extends LitElement {
     super();
     this.list = { kind: "flat", rows: [] };
     this.query = "";
+    this.shop = null;
     this.showCategory = false;
     this.grouping = "month";
     this.toggled = new Set();
@@ -53,8 +56,8 @@ export class Postings extends LitElement {
   }
 
   protected override willUpdate(changed: PropertyValues<this>): void {
-    if (!changed.has("list") && !changed.has("query")) return;
-    const key = resetKey(this.list, this.query);
+    if (!changed.has("list") && !changed.has("query") && !changed.has("shop")) return;
+    const key = resetKey(this.list, this.query, this.shop);
     if (key === this.shownFor) return;
     this.shownFor = key;
     this.toggled = new Set();
@@ -78,12 +81,13 @@ export class Postings extends LitElement {
 
   private row(r: PostingRow) {
     const p = r.posting;
+    const shown = p.shop ?? p.text;
     const text = r.href
-      ? html`<a href=${r.href} target="_blank" rel="noopener noreferrer">${p.text}</a>`
-      : p.text;
+      ? html`<a href=${r.href} target="_blank" rel="noopener noreferrer">${shown}</a>`
+      : shown;
     return html`<tr class="posting">
       <td class="posting-date">${tableDate(p.date)}</td>
-      <td>${text}</td>
+      <td title=${p.shop === null ? nothing : p.text}>${text}</td>
       ${this.showCategory
         ? html`<td>
             <span class="posting-dot" aria-hidden="true" style=${styleMap({ background: r.colour })}></span>${r.category}

@@ -1,6 +1,10 @@
 /** The fields of Firefly III's answers that the server reads. */
 
 export const ASSET = "Asset account";
+export const EXPENSE = "Expense account";
+export const REVENUE = "Revenue account";
+/** The Data Importer's name for no counterparty. */
+export const NO_SHOP = "(no name)";
 
 export interface WirePage<T> {
   data: T[];

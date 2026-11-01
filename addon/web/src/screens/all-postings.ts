@@ -4,11 +4,12 @@ import { live } from "lit/directives/live.js";
 import { chip, fire } from "../components/chip";
 import { Dropdown } from "../components/dropdown";
 import "../components/postings";
+import "../components/search";
 import { amountChip, count, kr, unitName } from "../format";
 import { da } from "../i18n/da";
 import { categoryColours } from "../model/circle";
 import { partName, type ViewContext } from "../model/context";
-import { filteredPostings, sortPostings } from "../model/filter";
+import { filteredPostings, searchBase, shopSuggestions, sortPostings } from "../model/filter";
 import { flatPostings, groupedPostings } from "../model/postings";
 import { type AmountRange, parseKroner, type Sort, toHash } from "../state/view";
 
@@ -132,8 +133,8 @@ export class FilterPicker extends Dropdown {
 }
 
 /**
- * Alle posteringer (UI spec §4.3). Fires `search-input`, `sort-change`, `remove-main-group`, `remove-category`,
- * `remove-unit` and `set-amount`; the filter picker fires the rest.
+ * Alle posteringer (UI spec §4.3). Fires `sort-change`, `remove-main-group`, `remove-category`, `remove-unit` and
+ * `set-amount`; the search and the filter picker fire the rest.
  */
 export class AllPostings extends LitElement {
   static override properties = {
@@ -173,7 +174,12 @@ export class AllPostings extends LitElement {
       sort === "largest" || sort === "smallest"
         ? flatPostings(sortPostings(postings, sort), ctx, colours)
         : groupedPostings(postings, ctx.units, ctx, sort === "newest", colours);
-    return html`<hs-postings .list=${list} .showCategory=${true} .grouping=${ctx.timeline.grouping}></hs-postings>`;
+    return html`<hs-postings
+      .list=${list}
+      .shop=${ctx.state.shop}
+      .showCategory=${true}
+      .grouping=${ctx.timeline.grouping}
+    ></hs-postings>`;
   }
 
   override render() {
@@ -182,14 +188,11 @@ export class AllPostings extends LitElement {
     const postings = filteredPostings(ctx);
     return html`<section class="card all-postings">
       <div class="all-search-row">
-        <input
-          class="all-search"
-          type="search"
-          aria-label=${da.searchLabel}
-          placeholder=${da.search}
-          .value=${live(state.search)}
-          @input=${(e: Event) => fire(this, "search-input", (e.target as HTMLInputElement).value)}
-        />
+        <hs-search
+          .search=${state.search}
+          .shop=${state.shop}
+          .suggestions=${shopSuggestions(searchBase(ctx), state.search)}
+        ></hs-search>
         <label class="field">
           <small>${da.sort}</small>
           <!-- The options are static so that the value binding finds them when it is first set. -->

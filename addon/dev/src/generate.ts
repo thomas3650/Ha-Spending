@@ -122,12 +122,13 @@ export function generateSeed(options: { today: string; seed: number }): SeedData
   const withdrawal = (
     date: string,
     source: string,
-    destination: string,
+    destination: string | undefined,
     amount: string,
     category?: string,
     subscription?: string,
+    description = destination ?? "",
   ) =>
-    add({ type: "withdrawal", date, amount, description: destination, source, destination,
+    add({ type: "withdrawal", date, amount, description, source, ...(destination ? { destination } : {}),
       ...(category ? { category } : {}), ...(subscription ? { subscription } : {}) });
 
   for (let m = startMonth; m <= year * 12 + month - 1; m++) {
@@ -150,14 +151,18 @@ export function generateSeed(options: { today: string; seed: number }): SeedData
     if (m % 6 === 0) withdrawal(day(15), JOINT, "Kommunen", kroner(1500, 2500), "Ejendomsskat");
 
     for (let date = day(between(1, 4)); date <= last; date = addDays(date, 7)) {
-      withdrawal(date, BUDGET, pick(["Netto", "Rema 1000", "Føtex"]), kroner(300, 1200), "Dagligvarer");
+      const shop = pick(["Netto", "Rema 1000", "Føtex"]);
+      withdrawal(date, BUDGET, shop, kroner(300, 1200), "Dagligvarer", undefined, `Dankort ${shop.toUpperCase()}`);
     }
 
     for (let i = between(10, 16); i > 0; i--) {
       const c = pick(randomCategories);
       withdrawal(anyDay(), pick([BUDGET, CARD]), pick(c.shops), kroner(c.min, c.max), c.category);
     }
-    for (let i = between(1, 3); i > 0; i--) withdrawal(anyDay(), CARD, pick(["Kiosken", "MobilePay"]), kroner(20, 300));
+    for (let i = between(1, 3); i > 0; i--) {
+      const small = pick(["Kiosken", "MobilePay"]);
+      withdrawal(anyDay(), CARD, small === "Kiosken" ? small : undefined, kroner(20, 300), undefined, undefined, small);
+    }
     if (random() < 0.4) withdrawal(anyDay(), CARD, "Gavebutikken", kroner(150, 800), UNRULED);
 
     const refund = pick(spending.filter((c) => ["Tøj", "Fritid", "Mad"].includes(c.group)));

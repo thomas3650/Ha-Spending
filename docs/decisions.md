@@ -191,7 +191,7 @@ to set their status to `superseded by D<n>`, or to name a part a later decision 
 - **Source:** Claude, [page plan](superpowers/plans/2026-10-31-page.md)
 
 ### D20: The view state's hash
-- **Date:** 2026-10-31 · **Status:** active
+- **Date:** 2026-10-31 · **Status:** active; key list superseded by D35
 - **Decision:**
   - The keys are `period`, `from`, `to`, `by`, `accounts`, `group`, `category`, `unit`, `card`, `view`, `q`, `sort`,
     `min` and `max`, in a `URLSearchParams` string.
@@ -357,3 +357,19 @@ to set their status to `superseded by D<n>`, or to name a part a later decision 
   lives only in the calling add-on's gate, and D29's bound of at worst a wrong category or shop holds only behind it.
 - **Source:** Thomas, 2026-11-01, the design of a more helpful assistant in the house session (the tools, the tag, the
   note); the names, the limits and the refusals: Claude
+
+### D35: The chosen shop is a shared choice
+- **Date:** 2026-11-01 · **Status:** active
+- **Decision:** The chosen shop belongs with the search: one of the shared choices, kept and changed as the search is.
+  It is the hash key `shop`, written right after `q` and before `sort` on every screen ([D20](decisions.md)); an empty
+  value is no shop.
+- **Why:** Thomas wants a shop's postings and cost in the chosen period, and the link keeps what he chose.
+- **Source:** Thomas, 2026-11-01; [the shop search spec](superpowers/specs/2026-11-01-shop-search.md) §4
+
+### D36: The page calls subscriptions "faste udgifter"
+- **Date:** 2026-11-01 · **Status:** active
+- **Decision:** The page calls Firefly III's bills "faste udgifter". The code keeps `subscription`
+  ([D33](decisions.md) stays active).
+- **Why:** The bills include rent, loans, insurance and utilities, not only subscriptions, and a main group can itself
+  be named "Abonnementer".
+- **Source:** Thomas, 2026-11-01

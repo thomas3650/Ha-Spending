@@ -22,13 +22,16 @@ const rows: Row[] = [
   [null, "Kiosken", 15000, "1", "2026-02-14"],
 ];
 
+const BANK_TEXTS: Record<string, string> = { Netto: "DK NETTO 4521", "Pizzeria Roma": "MOBILEPAY 1234" };
+
 const POSTINGS: Posting[] = rows.map(([category, text, amount, account, date], i) => ({
   id: `p${i + 1}`,
   groupId: `g${i + 1}`,
   date,
-  text,
+  text: BANK_TEXTS[text] ?? text,
   account,
   category,
+  shop: text === "Husleje" || text === "Kiosken" ? null : text,
   kind: amount < 0 ? "refund" : "spending",
   amount,
 }));

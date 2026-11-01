@@ -126,6 +126,12 @@ describe("a real Firefly III", () => {
     expect(pages).toBe(4);
   });
 
+  it("gives a posting's shop from its expense account, and a refund's from its revenue account", async () => {
+    const d = await read(R1);
+    expect(d.postings.find((p) => p.text === "Indkøb i Netto")?.shop).toBe("Netto");
+    expect(d.postings.find((p) => p.text === "Returvare Netto")).toMatchObject({ kind: "refund", shop: "Netto" });
+  });
+
   it("keeps the split group, the foreign posting and the summer refund", async () => {
     const d = await read(R1);
     const bilka = d.postings.filter((p) => p.text.startsWith("Bilka"));
@@ -541,6 +547,13 @@ describe("the sorter's shop on a real Firefly III", () => {
     const after = await splits();
     expect(after.get("Shop kontant")!.destination_id).toBe(cash.destination_id);
     expect(after.get("Shop kontant navn")!.destination_id).toBe(before.get("Shop kontant navn")!.destination_id);
+  });
+
+  it("sends no shop for (no name) or a cash account", async () => {
+    const december = await read({ start: "2026-12-01", end: "2026-12-31" });
+    const shopOf = (text: string) => december.postings.find((p) => p.text === text)?.shop;
+    expect(shopOf("Shop gæld")).toBeNull();
+    expect(shopOf("Shop kontant")).toBeNull();
   });
 });
 

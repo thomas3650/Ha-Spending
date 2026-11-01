@@ -5,7 +5,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { amountChip, count, kr, postingAmount, unitName } from "../src/format";
 import type { SpendingApp } from "../src/app";
 import { da } from "../src/i18n/da";
-import { inAmount, matchesSearch, sortPostings } from "../src/model/filter";
+import { inAmount, sortPostings } from "../src/model/filter";
 import { mount, settle, unmount } from "./mount";
 
 const TODAY = "2026-10-30";
@@ -51,7 +51,7 @@ describe("screen 3, all postings", () => {
     const { app, root } = await mount(CAFE);
     const replace = vi.spyOn(history, "replaceState");
     const push = vi.spyOn(history, "pushState");
-    const box = getByRole(root, "searchbox", { name: da.searchLabel });
+    const box = getByRole(root, "combobox", { name: da.searchLabel });
     expect(box.getAttribute("placeholder")).toBe(da.search);
     fireEvent.input(box, { target: { value: "roma" } });
     await settle(app);
@@ -188,11 +188,33 @@ describe("screen 3, all postings", () => {
     expect(params.has("min")).toBe(false);
   });
 
+  it("shows a chosen shop from a link as a chip with only its rows", async () => {
+    const { root } = await mount("view=all-postings&shop=Netto");
+    chip(root, da.shopChip("Netto"));
+    summary(root, 10, 3150000);
+    const texts = getAllByRole(getByRole(root, "table"), "link").map((a) => a.textContent?.trim());
+    expect(texts.length).toBeGreaterThan(0);
+    expect(texts.every((text) => text === "Netto")).toBe(true);
+  });
+
+  it("offers only the shops with postings in the amount range", async () => {
+    const { app, root } = await mount("view=all-postings&min=1000");
+    const box = getByRole(root, "combobox", { name: da.searchLabel });
+    box.focus();
+    fireEvent.input(box, { target: { value: "o" } });
+    await settle(app);
+    const list = getByRole(root, "listbox", { name: da.suggestions });
+    expect(getAllByRole(list, "option")).toEqual([
+      getByRole(list, "option", { name: da.shopOption("Netto", kr(3150000)) }),
+      getByRole(list, "option", { name: da.shopOption("Boghandlen", kr(120000)) }),
+    ]);
+  });
+
   it("shows a busy card while the answer is on its way", async () => {
     const { root } = await mount(CAFE, { answer: () => new Promise<Response>(() => {}) });
     const card = getByRole(root, "region", { name: da.loading });
     expect(card.getAttribute("aria-busy")).toBe("true");
-    expect(queryByRole(root, "searchbox")).toBeNull();
+    expect(queryByRole(root, "combobox", { name: da.searchLabel })).toBeNull();
   });
 
   it("closes + Filter when the view changes under it", async () => {
@@ -219,16 +241,10 @@ describe("screen 3, all postings", () => {
 });
 
 function posting(id: string, date: string, amount: number): ClassifiedPosting {
-  return { id, groupId: id, date, text: id, account: "1", category: null, kind: "spending", amount, mainGroup: null };
+  return { id, groupId: id, date, text: id, account: "1", category: null, kind: "spending", shop: id, amount, mainGroup: null };
 }
 
 describe("the filter rules", () => {
-  it("searches case-insensitively, trimmed, and an empty search matches all", () => {
-    expect(matchesSearch("Café Søde", "  søde ")).toBe(true);
-    expect(matchesSearch("Café Søde", "ROMA")).toBe(false);
-    expect(matchesSearch("Café Søde", "   ")).toBe(true);
-  });
-
   it("keeps an amount within the range in whole kroner, both bounds included", () => {
     expect(inAmount(posting("a", "2026-01-01", 40000), { min: 400, max: 600 })).toBe(true);
     expect(inAmount(posting("a", "2026-01-01", 60000), { min: 400, max: 600 })).toBe(true);

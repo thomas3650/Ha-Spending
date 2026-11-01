@@ -28,8 +28,9 @@ export interface ViewState {
   unit: string | null;
   card: Card;
   screen: "overview" | "allPostings";
-  /** The search is a shared choice; sort and amount belong to Alle posteringer. */
+  /** The search and the chosen shop are shared choices; sort and amount belong to Alle posteringer. */
   search: string;
+  shop: string | null;
   sort: Sort;
   amount: AmountRange | null;
 }
@@ -43,6 +44,7 @@ export const DEFAULT_STATE: ViewState = {
   card: "bars",
   screen: "overview",
   search: "",
+  shop: null,
   sort: "newest",
   amount: null,
 };
@@ -104,12 +106,13 @@ export function parseHash(hash: string): ViewState {
     card: oneOf(CARDS, p.get("card"), DEFAULT_STATE.card),
     screen: allPostings ? "allPostings" : "overview",
     search: p.get("q") ?? DEFAULT_STATE.search,
+    shop: p.get("shop") || DEFAULT_STATE.shop,
     sort: allPostings ? oneOf(SORTS, p.get("sort"), DEFAULT_STATE.sort) : DEFAULT_STATE.sort,
     amount: allPostings ? parseAmount(p) : DEFAULT_STATE.amount,
   };
 }
 
-/** Without '#'. The keys go in D20's order and defaults are left out, so equal states give equal hashes. */
+/** Without '#'. The keys go in the order of D20 and D35, and defaults are left out, so equal states give equal hashes. */
 export function toHash(s: ViewState): string {
   const p = new URLSearchParams();
   if (s.period.preset === "custom") {
@@ -127,6 +130,7 @@ export function toHash(s: ViewState): string {
   if (s.card !== DEFAULT_STATE.card) p.set("card", s.card);
   if (s.screen === "allPostings") p.set("view", ALL_POSTINGS);
   if (s.search !== "") p.set("q", s.search);
+  if (s.shop !== null) p.set("shop", s.shop);
   if (s.screen === "allPostings") {
     if (s.sort !== DEFAULT_STATE.sort) p.set("sort", s.sort);
     if (s.amount?.min != null) p.set("min", String(s.amount.min));

@@ -16,6 +16,7 @@ function posting(id: string, date: string, account: string, category: string | n
     text: `Posting ${id}`,
     account,
     category,
+    shop: `Posting ${id}`,
     kind: amount < 0 ? "refund" : "spending",
     amount,
   };
