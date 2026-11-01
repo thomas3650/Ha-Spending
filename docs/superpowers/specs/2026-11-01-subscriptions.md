@@ -134,8 +134,8 @@ The first that holds wins:
 | Forventes | there is a next date at most 7 days after today (3 for `weekly`), or there is no P | "Forventes {next date}", or "Forventes ikke" with no next date |
 | Betalt | otherwise | "Betalt {P's date}" |
 
-- "Betalt" so means the current period is paid and the next payment is more than 7 days away (3 for `weekly`). A quarterly one paid on
-  1 October reads "Betalt 1. okt" until late December.
+- "Betalt" so means the current period is paid and the next payment is more than 7 days away (3 for `weekly`). A
+  quarterly one paid on 1 October reads "Betalt 1. okt" until late December.
 - In "Steget", both amounts are in whole kroner when both are whole ("Steget · 149 → 169 kr."), else both with two
   decimals ("Steget · 149,50 → 149,75 kr."), so the two never look equal.
 
@@ -149,9 +149,9 @@ måned", "Hvert {n}. kvartal", "Hver {6n}. måned" (half-year) or "Hvert {n}. å
 `/api/data` reads the subscriptions beside what it reads today, in the same `Promise.all`, with the same timeout and
 the same stop on a failure.
 
-- **`GET /api/v1/bills`** with `start` 760 days before today (24 months and a month) and `end` today, every page.
-  For that window Firefly III answers each subscription's `paid_dates`: the linked payments, each with `date`,
-  `amount`, `transaction_group_id` and `transaction_journal_id`. Nothing is read from Firefly III's own clock: not `pay_dates`,
+- **`GET /api/v1/bills`** with `start` 760 days before today (24 months and a month) and `end` today, every page. For
+  that window Firefly III answers each subscription's `paid_dates`: the linked payments, each with `date`, `amount`,
+  `transaction_group_id` and `transaction_journal_id`. Nothing is read from Firefly III's own clock: not `pay_dates`,
   not `next_expected_match`. The window comes from the server's `today`, which the tests inject.
 - **The server keeps** a subscription only when:
   - it is `active`;
@@ -232,9 +232,9 @@ By behaviour through the public interfaces (hard rule 5), with made-up data only
   - the repeat texts with and without `skip`; "Steget" with whole and with øre amounts.
 - **Server, against the fake:** inactive left out; an end date of today kept and of yesterday left out; an unknown
   repeat and a gap over 24 months left out and logged without the name; a last payment in an excluded main group left
-  out; a last payment from a liability left out; a future-dated payment not taken as the last; the category and account from the right split
-  in a split group; amounts in øre; a subscription with no payment; a failed bills read and a failed group read answer
-  the error code.
+  out; a last payment from a liability left out; a future-dated payment not taken as the last; the category and account
+  from the right split in a split group; amounts in øre; a subscription with no payment; a failed bills read and a
+  failed group read answer the error code.
 - **Page, by role, accessible name and text:**
   - the key number's text; its button opens the card and is pressed; a second click shows Søjler;
   - the switch's fourth button; the card's title, rows, order and status texts on each level;
