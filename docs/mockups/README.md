@@ -31,3 +31,14 @@ One screen at a time, three variants each, one chosen. Under [`v2/`](v2/).
 | [5](v2/5-oevrige-a.png) | dropped | A click on Øvrige. Dropped once screen 1 showed every main group: there is no Øvrige. Tried: [A](v2/5-oevrige-a.png), [B](v2/5-oevrige-b.png), [C](v2/5-oevrige-c.png) |
 
 Every circle follows screen 1: a piece for every group, eight colours then greys, the names clickable. Screens 2 and 4 were drawn before that rule and still show five pieces and Øvrige.
+
+## Subscriptions
+
+Three ideas for showing Firefly III's subscriptions, none chosen yet. Under [`v3/`](v3/abonnementer.html); open it
+with `?v=a`, `b` or `c`.
+
+| Variant | Shows |
+| --- | --- |
+| [A](v3/abonnementer-a-liste.png) | The overview as today, with a key number for the subscriptions per month and a card listing them: repeat, amount, per month, next date and a status (paid, expected, not seen, gone up) |
+| [B](v3/abonnementer-b-fast-variabel.png) | Every amount split in fixed (paid through a subscription) and variable: key numbers, the main groups as split bars, the months stacked, and Alt / Faste / Variable at the top |
+| [C](v3/abonnementer-c-kalender.png) | Subscriptions as their own screen beside Forbrug: the coming month as a calendar, what to look at (a price that went up, a payment not seen) and every subscription per month |
