@@ -14,7 +14,7 @@ import { barItems, categoryColours, circleItems, circleSpan, circleTotal, partCo
 import { levelName, partName, type ViewContext } from "../model/context";
 import { matches, shopSuggestions } from "../model/filter";
 import { groupedPostings } from "../model/postings";
-import { subscriptionRows, subscriptionsYear } from "../model/subscriptions";
+import { subscriptionsYear, subscriptionTable } from "../model/subscriptions";
 import type { Card } from "../state/view";
 
 const LEFT_TITLE = "hs-left-title";
@@ -164,9 +164,9 @@ export class Overview extends LitElement {
   }
 
   private subscriptions(title: string) {
-    const rows = subscriptionRows(this.ctx);
-    if (rows.length === 0) return html`<p class="empty">${da.noSubscriptions(levelName(this.ctx.state.level))}</p>`;
-    return html`<hs-subscriptions .rows=${rows} .label=${title}></hs-subscriptions>
+    const table = subscriptionTable(this.ctx);
+    if (table.rows.length === 0) return html`<p class="empty">${da.noSubscriptions(levelName(this.ctx.state.level))}</p>`;
+    return html`<hs-subscriptions .table=${table} .label=${title}></hs-subscriptions>
       <p class="half-foot">${da.subscriptionsFoot}</p>`;
   }
 

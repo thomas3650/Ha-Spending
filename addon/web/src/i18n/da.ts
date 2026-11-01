@@ -182,6 +182,7 @@ export const da = {
   perYear: (value: string) => `${value} om året`,
   subscriptionColumns: {
     name: "Fast udgift",
+    category: "Kategori",
     amount: "Beløb",
     perYear: "Om året",
     status: "Status",
