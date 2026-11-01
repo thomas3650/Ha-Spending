@@ -47,11 +47,14 @@ postings. A posting opens in Firefly III only when `firefly_link_url` is set; wi
 the rule group in `main_group_rule_group` does not exist, the page says so.
 
 The overview also shows your Firefly III subscriptions, which the page calls "Faste udgifter": a key number with their
-cost per year, and a card with each subscription's amount, its cost per year and a status. The card needs subscriptions
-in Firefly III with their postings linked to them, for example by Firefly III's rules. A subscription without a payment
-reads "Forventes" for a few days after a due date, and always when its start is in the future; after that it reads "Ikke
-set". Inactive and ended subscriptions are left out, as are those last paid from a liability or into a main group in
-`excluded_main_groups`.
+cost per year, and a card with each subscription's amount, its cost per year and a status, grouped by main group with
+its category. The card needs subscriptions in Firefly III with their postings linked to them, for example by Firefly
+III's rules. A subscription without a payment reads "Forventes" for a few days after a due date, and always when its
+start is in the future; after that it reads "Ikke set". Inactive and ended subscriptions are left out, as are those last
+paid from a liability or into a main group in `excluded_main_groups`.
+
+The button "Fuld skærm" in the right card's title gives that card the page's whole width; the same button or Escape
+brings the circle and the key numbers back.
 
 ## The sorter's endpoint
 

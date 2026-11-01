@@ -1,21 +1,22 @@
 import { css, html, LitElement, nothing } from "lit";
+import { styleMap } from "lit/directives/style-map.js";
 import { da } from "../i18n/da";
-import type { SubscriptionRow } from "../model/subscriptions";
+import type { SubscriptionGroup, SubscriptionRow, SubscriptionTable } from "../model/subscriptions";
 
 /** The Faste udgifter card's table (subscriptions spec §1.2). */
 export class Subscriptions extends LitElement {
   static override properties = {
-    rows: { attribute: false },
+    table: { attribute: false },
     label: { attribute: false },
   };
 
-  declare rows: SubscriptionRow[];
+  declare table: SubscriptionTable;
   /** The card's title, which names the scroll box. */
   declare label: string;
 
   constructor() {
     super();
-    this.rows = [];
+    this.table = { groups: null, showCategory: false, rows: [] };
     this.label = "";
   }
 
@@ -23,35 +24,57 @@ export class Subscriptions extends LitElement {
     return this;
   }
 
-  private row(r: SubscriptionRow) {
+  private row(r: SubscriptionRow, showCategory: boolean) {
     const name = r.href ? html`<a href=${r.href} target="_blank" rel="noopener noreferrer">${r.name}</a>` : r.name;
     return html`<tr>
       <td>
         <span class="subscription-name">${name}</span>
         ${r.next === null ? nothing : html`<span class="subscription-next">${da.nextOn(r.next)}</span>`}
       </td>
+      ${showCategory ? html`<td>${r.category}</td>` : nothing}
       <td class="subscription-amount">${r.amount}</td>
       <td class="subscription-amount subscription-nowrap">${r.perYear}</td>
       <td><span class="subscription-status status-${r.status.kind}">${r.status.text}</span></td>
     </tr>`;
   }
 
+  private group(g: SubscriptionGroup, showCategory: boolean) {
+    return html`<tbody>
+      <tr class="subscription-group">
+        <th scope="rowgroup">
+          <span class="subscription-dot" aria-hidden="true" style=${styleMap({ background: g.colour })}></span>
+          <span class="subscription-group-name">${g.name}</span>
+          <span class="subscription-group-count">${g.count}</span>
+        </th>
+        ${showCategory ? html`<td></td>` : nothing}
+        <td></td>
+        <td class="subscription-amount subscription-nowrap">${g.perYear}</td>
+        <td></td>
+      </tr>
+      ${g.rows.map((r) => this.row(r, showCategory))}
+    </tbody>`;
+  }
+
   override render() {
     const c = da.subscriptionColumns;
-    // Four columns do not fit a 420 px card, so the box scrolls sideways there and must be reachable by keyboard.
+    const { groups, showCategory, rows } = this.table;
+    // The columns do not fit a 420 px card, so the box scrolls sideways there and must be reachable by keyboard.
     return html`<div class="subscriptions" tabindex="0" role="group" aria-label=${this.label}>
       <table>
         <thead>
           <tr>
             <th scope="col">${c.name}</th>
+            ${showCategory ? html`<th scope="col">${c.category}</th>` : nothing}
             <th scope="col" class="subscription-amount">${c.amount}</th>
             <th scope="col" class="subscription-amount">${c.perYear}</th>
             <th scope="col">${c.status}</th>
           </tr>
         </thead>
-        <tbody>
-          ${this.rows.map((r) => this.row(r))}
-        </tbody>
+        ${groups === null
+          ? html`<tbody>
+              ${rows.map((r) => this.row(r, showCategory))}
+            </tbody>`
+          : groups.map((g) => this.group(g, showCategory))}
       </table>
     </div>`;
   }
@@ -80,6 +103,23 @@ export const subscriptionsStyles = css`
   .subscriptions thead th {
     color: var(--hs-muted);
     font-weight: normal;
+  }
+  .subscriptions .subscription-group th,
+  .subscriptions .subscription-group td {
+    background: var(--hs-soft);
+    font-weight: bold;
+    vertical-align: middle;
+  }
+  .subscriptions .subscription-group-count {
+    margin-left: 6px;
+    font-weight: normal;
+  }
+  .subscriptions .subscription-dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    margin-right: 6px;
+    border-radius: 50%;
   }
   .subscriptions .subscription-amount {
     text-align: right;

@@ -118,11 +118,17 @@ The page's list. Every screenshot is at 1440×960 with the console free of error
 21. `34-posteringer-ingen-match`: a search nothing matches on the overview: the summary at 0 and `da.noMatch`, with
     the search row still there.
 22. `35-abonnementer`, `36-abonnementer-hovedgruppe`: the key number Faste udgifter om året pressed, so the card shows
-    on Alt forbrug, then on a main group. Every status shows, the order is Ikke set, Steget, Forventes, Betalt, and the
-    names link to the fake. Also at 1728 and 420 px, where the head wraps; compare `docs/mockups/v3/`.
+    on Alt forbrug, then on a main group. Every status shows, the order within each group is Ikke set, Steget,
+    Forventes, Betalt, and the names link to the fake. Also at 1728 and 420 px, where the head wraps; compare
+    `docs/mockups/v3/`.
 23. `37-butik-forslag`: screen 1 on Posteringer with part of a shop's name typed. The suggestions open under the field,
     over the list, biggest sum first, each with its sum; rows show the shop, and a mouse-over shows the bank text. Also
     at 1728 and 420 px, and with touch emulation: a tap chooses, a scroll that starts on the list chooses nothing.
 24. `38-butik-valgt`: a shop chosen from the suggestions. The chip "Butik: …" sits in front of the empty field, which
     keeps the focus; only that shop's rows show, and the count and the sum are its own. The ✕ and Back undo it. The
     same on Alle posteringer.
+25. `39-fuld-skaerm`: screen 1 on Posteringer with "Fuld skærm" pressed. The right card alone, the full width; the
+    button sits on the switch's line, also at 420 px. Escape and the button bring the circle and the key numbers
+    back. Also on Søjler, Forskel and Faste udgifter, at 1440, 1728 and 420 px.
+26. `40-faste-udgifter-grupper`: Faste udgifter at Alt forbrug, grouped by main group with a Kategori column, each
+    group's dot the same colour as its part in the circle; then at a main group, grouped by category.

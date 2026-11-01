@@ -75,6 +75,7 @@ export class SpendingApp extends LitElement {
     today: { state: true },
     load: { state: true },
     accounts: { state: true },
+    fullScreen: { state: true },
   };
 
   static override styles = [
@@ -130,6 +131,9 @@ export class SpendingApp extends LitElement {
         gap: 14px;
         align-items: start;
       }
+      .halves.single {
+        grid-template-columns: minmax(0, 1fr);
+      }
       .half {
         min-height: 320px;
       }
@@ -163,6 +167,8 @@ export class SpendingApp extends LitElement {
   declare load: Load;
   /** The last answer's accounts; null until the first answer. */
   declare accounts: Account[] | null;
+  /** A layout setting of this page load, so it stays out of the view state and the hash. */
+  declare private fullScreen: boolean;
 
   private asked: Period | null = null;
   private request = 0;
@@ -174,6 +180,7 @@ export class SpendingApp extends LitElement {
     this.today = localToday(new Date());
     this.load = { kind: "idle" };
     this.accounts = null;
+    this.fullScreen = false;
   }
 
   private readonly onHash = (): void => {
@@ -181,16 +188,22 @@ export class SpendingApp extends LitElement {
     if (toHash(next) !== toHash(this.state)) this.change(next);
   };
 
+  private readonly onKey = (event: KeyboardEvent): void => {
+    if (event.key === "Escape" && this.fullScreen && this.state.screen === "overview") this.fullScreen = false;
+  };
+
   override connectedCallback(): void {
     super.connectedCallback();
     window.addEventListener("hashchange", this.onHash);
     window.addEventListener("popstate", this.onHash);
+    window.addEventListener("keydown", this.onKey);
     this.change(parseHash(location.hash));
   }
 
   override disconnectedCallback(): void {
     window.removeEventListener("hashchange", this.onHash);
     window.removeEventListener("popstate", this.onHash);
+    window.removeEventListener("keydown", this.onKey);
     this.request += 1;
     this.controller?.abort();
     this.controller = null;
@@ -292,8 +305,9 @@ export class SpendingApp extends LitElement {
   }
 
   private loadingHalves() {
-    return html`<div class="halves">
-      ${[0, 1].map(
+    const single = this.fullScreen;
+    return html`<div class="halves ${single ? "single" : ""}">
+      ${(single ? [0] : [0, 1]).map(
         () => html`<section class="card half" role="region" aria-busy="true" aria-label=${da.loading}></section>`,
       )}
     </div>`;
@@ -309,13 +323,17 @@ export class SpendingApp extends LitElement {
     return html`
       ${ctx.data.mainGroupsFound ? nothing : html`<p class="card line status" role="status">${da.noRuleGroup}</p>`}
       ${overview
-        ? html`<hs-key-numbers
-              .cards=${keyCards(ctx)}
-              .subscriptions=${this.subscriptionsKey(ctx)}
-              @subscriptions-toggle=${() => this.push(toggleSubscriptions(this.state))}
-            ></hs-key-numbers>
+        ? html`${this.fullScreen
+              ? nothing
+              : html`<hs-key-numbers
+                  .cards=${keyCards(ctx)}
+                  .subscriptions=${this.subscriptionsKey(ctx)}
+                  @subscriptions-toggle=${() => this.push(toggleSubscriptions(this.state))}
+                ></hs-key-numbers>`}
             <hs-overview
               .ctx=${ctx}
+              .fullScreen=${this.fullScreen}
+              @full-screen-toggle=${() => (this.fullScreen = !this.fullScreen)}
               @part-click=${(e: CustomEvent<CircleSelection>) => this.push(openPart(this.state, e.detail.key))}
               @unit-click=${(e: CustomEvent<UnitSelection>) => this.push(chooseUnit(this.state, e.detail.fullStart))}
               @card-change=${(e: CustomEvent<Card>) => this.push(setCard(this.state, e.detail))}
@@ -351,7 +369,8 @@ export class SpendingApp extends LitElement {
         return this.ready(viewContext(this.load.data, this.state, this.today));
       default:
         return this.state.screen === "overview"
-          ? html`<hs-key-numbers .cards=${null}></hs-key-numbers>${this.loadingHalves()}`
+          ? html`${this.fullScreen ? nothing : html`<hs-key-numbers .cards=${null}></hs-key-numbers>`}
+              ${this.loadingHalves()}`
           : html`<section class="card half" role="region" aria-busy="true" aria-label=${da.loading}></section>`;
     }
   }

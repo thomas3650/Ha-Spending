@@ -110,6 +110,7 @@ export const da = {
   postings: "Posteringer",
   difference: "Forskel",
   view: "Visning",
+  fullScreen: "Fuld skærm",
   barsHint: (g: Grouping) => `klik på en søjle for kun ${da.groupings[g].definite}`,
   circleHintAll: "Klik på et stykke eller et navn for at gå til hovedgruppen.",
   circleHintGroup: "Klik på en kategori for kun den.",
@@ -182,6 +183,7 @@ export const da = {
   perYear: (value: string) => `${value} om året`,
   subscriptionColumns: {
     name: "Fast udgift",
+    category: "Kategori",
     amount: "Beløb",
     perYear: "Om året",
     status: "Status",

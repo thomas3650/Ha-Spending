@@ -187,6 +187,24 @@ describe("the search field with shop suggestions", () => {
     expect(list(el)).not.toBeNull();
   });
 
+  it("keeps an Escape that closes the list from the page, and passes it on when the list is closed", async () => {
+    const heard: string[] = [];
+    const listener = (e: KeyboardEvent) => heard.push(e.key);
+    document.addEventListener("keydown", listener);
+    try {
+      const { el } = await render();
+      await focus(el);
+      await key(el, "Escape");
+      expect(list(el)).toBeNull();
+      expect(heard).toEqual([]);
+      await key(el, "Escape");
+      expect(heard).toEqual(["Escape"]);
+    }
+    finally {
+      document.removeEventListener("keydown", listener);
+    }
+  });
+
   it("chooses an option on a click and focuses the field again", async () => {
     const { el, fired } = await render();
     await openWithFocusElsewhere(el);

@@ -35,19 +35,50 @@ function text(el: HTMLElement): string {
   return (el.textContent ?? "").replace(/\s+/g, " ").trim();
 }
 
+function fixedCostName(r: HTMLElement): string {
+  return text(within(r).getAllByRole("cell")[0]).replace(/ næste .*$/, "");
+}
+
 function rowNames(region: HTMLElement): string[] {
-  const rows = getAllByRole(region, "row").slice(1);
-  return rows.map((r) => text(within(r).getAllByRole("cell")[0]).replace(/ næste .*$/, ""));
+  return getAllByRole(region, "row")
+    .slice(1)
+    .filter((r) => within(r).queryByRole("rowheader") === null)
+    .map(fixedCostName);
+}
+
+function groupHeaders(region: HTMLElement): HTMLElement[] {
+  return getAllByRole(region, "rowheader");
+}
+
+function groupRow(region: HTMLElement, name: string): HTMLElement {
+  const header = groupHeaders(region).find((h) => text(h).startsWith(name));
+  if (!header) throw new Error(`no group ${name}`);
+  return header.closest("tr") as HTMLElement;
+}
+
+function groupNames(region: HTMLElement): string[] {
+  return groupHeaders(region).map((h) => text(h).replace(/ \d+ faste? udgifte?r?$/, ""));
 }
 
 function row(region: HTMLElement, name: string): HTMLElement {
   return getByRole(region, "row", { name: new RegExp(`^${name}`) });
 }
 
+function categoryColumn(region: HTMLElement): number {
+  return getAllByRole(region, "columnheader").findIndex((h) => text(h) === da.subscriptionColumns.category);
+}
+
+/** The row's cells without the Kategori column, which has its own helper. */
 function cells(region: HTMLElement, name: string): string[] {
+  const column = categoryColumn(region);
   return within(row(region, name))
     .getAllByRole("cell")
+    .filter((_, i) => i !== column)
     .map(text);
+}
+
+function categoryOf(region: HTMLElement, name: string): string {
+  return text(within(row(region, name)).getAllByRole("cell")[categoryColumn(region)]);
 }
 
 describe("the subscriptions key number", () => {
@@ -88,16 +119,17 @@ describe("the subscriptions key number", () => {
 });
 
 describe("the subscriptions card", () => {
-  it("lists every subscription in the order of its status", async () => {
+  it("lists every subscription in the order of its status within its group", async () => {
     const { root } = await mountWith("card=subscriptions");
     const region = card(root, "Faste udgifter");
     expect(getAllByRole(region, "columnheader").map((h) => h.textContent?.trim())).toEqual([
       "Fast udgift",
+      "Kategori",
       "Beløb",
       "Om året",
       "Status",
     ]);
-    expect(rowNames(region)).toEqual(["Indboforsikring", "Streaming", "Husleje", "Avis", "Bilforsikring"]);
+    expect(rowNames(region)).toEqual(["Indboforsikring", "Husleje", "Bilforsikring", "Streaming", "Avis"]);
     expect(cells(region, "Husleje")).toEqual(["Husleje næste 1. nov", "8.000 kr. pr. måned", "96.000 kr.", "Forventes 1. nov"]);
     expect(cells(region, "Streaming").slice(1)).toEqual(["114 kr. pr. måned", "1.368 kr.", "Steget · 129 → 149 kr."]);
     expect(cells(region, "Indboforsikring").slice(1)).toEqual([
@@ -122,6 +154,7 @@ describe("the subscriptions card", () => {
     const { root } = await mountWith("group=Bolig&card=subscriptions");
     const region = card(root, "Faste udgifter i Bolig");
     expect(rowNames(region)).toEqual(["Indboforsikring", "Husleje"]);
+    expect(groupNames(region)).toEqual(["Husleje"]);
     getByText(region, "99.600 kr. om året");
     getByRole(root, "button", { name: `${KEY_LABEL} 99.600 kr. 2 faste udgifter` });
   });
@@ -137,7 +170,9 @@ describe("the subscriptions card", () => {
     };
     const all = [...SUBSCRIPTIONS, unknown];
     const { root } = await mountWith(`group=&card=subscriptions`, all);
-    expect(rowNames(card(root, `Faste udgifter i ${da.noMainGroup}`))).toEqual(["Fitness", "Avis"]);
+    const region = card(root, `Faste udgifter i ${da.noMainGroup}`);
+    expect(rowNames(region)).toEqual(["Fitness", "Avis"]);
+    expect(groupNames(region)).toEqual([da.noCategory]);
     unmount();
 
     const again = await mountWith("", all);
@@ -160,13 +195,7 @@ describe("the subscriptions card", () => {
 
   it("does not follow the search", async () => {
     const { root } = await mountWith("q=Netto&card=subscriptions");
-    expect(rowNames(card(root, "Faste udgifter"))).toEqual([
-      "Indboforsikring",
-      "Streaming",
-      "Husleje",
-      "Avis",
-      "Bilforsikring",
-    ]);
+    expect(rowNames(card(root, "Faste udgifter"))).toHaveLength(5);
     getByRole(root, "button", { name: `${KEY_LABEL} 106.968 kr. 5 faste udgifter` });
     expect(location.hash).toBe("#q=Netto&card=subscriptions");
   });
@@ -175,7 +204,7 @@ describe("the subscriptions card", () => {
     const { app, root } = await mountWith("unit=2026-07-01&card=subscriptions");
     const region = card(root, "Faste udgifter");
     expect(queryByRole(root, "button", { name: da.remove("Juli 2026") })).toBeNull();
-    expect(rowNames(region)).toEqual(["Indboforsikring", "Streaming", "Husleje", "Avis", "Bilforsikring"]);
+    expect(rowNames(region)).toHaveLength(5);
     getByRole(root, "button", { name: `${KEY_LABEL} 106.968 kr. 5 faste udgifter` });
     getByRole(viewSwitch(root), "button", { name: da.difference });
 
@@ -216,6 +245,107 @@ describe("the subscriptions card", () => {
     getByText(region, "Ingen faste udgifter i Bil");
     expect(queryByRole(region, "table")).toBeNull();
     getByRole(root, "button", { name: `${KEY_LABEL} 0 kr. 0 faste udgifter` });
+  });
+});
+
+describe("the subscriptions card grouped", () => {
+  const FITNESS: Subscription = {
+    ...SUBSCRIPTIONS[0],
+    id: "b9",
+    name: "Fitness",
+    amountMin: 30000,
+    amountMax: 30000,
+    lastPayment: { date: "2026-10-01", amount: 30000, category: "Ukendt", account: "1" },
+  };
+
+  function tbodyOf(region: HTMLElement, group: string): HTMLElement {
+    return groupRow(region, group).closest("tbody") as HTMLElement;
+  }
+
+  it("groups by main group at Alt forbrug, the biggest sum per year first, Uden hovedgruppe last", async () => {
+    const { root } = await mountWith("card=subscriptions");
+    const region = card(root, "Faste udgifter");
+    expect(groupHeaders(region).map(text)).toEqual([
+      "Bolig 2 faste udgifter",
+      "Bil 1 fast udgift",
+      "Mad 1 fast udgift",
+      `${da.noMainGroup} 1 fast udgift`,
+    ]);
+    expect(within(groupRow(region, "Bolig")).getAllByRole("cell").map(text)).toEqual(["", "", "99.600 kr.", ""]);
+    expect(within(groupRow(region, "Bil")).getAllByRole("cell").map(text)).toEqual(["", "", "4.800 kr.", ""]);
+    expect(getAllByRole(region, "columnheader").map(text)).toContain("Kategori");
+    expect(tbodyOf(region, "Bolig").contains(row(region, "Husleje"))).toBe(true);
+    expect(tbodyOf(region, "Bil").contains(row(region, "Husleje"))).toBe(false);
+    expect(tbodyOf(region, "Bil").contains(row(region, "Bilforsikring"))).toBe(true);
+    expect(categoryOf(region, "Husleje")).toBe("Husleje");
+    expect(categoryOf(region, "Streaming")).toBe("Café");
+  });
+
+  it("puts one with no payment and one with an unknown category last, reading Uden kategori", async () => {
+    const { root } = await mountWith("card=subscriptions", [...SUBSCRIPTIONS, FITNESS]);
+    const region = card(root, "Faste udgifter");
+    expect(groupNames(region).at(-1)).toBe(da.noMainGroup);
+    const last = tbodyOf(region, da.noMainGroup);
+    expect(
+      within(last)
+        .getAllByRole("row")
+        .filter((r) => within(r).queryByRole("rowheader") === null)
+        .map(fixedCostName),
+    ).toEqual(["Fitness", "Avis"]);
+    expect(categoryOf(region, "Avis")).toBe(da.noCategory);
+    expect(categoryOf(region, "Fitness")).toBe(da.noCategory);
+  });
+
+  it("orders groups with the same sum per year by name", async () => {
+    const make = (id: string, name: string, category: string): Subscription => ({
+      ...SUBSCRIPTIONS[0],
+      id,
+      name,
+      amountMin: 10000,
+      amountMax: 10000,
+      lastPayment: { date: "2026-10-01", amount: 10000, category, account: "1" },
+    });
+    const all = [make("c1", "Ens", "Husleje"), make("c2", "To", "Brændstof"), make("c3", "Tre", "Café")];
+    const { root } = await mountWith("card=subscriptions", all);
+    expect(groupNames(card(root, "Faste udgifter"))).toEqual(["Bil", "Bolig", "Mad"]);
+  });
+
+  it("shows the groups in a period with no postings", async () => {
+    const { root } = await mountWith("period=custom&from=2025-01-01&to=2025-01-31&card=subscriptions");
+    const region = card(root, "Faste udgifter");
+    expect(groupNames(region)).toEqual(["Bolig", "Bil", "Mad", da.noMainGroup]);
+    expect(rowNames(region)).toHaveLength(5);
+  });
+
+  it("groups by category at a main group, with no Kategori column", async () => {
+    const { root } = await mountWith("group=Bolig&card=subscriptions");
+    const region = card(root, "Faste udgifter i Bolig");
+    expect(groupHeaders(region).map(text)).toEqual(["Husleje 2 faste udgifter"]);
+    expect(getAllByRole(region, "columnheader").map(text)).not.toContain("Kategori");
+    expect(within(groupRow(region, "Husleje")).getAllByRole("cell").map(text)).toEqual(["", "99.600 kr.", ""]);
+  });
+
+  it("puts the no-payment and unknown-category ones of Uden hovedgruppe under one Uden kategori, last", async () => {
+    const gift: Subscription = {
+      ...SUBSCRIPTIONS[0],
+      id: "b8",
+      name: "Gavekort",
+      lastPayment: { date: "2026-10-01", amount: 800000, category: "Gaver", account: "1" },
+    };
+    const { root } = await mountWith("group=&card=subscriptions", [...SUBSCRIPTIONS, FITNESS, gift]);
+    const region = card(root, `Faste udgifter i ${da.noMainGroup}`);
+    expect(groupNames(region)).toEqual(["Gaver", da.noCategory]);
+    const none = tbodyOf(region, da.noCategory);
+    within(none).getByText("Fitness");
+    within(none).getByText("Avis");
+  });
+
+  it("has no group rows at a category", async () => {
+    const { root } = await mountWith("group=Mad&category=Café&card=subscriptions");
+    const region = card(root, "Faste udgifter i Café");
+    expect(queryByRole(region, "rowheader")).toBeNull();
+    expect(getAllByRole(region, "columnheader").map(text)).not.toContain("Kategori");
+    expect(rowNames(region)).toEqual(["Streaming"]);
   });
 });
 

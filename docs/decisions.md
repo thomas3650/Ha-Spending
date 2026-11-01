@@ -373,3 +373,10 @@ to set their status to `superseded by D<n>`, or to name a part a later decision 
 - **Why:** The bills include rent, loans, insurance and utilities, not only subscriptions, and a main group can itself
   be named "Abonnementer".
 - **Source:** Thomas, 2026-11-01
+
+### D37: Full screen stays out of the hash
+- **Date:** 2026-11-01 · **Status:** active
+- **Decision:** The right card's full screen is a layout setting of the page load, held by the app and not in the hash.
+  It adds no history entry; the button or Escape on the overview turns it off, and a reload starts with it off.
+- **Why:** A shared link should show the normal page, and a layout setting is not a choice of what to look at.
+- **Source:** Thomas, 2026-11-01, [the card full-screen spec §1](superpowers/specs/2026-11-01-card-full-screen.md)
