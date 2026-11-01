@@ -63,6 +63,23 @@ table.heat td.sum{text-align:right;padding-right:6px}
 .mini .t{display:flex;justify-content:space-between;align-items:baseline}
 .mini .t span:last-child{font-size:12px}
 .mini .s{color:var(--muted);font-size:12px;margin-top:2px}
+.nav{display:inline-flex;align-items:center;border:1px solid #c9c9c9;border-radius:8px;overflow:hidden}
+.nav span{padding:8px 14px}
+.nav span.arr{color:var(--muted);background:#fafafa}
+.nav span.mid{border-left:1px solid #c9c9c9;border-right:1px solid #c9c9c9;min-width:150px;text-align:center;font-weight:500}
+.big{position:relative;display:flex;height:22px;border-radius:6px;overflow:visible;background:var(--soft);margin:14px 0 8px}
+.big span{height:100%}
+.big .today{position:absolute;top:-6px;bottom:-6px;width:2px;background:#1f1f1f}
+.nums{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px}
+.nums .v{font-size:22px;font-variant-numeric:tabular-nums;margin-top:2px}
+.nums .s{color:var(--muted);font-size:12px}
+table.bt{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
+table.bt th{text-align:left;color:var(--muted);font-weight:400;font-size:12px;padding:6px 8px;border-bottom:1px solid var(--line)}
+table.bt td{padding:10px 8px;border-bottom:1px solid var(--soft);vertical-align:middle}
+table.bt .r{text-align:right}
+table.bt td small{display:block;color:var(--muted);font-size:12px}
+table.bt td.r{white-space:nowrap}
+.auto{display:inline-block;font-size:11px;color:#3b5b7a;background:#eef3f8;border-radius:8px;padding:1px 7px;margin-left:6px;vertical-align:middle}
 svg text{fill:var(--muted);font-size:11px}
 </style>
 </head>
@@ -93,6 +110,12 @@ const stateText = b => b[2] > b[1] ? `${n(b[2] - b[1])} kr. over` : proj(b) > b[
 const colour = s => ({ok: 'var(--ok)', near: 'var(--near)', over: 'var(--over)'})[s];
 function noise(i, s){ const x = Math.sin(i*12.9898 + s*78.233)*43758.5453; return x - Math.floor(x); }
 
+function spark2(){
+  const vals = [0.86, 0.92, 0.95, 1.04, 0.88, 1.08, 1.12, 0.9, 0.97, 0.66], W = 280, H = 110, bw = W / vals.length - 6, max = 1.2;
+  let g = `<line x1="0" x2="${W}" y1="${H - H/max}" y2="${H - H/max}" stroke="#1f1f1f" stroke-dasharray="3 3"/>`;
+  vals.forEach((v, i) => { g += `<rect x="${i*(bw+6)}" y="${H - H*v/max}" width="${bw}" height="${H*v/max}" rx="2" fill="${i === 9 ? '#b3e1fb' : v > 1 ? '#e57373' : '#03a9f4'}"/>`; });
+  return `<svg viewBox="0 0 ${W} ${H}" width="100%">${g}</svg><div class="legend" style="justify-content:space-between"><span>jan</span><span>okt</span></div>`;
+}
 function header(period){
   return `<div class="card"><div class="bar-row">
     <div style="display:flex;gap:16px;align-items:center"><div class="crumbs">Budget</div><div class="seg"><span>Forbrug</span><span class="on">Budget</span></div></div>
@@ -139,6 +162,51 @@ if (V === 'a') {
   html += `<div class="card"><h2>Brugt af budgettet pr. måned<span class="legend"><span><span class="dot" style="background:#e3f4ea"></span>Under 90 %</span><span><span class="dot" style="background:#fff3e0"></span>90 – 100 %</span><span><span class="dot" style="background:#fdecea"></span>Over</span></span></h2>
     <table class="heat"><tr><th class="l">Budget</th>${months.map((m, i) => `<th>${m}${i === 9 ? ' (indtil nu)' : ''}</th>`).join('')}<th style="text-align:right">I år</th></tr>${rows}</table>
     <div class="foot">Klik på en celle for budgettets posteringer i den måned; klik på et budget for at se det måned for måned.</div></div>`;
+} else if (V === 'd') {
+  // D: Firefly III's own budget page made calmer: the available amount for the month at the top, each budget as a
+  // row with Budgeteret, a bar, Brugt and Tilbage, both per day; the auto-budget shown on the row.
+  // [budget, set amount, carried from last month, spent, auto-budget]
+  const rows = [
+    ['Café og takeaway', 1200, -90, 1340, 'Retter for overforbrug'], ['Fritid', 2500, 320, 1980, 'Overføres'],
+    ['Børn', 1500, 0, 1120, 'Fast beløb'], ['Dagligvarer', 6000, 0, 4310, 'Fast beløb'], ['Husholdning', 600, 0, 410, 'Fast beløb'],
+    ['Personligt', 700, 0, 380, 'Fast beløb'], ['Benzin og opladning', 1500, 0, 690, 'Fast beløb'], ['Tøj', 1000, 150, 240, 'Overføres'],
+    ['Gaver', 800, 400, 0, 'Overføres'],
+  ];
+  const avail = 18000, budgeted = rows.reduce((a, r) => a + r[1] + r[2], 0), used = rows.reduce((a, r) => a + r[3], 0);
+  const leftIn = budgeted - used, unassigned = avail - budgeted, daysLeft = DAYS - DAY;
+  html += `<div class="card"><div class="bar-row">
+    <div style="display:flex;gap:16px;align-items:center"><div class="crumbs">Budget</div><div class="seg"><span>Forbrug</span><span class="on">Budget</span></div></div>
+    <div class="filters" style="align-items:center"><div class="nav"><span class="arr">‹ sep</span><span class="mid">Oktober 2026</span><span class="arr">nov ›</span></div><div class="sel"><small>Konti</small><span>Alle konti (2)</span></div></div>
+  </div></div>`;
+  const w = v => 100 * v / avail;
+  html += `<div class="card"><h2>Til rådighed i oktober<small>beløbet sat i Firefly III · i dag 20. okt</small></h2>
+    <div class="nums">
+      <div><div class="label">Til rådighed</div><div class="v">${kr(avail)}</div><div class="s">til det variable forbrug</div></div>
+      <div><div class="label">Fordelt på budgetter</div><div class="v">${kr(budgeted)}</div><div class="s">${budgets.length} budgetter, med overførsler</div></div>
+      <div><div class="label">Brugt</div><div class="v">${kr(used)}</div><div class="s">${pct(used, budgeted)} af det fordelte · ${pct(DAY, DAYS)} af måneden</div></div>
+      <div><div class="label">Tilbage i budgetterne</div><div class="v">${kr(leftIn)}</div><div class="s">${kr(leftIn / daysLeft)} pr. dag i ${daysLeft} dage</div></div>
+      <div><div class="label">Ikke fordelt</div><div class="v">${kr(unassigned)}</div><div class="s">kan gives til et budget i Firefly III</div></div>
+    </div>
+    <div class="big"><span style="width:${w(used)}%;background:#03a9f4;border-radius:6px 0 0 6px"></span><span style="width:${w(leftIn)}%;background:#b3e1fb"></span><span style="width:${w(unassigned)}%;background:repeating-linear-gradient(45deg,#e0e0e0,#e0e0e0 4px,#f2f2f2 4px,#f2f2f2 8px)"></span><span class="today" style="left:${100*pace}%"></span></div>
+    <div class="legend"><span><span class="dot" style="background:#03a9f4"></span>Brugt</span><span><span class="dot" style="background:#b3e1fb"></span>Tilbage i budgetterne</span><span><span class="dot" style="background:#e0e0e0"></span>Ikke fordelt</span><span><span style="display:inline-block;width:2px;height:12px;background:#1f1f1f;margin-right:6px;vertical-align:middle"></span>I dag</span><span style="margin-left:auto">Faste udgifter, ${kr(16925)} pr. måned, er ikke med; de står under Abonnementer.</span></div>
+  </div>`;
+  const order = rows.slice().sort((p, q) => q[3]/(q[1]+q[2]) - p[3]/(p[1]+p[2]));
+  const body = order.map(r => { const lim = r[1] + r[2], left = lim - r[3], b = [r[0], lim, r[3]], st = state(b), wd = Math.min(100, 100*r[3]/lim);
+    const carry = r[2] ? `<small>${n(r[1])} ${r[2] > 0 ? '+ ' + n(r[2]) + ' fra sep' : '− ' + n(-r[2]) + ' fra sep'}</small>` : `<small>&nbsp;</small>`;
+    return `<tr><td>${r[0]}<span class="auto">${r[4]}</span><small>${st === 'ok' ? 'holder' : st === 'near' ? 'på vej over · forventet ' + n(proj(b)) + ' kr.' : 'over budget'}</small></td>
+      <td class="r">${kr(lim)}${carry}</td>
+      <td style="width:34%"><span class="track" style="display:block"><span class="fill" style="width:${wd}%;background:${colour(st)}"></span><span class="today" style="left:${100*pace}%"></span></span></td>
+      <td class="r">${kr(r[3])}<small>${n(r[3] / DAY)} kr. pr. dag</small></td>
+      <td class="r" style="${left < 0 ? 'color:var(--over)' : ''}">${left < 0 ? '−' + kr(-left) : kr(left)}<small>${left > 0 ? n(left / daysLeft) + ' kr. pr. dag' : 'intet tilbage'}</small></td></tr>`; }).join('');
+  html += `<div style="display:grid;grid-template-columns:minmax(0,3fr) minmax(0,1fr);gap:14px;align-items:start">
+    <div class="card"><h2>Budgetter<small>dem, der har brugt mest af deres beløb, først</small></h2>
+      <table class="bt"><tr><th>Budget</th><th class="r">Budgetteret</th><th></th><th class="r">Brugt</th><th class="r">Tilbage</th></tr>${body}</table>
+      <div class="foot">Stregen i søjlerne er i dag. "Fast beløb", "Overføres" og "Retter for overforbrug" er budgettets auto-budget i Firefly III. Klik på et budget for dets posteringer, fordelt på kategori og butik.</div></div>
+    <div style="display:flex;flex-direction:column;gap:14px">
+      <div class="card"><h2>Uden budget</h2><div style="font-size:22px">${kr(3150)}</div><div class="foot" style="margin-top:2px">23 posteringer i oktober uden et budget. Klik for at se dem.</div></div>
+      <div class="card"><h2>Budgetter og forbrug<small>i år</small></h2>${spark2()}<div class="foot">Brugt mod budgetteret pr. måned; rød, hvor måneden gik over.</div></div>
+    </div>
+  </div>`;
 } else {
   // C: will the month hold? Spending so far, run on to the month's end, against the budget.
   html += header('Denne måned · 1. – 31. okt 2026');

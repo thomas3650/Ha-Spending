@@ -48,11 +48,12 @@ Three ideas for showing Firefly III's subscriptions; A reached as A2 is chosen. 
 
 ## Budget
 
-Three ideas for a page of its own with Firefly III's budgets, none chosen yet. Under [`v4/`](v4/budget.html); open it
-with `?v=a`, `b` or `c`. "Today" in them is 20 October 2026.
+Four ideas for a page of its own with Firefly III's budgets, none chosen yet. Under [`v4/`](v4/budget.html); open it
+with `?v=a`, `b`, `c` or `d`. "Today" in them is 20 October 2026.
 
 | Variant | Shows |
 | --- | --- |
 | [A](v4/budget-a-maaned.png) | This month: a bar per budget against its amount, a line for how far the month has come, what is left, and what may be spent per day |
 | [B](v4/budget-b-aar.png) | The year: a cell per budget per month, coloured by how much of the budget was used |
 | [C](v4/budget-c-prognose.png) | Will the month hold: spending day by day against the budget, run on to the month's end, and a small chart per budget |
+| [D](v4/budget-d-firefly.png) | After Firefly III's own budget page: the month's available amount split in spent, left and not assigned; a row per budget with its amount, carry-over and auto-budget, a bar, spent and left per day; Uden budget beside it |
