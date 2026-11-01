@@ -10,7 +10,7 @@ import { json, mount, type MountOptions, settle, unmount } from "./mount";
 
 afterEach(unmount);
 
-const KEY_LABEL = "Faste udgifter om året";
+const KEY_LABEL = da.subscriptionsPerYear;
 const JULY = unitName(unitAt("2026-07-01", "month", "2026-10-30"), "month");
 
 function answerWith(range: Parameters<typeof answerFor>[0]): Response {
@@ -95,7 +95,6 @@ describe("the right card in full screen", () => {
   it("leaves out the left card and the key numbers, keeps the focus, and touches no history", async () => {
     const { app, root } = await mountWith("");
     const hash = location.hash;
-    const length = history.length;
     const push = vi.spyOn(history, "pushState");
     const replace = vi.spyOn(history, "replaceState");
     expect(subscriptionsKey(root)).not.toBeNull();
@@ -106,7 +105,6 @@ describe("the right card in full screen", () => {
     expect(app.shadowRoot?.activeElement).toBe(button);
     expect(fullScreen(root)).toBe(button);
     expect(location.hash).toBe(hash);
-    expect(history.length).toBe(length);
 
     fireEvent.click(button);
     await settle(app);

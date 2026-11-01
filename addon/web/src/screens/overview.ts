@@ -261,8 +261,10 @@ export const overviewStyles = css`
     font-variant-numeric: tabular-nums;
   }
   .card-tools {
-    flex: none;
     display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    min-width: 0;
     gap: 8px;
   }
   .card-tools .full-screen {
@@ -313,9 +315,18 @@ export const overviewStyles = css`
     font-weight: 600;
     background: var(--hs-accent);
   }
+  .card-switch button {
+    white-space: nowrap;
+  }
   .card-switch button:focus-visible {
     outline: 2px solid var(--hs-accent-text);
     outline-offset: -2px;
+  }
+  @media (max-width: 480px) {
+    .card-switch button {
+      padding: 6px 8px;
+      font-size: 14px;
+    }
   }
   .half-foot {
     margin: 12px 0 0;
