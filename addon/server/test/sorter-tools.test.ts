@@ -399,18 +399,18 @@ describe("set_category", () => {
     ]);
     expect(isError).toBe(false);
     expect(value.results).toEqual([
-      { posting_id: rent, ok: false, reason: "not-in-inbox" },
+      { posting_id: rent, ok: false, reason: "not-given-out" },
       { posting_id: kiosk, ok: true },
     ]);
     const after = await s.splits();
     expect(after.get("Husleje marts")).toMatchObject({ category_name: "Husleje", tags: ["Bolig"] });
     expect(after.get("Kiosk")).toMatchObject({ category_name: "Dagligvarer" });
-    expect(s.log).toHaveBeenCalledWith("sorter: set_category: 1 written, refused 1 not-in-inbox");
+    expect(s.log).toHaveBeenCalledWith("sorter: set_category: 1 written, refused 1 not-given-out");
   });
 
   it.each([
-    ["a posting already sorted", "Husleje marts", "Dagligvarer", "not-in-inbox"],
-    ["a transfer", "Overførsel", "Dagligvarer", "transfer"],
+    ["a posting already sorted", "Husleje marts", "Dagligvarer", "not-given-out"],
+    ["a transfer", "Overførsel", "Dagligvarer", "not-given-out"],
     ["a category in no main group", "Kiosk", "Gammel", "no-main-group"],
     ["a category in an excluded main group", "Kiosk", "Indskud", "excluded-main-group"],
     ["the inbox category", "Kiosk", "Til sortering", "inbox-category"],
@@ -425,21 +425,27 @@ describe("set_category", () => {
     expect(await s.splits()).toEqual(before);
   });
 
-  it("refuses a posting that is neither a withdrawal nor a deposit", async () => {
+  it.each([
+    ["neither a withdrawal nor a deposit", "opening balance", "not-withdrawal-or-deposit"],
+    ["a transfer", "transfer", "transfer"],
+  ])("refuses a posting that became %s since start gave it out", async (_, type, reason) => {
+    let changed = false;
     const s = setup({
       fetch: (fetch) => async (input, init) => {
         const res = await fetch(input, init);
         const url = new URL(input instanceof Request ? input.url : input);
-        if (!url.pathname.includes("/search/") && !/\/transactions\/[0-9]+$/.test(url.pathname)) return res;
+        if (!changed || (!url.pathname.includes("/search/") && !/\/transactions\/[0-9]+$/.test(url.pathname))) return res;
         // Firefly III also has opening balances and reconciliations, which the fake does not make.
-        const text = (await res.text()).replaceAll('"type":"withdrawal"', '"type":"opening balance"');
+        const text = (await res.text()).replaceAll('"type":"withdrawal"', `"type":"${type}"`);
         return new Response(text, { status: res.status, headers: res.headers });
       },
     });
     const kiosk = await s.postingId("Kiosk");
     const food = (await s.categoryIds()).get("Dagligvarer")!;
-    const { value } = await s.write([{ posting_id: kiosk, category_id: food }]);
-    expect(value.results).toEqual([{ posting_id: kiosk, ok: false, reason: "not-withdrawal-or-deposit" }]);
+    await s.call("start", { categories: await s.tree() });
+    changed = true;
+    const { value } = await s.call("set_category", { assignments: [{ posting_id: kiosk, category_id: food, amount: "45.00" }] });
+    expect(value.results).toEqual([{ posting_id: kiosk, ok: false, reason }]);
     expect(s.puts()).toEqual([]);
   });
 
@@ -452,7 +458,7 @@ describe("set_category", () => {
       { posting_id: kiosk, category_id: 99999 },
     ]);
     expect(value.results).toEqual([
-      { posting_id: 99999, ok: false, reason: "unknown-posting" },
+      { posting_id: 99999, ok: false, reason: "not-given-out" },
       { posting_id: kiosk, ok: false, reason: "unknown-category" },
     ]);
     expect(s.puts()).toEqual([]);
@@ -495,6 +501,50 @@ describe("set_category", () => {
     const food = (await s.categoryIds()).get("Dagligvarer")!;
     const { value } = await s.call("set_category", { assignments: [{ posting_id: kiosk, category_id: food, amount: "45.00" }] });
     expect(value.results).toEqual([{ posting_id: kiosk, ok: false, reason: "not-given-out" }]);
+    expect(s.puts()).toEqual([]);
+  });
+
+  it("refuses a posting start has not given out before it reads the posting", async () => {
+    const s = setup();
+    const kiosk = await s.postingId("Kiosk");
+    const food = (await s.categoryIds()).get("Dagligvarer")!;
+    const before = s.fake.requests.length;
+    const { value } = await s.call("set_category", { assignments: [{ posting_id: kiosk, category_id: food, amount: "45.00" }] });
+    expect(value.results).toEqual([{ posting_id: kiosk, ok: false, reason: "not-given-out" }]);
+    expect(s.fake.requests.slice(before).filter((r) => r.path.includes("transactions"))).toEqual([]);
+  });
+
+  it("refuses a posting sent again after it was written, without reading it again", async () => {
+    const s = setup();
+    const kiosk = await s.postingId("Kiosk");
+    const food = (await s.categoryIds()).get("Dagligvarer")!;
+    expect((await s.write([{ posting_id: kiosk, category_id: food }])).value.results)
+      .toEqual([{ posting_id: kiosk, ok: true }]);
+    const before = s.fake.requests.length;
+    const { value } = await s.call("set_category", { assignments: [{ posting_id: kiosk, category_id: food, amount: "45.00" }] });
+    expect(value.results).toEqual([{ posting_id: kiosk, ok: false, reason: "not-given-out" }]);
+    expect(s.fake.requests.slice(before).filter((r) => r.path.includes("transactions"))).toEqual([]);
+    expect(s.puts()).toHaveLength(1);
+  });
+
+  it("refuses a posting whose type changed since start, though its amount is the same", async () => {
+    let flipped = false;
+    const s = setup({
+      fetch: (fetch) => async (input, init) => {
+        const res = await fetch(input, init);
+        const url = new URL(input instanceof Request ? input.url : input);
+        if (!flipped || (!url.pathname.includes("/search/") && !/\/transactions\/[0-9]+$/.test(url.pathname))) return res;
+        // A withdrawal turned into a deposit by hand keeps its amount; only the direction changes.
+        const text = (await res.text()).replaceAll('"type":"withdrawal"', '"type":"deposit"');
+        return new Response(text, { status: res.status, headers: res.headers });
+      },
+    });
+    const kiosk = await s.postingId("Kiosk");
+    const food = (await s.categoryIds()).get("Dagligvarer")!;
+    await s.call("start", { categories: await s.tree() });
+    flipped = true;
+    const { value } = await s.call("set_category", { assignments: [{ posting_id: kiosk, category_id: food, amount: "45.00" }] });
+    expect(value.results).toEqual([{ posting_id: kiosk, ok: false, reason: "amount-mismatch" }]);
     expect(s.puts()).toEqual([]);
   });
 
@@ -936,7 +986,7 @@ describe("set_category with a shop", () => {
     ]);
     expect(answer.value.results).toEqual([
       { posting_id: postings[0], ok: false, reason: "no-main-group" },
-      { posting_id: postings[1], ok: false, reason: "not-in-inbox" },
+      { posting_id: postings[1], ok: false, reason: "not-given-out" },
     ]);
     const kort2 = await s.postingId("Kort 2");
     const wrongAmount = await s.call("set_category", { assignments: [

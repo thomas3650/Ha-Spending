@@ -126,9 +126,10 @@ An assignment refused for its category or its posting writes nothing, the shop i
   `{"posting_id": 346, "ok": true, "shop_refused": "has-shop"}`, the category written all the same; written with no
   `shop` given, `{"posting_id": 347, "ok": true}`.
 - **Refused, with the reason:** `unknown-category`, `inbox-category`, `no-main-group`, `ambiguous-main-group` (the
-  rules put it in two main groups), `excluded-main-group`, `unknown-posting`, `transfer`,
-  `not-withdrawal-or-deposit`, `not-in-inbox`, `not-given-out` (not in a `start` answer of the last 30 minutes),
-  `amount-mismatch` (the amount is not the one `start` gave).
+  rules put it in two main groups), `excluded-main-group`, `not-given-out` (not in a `start` answer of the last 30
+  minutes, or already written since; checked before the posting is read), `unknown-posting`, `transfer`,
+  `not-withdrawal-or-deposit`, `not-in-inbox`, `amount-mismatch` (the amount, or whether it is a withdrawal or a
+  deposit, is not the one `start` gave).
 - **`shop_refused`**, checked in this order after the category and the posting pass; the first that fails is the reason:
   `not-withdrawal`; `has-shop` (the destination is not the expense account named `(no name)`, the Data Importer's name
   for a line with no counterparty, so a shop set by hand is never overwritten; a withdrawal made through Firefly III's
