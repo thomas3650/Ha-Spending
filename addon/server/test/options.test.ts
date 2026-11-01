@@ -40,6 +40,7 @@ describe("readOptions", () => {
       excluded_main_groups: ["A", "B"],
       sorter_key: "k".repeat(32),
       sorter_inbox_category: "Indbakke",
+      moved_tag: "flyttet",
     });
     expect(readOptions(path)).toEqual({
       fireflyUrl: "http://firefly.test:8080",
@@ -49,6 +50,7 @@ describe("readOptions", () => {
       excludedMainGroups: ["A", "B"],
       sorterKey: "k".repeat(32),
       sorterInboxCategory: "Indbakke",
+      movedTag: "flyttet",
     });
   });
 
@@ -62,6 +64,7 @@ describe("readOptions", () => {
       excludedMainGroups: ["Penge ind og ud"],
       sorterKey: null,
       sorterInboxCategory: "Til sortering",
+      movedTag: "moved-by-assistant",
     });
   });
 
@@ -98,6 +101,12 @@ describe("readOptions", () => {
   it("reads an empty rule group as the default", () => {
     const path = file({ firefly_url: "http://firefly.test", firefly_token: "t0ken-made-up", main_group_rule_group: "" });
     expect(readOptions(path).mainGroupRuleGroup).toBe("Hovedgrupper");
+  });
+
+  it("reads an empty moved tag as the default, and refuses one that is not text", () => {
+    const base = { firefly_url: "http://firefly.test", firefly_token: "t0ken-made-up" };
+    expect(readOptions(file({ ...base, moved_tag: "" })).movedTag).toBe("moved-by-assistant");
+    expect(refusal(file({ ...base, moved_tag: 7 })).message).toContain("moved_tag");
   });
 
   it("reads an empty sorter key as none", () => {

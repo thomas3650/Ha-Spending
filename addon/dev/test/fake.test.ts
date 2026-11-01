@@ -262,6 +262,23 @@ describe("the fake Firefly III", () => {
     expect(after.map((s) => s.description)).toEqual(["Bilka gave"]);
   });
 
+  it("puts a split's notes as text, and refuses notes that are not", async () => {
+    const { json, get } = client();
+    const group = (await allGroups()).find((g) => g.attributes.transactions.length === 1)!;
+    const [split] = group.attributes.transactions;
+    const put = (notes: unknown) =>
+      get(`transactions/${group.id}`, {
+        method: "PUT",
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ transactions: [{ transaction_journal_id: split.transaction_journal_id, notes }] }),
+      });
+
+    expect((await put(12)).status).toBe(422);
+    expect((await put("Første linje\nAnden linje")).status).toBe(200);
+    const after = (await json<{ data: Group }>(`transactions/${group.id}`)).data.attributes.transactions[0];
+    expect(after).toEqual({ ...split, notes: "Første linje\nAnden linje" });
+  });
+
   describe("accounts of every type", () => {
     interface AccountAttributes {
       name: string;

@@ -15,7 +15,7 @@ export interface SorterSettings {
 
 /** Small enough that a full answer stays well under the size Claude Code passes on as one tool result. */
 export const INBOX_LIMIT = 50;
-/** A description or notes longer than this is cut, for the same reason. */
+/** A description, notes or a shop longer than this is cut, for the same reason; `get_posting` cuts notes later. */
 export const TEXT_LIMIT = 150;
 export const MAX_ASSIGNMENTS = 100;
 /** The code points of `start`'s shop names together, so they too keep the answer within one tool result. */
@@ -80,24 +80,24 @@ export interface AccountInfo {
   active: boolean;
 }
 
-const isRecord = (value: unknown): value is Record<string, unknown> =>
+export const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null && !Array.isArray(value);
 
-const isId = (value: unknown): value is number => Number.isSafeInteger(value) && (value as number) > 0;
+export const isId = (value: unknown): value is number => Number.isSafeInteger(value) && (value as number) > 0;
 
 /** A split's `destination_type` for an expense account, in Firefly III's long form. */
 const EXPENSE = "Expense account";
 
-function kroner(amount: string): string {
+export function kroner(amount: string): string {
   const ore = Math.abs(toOre(amount));
   return `${Math.trunc(ore / 100)}.${String(ore % 100).padStart(2, "0")}`;
 }
 
-function timeout(settings: SorterSettings): AbortSignal {
+export function timeout(settings: Pick<SorterSettings, "timeoutMs">): AbortSignal {
   return AbortSignal.timeout(settings.timeoutMs);
 }
 
-interface Catalog {
+export interface Catalog {
   found: boolean;
   /** Category id → name, as Firefly III has them. */
   names: Map<string, string>;
@@ -108,7 +108,11 @@ interface Catalog {
   mainGroupTags: Set<string>;
 }
 
-async function readCatalog(client: FireflyClient, settings: SorterSettings, signal: AbortSignal): Promise<Catalog> {
+export async function readCatalog(
+  client: FireflyClient,
+  settings: SorterSettings,
+  signal: AbortSignal,
+): Promise<Catalog> {
   const [categories, mainGroups] = await Promise.all([
     getAllPages<WireCategory>(client, "categories", {}, settings.pageSize, signal),
     readMainGroups(client, settings, signal),
@@ -162,14 +166,14 @@ function inInbox(split: WireSplit, inbox: string): boolean {
   return split.category_id === null || split.category_name === inbox;
 }
 
-function isWithdrawalOrDeposit(split: WireSplit): split is WireSplit & { type: "withdrawal" | "deposit" } {
+export function isWithdrawalOrDeposit(split: WireSplit): split is WireSplit & { type: "withdrawal" | "deposit" } {
   return split.type === "withdrawal" || split.type === "deposit";
 }
 
 /** Cut by code points, so an emoji is never split into half a surrogate pair, which the model's API refuses. */
-function cut(text: string): string {
+export function cut(text: string, limit = TEXT_LIMIT): string {
   const points = Array.from(text);
-  return points.length > TEXT_LIMIT ? `${points.slice(0, TEXT_LIMIT - 1).join("")}…` : text;
+  return points.length > limit ? `${points.slice(0, limit - 1).join("")}…` : text;
 }
 
 async function readInbox(
@@ -273,7 +277,7 @@ interface Assignment {
   shop?: string;
 }
 
-const AMOUNT = /^[0-9]+\.[0-9]{2}$/;
+export const AMOUNT = /^[0-9]+\.[0-9]{2}$/;
 
 function givenAssignments(args: unknown): Assignment[] {
   const list = isRecord(args) ? args.assignments : undefined;
@@ -306,7 +310,11 @@ function givenAssignments(args: unknown): Assignment[] {
   });
 }
 
-function categoryRefusal(categoryId: number, catalog: Catalog, settings: SorterSettings): Refusal | { name: string; group: string } {
+export function categoryRefusal(
+  categoryId: number,
+  catalog: Catalog,
+  settings: SorterSettings,
+): Refusal | { name: string; group: string } {
   const name = catalog.names.get(String(categoryId));
   if (name === undefined) return "unknown-category";
   if (name === settings.inboxCategory) return "inbox-category";
@@ -317,8 +325,11 @@ function categoryRefusal(categoryId: number, catalog: Catalog, settings: SorterS
   return { name, group };
 }
 
-/** Reads the posting's whole group again, right before the write: a hand correction since `start` wins. */
-async function readPosting(
+/**
+ * Reads the posting's whole group, also right before a write, so a hand correction since `start` or since the chat's
+ * read wins.
+ */
+export async function readPosting(
   client: FireflyClient,
   postingId: number,
   settings: SorterSettings,

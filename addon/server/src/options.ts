@@ -9,6 +9,8 @@ export interface Options {
   /** When set, the sorter's endpoint runs (D29). */
   sorterKey: string | null;
   sorterInboxCategory: string;
+  /** The tag `move_posting` adds to a posting it moves. */
+  movedTag: string;
 }
 
 export const MIN_SORTER_KEY_LENGTH = 32;
@@ -86,5 +88,6 @@ export function readOptions(path: string): Options {
     excludedMainGroups: list(options, "excluded_main_groups") ?? ["Penge ind og ud"],
     sorterKey,
     sorterInboxCategory,
+    movedTag: optional(options, "moved_tag") ?? "moved-by-assistant",
   };
 }

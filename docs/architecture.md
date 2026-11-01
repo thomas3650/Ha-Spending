@@ -33,11 +33,14 @@ The server reads Firefly III and answers `/api/data`; the page fetches it and sh
   - `data/api.ts`: the fetch of `api/data`.
   The build is one JS chunk ([D19](decisions.md)).
 - **The Firefly III client** (`addon/server/src/firefly/`) has a `get`, a `put` and a `post`. It pages through the
-  answers and maps them to postings and subscriptions ([D12](decisions.md), [D15](decisions.md)). Only the sorter's `set_category` calls
-  `put` ([D29](decisions.md)), and `post` only to make a shop's expense account ([D32](decisions.md)).
+  answers and maps them to postings and subscriptions ([D12](decisions.md), [D15](decisions.md)). Only the sorter's
+  `set_category` ([D29](decisions.md)) and the chat's `move_posting` ([D34](decisions.md)) call `put`, and `post` only
+  to make a shop's expense account ([D32](decisions.md)).
 - **The sorter's endpoint** (`addon/server/src/sorter/`) is a second Hono app on port 8100, started only when
   `sorter_key` is set ([D29](decisions.md)): `http.ts` holds the key check and MCP's JSON-RPC, `tools.ts` the tools
-  `start` and `set_category` and their limits. Their contract is in [`addon/DOCS.md`](../addon/DOCS.md#the-sorters-endpoint).
+  `start` and `set_category` and their limits, and `chat.ts` the chat's tools `find_postings`, `get_posting`,
+  `spending` and `move_posting` ([D34](decisions.md)). Their contract is in
+  [`addon/DOCS.md`](../addon/DOCS.md#the-sorters-endpoint).
 - **The options** are read once at start from `/data/options.json`, or from `HA_SPENDING_OPTIONS`. Without a Firefly III
   address and token the server logs what is missing and exits 1.
 - **The cache** keeps an answer per period for a few minutes (`addon/server/src/cache.ts`).
