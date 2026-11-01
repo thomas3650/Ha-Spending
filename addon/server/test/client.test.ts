@@ -96,8 +96,8 @@ describe("the Firefly III client", () => {
     const fake = createFakeFirefly(exampleSeed, { maxPerPage: 3 });
     const client = createFireflyClient({ baseUrl: "http://f", token: "fake-token", fetch: fake.fetch });
     const groups = await getAllPages<{ id: string }>(client, "transactions", { type: "all" }, 500);
-    expect(groups).toHaveLength(17);
-    expect(new Set(groups.map((g) => g.id)).size).toBe(17);
+    expect(groups).toHaveLength(20);
+    expect(new Set(groups.map((g) => g.id)).size).toBe(20);
   });
 
   it("maps a refused token", async () => {

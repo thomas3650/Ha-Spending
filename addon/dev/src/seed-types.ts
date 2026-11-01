@@ -1,3 +1,5 @@
+import type { Repeat } from "@ha-spending/shared";
+
 /** Close to Firefly III's POST bodies, so one dataset feeds the fake and a real Firefly III alike. */
 export interface SeedSplit {
   type: "withdrawal" | "deposit" | "transfer";
@@ -12,6 +14,19 @@ export interface SeedSplit {
   foreignCurrency?: string;
   notes?: string;
   tags?: string[];
+  /** The name of a subscription in `SeedData.subscriptions`. */
+  subscription?: string;
+}
+
+export interface SeedSubscription {
+  name: string;
+  amountMin: string;
+  amountMax: string;
+  start: string;
+  repeat: Repeat;
+  skip?: number;
+  active?: boolean;
+  end?: string;
 }
 
 export interface SeedRule {
@@ -24,10 +39,11 @@ export interface SeedRule {
 export interface SeedData {
   /** Asset accounts, in DKK. */
   accounts: { name: string; active: boolean }[];
-  /** More accounts, such as a liability or an inactive expense account. In the fake a withdrawal may pay one. */
+  /** More accounts, such as a liability or an inactive expense account. In the fake a withdrawal may pay one or be paid from one. */
   otherAccounts?: { name: string; type: "expense" | "revenue" | "liabilities"; active: boolean }[];
   /** Every category, also those with no postings. */
   categories: string[];
+  subscriptions?: SeedSubscription[];
   /** A group's rules run in array order. */
   ruleGroups: { title: string; rules: SeedRule[] }[];
   transactions: { groupTitle?: string; splits: SeedSplit[] }[];

@@ -111,8 +111,11 @@ function buildData(data: SeedData) {
   const paysLiability = (split: SeedSplit) =>
     split.type === "withdrawal" && split.destination !== undefined && liabilityIds.has(split.destination);
 
+  const paidFromLiability = (split: SeedSplit) => split.type === "withdrawal" && liabilityIds.has(split.source);
+
   function ends(split: SeedSplit): [AccountType, AccountType] {
     if (paysLiability(split)) return ["Asset account", "Loan"];
+    if (paidFromLiability(split)) return ["Loan", "Expense account"];
     if (split.type === "withdrawal") return ["Asset account", "Expense account"];
     if (split.type === "deposit") return ["Revenue account", "Asset account"];
     return ["Asset account", "Asset account"];
@@ -129,6 +132,9 @@ function buildData(data: SeedData) {
   const categories = data.categories.map((name) => ({ id: nextId(), name }));
   const categoryIds = new Map(categories.map((c) => [c.name, c.id]));
 
+  const subscriptionNames = new Set((data.subscriptions ?? []).map((x) => x.name));
+  const links: { subscription: string; groupId: string; journalId: string; date: string; amount: string }[] = [];
+
   const groupIds = data.transactions.map(() => nextId());
   const groups = data.transactions.map((t, i) => ({
     id: groupIds[i],
@@ -139,8 +145,15 @@ function buildData(data: SeedData) {
         const [sourceType, destinationType] = ends(s);
         const categoryId = s.category === undefined ? null : categoryIds.get(s.category);
         if (categoryId === undefined) throw new Error(`The seed names a category it does not list: ${s.category}`);
+        if (s.subscription !== undefined && !subscriptionNames.has(s.subscription)) {
+          throw new Error(`The seed names a subscription it does not list: ${s.subscription}`);
+        }
+        const journalId = nextId();
+        if (s.subscription !== undefined) {
+          links.push({ subscription: s.subscription, groupId: groupIds[i], journalId, date: s.date, amount: s.amount });
+        }
         return {
-          transaction_journal_id: nextId(),
+          transaction_journal_id: journalId,
           type: s.type,
           date: fireflyDate(s.date),
           amount: fireflyAmount(s.amount),
@@ -188,7 +201,22 @@ function buildData(data: SeedData) {
     ...extra,
   ].sort((a, b) => Number(a.id) - Number(b.id));
 
-  return { assets, accounts, categories, groups, ruleGroups, nextId };
+  const bills = (data.subscriptions ?? []).map((b) => ({
+    id: nextId(),
+    name: b.name,
+    attributes: {
+      name: b.name,
+      amount_min: fireflyAmount(b.amountMin),
+      amount_max: fireflyAmount(b.amountMax),
+      date: fireflyDate(b.start),
+      end_date: b.end === undefined ? null : fireflyDate(b.end),
+      repeat_freq: b.repeat,
+      skip: b.skip ?? 0,
+      active: b.active ?? true,
+    },
+  }));
+
+  return { assets, accounts, categories, groups, ruleGroups, bills, links, nextId };
 }
 
 type FakeSplit = ReturnType<typeof buildData>["groups"][number]["attributes"]["transactions"][number];
@@ -430,6 +458,28 @@ export function createFakeFirefly(data: SeedData, options: FakeOptions = {}): Fa
   app.get("/api/v1/categories", (c) =>
     page(c, built.categories.map((x) => ({ id: x.id, attributes: { name: x.name } }))),
   );
+
+  app.get("/api/v1/bills", (c) => {
+    const start = c.req.query("start") ?? "0000-01-01";
+    const end = c.req.query("end") ?? "9999-12-31";
+    return page(
+      c,
+      built.bills.map((b) => ({
+        id: b.id,
+        attributes: {
+          ...b.attributes,
+          paid_dates: built.links
+            .filter((l) => l.subscription === b.name && l.date >= start && l.date <= end)
+            .map((l) => ({
+              transaction_group_id: l.groupId,
+              transaction_journal_id: l.journalId,
+              date: fireflyDate(l.date),
+              amount: fireflyAmount(l.amount),
+            })),
+        },
+      })),
+    );
+  });
 
   app.get("/api/v1/rule-groups", (c) =>
     page(c, built.ruleGroups.map((g) => ({ id: g.id, attributes: g.attributes }))),
