@@ -15,7 +15,7 @@ and the postings linked to it. The page shows none of that today. This spec adds
 point):
 
 - A row opens the subscription in Firefly III, not its postings on this page (§1.2). Filtering the postings by
-  subscription becomes a new issue.
+  subscription is a later step of #46, not this spec.
 - "Steget" compares the last payment with the top of the amount range set in Firefly III, not with the payment before
   it (§2.3). Raising the range in Firefly III clears it.
 - A subscription is shown with the category, main group and account of its last payment (§1.3).
