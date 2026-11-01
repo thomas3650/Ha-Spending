@@ -11,11 +11,18 @@ Firefly III keeps subscriptions (its API still calls them bills). Each has an am
 and the postings linked to it. The page shows none of that today. This spec adds them to the overview. It changes the
 [UI and UX spec](2026-10-30-ui-ux-design.md) where it says so; everything else there holds.
 
+**Thomas's rulings, 2026-11-01** (each differs from the mockup or the issue):
+
+- The key number is the cost per year, not per month (§1.1).
+- A row shows the amount as it is paid, with its repeat ("900 kr. pr. kvartal"), and beside it the amount per year, so
+  the rows can be compared (§1.2).
+- A subscription's name links to it in Firefly III; a row does not show its postings on this page (§1.2). Filtering
+  the postings by subscription is a later step of #46, not this spec.
+
 **Claude's calls, for Thomas to see before approving** (each differs from the mockup or the issue, or settles an open
 point):
 
-- A row opens the subscription in Firefly III, not its postings on this page (§1.2). Filtering the postings by
-  subscription is a later step of #46, not this spec.
+- The line under a row's name holds only the next date: the repeat is in the amount's text (§1.2).
 - "Steget" compares the last payment with the top of the amount range set in Firefly III, not with the payment before
   it (§2.3). Raising the range in Firefly III clears it.
 - A subscription is shown with the category, main group and account of its last payment (§1.3).
@@ -27,13 +34,13 @@ point):
 
 ## 1. What the page shows
 
-### 1.1 The key number "Abonnementer pr. måned"
+### 1.1 The key number "Abonnementer om året"
 
 **Changes the UI spec** §3.1 ("the three key numbers"): with subscriptions there are four.
 
 - A fourth key number after the three of today, on the overview (screens 1 and 2), not on Alle posteringer.
-- **Its value** is the sum of the shown subscriptions' amount per month (§2.1), in whole kroner as the other key
-  numbers. **Its sub-line** is "{n} abonnementer · {the value × 12} om året", with "1 abonnement" for one.
+- **Its value** is the sum of the shown subscriptions' amount per year (§2.1), in whole kroner as the other key
+  numbers. **Its sub-line** is "{n} abonnementer", with "1 abonnement" for one.
 - **What it follows:** the level and the accounts (§1.3). It does not follow the period, the chosen unit or the
   search: it says what the subscriptions cost now.
 - **It is a toggle button.** A click switches the right card to Abonnementer; a click while the card shows
@@ -49,21 +56,26 @@ point):
 Abonnementer (Forskel only while a unit is chosen, as today).
 
 - **The title** is "Abonnementer" on Alt forbrug and "Abonnementer i {level}" on a main group or a category. "{the key
-  number's value} pr. måned" is on the right.
+  number's value} om året" is on the right.
 - **The head wraps:** when the title, the chips and the four buttons do not fit on one line (a half at 1024 px, the
   stacked card at 420 px), the switch goes on its own line under the title.
 - **The chips:** the category chip shows, as the card follows the category. The chosen unit's chip does not show, as
   the card does not follow the unit. The unit stays chosen: Søjler, Posteringer and Forskel still use it.
+- **A table,** as the postings table (`addon/web/src/components/postings.ts`), with the column heads "Abonnement",
+  "Beløb", "Om året" and "Status", so a screen reader names each cell by its column.
 - **A row per subscription:**
-  - its name, and under it the repeat (§2.4) and "næste {date}" when there is a next date;
-  - its amount per month in whole kroner, right-aligned;
-  - its status (§2.3) as a coloured label with text, so the colour is never the only sign.
+  - Abonnement: its name, and under it "næste {date}" when there is a next date;
+  - Beløb: its amount per payment (§2.1) in whole kroner with its repeat (§2.4), right-aligned: "900 kr. pr.
+    kvartal";
+  - Om året: its amount per year (§2.1) in whole kroner, right-aligned: "3.600 kr.";
+  - Status: its status (§2.3) as a coloured label with text, so the colour is never the only sign.
 - **The order:** Ikke set, then Steget, then Forventes, then Betalt; within each, by the next date (none last), then by
   name (`localeCompare(…, "da")`).
-- **A click on a row** opens the subscription in Firefly III at `{fireflyLinkUrl}/bills/show/{id}`, as a posting's
-  link opens its posting. Without `fireflyLinkUrl` the rows are not links.
+- **The name is a link** to the subscription in Firefly III at `{fireflyLinkUrl}/bills/show/{id}`, as a posting's
+  text is a link to its posting. The rest of the row is not a link. Without `fireflyLinkUrl` the name is not a link.
 - **Nothing to show** on a level with no subscription: "Ingen abonnementer i {level}".
-- **The foot:** "Fra Firefly III. Pr. måned er gennemsnittet af beløbet, regnet om til en måned."
+- **The foot:** "Fra Firefly III. Beløbet er midten af abonnementets beløbsinterval. Om året er det regnet om til et
+  år."
 - **Dates** are written as "1. nov", with the year when it is not today's year ("1. jan 2027").
 - The period, the chosen unit and the search do not change the card, as for the key number.
 
@@ -96,18 +108,21 @@ of the circle, a trail link and a chip's ✕ keep it, as they keep Posteringer
 Pure functions in `addon/shared/`, beside the money rules. `today` is the answer's `today`, the day the subscriptions
 were read, so the statuses match the data.
 
-### 2.1 Amount per month
+### 2.1 Amount per payment and per year
 
-The middle of the amount range, `(min + max) / 2`, times the repeat's factor, divided by `skip + 1`, rounded to whole
-øre:
+- **The amount per payment** is the middle of the amount range, `(min + max) / 2`, rounded to whole øre.
+- **The amount per year** is the amount per payment times the repeat's payments per year, divided by `skip + 1`,
+  rounded to whole øre. The key number sums the amounts per year in øre and shows the sum in whole kroner. So the
+  rows' "Om året", each rounded to whole kroner, may add up to a few kroner more or less than the key number. That is
+  meant.
 
-| Repeat | Firefly III | Factor |
-| --- | --- | --- |
-| Ugentlig | `weekly` | 52 / 12 |
-| Månedlig | `monthly` | 1 |
-| Kvartalsvis | `quarterly` | 1 / 3 |
-| Halvårlig | `half-year` | 1 / 6 |
-| Årlig | `yearly` | 1 / 12 |
+| Repeat | Payments per year |
+| --- | --- |
+| `weekly` | 52 |
+| `monthly` | 12 |
+| `quarterly` | 4 |
+| `half-year` | 2 |
+| `yearly` | 1 |
 
 `skip` is how many periods Firefly III leaves out between payments: `monthly` with `skip` 1 is every second month.
 
@@ -141,8 +156,9 @@ The first that holds wins:
 
 ### 2.4 The repeat's text
 
-Ugentlig, Månedlig, Kvartalsvis, Halvårlig or Årlig. With `skip` above 0, n = `skip + 1`: "Hver {n}. uge", "Hver {n}.
-måned", "Hvert {n}. kvartal", "Hver {6n}. måned" (half-year) or "Hvert {n}. år".
+It follows the amount per payment: "pr. uge", "pr. måned", "pr. kvartal", "pr. halvår" or "om året". With `skip`
+above 0, n = `skip + 1`: "hver {n}. uge", "hver {n}. måned", "hvert {n}. kvartal", "hver {6n}. måned" (half-year) or
+"hvert {n}. år".
 
 ## 3. The server
 
@@ -223,7 +239,7 @@ token serve every read, and a page with the subscriptions silently missing would
 By behaviour through the public interfaces (hard rule 5), with made-up data only.
 
 - **Shared:**
-  - the amount per month for each repeat and for `skip` 1;
+  - the amount per payment, and the amount per year for each repeat and for `skip` 1;
   - the due dates on the 31st of a month (February), and every second month;
   - the next date after an early payment (1 day before), a late one (4 days after), with no payment, a start after
     today, and past the end date; for `weekly`, a payment 2 and 3 days early;
@@ -236,11 +252,13 @@ By behaviour through the public interfaces (hard rule 5), with made-up data only
   from the right split in a split group; amounts in øre; a subscription with no payment; a failed bills read and a
   failed group read answer the error code.
 - **Page, by role, accessible name and text:**
-  - the key number's text; its button opens the card and is pressed; a second click shows Søjler;
-  - the switch's fourth button; the card's title, rows, order and status texts on each level;
+  - the key number's text, with "1 abonnement" for one; its button opens the card and is pressed; a second click
+    shows Søjler;
+  - the switch's fourth button; the card's title, its `columnheader`s, rows (the amount with its repeat, the amount per
+    year), order and status texts on each level;
   - a main group, a category and the accounts filter the rows and the key number; the period and a chosen unit do not;
   - the card is kept across a period change and a level change; the category chip shows and the unit chip does not;
-  - a row's link to Firefly III, and no link without `fireflyLinkUrl`;
+  - a name's link to Firefly III, and no link without `fireflyLinkUrl`;
   - "Ingen abonnementer i {level}";
   - an empty `subscriptions`: three key numbers, no fourth button, and `#card=subscriptions` shows Søjler;
   - a deep link `#card=subscriptions` shows the card.
@@ -253,8 +271,8 @@ By behaviour through the public interfaces (hard rule 5), with made-up data only
 ## 7. Docs in the same PR
 
 - `docs/decisions.md`: D33.
-- `docs/domain-language.md`: Subscription (abonnement, `subscription`), due date, next date, last payment, status; and
-  `"subscriptions"` in the Card row.
+- `docs/domain-language.md`: Subscription (abonnement, `subscription`), due date, next date, last payment, amount per
+  payment, amount per year, status; and `"subscriptions"` in the Card row.
 - `docs/architecture.md`: what `/api/data` reads and answers.
 - `addon/DOCS.md`: what the card shows, and that it needs subscriptions in Firefly III with their postings linked.
 - `docs/testing.md`: screens `30-1024`, `31-900` and `32-420` now show four key numbers; the new screens of the card.
