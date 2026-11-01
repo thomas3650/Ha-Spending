@@ -381,17 +381,26 @@ async function shopAccount(
   return account;
 }
 
+/** The postings `start` gave out and not yet written: each one's type as `start` gave it. */
+interface GivenOut {
+  type: (postingId: number) => "withdrawal" | "deposit" | undefined;
+  forget: (postingId: number) => void;
+}
+
 async function assign(
   client: FireflyClient,
   settings: SorterSettings,
   catalog: Catalog,
   accounts: AccountInfo[],
   assignment: Assignment,
-  givenOut: (postingId: number) => boolean,
+  givenOut: GivenOut,
 ): Promise<AssignmentResult> {
   const { posting_id } = assignment;
   const category = categoryRefusal(assignment.category_id, catalog, settings);
   if (typeof category === "string") return { posting_id, ok: false, reason: category };
+  // Checked before the posting is read, so a posting sent again after its write costs no read of Firefly III.
+  const givenType = givenOut.type(posting_id);
+  if (givenType === undefined) return { posting_id, ok: false, reason: "not-given-out" };
 
   const signal = timeout(settings);
   const posting = await readPosting(client, posting_id, settings, signal);
@@ -400,8 +409,10 @@ async function assign(
   if (split.type === "transfer") return { posting_id, ok: false, reason: "transfer" };
   if (!isWithdrawalOrDeposit(split)) return { posting_id, ok: false, reason: "not-withdrawal-or-deposit" };
   if (!inInbox(split, settings.inboxCategory)) return { posting_id, ok: false, reason: "not-in-inbox" };
-  if (!givenOut(posting_id)) return { posting_id, ok: false, reason: "not-given-out" };
-  if (kroner(split.amount) !== assignment.amount) return { posting_id, ok: false, reason: "amount-mismatch" };
+  // The amount is without its sign, so the type `start` gave is its direction.
+  if (split.type !== givenType || kroner(split.amount) !== assignment.amount) {
+    return { posting_id, ok: false, reason: "amount-mismatch" };
+  }
 
   const tags = [...(split.tags ?? []).filter((t) => !catalog.mainGroupTags.has(t)), category.group];
   const shop =
@@ -429,6 +440,7 @@ async function assign(
     },
     signal,
   );
+  givenOut.forget(posting_id);
   if (shop === undefined) return { posting_id, ok: true };
   return typeof shop === "string"
     ? { posting_id, ok: true, shop_refused: shop }
@@ -467,8 +479,14 @@ export function createSorterTools(
   now: () => number = Date.now,
 ): Tool[] {
   // The postings `start` gave out, with when that ends: `set_category` writes no other posting.
-  const givenOutUntil = new Map<number, number>();
-  const givenOut = (postingId: number) => (givenOutUntil.get(postingId) ?? 0) > now();
+  const givenOutUntil = new Map<number, { until: number; type: "withdrawal" | "deposit" }>();
+  const givenOut: GivenOut = {
+    type: (postingId) => {
+      const given = givenOutUntil.get(postingId);
+      return given !== undefined && given.until > now() ? given.type : undefined;
+    },
+    forget: (postingId) => givenOutUntil.delete(postingId),
+  };
 
   const start: Tool = {
     name: "start",
@@ -514,8 +532,10 @@ export function createSorterTools(
         readAccounts(client, settings, timeout(settings)),
       ]);
       const { shops, more: shopsMore } = shopList(accounts);
-      for (const [id, until] of givenOutUntil) if (until <= now()) givenOutUntil.delete(id);
-      for (const posting of postings) givenOutUntil.set(posting.posting_id, now() + GIVEN_OUT_MS);
+      for (const [id, { until }] of givenOutUntil) if (until <= now()) givenOutUntil.delete(id);
+      for (const posting of postings) {
+        givenOutUntil.set(posting.posting_id, { until: now() + GIVEN_OUT_MS, type: posting.type });
+      }
       log(`sorter: start: ok, ${postings.length} postings${more ? ", more left" : ""}`);
       return { ok: true, postings, more, shops, shops_more: shopsMore };
     },
