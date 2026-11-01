@@ -12,7 +12,7 @@ import { count, kr, unitName } from "../format";
 import { da } from "../i18n/da";
 import { barItems, categoryColours, circleItems, circleSpan, circleTotal, partColours } from "../model/circle";
 import { levelName, partName, type ViewContext } from "../model/context";
-import { matchesSearch } from "../model/filter";
+import { matches } from "../model/filter";
 import { groupedPostings } from "../model/postings";
 import { subscriptionRows, subscriptionsYear } from "../model/subscriptions";
 import type { Card } from "../state/view";
@@ -98,10 +98,10 @@ export class Overview extends LitElement {
     const ctx = this.ctx;
     const search = ctx.state.search;
     const chosen = ctx.chosen;
-    const postings = within(ctx.shown, chosen ?? ctx.timeline.period).filter((p) => matchesSearch(p.text, search));
+    const postings = within(ctx.shown, chosen ?? ctx.timeline.period).filter((p) => matches(p, search, ctx.state.shop));
     const g = ctx.timeline.grouping;
     let body: unknown;
-    if (postings.length === 0) body = html`<p class="empty">${search.trim() === "" ? da.noSpending : da.noMatch}</p>`;
+    if (postings.length === 0) body = html`<p class="empty">${search.trim() === "" && ctx.state.shop === null ? da.noSpending : da.noMatch}</p>`;
     else {
       const list = groupedPostings(postings, chosen === null ? ctx.units : [chosen], ctx, true, categoryColours(ctx));
       body = html`<hs-postings .list=${list} .query=${search} .grouping=${g}></hs-postings>

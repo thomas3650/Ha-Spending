@@ -30,7 +30,8 @@ its name in code, so the same thing has one name everywhere. The Danish word is 
 | Amount per year | om året | the cost of a subscription over a year; the rule is in [the spec](superpowers/specs/2026-11-01-subscriptions.md#21-amount-per-payment-and-per-year) |
 | Subscription status | status | Ikke set, Steget, Forventes or Betalt; the rules are in [the spec](superpowers/specs/2026-11-01-subscriptions.md#23-the-status) |
 | Card | kort | `card` in the view state: which card the second half shows, Søjler, Posteringer, Forskel or Abonnementer (`"bars"` \| `"postings"` \| `"difference"` \| `"subscriptions"`) |
+| Shop | butik | `shop` (`Posting.shop`): the name of the shop a posting was made at, null when it has none |
 
-The hash keys are listed in [D20](decisions.md). `Posting`, `kind` and the `null` category are fixed by technical spec §3.2
+The hash keys are listed in [D20](decisions.md) and [D34](decisions.md). `Posting`, `kind` and the `null` category are fixed by technical spec §3.2
 ([technical spec](superpowers/specs/2026-10-30-technical-design.md)). The other names are chosen here; they are in
 `addon/shared/src/`. Their texts, such as Uden kategori, belong to the page.

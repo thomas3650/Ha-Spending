@@ -5,7 +5,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { amountChip, count, kr, postingAmount, unitName } from "../src/format";
 import type { SpendingApp } from "../src/app";
 import { da } from "../src/i18n/da";
-import { inAmount, matchesSearch, sortPostings } from "../src/model/filter";
+import { inAmount, sortPostings } from "../src/model/filter";
 import { mount, settle, unmount } from "./mount";
 
 const TODAY = "2026-10-30";
@@ -223,12 +223,6 @@ function posting(id: string, date: string, amount: number): ClassifiedPosting {
 }
 
 describe("the filter rules", () => {
-  it("searches case-insensitively, trimmed, and an empty search matches all", () => {
-    expect(matchesSearch("Café Søde", "  søde ")).toBe(true);
-    expect(matchesSearch("Café Søde", "ROMA")).toBe(false);
-    expect(matchesSearch("Café Søde", "   ")).toBe(true);
-  });
-
   it("keeps an amount within the range in whole kroner, both bounds included", () => {
     expect(inAmount(posting("a", "2026-01-01", 40000), { min: 400, max: 600 })).toBe(true);
     expect(inAmount(posting("a", "2026-01-01", 60000), { min: 400, max: 600 })).toBe(true);

@@ -1,10 +1,37 @@
-import { type ClassifiedPosting, within } from "@ha-spending/shared";
+import { type ClassifiedPosting, type Posting, within } from "@ha-spending/shared";
 import type { AmountRange, Sort } from "../state/view";
 import type { ViewContext } from "./context";
 
-export function matchesSearch(text: string, q: string): boolean {
-  const query = q.trim().toLocaleLowerCase("da");
-  return query === "" || text.toLocaleLowerCase("da").includes(query);
+const SUGGESTIONS = 8;
+
+export interface ShopSuggestion {
+  name: string;
+  /** The net sum in øre, refunds subtracted. */
+  sum: number;
+}
+
+function fold(text: string): string {
+  return text.trim().toLocaleLowerCase("da");
+}
+
+/** A chosen shop is matched by its exact name; the search is free text in the posting's text or its shop. */
+export function matches(p: Posting, search: string, shop: string | null): boolean {
+  if (shop !== null && p.shop !== shop) return false;
+  const query = fold(search);
+  return query === "" || fold(p.text).includes(query) || (p.shop !== null && fold(p.shop).includes(query));
+}
+
+export function shopSuggestions(base: Posting[], search: string): ShopSuggestion[] {
+  const query = fold(search);
+  if (query === "") return [];
+  const sums = new Map<string, number>();
+  for (const p of base) {
+    if (p.shop !== null && fold(p.shop).includes(query)) sums.set(p.shop, (sums.get(p.shop) ?? 0) + p.amount);
+  }
+  return [...sums]
+    .map(([name, sum]) => ({ name, sum }))
+    .sort((a, b) => b.sum - a.sum || a.name.localeCompare(b.name, "da"))
+    .slice(0, SUGGESTIONS);
 }
 
 export function inAmount(p: ClassifiedPosting, range: AmountRange | null): boolean {
@@ -32,9 +59,12 @@ export function sortPostings(ps: ClassifiedPosting[], sort: Sort): ClassifiedPos
   }
 }
 
+/** Alle posteringer's postings before the search and the chosen shop. */
+export function searchBase(ctx: ViewContext): ClassifiedPosting[] {
+  return within(ctx.shown, ctx.chosen ?? ctx.timeline.period).filter((p) => inAmount(p, ctx.state.amount));
+}
+
 export function filteredPostings(ctx: ViewContext): ClassifiedPosting[] {
-  const { search, amount } = ctx.state;
-  return within(ctx.shown, ctx.chosen ?? ctx.timeline.period).filter(
-    (p) => matchesSearch(p.text, search) && inAmount(p, amount),
-  );
+  const { search, shop } = ctx.state;
+  return searchBase(ctx).filter((p) => matches(p, search, shop));
 }

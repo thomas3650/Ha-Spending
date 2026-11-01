@@ -90,6 +90,14 @@ export function setSearch(s: ViewState, search: string): ViewState {
   return { ...s, search };
 }
 
+export function chooseShop(s: ViewState, name: string): ViewState {
+  return { ...s, shop: name, search: "" };
+}
+
+export function removeShop(s: ViewState): ViewState {
+  return { ...s, shop: null };
+}
+
 export function setSort(s: ViewState, sort: Sort): ViewState {
   return { ...s, sort };
 }

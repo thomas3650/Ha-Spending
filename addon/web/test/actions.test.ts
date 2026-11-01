@@ -1,12 +1,14 @@
 import type { Level, SpendingData, Subscription } from "@ha-spending/shared";
 import { describe, expect, it } from "vitest";
 import {
+  chooseShop,
   chooseUnit,
   normalise,
   openAllPostings,
   openPart,
   removeCategory,
   removeMainGroup,
+  removeShop,
   removeUnit,
   setAccounts,
   setAmount,
@@ -179,6 +181,30 @@ describe("the subscriptions card", () => {
   });
 });
 
+describe("the chosen shop", () => {
+  const netto: ViewState = { ...DEFAULT_STATE, search: "net", shop: "Netto" };
+
+  it("is chosen with the search emptied, and removed", () => {
+    const s = chooseShop({ ...DEFAULT_STATE, search: "net" }, "Netto");
+    expect(s.shop).toBe("Netto");
+    expect(s.search).toBe("");
+    expect(removeShop(s).shop).toBeNull();
+  });
+
+  it("is kept by the actions that keep the search", () => {
+    const kept = [
+      openAllPostings(netto),
+      trailLevel(netto, 1),
+      openPart(netto, "Mad"),
+      setCard(netto, "postings"),
+      setPeriod(netto, { preset: "lastYear" }),
+      setGrouping(netto, "week"),
+      removeUnit({ ...netto, unit: "2026-07-01" }),
+    ];
+    for (const s of kept) expect(s.shop).toBe("Netto");
+  });
+});
+
 describe("normalise", () => {
   const today = "2026-10-30";
   const data: SpendingData = {
@@ -207,6 +233,10 @@ describe("normalise", () => {
   it("keeps a state the answer knows", () => {
     const s: ViewState = { ...DEFAULT_STATE, accounts: ["1"], level: cafe, unit: "2026-07-01", card: "difference" };
     expect(normalise(s, data, today)).toEqual(s);
+  });
+
+  it("keeps the chosen shop, also one with no posting", () => {
+    expect(norm({ shop: "Ukendt", unit: "2020-01-01" }).shop).toBe("Ukendt");
   });
 
   it("keeps the search", () => {

@@ -191,7 +191,7 @@ to set their status to `superseded by D<n>`, or to name a part a later decision 
 - **Source:** Claude, [page plan](superpowers/plans/2026-10-31-page.md)
 
 ### D20: The view state's hash
-- **Date:** 2026-10-31 · **Status:** active
+- **Date:** 2026-10-31 · **Status:** active; key list superseded by D34
 - **Decision:**
   - The keys are `period`, `from`, `to`, `by`, `accounts`, `group`, `category`, `unit`, `card`, `view`, `q`, `sort`,
     `min` and `max`, in a `URLSearchParams` string.
@@ -337,3 +337,11 @@ to set their status to `superseded by D<n>`, or to name a part a later decision 
   path, and a page with the subscriptions silently missing would read as "none".
 - **Source:** Thomas, 2026-11-01: the year, the amount as paid and the "Om året" column;
   [the subscriptions spec](superpowers/specs/2026-11-01-subscriptions.md); the other calls: Claude
+
+### D34: The chosen shop is a shared choice
+- **Date:** 2026-11-01 · **Status:** active
+- **Decision:** The chosen shop belongs with the search: one of the shared choices, kept and changed as the search is.
+  It is the hash key `shop`, written right after `q` and before `sort` on every screen ([D20](decisions.md)); an empty
+  value is no shop.
+- **Why:** Thomas wants a shop's postings and cost in the chosen period, and the link keeps what he chose.
+- **Source:** Thomas, 2026-11-01; [the shop search spec](superpowers/specs/2026-11-01-shop-search.md) §4

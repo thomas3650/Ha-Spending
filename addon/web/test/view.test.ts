@@ -18,6 +18,7 @@ describe("the view state's hash", () => {
       card: "difference",
       screen: "allPostings",
       search: "pizza",
+      shop: "Netto",
       sort: "largest",
       amount: { min: 100, max: null },
     };
@@ -78,6 +79,19 @@ describe("the view state's hash", () => {
     expect(s.screen).toBe("overview");
     expect(s.search).toBe("rema");
     expect(toHash(s)).toBe("q=rema");
+  });
+
+  it("reads and writes the chosen shop on every screen", () => {
+    const s = parseHash("shop=Netto");
+    expect(s.shop).toBe("Netto");
+    expect(toHash(s)).toBe("shop=Netto");
+    expect(parseHash("shop=").shop).toBeNull();
+    expect(parseHash("").shop).toBeNull();
+  });
+
+  it("writes the shop right after the search and before the sort", () => {
+    const s: ViewState = { ...DEFAULT_STATE, screen: "allPostings", search: "rema", shop: "Netto", sort: "largest" };
+    expect(toHash(s)).toBe("view=all-postings&q=rema&shop=Netto&sort=largest");
   });
 
   it("writes the keys of Alle posteringer in a fixed order", () => {
