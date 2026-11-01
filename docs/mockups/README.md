@@ -34,9 +34,9 @@ Every circle follows screen 1: a piece for every group, eight colours then greys
 
 ## Subscriptions
 
-Three ideas for showing Firefly III's subscriptions, none chosen yet. Under [`v3/`](v3/abonnementer.html); open it
-with `?v=a`, `b` or `c`. A's list is reached in one of two ways, `?v=a2` or `a3`; `?v=a2-bolig` shows the first in a
-main group.
+Three ideas for showing Firefly III's subscriptions; A reached as A2 is chosen. Under
+[`v3/`](v3/abonnementer.html); open it with `?v=a`, `b` or `c`. A's list is reached in one of two ways, `?v=a2` or
+`a3`; `?v=a2-bolig` shows the first in a main group.
 
 | Variant | Shows |
 | --- | --- |
