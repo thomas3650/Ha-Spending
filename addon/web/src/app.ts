@@ -16,11 +16,12 @@ import { type CircleSelection, circleStyles } from "./components/circle";
 import { differenceStyles } from "./components/difference";
 import { periodPickerStyles } from "./components/period-picker";
 import { postingsStyles } from "./components/postings";
+import { subscriptionsStyles } from "./components/subscriptions";
 import { topCardStyles } from "./components/top-card";
 import { LoadError, type LoadErrorCode, loadData } from "./data/api";
 import { da } from "./i18n/da";
 import { type ViewContext, viewContext } from "./model/context";
-import { keyCards } from "./model/key-numbers";
+import { keyCards, subscriptionsCard } from "./model/key-numbers";
 import { allPostingsStyles, type CategoryChoice } from "./screens/all-postings";
 import "./screens/overview";
 import { overviewStyles } from "./screens/overview";
@@ -41,6 +42,7 @@ import {
   setPeriod,
   setSearch,
   setSort,
+  toggleSubscriptions,
 } from "./state/actions";
 import {
   type AmountRange,
@@ -85,6 +87,7 @@ export class SpendingApp extends LitElement {
     barsStyles,
     differenceStyles,
     postingsStyles,
+    subscriptionsStyles,
     overviewStyles,
     allPostingsStyles,
     css`
@@ -279,12 +282,21 @@ export class SpendingApp extends LitElement {
     </div>`;
   }
 
+  private subscriptionsKey(ctx: ViewContext) {
+    const card = subscriptionsCard(ctx);
+    return card === null ? null : { card, pressed: this.state.card === "subscriptions" };
+  }
+
   private ready(ctx: ViewContext) {
     const overview = this.state.screen === "overview";
     return html`
       ${ctx.data.mainGroupsFound ? nothing : html`<p class="card line status" role="status">${da.noRuleGroup}</p>`}
       ${overview
-        ? html`<hs-key-numbers .cards=${keyCards(ctx)}></hs-key-numbers>
+        ? html`<hs-key-numbers
+              .cards=${keyCards(ctx)}
+              .subscriptions=${this.subscriptionsKey(ctx)}
+              @subscriptions-toggle=${() => this.push(toggleSubscriptions(this.state))}
+            ></hs-key-numbers>
             <hs-overview
               .ctx=${ctx}
               @part-click=${(e: CustomEvent<CircleSelection>) => this.push(openPart(this.state, e.detail.key))}

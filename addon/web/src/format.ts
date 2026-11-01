@@ -171,3 +171,16 @@ export function partLabel(name: string, amount: number, share: number | null): s
 export function count(n: number): string {
   return `${whole.format(n)} ${n === 1 ? da.postingOne : da.postingMany}`;
 }
+
+/** "1. nov", with the year when it is not today's year. */
+export function shortDate(date: string, today: string): string {
+  const { year, month, day } = parts(date);
+  const text = `${day}. ${da.months[month - 1]}`;
+  return year === parts(today).year ? text : `${text} ${year}`;
+}
+
+/** Both whole, or both with øre, so a rise of a few øre never reads as two equal amounts. */
+export function stepAmounts(max: number, paid: number): [string, string] {
+  const format = max % 100 === 0 && paid % 100 === 0 ? whole : cents;
+  return [format.format(max / 100), format.format(paid / 100)];
+}

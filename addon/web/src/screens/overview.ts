@@ -7,12 +7,14 @@ import "../components/circle";
 import "../components/difference";
 import type { DifferenceItem } from "../components/difference";
 import "../components/postings";
+import "../components/subscriptions";
 import { count, kr, unitName } from "../format";
 import { da } from "../i18n/da";
 import { barItems, categoryColours, circleItems, circleSpan, circleTotal, partColours } from "../model/circle";
 import { levelName, partName, type ViewContext } from "../model/context";
 import { matchesSearch } from "../model/filter";
 import { groupedPostings } from "../model/postings";
+import { subscriptionRows, subscriptionsYear } from "../model/subscriptions";
 import type { Card } from "../state/view";
 
 const LEFT_TITLE = "hs-left-title";
@@ -132,6 +134,7 @@ export class Overview extends LitElement {
     const level = this.ctx.state.level;
     const g = this.ctx.timeline.grouping;
     const all = level.kind === "all";
+    if (card === "subscriptions") return all ? da.subscriptions : da.subscriptionsIn(levelName(level));
     if (card === "difference" && this.ctx.chosen !== null) return this.differenceTitle(this.ctx.chosen);
     if (card === "postings") return all ? da.postingsTitle : da.postingsOf(levelName(level));
     return all ? da.per(g) : da.levelPer(levelName(level), g);
@@ -152,12 +155,21 @@ export class Overview extends LitElement {
       <p class="half-foot">${da.differenceHint}</p>`;
   }
 
+  /** Abonnementer does not follow the chosen unit, so its chip does not show there; the unit stays chosen. */
   private chips() {
     const ctx = this.ctx;
     const level = ctx.state.level;
-    const unit = ctx.chosen === null ? null : unitName(ctx.chosen, ctx.timeline.grouping);
+    const unit =
+      ctx.chosen === null || ctx.state.card === "subscriptions" ? null : unitName(ctx.chosen, ctx.timeline.grouping);
     return html`${level.kind === "category" ? chip(levelName(level), () => fire(this, "remove-category")) : nothing}
     ${unit === null ? nothing : chip(unit, () => fire(this, "remove-unit"))}`;
+  }
+
+  private subscriptions() {
+    const rows = subscriptionRows(this.ctx);
+    if (rows.length === 0) return html`<p class="empty">${da.noSubscriptions(levelName(this.ctx.state.level))}</p>`;
+    return html`<hs-subscriptions .rows=${rows}></hs-subscriptions>
+      <p class="half-foot">${da.subscriptionsFoot}</p>`;
   }
 
   private right() {
@@ -166,19 +178,24 @@ export class Overview extends LitElement {
     const inPeriod = within(ctx.shown, ctx.timeline.period);
     const title = this.cardTitle(card);
     let body: unknown;
-    if (card === "postings") body = this.postings();
+    if (card === "subscriptions") body = this.subscriptions();
+    else if (card === "postings") body = this.postings();
     else if (inPeriod.length === 0) body = this.empty();
     else if (card === "difference" && ctx.chosen !== null) body = this.difference(ctx.chosen, title);
     else body = this.bars();
     return html`<section class="card half" role="region" aria-labelledby=${RIGHT_TITLE}>
-      <div class="half-head">
+      <div class="half-head wraps">
         <div class="half-title">
           <h2 id=${RIGHT_TITLE}>${title}</h2>
           ${this.chips()}
         </div>
+        ${card === "subscriptions"
+          ? html`<span class="half-sum">${da.perYear(kr(subscriptionsYear(ctx)))}</span>`
+          : nothing}
         <div class="card-switch" role="group" aria-label=${da.view}>
           ${this.switchButton("bars", da.bars)} ${this.switchButton("postings", da.postings)}
           ${ctx.chosen === null ? nothing : this.switchButton("difference", da.difference)}
+          ${ctx.data.subscriptions.length === 0 ? nothing : this.switchButton("subscriptions", da.subscriptions)}
         </div>
       </div>
       ${body}
@@ -201,6 +218,9 @@ export const overviewStyles = css`
   .half-head > :first-child {
     flex: 1 1 auto;
     min-width: 0;
+  }
+  .half-head.wraps {
+    flex-wrap: wrap;
   }
   .half-head h2 {
     margin: 0;

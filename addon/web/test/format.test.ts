@@ -12,6 +12,8 @@ import {
   rangeText,
   signedKr,
   signedPercent,
+  shortDate,
+  stepAmounts,
   tableDate,
   unitAxis,
   unitName,
@@ -114,5 +116,17 @@ describe("labels", () => {
     expect(count(0)).toBe("0 posteringer");
     expect(count(1)).toBe("1 postering");
     expect(count(4)).toBe("4 posteringer");
+  });
+});
+
+describe("subscriptions", () => {
+  it("writes a date short, with the year only when it is not today's", () => {
+    expect(shortDate("2026-11-01", "2026-10-30")).toBe("1. nov");
+    expect(shortDate("2027-01-01", "2026-10-30")).toBe("1. jan 2027");
+  });
+  it("writes a rise in whole kroner, or both with øre", () => {
+    expect(stepAmounts(14900, 16900)).toEqual(["149", "169"]);
+    expect(stepAmounts(14950, 14975)).toEqual(["149,50", "149,75"]);
+    expect(stepAmounts(14900, 14975)).toEqual(["149,00", "149,75"]);
   });
 });

@@ -2,6 +2,7 @@ import { change, chosenUnitNumbers, type Grouping, keyNumbers, type Period, shar
 import { comparisonLabel, kr, percent, rangeText, signedPercent, unitName } from "../format";
 import { da } from "../i18n/da";
 import { levelName, type ViewContext } from "./context";
+import { shownSubscriptions, subscriptionsYear } from "./subscriptions";
 
 export interface KeyCard {
   label: string;
@@ -103,4 +104,15 @@ function unitCards(ctx: ViewContext, unit: Unit): [KeyCard, KeyCard, KeyCard] {
 
 export function keyCards(ctx: ViewContext): [KeyCard, KeyCard, KeyCard] {
   return ctx.chosen === null ? periodCards(ctx) : unitCards(ctx, ctx.chosen);
+}
+
+/** null when the household has no subscriptions: then there are three key numbers (spec §1.4). */
+export function subscriptionsCard(ctx: ViewContext): KeyCard | null {
+  if (ctx.data.subscriptions.length === 0) return null;
+  return {
+    label: da.subscriptionsPerYear,
+    value: kr(subscriptionsYear(ctx)),
+    sub: da.subscriptionCount(shownSubscriptions(ctx).length),
+    trend: null,
+  };
 }

@@ -1,4 +1,4 @@
-import type { Grouping, Preset } from "@ha-spending/shared";
+import type { Grouping, Preset, Repeat } from "@ha-spending/shared";
 import type { Sort } from "../state/view";
 
 interface GroupingTexts {
@@ -171,4 +171,41 @@ export const da = {
   differenceHint: "Orange: mere end gennemsnittet; blå: mindre.",
 
   periodClosed: (label: string, range: string) => `${label} · ${range}`,
+
+  subscriptionsPerYear: "Abonnementer om året",
+  subscriptionCount: (n: number) => `${n} ${n === 1 ? "abonnement" : "abonnementer"}`,
+  subscriptions: "Abonnementer",
+  subscriptionsIn: (name: string) => `Abonnementer i ${name}`,
+  perYear: (value: string) => `${value} om året`,
+  subscriptionColumns: {
+    name: "Abonnement",
+    amount: "Beløb",
+    perYear: "Om året",
+    status: "Status",
+  },
+  nextOn: (date: string) => `næste ${date}`,
+  noSubscriptions: (name: string) => `Ingen abonnementer i ${name}`,
+  subscriptionsFoot:
+    "Fra Firefly III. Beløbet er midten af abonnementets beløbsinterval. Om året er det regnet om til et år.",
+  status: {
+    notSeen: (date: string) => `Ikke set · ventet ${date}`,
+    risen: (max: string, paid: string) => `Steget · ${max} → ${paid} ${da.kr}`,
+    expected: (date: string | null) => (date === null ? "Forventes ikke" : `Forventes ${date}`),
+    paid: (date: string) => `Betalt ${date}`,
+  },
+  repeatText: (repeat: Repeat, skip: number): string => {
+    const n = skip + 1;
+    switch (repeat) {
+      case "weekly":
+        return skip === 0 ? "pr. uge" : `hver ${n}. uge`;
+      case "monthly":
+        return skip === 0 ? "pr. måned" : `hver ${n}. måned`;
+      case "quarterly":
+        return skip === 0 ? "pr. kvartal" : `hvert ${n}. kvartal`;
+      case "half-year":
+        return skip === 0 ? "pr. halvår" : `hver ${6 * n}. måned`;
+      case "yearly":
+        return skip === 0 ? "om året" : `hvert ${n}. år`;
+    }
+  },
 };
