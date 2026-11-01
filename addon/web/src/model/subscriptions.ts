@@ -31,12 +31,7 @@ function unbroken(text: string): string {
   return text.replaceAll(" ", "\u00a0");
 }
 
-const STATUS_ORDER: Record<SubscriptionStatus["kind"], number> = {
-  notSeen: 0,
-  risen: 1,
-  expected: 2,
-  paid: 3,
-};
+const STATUS_ORDER: Record<SubscriptionStatus["kind"], number> = { notSeen: 0, risen: 1, expected: 2, paid: 3 };
 
 interface Shown {
   subscription: Subscription;
@@ -47,29 +42,20 @@ interface Shown {
 /** The answer's today, the day the subscriptions were read, so the statuses match the data (spec §2). */
 function shown(ctx: ViewContext): Shown[] {
   const today = ctx.data.today;
-  const mainGroups = new Map(
-    ctx.data.categories.map((c) => [c.name, c.mainGroup]),
-  );
-  const accounts =
-    ctx.state.accounts === null ? null : new Set(ctx.state.accounts);
+  const mainGroups = new Map(ctx.data.categories.map((c) => [c.name, c.mainGroup]));
+  const accounts = ctx.state.accounts === null ? null : new Set(ctx.state.accounts);
   const level = ctx.state.level;
   return ctx.data.subscriptions
     .filter((s) => {
       const last = s.lastPayment;
-      if (last !== null && accounts !== null && !accounts.has(last.account))
-        return false;
+      if (last !== null && accounts !== null && !accounts.has(last.account)) return false;
       if (level.kind === "all") return true;
       const category = last?.category ?? null;
-      const mainGroup =
-        category === null ? null : (mainGroups.get(category) ?? null);
+      const mainGroup = category === null ? null : (mainGroups.get(category) ?? null);
       if (mainGroup !== level.mainGroup) return false;
       return level.kind === "mainGroup" || category === level.category;
     })
-    .map((s) => ({
-      subscription: s,
-      next: nextDate(s, today),
-      status: subscriptionStatus(s, today),
-    }))
+    .map((s) => ({ subscription: s, next: nextDate(s, today), status: subscriptionStatus(s, today) }))
     .sort(
       (a, b) =>
         STATUS_ORDER[a.status.kind] - STATUS_ORDER[b.status.kind] ||
@@ -93,9 +79,7 @@ function statusText(status: SubscriptionStatus, today: string): string {
     case "risen":
       return da.status.risen(...stepAmounts(status.max, status.paid));
     case "expected":
-      return da.status.expected(
-        status.date === null ? null : shortDate(status.date, today),
-      );
+      return da.status.expected(status.date === null ? null : shortDate(status.date, today));
     case "paid":
       return da.status.paid(shortDate(status.date, today));
   }
@@ -119,9 +103,7 @@ export interface SubscriptionTable {
 export function subscriptionTable(ctx: ViewContext): SubscriptionTable {
   const today = ctx.data.today;
   const base = linkBase(ctx.data.fireflyLinkUrl);
-  const mainGroups = new Map(
-    ctx.data.categories.map((c) => [c.name, c.mainGroup]),
-  );
+  const mainGroups = new Map(ctx.data.categories.map((c) => [c.name, c.mainGroup]));
   const items = shown(ctx).map(({ subscription: s, next, status }) => {
     const last = s.lastPayment?.category ?? null;
     const known = last !== null && mainGroups.has(last);
@@ -133,8 +115,7 @@ export function subscriptionTable(ctx: ViewContext): SubscriptionTable {
       perYear: kr(amountPerYear(s)),
       category: known ? last : da.noCategory,
       status: { kind: status.kind, text: statusText(status, today) },
-      href:
-        base === null ? null : `${base}/bills/show/${encodeURIComponent(s.id)}`,
+      href: base === null ? null : `${base}/bills/show/${encodeURIComponent(s.id)}`,
     };
     return {
       row,
@@ -149,10 +130,7 @@ export function subscriptionTable(ctx: ViewContext): SubscriptionTable {
 
   const of = kind === "all" ? "mainGroup" : "category";
   const colours = partColours(ctx);
-  const byKey = new Map<
-    string | null,
-    { year: number; rows: SubscriptionRow[] }
-  >();
+  const byKey = new Map<string | null, { year: number; rows: SubscriptionRow[] }>();
   for (const item of items) {
     const key = of === "mainGroup" ? item.mainGroup : item.category;
     const group = byKey.get(key) ?? { year: 0, rows: [] };
@@ -161,12 +139,7 @@ export function subscriptionTable(ctx: ViewContext): SubscriptionTable {
     byKey.set(key, group);
   }
   const groups = [...byKey]
-    .map(([key, g]) => ({
-      key,
-      name: partName(key, of),
-      year: g.year,
-      rows: g.rows,
-    }))
+    .map(([key, g]) => ({ key, name: partName(key, of), year: g.year, rows: g.rows }))
     .sort(
       (a, b) =>
         Number(a.key === null) - Number(b.key === null) ||

@@ -1,11 +1,7 @@
 import { css, html, LitElement, nothing } from "lit";
 import { styleMap } from "lit/directives/style-map.js";
 import { da } from "../i18n/da";
-import type {
-  SubscriptionGroup,
-  SubscriptionRow,
-  SubscriptionTable,
-} from "../model/subscriptions";
+import type { SubscriptionGroup, SubscriptionRow, SubscriptionTable } from "../model/subscriptions";
 
 /** The Faste udgifter card's table (subscriptions spec §1.2). */
 export class Subscriptions extends LitElement {
@@ -29,11 +25,7 @@ export class Subscriptions extends LitElement {
   }
 
   private row(r: SubscriptionRow, showCategory: boolean) {
-    const name = r.href
-      ? html`<a href=${r.href} target="_blank" rel="noopener noreferrer"
-          >${r.name}</a
-        >`
-      : r.name;
+    const name = r.href ? html`<a href=${r.href} target="_blank" rel="noopener noreferrer">${r.name}</a>` : r.name;
     return html`<tr>
       <td>
         <span class="subscription-name">${name}</span>
@@ -42,11 +34,7 @@ export class Subscriptions extends LitElement {
       ${showCategory ? html`<td>${r.category}</td>` : nothing}
       <td class="subscription-amount">${r.amount}</td>
       <td class="subscription-amount subscription-nowrap">${r.perYear}</td>
-      <td>
-        <span class="subscription-status status-${r.status.kind}"
-          >${r.status.text}</span
-        >
-      </td>
+      <td><span class="subscription-status status-${r.status.kind}">${r.status.text}</span></td>
     </tr>`;
   }
 
@@ -54,11 +42,7 @@ export class Subscriptions extends LitElement {
     return html`<tbody>
       <tr class="subscription-group">
         <th scope="rowgroup">
-          <span
-            class="subscription-dot"
-            aria-hidden="true"
-            style=${styleMap({ background: g.colour })}
-          ></span>
+          <span class="subscription-dot" aria-hidden="true" style=${styleMap({ background: g.colour })}></span>
           <span class="subscription-group-name">${g.name}</span>
           <span class="subscription-group-count">${g.count}</span>
         </th>
@@ -74,13 +58,8 @@ export class Subscriptions extends LitElement {
   override render() {
     const c = da.subscriptionColumns;
     const { groups, showCategory, rows } = this.table;
-    // Four columns do not fit a 420 px card, so the box scrolls sideways there and must be reachable by keyboard.
-    return html`<div
-      class="subscriptions"
-      tabindex="0"
-      role="group"
-      aria-label=${this.label}
-    >
+    // The columns do not fit a 420 px card, so the box scrolls sideways there and must be reachable by keyboard.
+    return html`<div class="subscriptions" tabindex="0" role="group" aria-label=${this.label}>
       <table>
         <thead>
           <tr>
@@ -91,13 +70,11 @@ export class Subscriptions extends LitElement {
             <th scope="col">${c.status}</th>
           </tr>
         </thead>
-        ${
-          groups === null
-            ? html`<tbody>
-                ${rows.map((r) => this.row(r, showCategory))}
-              </tbody>`
-            : groups.map((g) => this.group(g, showCategory))
-        }
+        ${groups === null
+          ? html`<tbody>
+              ${rows.map((r) => this.row(r, showCategory))}
+            </tbody>`
+          : groups.map((g) => this.group(g, showCategory))}
       </table>
     </div>`;
   }
@@ -191,8 +168,7 @@ export const subscriptionsStyles = css`
   }
 `;
 
-if (!customElements.get("hs-subscriptions"))
-  customElements.define("hs-subscriptions", Subscriptions);
+if (!customElements.get("hs-subscriptions")) customElements.define("hs-subscriptions", Subscriptions);
 
 declare global {
   interface HTMLElementTagNameMap {
