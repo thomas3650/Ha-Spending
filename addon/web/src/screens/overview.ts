@@ -165,10 +165,10 @@ export class Overview extends LitElement {
     ${unit === null ? nothing : chip(unit, () => fire(this, "remove-unit"))}`;
   }
 
-  private subscriptions() {
+  private subscriptions(title: string) {
     const rows = subscriptionRows(this.ctx);
     if (rows.length === 0) return html`<p class="empty">${da.noSubscriptions(levelName(this.ctx.state.level))}</p>`;
-    return html`<hs-subscriptions .rows=${rows}></hs-subscriptions>
+    return html`<hs-subscriptions .rows=${rows} .label=${title}></hs-subscriptions>
       <p class="half-foot">${da.subscriptionsFoot}</p>`;
   }
 
@@ -178,13 +178,13 @@ export class Overview extends LitElement {
     const inPeriod = within(ctx.shown, ctx.timeline.period);
     const title = this.cardTitle(card);
     let body: unknown;
-    if (card === "subscriptions") body = this.subscriptions();
+    if (card === "subscriptions") body = this.subscriptions(title);
     else if (card === "postings") body = this.postings();
     else if (inPeriod.length === 0) body = this.empty();
     else if (card === "difference" && ctx.chosen !== null) body = this.difference(ctx.chosen, title);
     else body = this.bars();
     return html`<section class="card half" role="region" aria-labelledby=${RIGHT_TITLE}>
-      <div class="half-head wraps">
+      <div class="half-head ${ctx.data.subscriptions.length === 0 ? "" : "wraps"}">
         <div class="half-title">
           <h2 id=${RIGHT_TITLE}>${title}</h2>
           ${this.chips()}

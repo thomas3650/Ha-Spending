@@ -113,6 +113,9 @@ describe("the subscriptions card", () => {
     ]);
     expect(cells(region, "Avis").slice(1)).toEqual(["200 kr. hver 2. måned", "1.200 kr.", "Forventes 20. nov"]);
     getByText(region, da.subscriptionsFoot);
+    const box = getByRole(region, "group", { name: "Abonnementer" });
+    expect(box.tabIndex).toBe(0);
+    getByRole(box, "table");
   });
 
   it("shows a main group's subscriptions", async () => {
@@ -144,12 +147,28 @@ describe("the subscriptions card", () => {
   it("leaves out those paid from an account not chosen, never one with no payment", async () => {
     const { root } = await mountWith("accounts=1&card=subscriptions");
     expect(rowNames(card(root, "Abonnementer"))).toEqual(["Indboforsikring", "Husleje", "Avis"]);
+    getByRole(root, "button", { name: `${KEY_LABEL} 100.800 kr. 3 abonnementer` });
   });
 
   it("shows a category's subscriptions and its chip", async () => {
     const { root } = await mountWith("group=Mad&category=Café&card=subscriptions");
-    expect(rowNames(card(root, "Abonnementer i Café"))).toEqual(["Streaming"]);
-    getByRole(root, "button", { name: da.remove("Café") });
+    const region = card(root, "Abonnementer i Café");
+    expect(rowNames(region)).toEqual(["Streaming"]);
+    getByRole(region, "button", { name: da.remove("Café") });
+    getByRole(root, "button", { name: `${KEY_LABEL} 1.368 kr. 1 abonnement` });
+  });
+
+  it("does not follow the search", async () => {
+    const { root } = await mountWith("q=Netto&card=subscriptions");
+    expect(rowNames(card(root, "Abonnementer"))).toEqual([
+      "Indboforsikring",
+      "Streaming",
+      "Husleje",
+      "Avis",
+      "Bilforsikring",
+    ]);
+    getByRole(root, "button", { name: `${KEY_LABEL} 106.968 kr. 5 abonnementer` });
+    expect(location.hash).toBe("#q=Netto&card=subscriptions");
   });
 
   it("does not follow a chosen unit or the period", async () => {

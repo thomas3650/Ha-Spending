@@ -6,13 +6,17 @@ import type { SubscriptionRow } from "../model/subscriptions";
 export class Subscriptions extends LitElement {
   static override properties = {
     rows: { attribute: false },
+    label: { attribute: false },
   };
 
   declare rows: SubscriptionRow[];
+  /** The card's title, which names the scroll box. */
+  declare label: string;
 
   constructor() {
     super();
     this.rows = [];
+    this.label = "";
   }
 
   protected override createRenderRoot(): HTMLElement {
@@ -27,14 +31,15 @@ export class Subscriptions extends LitElement {
         ${r.next === null ? nothing : html`<span class="subscription-next">${da.nextOn(r.next)}</span>`}
       </td>
       <td class="subscription-amount">${r.amount}</td>
-      <td class="subscription-amount">${r.perYear}</td>
+      <td class="subscription-amount subscription-nowrap">${r.perYear}</td>
       <td><span class="subscription-status status-${r.status.kind}">${r.status.text}</span></td>
     </tr>`;
   }
 
   override render() {
     const c = da.subscriptionColumns;
-    return html`<div class="subscriptions">
+    // Four columns do not fit a 420 px card, so the box scrolls sideways there and must be reachable by keyboard.
+    return html`<div class="subscriptions" tabindex="0" role="group" aria-label=${this.label}>
       <table>
         <thead>
           <tr>
@@ -56,6 +61,10 @@ export const subscriptionsStyles = css`
   .subscriptions {
     overflow-x: auto;
   }
+  .subscriptions:focus-visible {
+    outline: 2px solid var(--hs-accent-text);
+    outline-offset: 2px;
+  }
   .subscriptions table {
     width: 100%;
     border-collapse: collapse;
@@ -74,6 +83,8 @@ export const subscriptionsStyles = css`
   }
   .subscriptions .subscription-amount {
     text-align: right;
+  }
+  .subscriptions .subscription-nowrap {
     white-space: nowrap;
   }
   .subscriptions .subscription-name,
@@ -100,20 +111,20 @@ export const subscriptionsStyles = css`
     font-size: 12px;
   }
   .subscriptions .status-notSeen {
-    color: #b71c1c;
-    background: #fdecea;
+    color: var(--hs-not-seen);
+    background: var(--hs-not-seen-soft);
   }
   .subscriptions .status-risen {
-    color: #9a4a00;
-    background: #fff1e0;
+    color: var(--hs-risen);
+    background: var(--hs-risen-soft);
   }
   .subscriptions .status-expected {
-    color: #37474f;
-    background: #eceff1;
+    color: var(--hs-expected);
+    background: var(--hs-expected-soft);
   }
   .subscriptions .status-paid {
-    color: #1b5e20;
-    background: #e8f5e9;
+    color: var(--hs-paid);
+    background: var(--hs-paid-soft);
   }
 `;
 

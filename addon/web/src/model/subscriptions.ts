@@ -17,10 +17,15 @@ export interface SubscriptionRow {
   name: string;
   /** "1. nov"; null: no next date. */
   next: string | null;
+  /** "8.000 kr. pr. måned", which wraps only between the amount and its repeat. */
   amount: string;
   perYear: string;
   status: { kind: SubscriptionStatus["kind"]; text: string };
   href: string | null;
+}
+
+function unbroken(text: string): string {
+  return text.replaceAll(" ", "\u00a0");
 }
 
 const STATUS_ORDER: Record<SubscriptionStatus["kind"], number> = { notSeen: 0, risen: 1, expected: 2, paid: 3 };
@@ -84,7 +89,7 @@ export function subscriptionRows(ctx: ViewContext): SubscriptionRow[] {
     id: s.id,
     name: s.name,
     next: next === null ? null : shortDate(next, today),
-    amount: `${kr(amountPerPayment(s))} ${da.repeatText(s.repeat, s.skip)}`,
+    amount: `${unbroken(kr(amountPerPayment(s)))} ${unbroken(da.repeatText(s.repeat, s.skip))}`,
     perYear: kr(amountPerYear(s)),
     status: { kind: status.kind, text: statusText(status, today) },
     href: base === null ? null : `${base}/bills/show/${encodeURIComponent(s.id)}`,
