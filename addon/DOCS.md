@@ -46,8 +46,10 @@ the rule group in `main_group_rule_group` does not exist, the page says so.
 
 The overview also shows your Firefly III subscriptions: a key number with their cost per year, and a card with each
 subscription's amount, its cost per year and a status. The card needs subscriptions in Firefly III with their postings
-linked to them, for example by Firefly III's rules. Without linked postings every subscription reads "Ikke set". The
-page shows no subscriptions card when Firefly III has no active subscription.
+linked to them, for example by Firefly III's rules. A subscription without a payment reads
+"Forventes" for a few days after a due date, and always when its start is in the future; after that it reads "Ikke set".
+The card shows only the subscriptions the add-on keeps; the rules are in
+[the spec](../docs/superpowers/specs/2026-11-01-subscriptions.md#3-the-server).
 
 ## The sorter's endpoint
 

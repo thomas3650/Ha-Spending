@@ -18,7 +18,8 @@ The server and the page reach each other only through the routes below.
 ## What exists now
 
 The server reads Firefly III and answers `/api/data`; the page fetches it and shows screens 1 to 4 of the
-[UI spec](superpowers/specs/2026-10-30-ui-ux-design.md).
+[UI spec](superpowers/specs/2026-10-30-ui-ux-design.md) and the subscriptions card of the
+[subscriptions spec](superpowers/specs/2026-11-01-subscriptions.md).
 
 - **The server** is Hono on `@hono/node-server` ([D3](decisions.md)), in `addon/server/src/`. In the image it is one
   bundle at `/opt/ha-spending/server.mjs`, run by `node:24-alpine` ([D4](decisions.md)).
@@ -32,7 +33,7 @@ The server reads Firefly III and answers `/api/data`; the page fetches it and sh
   - `data/api.ts`: the fetch of `api/data`.
   The build is one JS chunk ([D19](decisions.md)).
 - **The Firefly III client** (`addon/server/src/firefly/`) has a `get`, a `put` and a `post`. It pages through the
-  answers and maps them to postings ([D12](decisions.md), [D15](decisions.md)). Only the sorter's `set_category` calls
+  answers and maps them to postings and subscriptions ([D12](decisions.md), [D15](decisions.md)). Only the sorter's `set_category` calls
   `put` ([D29](decisions.md)), and `post` only to make a shop's expense account ([D32](decisions.md)).
 - **The sorter's endpoint** (`addon/server/src/sorter/`) is a second Hono app on port 8100, started only when
   `sorter_key` is set ([D29](decisions.md)): `http.ts` holds the key check and MCP's JSON-RPC, `tools.ts` the tools

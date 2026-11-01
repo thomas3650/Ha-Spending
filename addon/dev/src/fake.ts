@@ -87,7 +87,7 @@ function buildData(data: SeedData) {
   const others = new Map<string, string>();
   const NO_NAME = "(no name)";
   const extra = (data.otherAccounts ?? []).map((a) => ({ id: nextId(), ...a }));
-  // Firefly III lets a withdrawal pay a liability.
+  // Firefly III lets a withdrawal pay a liability or be paid from one.
   const liabilityIds = new Map(extra.filter((a) => a.type === "liabilities").map((a) => [a.name, a.id]));
 
   function account(name: string, type: AccountType): string {

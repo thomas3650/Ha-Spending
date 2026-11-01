@@ -107,6 +107,16 @@ describe("nextDate", () => {
     expect(nextDate(s, "2026-11-02")).toBeNull();
   });
 
+  it("counts the due dates from the start each time", () => {
+    const s = subscription({ start: "2026-01-31", lastPayment: paid("2026-02-28") });
+    expect(nextDate(s, "2026-03-01")).toBe("2026-03-31");
+  });
+
+  it("steps over skipped weeks", () => {
+    const s = subscription({ repeat: "weekly", skip: 1, start: "2026-10-05", lastPayment: paid("2026-10-05") });
+    expect(nextDate(s, "2026-10-06")).toBe("2026-10-19");
+  });
+
   it("uses 2 days early for weekly", () => {
     const base = { repeat: "weekly", start: "2026-10-05" } as const;
     expect(nextDate(subscription({ ...base, lastPayment: paid("2026-10-10") }), "2026-10-10")).toBe("2026-10-19");

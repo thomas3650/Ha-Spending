@@ -27,7 +27,7 @@ its name in code, so the same thing has one name everywhere. The Danish word is 
 | Next date | næste dato | the due date the last payment does not cover, or none past the end date; the rules are in [the spec](superpowers/specs/2026-11-01-subscriptions.md#22-the-due-dates-and-the-next-date) |
 | Last payment | seneste betaling | `lastPayment`: the latest posting linked to a subscription on or before today |
 | Amount per payment | beløb | the middle of the subscription's amount range |
-| Amount per year | om året | the amount per payment times the payments per year |
+| Amount per year | om året | the cost of a subscription over a year; the rule is in [the spec](superpowers/specs/2026-11-01-subscriptions.md#21-amount-per-payment-and-per-year) |
 | Subscription status | status | Ikke set, Steget, Forventes or Betalt; the rules are in [the spec](superpowers/specs/2026-11-01-subscriptions.md#23-the-status) |
 | Card | kort | `card` in the view state: which card the second half shows, Søjler, Posteringer, Forskel or Abonnementer (`"bars"` \| `"postings"` \| `"difference"` \| `"subscriptions"`) |
 
