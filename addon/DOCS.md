@@ -44,6 +44,11 @@ The page is in Danish and has a light theme. Click a main group to see its categ
 postings. A posting opens in Firefly III only when `firefly_link_url` is set; without it the posting is plain text. If
 the rule group in `main_group_rule_group` does not exist, the page says so.
 
+The overview also shows your Firefly III subscriptions: a key number with their cost per year, and a card with each
+subscription's amount, its cost per year and a status. The card needs subscriptions in Firefly III with their postings
+linked to them, for example by Firefly III's rules. Without linked postings every subscription reads "Ikke set". The
+page shows no subscriptions card when Firefly III has no active subscription.
+
 ## The sorter's endpoint
 
 For an AI agent that sorts new postings into a fixed set of categories. The agent gets two tools and nothing else; the

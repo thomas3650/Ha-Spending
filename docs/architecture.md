@@ -48,7 +48,7 @@ The server reads Firefly III and answers `/api/data`; the page fetches it and sh
 | Route | Answers |
 | --- | --- |
 | `GET /api/health` | `{"status": "ok", "version": "<version>"}`, typed `Health` in `addon/shared/` |
-| `GET /api/data?start=YYYY-MM-DD&end=YYYY-MM-DD` | the postings of the period and what the page needs around them, typed `SpendingData` in `addon/shared/`; errors are the codes of `DataError` ([D18](decisions.md)) |
+| `GET /api/data?start=YYYY-MM-DD&end=YYYY-MM-DD` | the postings of the period, the household's subscriptions with their last payments (the bills of the 760 days before today, and the posting of each last payment) and what the page needs around them, typed `SpendingData` in `addon/shared/`; errors are the codes of `DataError` ([D18](decisions.md)) |
 | any other `/api/…` | 404 |
 | `GET /` and `GET /web/*` | the page's built files |
 

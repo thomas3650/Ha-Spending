@@ -326,3 +326,17 @@ to set their status to `superseded by D<n>`, or to name a part a later decision 
   independent of the database's collation.
 - **Source:** Thomas, 2026-10-31, the design of the shop on every posting;
   [the shop spec](superpowers/specs/2026-11-01-sorter-shop.md); the limits: Claude
+
+### D33: Subscriptions on the overview
+- **Date:** 2026-11-01 · **Status:** active
+- **Decision:** The overview shows Firefly III's subscriptions as a fourth key number and a fourth choice on the right
+  card, `card=subscriptions` in the hash ([D20](decisions.md)). The key number is the cost per year. A row shows the
+  amount as it is paid, with its repeat, and beside it the amount per year. The amount is the middle of the amount
+  range; the due dates, the next date and the status follow the rules in the spec (§2), from the day the data was read.
+  A subscription's category, main group and account are those of its last payment, as Firefly III gives it none of its
+  own. A failed read of the subscriptions or of a payment's posting fails the whole answer.
+- **Why:** The year makes the rows comparable. The last payment's posting is the only link from a subscription to a
+  category. One answer has one error path: the same Firefly III and token serve every read, and a page with the
+  subscriptions silently missing would read as "none".
+- **Source:** Thomas, 2026-11-01: the year, the amount as paid and the "Om året" column;
+  [the subscriptions spec](superpowers/specs/2026-11-01-subscriptions.md); the other calls: Claude
