@@ -4,7 +4,7 @@ export { NO_SHOP };
 export const SHOP_LIMIT = 60;
 
 // Control, format (bidi overrides, zero-width), line and paragraph separators, and lone surrogates.
-const REFUSED = /[\p{Cc}\p{Cf}\p{Zl}\p{Zp}\p{Cs}]/u;
+export const REFUSED = /[\p{Cc}\p{Cf}\p{Zl}\p{Zp}\p{Cs}]/u;
 
 export function cleanShop(raw: string): string | null {
   const name = raw.normalize("NFC").trim();

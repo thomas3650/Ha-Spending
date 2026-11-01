@@ -112,7 +112,7 @@ export function parseHash(hash: string): ViewState {
   };
 }
 
-/** Without '#'. The keys go in the order of D20 and D34, and defaults are left out, so equal states give equal hashes. */
+/** Without '#'. The keys go in the order of D20 and D35, and defaults are left out, so equal states give equal hashes. */
 export function toHash(s: ViewState): string {
   const p = new URLSearchParams();
   if (s.period.preset === "custom") {

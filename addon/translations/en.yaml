@@ -30,3 +30,8 @@ configuration:
     description: >-
       The Firefly III category of the postings still to be sorted. The sorter takes postings from it and never puts
       one into it.
+  moved_tag:
+    name: Moved tag
+    description: >-
+      The Firefly III tag that move_posting, on the sorter's endpoint, adds to every posting it moves to another
+      category.

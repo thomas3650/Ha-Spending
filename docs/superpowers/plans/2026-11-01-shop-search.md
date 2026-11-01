@@ -122,12 +122,12 @@ Model: sonnet · Review: yes
 - [ ] Implement as **Produces** says. `overview.ts` and `all-postings.ts` switch to `matches(p, state.search,
   state.shop)` so the page builds; their fields change in Task 4. The comment on `ViewState.search` becomes: the
   search and the chosen shop are shared choices; sort and amount belong to Alle posteringer. The comment on `toHash`
-  says the keys go in the order of D20 and D34.
-- [ ] Docs: in `decisions.md`, D20's status becomes `active; key list superseded by D34`, and new D34 in the log's
+  says the keys go in the order of D20 and D35.
+- [ ] Docs: in `decisions.md`, D20's status becomes `active; key list superseded by D35`, and new D35 in the log's
   format: the chosen shop is a shared choice, the hash key `shop` right after `q` on every screen, kept and changed as
   the search is. Why: Thomas wants a shop's postings and cost in the chosen period, and the link keeps what he chose.
   Source: Thomas, 2026-11-01, the shop search spec §4. In `domain-language.md`, a row "Shop | butik | `shop`
-  (`Posting.shop`)", and line 34 points at D20 and D34.
+  (`Posting.shop`)", and line 34 points at D20 and D35.
 - [ ] The gates pass; commit `feat: the chosen shop and the shop match in the page's state`.
 
 ## Task 3: the rows show the shop

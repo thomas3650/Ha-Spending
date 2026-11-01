@@ -1,6 +1,7 @@
 import { createFakeFirefly, exampleSeed, seedFirefly } from "@ha-spending/dev";
 import { classify, parts, type SpendingData } from "@ha-spending/shared";
 import { beforeAll, describe, expect, it, vi } from "vitest";
+import { createChatTools } from "../src/sorter/chat";
 import { createSorterApp } from "../src/sorter/http";
 import { createSorterTools, readAccounts } from "../src/sorter/tools";
 import { createApp } from "../src/app";
@@ -553,5 +554,127 @@ describe("the sorter's shop on a real Firefly III", () => {
     const shopOf = (text: string) => december.postings.find((p) => p.text === text)?.shop;
     expect(shopOf("Shop gæld")).toBeNull();
     expect(shopOf("Shop kontant")).toBeNull();
+  });
+});
+
+// In January 2027, after every posting above, with the first sorter describe's categories and rules.
+describe("the chat's tools on a real Firefly III", () => {
+  const KEY = "made-up-sorter-key-made-up-sorter-key";
+  const WRITTEN = new Set(["category_id", "category_name", "tags", "notes"]);
+  const JANUARY = { start: "2027-01-01", end: "2027-01-31" };
+  let call: (name: string, args: unknown) => Promise<{ isError: boolean; value: Record<string, unknown> }>;
+  let ids: Map<string, number>;
+
+  const splits = async () => {
+    const page = (await client.get("transactions", { ...JANUARY, type: "all", limit: "50" })) as WirePage<WireGroup>;
+    return new Map<string, WireSplit>(
+      page.data.flatMap((g) => g.attributes.transactions.map((t) => [t.description, t])),
+    );
+  };
+
+  beforeAll(async () => {
+    await seedFirefly(url, token, {
+      accounts: [],
+      categories: [],
+      ruleGroups: [],
+      transactions: [
+        { splits: [{ type: "withdrawal", date: "2027-01-05", amount: "38.00", description: "Chat kaffe",
+          source: "Konto A", destination: "Café Chat", category: "Dagligvarer", notes: "Banken: kaffe",
+          tags: ["Kvittering"] }] },
+        { splits: [{ type: "deposit", date: "2027-01-06", amount: "10.00", description: "Chat retur",
+          source: "Café Chat", destination: "Konto A", category: "Dagligvarer" }] },
+        {
+          groupTitle: "Chat delt",
+          splits: [
+            { type: "withdrawal", date: "2027-01-07", amount: "20.00", description: "Chat del 1", source: "Konto A",
+              destination: "Butik Z", category: "Dagligvarer" },
+            { type: "withdrawal", date: "2027-01-07", amount: "30.00", description: "Chat del 2", source: "Konto A",
+              destination: "Butik Z", category: "Dagligvarer" },
+          ],
+        },
+      ],
+    });
+    const settings = {
+      mainGroupRuleGroup: "Sorteringsgrupper",
+      excludedMainGroups: ["Penge ind og ud"],
+      inboxCategory: "Til sortering",
+      pageSize: 5,
+      timeoutMs: 30_000,
+      movedTag: "moved-by-assistant",
+    };
+    const tools = createChatTools(client, settings, () => {}, () => new Date(2026, 10, 1, 12));
+    const app = createSorterApp({ key: KEY, tools, log: () => {} });
+    call = async (name, args) => {
+      const res = await app.request("/mcp", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${KEY}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "tools/call", params: { name, arguments: args } }),
+      });
+      const body = (await res.json()) as { result: { content: { text: string }[]; isError?: boolean } };
+      return { isError: body.result.isError === true, value: JSON.parse(body.result.content[0].text) };
+    };
+    const categories = (await client.get("categories", { limit: "50" })) as WirePage<WireCategory>;
+    ids = new Map(categories.data.map((c) => [c.attributes.name, Number(c.id)]));
+  });
+
+  it("finds the postings, reads one and sums the month", async () => {
+    const found = await call("find_postings", { ...JANUARY, text: "chat" });
+    expect((found.value.postings as { description: string }[]).map((p) => p.description)).toEqual([
+      "Chat del 2",
+      "Chat del 1",
+      "Chat retur",
+      "Chat kaffe",
+    ]);
+    const coffee = Number((await splits()).get("Chat kaffe")!.transaction_journal_id);
+    expect((await call("get_posting", { posting_id: coffee })).value).toMatchObject({
+      posting_id: coffee,
+      date: "2027-01-05",
+      type: "withdrawal",
+      amount: "38.00",
+      category: "Dagligvarer",
+      main_group: "Mad",
+      shop: "Café Chat",
+      notes: "Banken: kaffe",
+    });
+    expect((await call("spending", { ...JANUARY, by: "main_group" })).value).toEqual({
+      rows: [{ name: "Mad", amount: "78.00" }],
+      more: false,
+      total: "78.00",
+    });
+  });
+
+  it("moves a posting: the category, the tags and one more line of notes, nothing else", async () => {
+    const before = await splits();
+    const coffee = before.get("Chat kaffe")!;
+    const { isError, value } = await call("move_posting", {
+      posting_id: Number(coffee.transaction_journal_id),
+      amount: "38.00",
+      category_id: ids.get("Husleje")!,
+      reason: "Kaffe til udlejeren",
+    });
+    expect(isError).toBe(false);
+    expect(value).toEqual({ ok: true, from: "Dagligvarer", to: "Husleje" });
+
+    const after = (await splits()).get("Chat kaffe")!;
+    expect(after.category_name).toBe("Husleje");
+    expect([...after.tags].sort()).toEqual(["Bolig", "Kvittering", "moved-by-assistant"]);
+    expect(after.notes).toBe("Banken: kaffe\n2026-11-01: Dagligvarer → Husleje. Kaffe til udlejeren");
+    // Every other field Firefly III answers, not only those the add-on reads.
+    const rest = (split: WireSplit) =>
+      Object.fromEntries(Object.entries(split).filter(([key]) => !WRITTEN.has(key) && !key.endsWith("updated_at")));
+    expect(Object.keys(rest(coffee)).length).toBeGreaterThan(20);
+    expect(rest(after)).toEqual(rest(coffee));
+  });
+
+  it("refuses a part of a split posting, and writes nothing", async () => {
+    const before = await splits();
+    const { value } = await call("move_posting", {
+      posting_id: Number(before.get("Chat del 1")!.transaction_journal_id),
+      amount: "20.00",
+      category_id: ids.get("Husleje")!,
+      reason: "En grund",
+    });
+    expect(value).toEqual({ error: "split" });
+    expect(await splits()).toEqual(before);
   });
 });

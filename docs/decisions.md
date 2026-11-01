@@ -191,7 +191,7 @@ to set their status to `superseded by D<n>`, or to name a part a later decision 
 - **Source:** Claude, [page plan](superpowers/plans/2026-10-31-page.md)
 
 ### D20: The view state's hash
-- **Date:** 2026-10-31 · **Status:** active; key list superseded by D34
+- **Date:** 2026-10-31 · **Status:** active; key list superseded by D35
 - **Decision:**
   - The keys are `period`, `from`, `to`, `by`, `accounts`, `group`, `category`, `unit`, `card`, `view`, `q`, `sort`,
     `min` and `max`, in a `URLSearchParams` string.
@@ -279,7 +279,7 @@ to set their status to `superseded by D<n>`, or to name a part a later decision 
 - **Source:** Claude, for #28 (Thomas: "Yes, fix #28", 2026-10-31)
 
 ### D29: The sorter's endpoint: MCP on port 8100, behind a key
-- **Date:** 2026-10-31 · **Status:** active
+- **Date:** 2026-10-31 · **Status:** active; its list of two tools superseded by D34
 - **Decision:** When `sorter_key` is set, the server also listens on port 8100, unpublished and without the ingress
   check, for an MCP endpoint with two tools, `start` and `set_category`. Every request needs the key, compared as
   SHA-256 digests in constant time, and a key under 32 characters stops the add-on. It answers JSON-RPC as plain JSON,
@@ -338,7 +338,27 @@ to set their status to `superseded by D<n>`, or to name a part a later decision 
 - **Source:** Thomas, 2026-11-01: the year, the amount as paid and the "Om året" column;
   [the subscriptions spec](superpowers/specs/2026-11-01-subscriptions.md); the other calls: Claude
 
-### D34: The chosen shop is a shared choice
+### D34: The chat's four tools on the sorter's endpoint
+- **Date:** 2026-11-01 · **Status:** active
+- **Decision:** The sorter's endpoint also serves `find_postings`, `get_posting`, `spending` and `move_posting`, under
+  the same key; the calling add-on's gate tells the chat's tools from the sorter's by name. `move_posting` moves one
+  posting, given with its amount, and writes only the category, the main group's tag as D30, the tag in the option
+  `moved_tag` and one more line of notes with the date, both categories and the household's reason. It refuses a
+  transfer, a posting in a group of several, a posting or a category in an excluded main group, and a category the
+  sorter could not choose. The reads take at most 400 days and answer at most 50 rows; `spending` counts as the page
+  does, with the page's `classify` and `parts`. `find_postings` has no account filter, by choice: the household asks
+  by shop, text, category and period, and the answer names no account. The contract is in
+  [`addon/DOCS.md`](../addon/DOCS.md#the-chats-tools).
+- **Why:** The household asks the chat about spending and to fix a wrong category, and the chat must not hold the
+  Firefly III token or be able to change an amount, a date, an account or a description. The narrowness is in this
+  code, not in the chat's prompt; the tag and the note let a move be found and undone by hand. A split posting is
+  left to Firefly III itself, because a move of one part changes what the group means. One endpoint needs no second
+  key or port; the price is that the endpoint does not tell the sorter from the chat, so the separation between them
+  lives only in the calling add-on's gate, and D29's bound of at worst a wrong category or shop holds only behind it.
+- **Source:** Thomas, 2026-11-01, the design of a more helpful assistant in the house session (the tools, the tag, the
+  note); the names, the limits and the refusals: Claude
+
+### D35: The chosen shop is a shared choice
 - **Date:** 2026-11-01 · **Status:** active
 - **Decision:** The chosen shop belongs with the search: one of the shared choices, kept and changed as the search is.
   It is the hash key `shop`, written right after `q` and before `sort` on every screen ([D20](decisions.md)); an empty
@@ -346,7 +366,7 @@ to set their status to `superseded by D<n>`, or to name a part a later decision 
 - **Why:** Thomas wants a shop's postings and cost in the chosen period, and the link keeps what he chose.
 - **Source:** Thomas, 2026-11-01; [the shop search spec](superpowers/specs/2026-11-01-shop-search.md) §4
 
-### D35: The page calls subscriptions "faste udgifter"
+### D36: The page calls subscriptions "faste udgifter"
 - **Date:** 2026-11-01 · **Status:** active
 - **Decision:** The page calls Firefly III's bills "faste udgifter". The code keeps `subscription`
   ([D33](decisions.md) stays active).

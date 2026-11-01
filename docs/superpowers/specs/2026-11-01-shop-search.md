@@ -74,8 +74,8 @@ the chip still there to be cleared.
 The chosen shop belongs with the search: one of the shared choices, kept by every action that keeps the search, and
 changed only in the search field. It is the new hash key `shop`, written right after `q` and before `sort`, on every
 screen, when a shop is chosen. `shop=` with an empty value is no shop chosen. Any other name is accepted from the hash
-as it is, also one with no postings; `normalise` leaves it alone. This is new decision D34. D20's key list gains
-`shop`, so D20 becomes "active; key list superseded by D34". D31 stays active.
+as it is, also one with no postings; `normalise` leaves it alone. This is new decision D35. D20's key list gains
+`shop`, so D20 becomes "active; key list superseded by D35". D31 stays active.
 
 ## 5. What is left to the builder
 
@@ -119,7 +119,7 @@ The Chrome check ([`testing.md`](../../testing.md)): the suggestions and the chi
 
 ## 7. Docs in the same PR
 
-- `docs/decisions.md`: D34, the chosen shop is a shared choice in the hash; D20's status as §4 says.
+- `docs/decisions.md`: D35, the chosen shop is a shared choice in the hash; D20's status as §4 says.
 - `docs/domain-language.md`: add the shop (*butik*) and its name in code, `Posting.shop`.
 - `docs/testing.md`: new screens for the suggestions and the chip.
 - `docs/README.md`: this spec and its plan in the lists.

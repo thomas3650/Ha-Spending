@@ -30,3 +30,8 @@ configuration:
     description: >-
       Den kategori i Firefly III, som posteringer, der endnu ikke er sorteret, har. Sorteringen tager posteringer
       derfra og lægger aldrig en i den.
+  moved_tag:
+    name: Mærke for flytninger
+    description: >-
+      Det mærke i Firefly III, som move_posting på sorteringens endepunkt sætter på hver postering, det flytter til en
+      anden kategori.
