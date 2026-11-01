@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.5.0](https://github.com/thomas3650/Ha-Spending/compare/v0.4.0...v0.5.0) (2026-11-01)
+
+
+### Features
+
+* four tools for the household's chat on the sorter's endpoint ([#48](https://github.com/thomas3650/Ha-Spending/issues/48)) ([52c52fd](https://github.com/thomas3650/Ha-Spending/commit/52c52fde2c0a42faf5a200cc88ec25d95c8c37c8))
+* subscriptions on the overview ([#51](https://github.com/thomas3650/Ha-Spending/issues/51)) ([cacaeb2](https://github.com/thomas3650/Ha-Spending/commit/cacaeb23c5ee3c68b74705e1e89141b6b387962b))
+
 ## [0.4.0](https://github.com/thomas3650/Ha-Spending/compare/v0.3.0...v0.4.0) (2026-10-31)
 
 
