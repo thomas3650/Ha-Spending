@@ -246,11 +246,11 @@ const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null && !Array.isArray(value);
 
 const GROUP_KEYS = new Set(["apply_rules", "fire_webhooks", "group_title", "transactions"]);
-const SPLIT_KEYS = new Set(["transaction_journal_id", "category_id", "tags", "destination_id"]);
+const SPLIT_KEYS = new Set(["transaction_journal_id", "category_id", "tags", "destination_id", "notes"]);
 
 /**
- * Firefly III's update of a group, for the fields the sorter sends; any other field is refused, so a test sees one
- * sent. As in Firefly III, a split the body does not list is deleted, and `tags` replaces the split's tags.
+ * Firefly III's update of a group, for the fields the sorter's endpoint sends; any other field is refused, so a test
+ * sees one sent. As in Firefly III, a split the body does not list is deleted, and `tags` replaces the split's tags.
  */
 function updateGroup(
   group: { group_title: string | null; transactions: FakeSplit[] },
@@ -287,6 +287,9 @@ function updateGroup(
     if (tags !== undefined && !(Array.isArray(tags) && tags.every((t) => typeof t === "string"))) {
       return "The tags are not a list of text.";
     }
+    if (entry.notes !== undefined && entry.notes !== null && typeof entry.notes !== "string") {
+      return "The notes are not text.";
+    }
     updates.push({ split, entry });
   }
   if (typeof body.group_title === "string") group.group_title = body.group_title;
@@ -300,6 +303,7 @@ function updateGroup(
       split.destination_name = accounts.find((a) => a.id === entry.destination_id)!.name;
     }
     if (entry.tags !== undefined) split.tags = [...(entry.tags as string[])];
+    if (entry.notes !== undefined) split.notes = entry.notes as string | null;
   }
   group.transactions = updates.map((u) => u.split).sort((a, b) =>
     group.transactions.indexOf(a) - group.transactions.indexOf(b));

@@ -17,7 +17,7 @@ export class FireflyError extends Error {
 
 export interface FireflyClient {
   get(path: string, query: Record<string, string>, signal?: AbortSignal): Promise<unknown>;
-  /** Only the sorter's `set_category` writes (D29). */
+  /** Only the sorter's `set_category` (D29) and the chat's `move_posting` (D34) write. */
   put(path: string, body: unknown, signal?: AbortSignal): Promise<unknown>;
   /** Only the sorter's `set_category` makes something: a new shop's expense account (D32). */
   post(path: string, body: unknown, signal?: AbortSignal): Promise<unknown>;

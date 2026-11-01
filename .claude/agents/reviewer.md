@@ -33,7 +33,8 @@ Each spec and each plan before it is approved, and each branch before its PR mer
 1. **Security and privacy:** no token, hostname, IP, account name or real posting anywhere in the public repo
    (`CLAUDE.md` hard rules 2 and 3); the Firefly III token never reaches the browser, a log line or an answer; the
    Firefly III client writes only through the sorter's `set_category`, and only a posting's category, main-group tag and
-   shop, and may make expense accounts for a shop (`docs/decisions.md` D32);
+   shop, and may make expense accounts for a shop (`docs/decisions.md` D32), and through the chat's `move_posting`, and
+   only a posting's category, main-group tag, the `moved_tag` tag and one more line of notes (`docs/decisions.md` D34);
    port 8099 answers ingress only and port 8100 the sorter's key only (`docs/decisions.md` D5, D29; technical spec
    §5).
 2. **Correctness against the specs:** the money rules, the rule mapping, the state and the clicks

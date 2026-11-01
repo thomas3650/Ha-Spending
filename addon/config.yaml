@@ -18,6 +18,7 @@ options:
   excluded_main_groups:
     - Penge ind og ud
   sorter_inbox_category: Til sortering
+  moved_tag: moved-by-assistant
 schema:
   firefly_url: url
   firefly_token: password
@@ -27,3 +28,4 @@ schema:
     - str
   sorter_key: password?
   sorter_inbox_category: str
+  moved_tag: str
