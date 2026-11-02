@@ -59,6 +59,50 @@ describe("the detail in the history", () => {
     await hashBecomes(app, "#card=postings");
   });
 
+  it("two rows then close goes back to the list, and Back then leaves the list", async () => {
+    const { app, root } = await mount("");
+    fireEvent.click(getByRole(getByRole(root, "group", { name: da.view }), "button", { name: da.postings }));
+    await settle(app);
+    await open(app, CAFE);
+    await open(app, LATER);
+    await close(app);
+    await hashBecomes(app, "#card=postings");
+    history.back();
+    await hashBecomes(app, "");
+  });
+
+  it("two Escapes in a row close the detail once and then leave full screen", async () => {
+    const { app, root } = await mount("card=postings");
+    fireEvent.click(fullScreen(root));
+    await settle(app);
+    await open(app, CAFE);
+    // happy-dom's Back fires popstate at once; a browser's comes later, which is the case this test is about.
+    const back = history.back.bind(history);
+    vi.spyOn(history, "back").mockImplementation(() => void setTimeout(back));
+    fireEvent.keyDown(window, { key: "Escape" });
+    fireEvent.keyDown(window, { key: "Escape" });
+    await hashBecomes(app, "#card=postings");
+    await settle(app);
+    expect(location.hash).toBe("#card=postings");
+    expect(fullScreen(root).getAttribute("aria-pressed")).toBe("false");
+  });
+
+  const showAll = (root: HTMLElement) => getByRole(root, "button", { name: da.showAll });
+  const bars = (root: HTMLElement) =>
+    getByRole(getByRole(root, "group", { name: da.view }), "button", { name: da.bars });
+
+  it.each([
+    ["Vis alle", showAll, "#card=postings&view=all-postings"],
+    ["the card", bars, ""],
+  ])("a choice that changes the screen or the card closes the detail: %s", async (_, button, hash) => {
+    const { app, root } = await mount("card=postings");
+    await open(app, CAFE);
+    expect(location.hash).toBe("#card=postings&detail=p%3Ap23");
+    fireEvent.click(button(root));
+    await settle(app);
+    expect(location.hash).toBe(hash);
+  });
+
   it("open, close, then Back does not reopen it", async () => {
     const { app, root } = await mount("");
     fireEvent.click(getByRole(getByRole(root, "group", { name: da.view }), "button", { name: da.postings }));

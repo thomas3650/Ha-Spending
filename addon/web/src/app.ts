@@ -261,14 +261,18 @@ export class SpendingApp extends LitElement {
 
   private readonly onDetailClose = (): void => this.closeDetail();
 
-  /** Back restores the entry before the open as it was; popstate then sets the state. */
+  /**
+   * Back lands on the entry before the open, which holds the same state without the detail. The state is set at once,
+   * since Back is async: a second close before popstate then finds no detail instead of going back twice.
+   */
   private closeDetail(): void {
     if (this.state.detail === null) return;
+    const next = closeDetail(this.state);
     if (detailEntry()) {
+      this.change(next);
       history.back();
       return;
     }
-    const next = closeDetail(this.state);
     history.replaceState(null, "", `#${toHash(next)}`);
     this.change(next);
   }
