@@ -69,6 +69,13 @@ describe("/api/hidden-shops", () => {
     expect(onDisk()).toEqual({ shops: ["Kommunen", "Udlejer"] });
   });
 
+  it("sorts in Danish order, not by code point", async () => {
+    const { change } = setup();
+    await change("Netto", true);
+    expect(await shopsOf(await change("bilka", true))).toEqual(["bilka", "Netto"]);
+    expect(onDisk()).toEqual({ shops: ["bilka", "Netto"] });
+  });
+
   it("showing again removes it, and showing a shown shop changes nothing", async () => {
     const { change, get } = setup();
     await change("Udlejer", true);
@@ -140,6 +147,16 @@ describe("/api/hidden-shops", () => {
       expect(await errorOf(res)).toBe("bad-request");
     }
     expect(await shopsOf(await get())).toEqual([]);
+  });
+
+  it("a body of exactly 1024 bytes is accepted and one of 1025 is 400", async () => {
+    const { post } = setup();
+    const valid = JSON.stringify({ shop: "Udlejer", hidden: true });
+    const padded = (bytes: number) => valid + " ".repeat(bytes - valid.length);
+    expect((await post(padded(1024))).status).toBe(200);
+    const over = await post(padded(1025));
+    expect(over.status).toBe(400);
+    expect(await errorOf(over)).toBe("bad-request");
   });
 
   it("accepts a name of exactly 200 characters", async () => {

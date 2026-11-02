@@ -99,7 +99,7 @@ export function createApp(options: {
     }
   });
 
-  const hiddenShops = (c: Context, shops: string[]) => {
+  const answerHiddenShops = (c: Context, shops: string[]) => {
     c.header("Cache-Control", "no-store");
     return c.json<HiddenShops>({ shops });
   };
@@ -110,7 +110,7 @@ export function createApp(options: {
   };
   app.get("/api/hidden-shops", async (c) => {
     try {
-      return hiddenShops(c, await options.hiddenShops.read());
+      return answerHiddenShops(c, await options.hiddenShops.read());
     } catch {
       return hiddenShopsError(c, "GET", "internal", 500);
     }
@@ -126,7 +126,7 @@ export function createApp(options: {
       const change = parseChange(await c.req.text());
       if (change === null) return hiddenShopsError(c, "POST", "bad-request", 400);
       try {
-        return hiddenShops(c, await options.hiddenShops.set(change.shop, change.hidden));
+        return answerHiddenShops(c, await options.hiddenShops.set(change.shop, change.hidden));
       } catch (error) {
         if (error instanceof HiddenShopsFull) return hiddenShopsError(c, "POST", "full", 409);
         return hiddenShopsError(c, "POST", "internal", 500);
