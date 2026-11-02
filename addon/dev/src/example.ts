@@ -23,8 +23,8 @@ function subscription(
   return { name, repeat, start, amountMin, amountMax: amountMin, ...extra };
 }
 
-const FASTE = "Faste udgifter";
-const ABONNEMENTER = "Abonnementer";
+const FIXED_COSTS = "Faste udgifter";
+const SUBSCRIPTIONS_GROUP = "Abonnementer";
 
 /** The small, hand-made dataset the server's and the integration tests check against. */
 export const exampleSeed: SeedData = {
@@ -36,17 +36,17 @@ export const exampleSeed: SeedData = {
   otherAccounts: [{ name: "Billån", type: "liabilities", active: true }],
   categories: ["Dagligvarer", "Café", "Husleje", "Brændstof", "Streaming", "Gaver", "Tandlæge", "Indskud", "Opsparing"],
   subscriptions: [
-    subscription("Husleje", "monthly", "2025-01-31", "8000.00", { objectGroup: FASTE }),
-    subscription("Netflix", "monthly", "2025-01-02", "99.00", { amountMax: "129.00", objectGroup: ABONNEMENTER }),
+    subscription("Husleje", "monthly", "2025-01-31", "8000.00", { objectGroup: FIXED_COSTS }),
+    subscription("Netflix", "monthly", "2025-01-02", "99.00", { amountMax: "129.00", objectGroup: SUBSCRIPTIONS_GROUP }),
     subscription("Bilka", "monthly", "2025-01-10", "150.00", { amountMax: "250.00" }),
-    subscription("Opsparingsaftale", "monthly", "2025-01-07", "1000.00", { objectGroup: FASTE }),
-    subscription("Avis", "monthly", "2025-01-15", "199.00", { active: false, objectGroup: FASTE }),
-    subscription("Fitness", "monthly", "2025-02-01", "299.00", { end: "2026-10-30", objectGroup: ABONNEMENTER }),
-    subscription("Gammel forsikring", "yearly", "2025-03-01", "1200.00", { end: "2026-10-29", objectGroup: FASTE }),
-    subscription("Tandforsikring", "yearly", "2026-12-01", "600.00", { objectGroup: FASTE }),
-    subscription("Hver tredje år", "yearly", "2025-05-01", "3000.00", { skip: 2, objectGroup: FASTE }),
-    subscription("Billån", "monthly", "2026-08-01", "2500.00", { objectGroup: FASTE }),
-    subscription("Indboforsikring", "quarterly", "2026-09-15", "900.00", { objectGroup: FASTE }),
+    subscription("Opsparingsaftale", "monthly", "2025-01-07", "1000.00", { objectGroup: FIXED_COSTS }),
+    subscription("Avis", "monthly", "2025-01-15", "199.00", { active: false, objectGroup: FIXED_COSTS }),
+    subscription("Fitness", "monthly", "2025-02-01", "299.00", { end: "2026-10-30", objectGroup: SUBSCRIPTIONS_GROUP }),
+    subscription("Gammel forsikring", "yearly", "2025-03-01", "1200.00", { end: "2026-10-29", objectGroup: FIXED_COSTS }),
+    subscription("Tandforsikring", "yearly", "2026-12-01", "600.00", { objectGroup: FIXED_COSTS }),
+    subscription("Hver tredje år", "yearly", "2025-05-01", "3000.00", { skip: 2, objectGroup: FIXED_COSTS }),
+    subscription("Billån", "monthly", "2026-08-01", "2500.00", { objectGroup: FIXED_COSTS }),
+    subscription("Indboforsikring", "quarterly", "2026-09-15", "900.00", { objectGroup: FIXED_COSTS }),
   ],
   ruleGroups: [
     {

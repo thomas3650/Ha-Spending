@@ -20,8 +20,8 @@ const settings = {
 
 type Wrap = (fetch: FetchLike) => FetchLike;
 
-function setup(wrap: Wrap = (f) => f) {
-  const fake = createFakeFirefly(exampleSeed, { token: "fake-token" });
+function setup(wrap: Wrap = (f) => f, seed: typeof exampleSeed = exampleSeed) {
+  const fake = createFakeFirefly(seed, { token: "fake-token" });
   const client = createFireflyClient({ baseUrl: "http://firefly.test", token: "fake-token", fetch: wrap(fake.fetch) });
   const warn = vi.fn();
   const app = createApp({
@@ -33,8 +33,8 @@ function setup(wrap: Wrap = (f) => f) {
   return { fake, app, warn };
 }
 
-async function answer(wrap?: Wrap) {
-  const { app, warn } = setup(wrap);
+async function answer(wrap?: Wrap, seed?: typeof exampleSeed) {
+  const { app, warn } = setup(wrap, seed);
   const res = await app.request(R1, {}, ingress);
   expect(res.status).toBe(200);
   return { data: (await res.json()) as SpendingData, warn };
@@ -106,6 +106,23 @@ describe("/api/data's subscriptions over the fake Firefly III", () => {
     const groups = bilka.attributes.paid_dates.map((p) => `/api/v1/transactions/${p.transaction_group_id}`);
     expect(groups.length).toBeGreaterThan(0);
     for (const group of groups) expect(read).not.toContain(group);
+  });
+
+  it("takes the category and amount of the linked split in a split group", async () => {
+    const seed = {
+      ...exampleSeed,
+      subscriptions: exampleSeed.subscriptions?.map((s) =>
+        s.name === "Bilka" ? { ...s, objectGroup: "Faste udgifter" } : s,
+      ),
+    };
+    const { data } = await answer(undefined, seed);
+    const kontoA = data.accounts.find((a) => a.name === "Konto A")!.id;
+    expect(data.subscriptions.find((s) => s.name === "Bilka")!.lastPayment).toMatchObject({
+      date: "2026-01-10",
+      amount: 20000,
+      category: "Dagligvarer",
+      account: kontoA,
+    });
   });
 
   it("takes the last payment on or before today, keeps one with no payment and one ending today", async () => {
@@ -272,7 +289,9 @@ describe("readSubscriptions and object groups", () => {
     const client: FireflyClient = {
       get: (path) =>
         path === "bills"
-          ? Promise.resolve({ data: [bill({ object_group_title: "  " })] })
+          ? Promise.resolve({
+              data: [bill({ object_group_title: "  ", paid_dates: [paidDate("2026-10-05", "201", "301")] })],
+            })
           : Promise.reject(new Error(`unexpected read ${path}`)),
       put: () => Promise.reject(new Error("no write")),
       post: () => Promise.reject(new Error("no write")),
