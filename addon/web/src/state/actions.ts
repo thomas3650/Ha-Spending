@@ -60,6 +60,11 @@ export function openAllPostingsFresh(s: ViewState): ViewState {
   return { ...openAllPostings(s), search: "", shop: null };
 }
 
+/** The object group's key number: its count ignores the chosen unit, so the unit goes too (D42). */
+export function openObjectGroupPostings(s: ViewState, title: string): ViewState {
+  return { ...withoutUnit(openAllPostingsFresh(s)), objectGroup: title };
+}
+
 function levelAt(level: Level, depth: 0 | 1 | 2): Level {
   if (depth === 0 || level.kind === "all") return ALL;
   if (depth === 1 || level.kind === "mainGroup") return { kind: "mainGroup", mainGroup: level.mainGroup };

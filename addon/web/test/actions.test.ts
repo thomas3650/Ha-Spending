@@ -6,6 +6,7 @@ import {
   normalise,
   openAllPostings,
   openAllPostingsFresh,
+  openObjectGroupPostings,
   openPart,
   removeCategory,
   removeMainGroup,
@@ -128,6 +129,33 @@ describe("the actions", () => {
     expect(s.unit).toBe("2026-07-01");
     expect(s.period).toEqual(from.period);
     expect(s.sort).toEqual(DEFAULT_STATE.sort);
+  });
+
+  it("openObjectGroupPostings sets og and clears the search, the shop, the unit and the amount, with the default sort and card=difference back to bars", () => {
+    const from: ViewState = {
+      ...at(cafe),
+      accounts: ["2"],
+      period: { preset: "lastYear" },
+      unit: "2026-07-01",
+      card: "difference",
+      search: "rema",
+      shop: "Netto",
+      sort: { column: "amount", descending: true },
+      amount: { min: 1, max: null },
+    };
+    const s = openObjectGroupPostings(from, "Abonnementer");
+    expect(s).toEqual({
+      ...from,
+      screen: "allPostings",
+      objectGroup: "Abonnementer",
+      unit: null,
+      card: "bars",
+      search: "",
+      shop: null,
+      sort: DEFAULT_STATE.sort,
+      amount: null,
+    });
+    expect(openObjectGroupPostings({ ...from, card: "postings" }, "Abonnementer").card).toBe("postings");
   });
 
   it("leaves Alle posteringer through the trail", () => {

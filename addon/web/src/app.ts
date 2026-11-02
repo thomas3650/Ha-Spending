@@ -34,6 +34,7 @@ import {
   normalise,
   openAllPostings,
   openAllPostingsFresh,
+  openObjectGroupPostings,
   openPart,
   removeCategory,
   removeMainGroup,
@@ -342,7 +343,7 @@ export class SpendingApp extends LitElement {
   }
 
   private objectGroupKeys(ctx: ViewContext) {
-    const cards = objectGroupCards(ctx);
+    const cards = objectGroupCards(ctx, (t) => `#${toHash(openObjectGroupPostings(this.state, t))}`);
     if (cards.length === 0) return null;
     return { cards, toggle: ctx.data.subscriptions.length > 0, pressed: this.state.card === "subscriptions" };
   }
