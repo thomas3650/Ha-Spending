@@ -13,7 +13,6 @@ import { kr, shortDate, stepAmounts } from "../format";
 import { da } from "../i18n/da";
 import { partColours } from "./circle";
 import { partName, type ViewContext } from "./context";
-import { linkBase } from "./postings";
 import type { Sorted, SubscriptionColumn } from "../state/view";
 
 export const DEFAULT_SUBSCRIPTION_SORT: Sorted<SubscriptionColumn> = { column: "status", descending: false };
@@ -43,7 +42,6 @@ export interface SubscriptionRow {
   /** The category when it is a known one; null shows as "Uden kategori". */
   categoryName: string | null;
   status: { kind: SubscriptionStatus["kind"]; text: string };
-  href: string | null;
 }
 
 function unbroken(text: string): string {
@@ -161,7 +159,6 @@ export function subscriptionTable(ctx: ViewContext, kept: Sorted<SubscriptionCol
   const kind = ctx.state.level.kind;
   const sort = shownSubscriptionSort(kept, kind);
   const today = ctx.data.today;
-  const base = linkBase(ctx.data.fireflyLinkUrl);
   const mainGroups = new Map(ctx.data.categories.map((c) => [c.name, c.mainGroup]));
   const unsorted = shown(ctx).map(({ subscription: s, next, status }) => {
     const last = s.lastPayment?.category ?? null;
@@ -178,7 +175,6 @@ export function subscriptionTable(ctx: ViewContext, kept: Sorted<SubscriptionCol
       perYearOre: amountPerYear(s),
       categoryName: known ? last : null,
       status: statusCell(status, today),
-      href: billHref(base, s.id),
     };
     return {
       row,

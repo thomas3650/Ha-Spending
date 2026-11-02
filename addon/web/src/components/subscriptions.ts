@@ -2,7 +2,7 @@ import { css, html, LitElement, nothing } from "lit";
 import { styleMap } from "lit/directives/style-map.js";
 import { da } from "../i18n/da";
 import { DEFAULT_SUBSCRIPTION_SORT, type SubscriptionGroup, type SubscriptionRow, type SubscriptionTable } from "../model/subscriptions";
-import type { SubscriptionColumn } from "../state/view";
+import type { DetailKey, SubscriptionColumn } from "../state/view";
 import { fire } from "./chip";
 import { sortHeader } from "./sort-header";
 
@@ -11,28 +11,40 @@ export class Subscriptions extends LitElement {
   static override properties = {
     table: { attribute: false },
     label: { attribute: false },
+    marked: { attribute: false },
   };
 
   /** Its `sort` is the one the headers show; a header click fires `subscription-sort` with its column. */
   declare table: SubscriptionTable;
   /** The card's title, which names the scroll box. */
   declare label: string;
+  /** The row whose detail is open. */
+  declare marked: DetailKey | null;
 
   constructor() {
     super();
     this.table = { objectGroups: [], groups: null, showCategory: false, rows: [], sort: DEFAULT_SUBSCRIPTION_SORT };
     this.label = "";
+    this.marked = null;
   }
 
   protected override createRenderRoot(): HTMLElement {
     return this;
   }
 
+  /** The click is the row's, so a click beside the name opens the detail too; the button gives the keyboard a way. */
   private row(r: SubscriptionRow, showCategory: boolean) {
-    const name = r.href ? html`<a href=${r.href} target="_blank" rel="noopener noreferrer">${r.name}</a>` : r.name;
-    return html`<tr>
+    const marked = this.marked?.kind === "subscription" && this.marked.id === r.id;
+    return html`<tr
+      class="subscription-row"
+      aria-current=${marked ? "true" : nothing}
+      @click=${() => fire(this, "detail-open", { kind: "subscription", id: r.id })}
+    >
       <td>
-        <span class="subscription-name">${name} <span class="object-group-mark">${r.objectGroup}</span></span>
+        <span class="subscription-name"
+          ><button type="button" class="row-name" data-detail=${`s:${r.id}`}>${r.name}</button>
+          <span class="object-group-mark">${r.objectGroup}</span></span
+        >
         ${r.next === null ? nothing : html`<span class="subscription-next">${da.nextOn(r.next)}</span>`}
       </td>
       ${showCategory ? html`<td>${r.category}</td>` : nothing}
@@ -173,34 +185,31 @@ export const subscriptionsStyles = css`
     color: var(--hs-muted);
     font-size: 12px;
   }
-  .subscriptions a {
-    color: inherit;
-    text-decoration: none;
+  .subscriptions tr.subscription-row {
+    cursor: pointer;
   }
-  .subscriptions a:hover,
-  .subscriptions a:focus-visible {
-    color: var(--hs-accent-text);
-    text-decoration: underline;
+  .subscriptions tr.subscription-row:hover {
+    background: var(--hs-soft);
   }
-  .subscriptions .subscription-status {
+  .subscription-status {
     display: inline-block;
     padding: 2px 8px;
     border-radius: 10px;
     font-size: 12px;
   }
-  .subscriptions .status-notSeen {
+  .subscription-status.status-notSeen {
     color: var(--hs-not-seen);
     background: var(--hs-not-seen-soft);
   }
-  .subscriptions .status-risen {
+  .subscription-status.status-risen {
     color: var(--hs-risen);
     background: var(--hs-risen-soft);
   }
-  .subscriptions .status-expected {
+  .subscription-status.status-expected {
     color: var(--hs-expected);
     background: var(--hs-expected-soft);
   }
-  .subscriptions .status-paid {
+  .subscription-status.status-paid {
     color: var(--hs-paid);
     background: var(--hs-paid-soft);
   }

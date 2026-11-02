@@ -1,6 +1,7 @@
 import { chosenUnitNumbers, differences, keyNumbers, total, type Unit, within } from "@ha-spending/shared";
 import { css, html, LitElement, nothing } from "lit";
 import "../components/bars";
+import "../components/detail";
 import { chip, fire } from "../components/chip";
 import "../components/circle";
 import "../components/difference";
@@ -13,6 +14,7 @@ import { count, kr, unitName } from "../format";
 import { da } from "../i18n/da";
 import { barItems, categoryColours, circleItems, circleSpan, circleTotal, partColours } from "../model/circle";
 import { levelName, partName, type ViewContext } from "../model/context";
+import { detailView } from "../model/detail";
 import { matches, shopSuggestions } from "../model/filter";
 import { postingList } from "../model/postings";
 import { type HiddenState, shopList } from "../model/shops";
@@ -60,6 +62,14 @@ export class Overview extends LitElement {
 
   protected override createRenderRoot(): HTMLElement {
     return this;
+  }
+
+  /** Waits for the lists too, so the app can focus a row's button once they show (detail spec §1.3). */
+  protected override async getUpdateComplete(): Promise<boolean> {
+    const done = await super.getUpdateComplete();
+    const children = [...this.querySelectorAll<LitElement>("hs-postings, hs-subscriptions, hs-detail")];
+    await Promise.all(children.map((c) => c.updateComplete));
+    return done;
   }
 
   private empty() {
@@ -145,6 +155,7 @@ export class Overview extends LitElement {
           .shop=${shop}
           .grouping=${g}
           .sort=${this.postingsSort}
+          .marked=${ctx.state.detail}
         ></hs-postings>`;
     }
     return html`<div class="postings-search-row">
@@ -202,7 +213,7 @@ export class Overview extends LitElement {
   private subscriptions(title: string) {
     const table = subscriptionTable(this.ctx, this.subscriptionsSort);
     if (table.rows.length === 0) return html`<p class="empty">${da.noSubscriptions(levelName(this.ctx.state.level))}</p>`;
-    return html`<hs-subscriptions .table=${table} .label=${title}></hs-subscriptions>
+    return html`<hs-subscriptions .table=${table} .label=${title} .marked=${this.ctx.state.detail}></hs-subscriptions>
       <p class="half-foot">${da.subscriptionsFoot}</p>`;
   }
 
@@ -232,8 +243,11 @@ export class Overview extends LitElement {
     const inPeriod = within(ctx.shown, ctx.timeline.period);
     const title = this.cardTitle(card);
     const shops = hasShops(ctx.data);
+    // In full screen the detail goes beside the list (detail spec §1.2).
+    const detail = this.fullScreen || ctx.state.detail === null ? null : detailView(ctx.state.detail, ctx);
     let body: unknown;
-    if (card === "subscriptions") body = this.subscriptions(title);
+    if (detail !== null) body = html`<hs-detail .view=${detail} .closable=${false}></hs-detail>`;
+    else if (card === "subscriptions") body = this.subscriptions(title);
     else if (card === "postings") body = this.postings();
     else if (card === "shops") body = this.shops();
     else if (inPeriod.length === 0) body = this.empty();
@@ -241,9 +255,19 @@ export class Overview extends LitElement {
     else body = this.bars();
     return html`<section class="card half" role="region" aria-labelledby=${RIGHT_TITLE}>
       <div class="half-head ${ctx.data.subscriptions.length === 0 && !shops ? "" : "wraps"}">
-        <div class="half-title">
-          <h2 id=${RIGHT_TITLE}>${title}</h2>
-          ${this.chips()}
+        <div class="half-title ${detail === null ? "" : "in-detail"}">
+          ${detail === null
+            ? nothing
+            : html`<button
+                type="button"
+                class="back"
+                aria-label=${da.backTo(title)}
+                @click=${() => fire(this, "detail-close")}
+              >
+                <span aria-hidden="true">←</span>
+              </button>`}
+          <h2 id=${RIGHT_TITLE} tabindex="-1">${title}</h2>
+          ${detail === null ? this.chips() : nothing}
         </div>
         <div class="card-tools">
           <div class="card-switch" role="group" aria-label=${da.view}>
@@ -297,6 +321,27 @@ export const overviewStyles = css`
     margin: 0;
     font-size: 16px;
     font-weight: 600;
+  }
+  .half-title.in-detail {
+    gap: 4px;
+    color: var(--hs-accent-text);
+  }
+  .half-title .back {
+    padding: 0 4px;
+    font: inherit;
+    font-size: 16px;
+    font-weight: 600;
+    color: inherit;
+    background: none;
+    border: 0;
+    border-radius: 4px;
+    cursor: pointer;
+  }
+  .half-title .back:focus-visible {
+    outline: 2px solid var(--hs-accent-text);
+  }
+  .half-head h2:focus {
+    outline: none;
   }
   .half-title {
     display: flex;

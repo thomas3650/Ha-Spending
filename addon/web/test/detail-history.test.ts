@@ -96,6 +96,9 @@ describe("the detail in the history", () => {
     ["the card", bars, ""],
   ])("a choice that changes the screen or the card closes the detail: %s", async (_, button, hash) => {
     const { app, root } = await mount("card=postings");
+    // Full screen keeps the list's rows above the detail; the normal page hides them while it is open.
+    fireEvent.click(fullScreen(root));
+    await settle(app);
     await open(app, CAFE);
     expect(location.hash).toBe("#card=postings&detail=p%3Ap23");
     fireEvent.click(button(root));
@@ -169,6 +172,8 @@ describe("the detail in the history", () => {
 
   it("Escape with the search's suggestions open closes only them and keeps the detail", async () => {
     const { app, root } = await mount("card=postings&detail=p%3Ap23");
+    fireEvent.click(fullScreen(root));
+    await settle(app);
     const box = getByRole(root, "combobox", { name: da.searchLabel });
     box.focus();
     fireEvent.input(box, { target: { value: "n" } });

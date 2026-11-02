@@ -9,7 +9,6 @@ export interface PostingRow {
   account: string;
   category: string;
   colour: string;
-  href: string | null;
 }
 
 export interface PostingGroup {
@@ -44,14 +43,12 @@ export function postingHref(base: string | null, p: Posting): string | null {
 }
 
 interface RowContext {
-  base: string | null;
   accounts: Map<string, string>;
   colours: Map<string | null, string>;
 }
 
 function rowContext(ctx: ViewContext, colours: Map<string | null, string>): RowContext {
   return {
-    base: linkBase(ctx.data.fireflyLinkUrl),
     accounts: new Map(ctx.data.accounts.map((a) => [a.id, a.name])),
     colours,
   };
@@ -63,7 +60,6 @@ function row(p: ClassifiedPosting, rc: RowContext): PostingRow {
     account: rc.accounts.get(p.account) ?? p.account,
     category: partName(p.category, "category"),
     colour: rc.colours.get(p.category) ?? NO_PIECE,
-    href: postingHref(rc.base, p),
   };
 }
 

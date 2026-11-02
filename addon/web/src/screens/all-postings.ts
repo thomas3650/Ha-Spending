@@ -172,6 +172,13 @@ export class AllPostings extends LitElement {
     return this;
   }
 
+  /** Waits for the list too, so the app can focus a row's button once it shows (detail spec §1.3). */
+  protected override async getUpdateComplete(): Promise<boolean> {
+    const done = await super.getUpdateComplete();
+    await this.querySelector("hs-postings")?.updateComplete;
+    return done;
+  }
+
   private chip(text: string, name: string, detail?: unknown) {
     return chip(text, () => fire(this, name, detail));
   }
@@ -203,6 +210,7 @@ export class AllPostings extends LitElement {
       .showCategory=${true}
       .grouping=${ctx.timeline.grouping}
       .sort=${sort}
+      .marked=${ctx.state.detail}
       @posting-sort=${(e: CustomEvent<PostingColumn>) => {
         e.stopPropagation();
         fire(this, "sort-change", nextSort(sort, e.detail, postingFirstDescending));

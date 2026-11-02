@@ -225,19 +225,14 @@ describe("the subscriptions card", () => {
     expect(within(region).queryByText(da.noSpending)).toBeNull();
   });
 
-  it("links a name to the subscription in Firefly III", async () => {
+  it("shows each name as a button that opens its detail, with no link to Firefly III", async () => {
     const { root } = await mountWith("card=subscriptions");
     const region = card(root, "Faste udgifter");
-    const link = getByRole(region, "link", { name: "Husleje" });
-    expect(link.getAttribute("href")).toBe(`${LINK}/bills/show/b1`);
-    expect(link.getAttribute("target")).toBe("_blank");
-    expect(link.getAttribute("rel")).toBe("noopener noreferrer");
-    expect(getAllByRole(region, "link")).toHaveLength(6);
-  });
-
-  it("has no links without the Firefly III address", async () => {
-    const { root } = await mountWith("card=subscriptions", SUBSCRIPTIONS, null);
-    expect(queryByRole(card(root, "Faste udgifter"), "link")).toBeNull();
+    const opened: unknown[] = [];
+    region.addEventListener("detail-open", (e) => opened.push((e as CustomEvent).detail));
+    fireEvent.click(getByRole(region, "button", { name: "Husleje" }));
+    expect(opened).toEqual([{ kind: "subscription", id: "b1" }]);
+    expect(queryByRole(region, "link")).toBeNull();
   });
 
   it("says when a level has none", async () => {
@@ -260,9 +255,9 @@ describe("the object groups in the card", () => {
     expect(text(row(region, "Husleje"))).toContain("Faste udgifter");
   });
 
-  it("keeps the fixed cost's name as its link's name", async () => {
+  it("keeps the fixed cost's name as its button's name", async () => {
     const { root } = await mountWith("card=subscriptions");
-    getByRole(card(root, "Faste udgifter"), "link", { name: "Husleje" });
+    getByRole(card(root, "Faste udgifter"), "button", { name: "Husleje" });
   });
 
   it("shows a yearly sum per object group, biggest first", async () => {

@@ -62,7 +62,7 @@ export class TopCard extends LitElement {
     return html`<div class="card top-card">
       <nav class="top-trail" aria-label=${da.trail}>
         ${links.map((l) => html`<a href=${l.href}>${l.name}</a><span class="top-sep" aria-hidden="true">›</span>`)}
-        <h1>${current}</h1>
+        <h1 tabindex="-1">${current}</h1>
       </nav>
       <div class="top-filters">
         <hs-period-picker .choice=${this.state.period} .today=${this.today} .earliest=${this.earliest}></hs-period-picker>

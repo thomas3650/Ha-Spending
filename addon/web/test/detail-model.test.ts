@@ -196,7 +196,7 @@ describe("a detail's head and boxes", () => {
     expect(v.amount).toBe(row?.amount);
     expect(v.status).toEqual(row?.status);
     expect(v.status?.kind).toBe("expected");
-    expect(v.href).toBe(row?.href);
+    expect(v.href).toBe(`${LINK}/bills/show/b1`);
     expect(v.aside).toBeNull();
     expect(v.boxes[1]).toEqual({ label: da.subscriptionColumns.perYear, value: "96.000 kr." });
     expect(v.boxes[2]).toEqual({ label: da.columns.account, value: "Fælleskonto" });

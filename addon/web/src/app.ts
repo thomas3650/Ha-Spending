@@ -14,6 +14,7 @@ import { dropdownStyles } from "./components/dropdown";
 import { keyNumbersStyles } from "./components/key-numbers";
 import { barsStyles, type UnitSelection } from "./components/bars";
 import { type CircleSelection, circleStyles } from "./components/circle";
+import { detailStyles } from "./components/detail";
 import { differenceStyles } from "./components/difference";
 import { calendarStyles, periodPickerStyles } from "./components/period-picker";
 import { postingsStyles } from "./components/postings";
@@ -126,6 +127,7 @@ export class SpendingApp extends LitElement {
     barsStyles,
     differenceStyles,
     postingsStyles,
+    detailStyles,
     sortHeaderStyles,
     searchStyles,
     subscriptionsStyles,
@@ -223,6 +225,8 @@ export class SpendingApp extends LitElement {
   private controller: AbortController | null = null;
   private hiddenAsked = false;
   private writes: Promise<void> = Promise.resolve();
+  /** The detail a close or Back just closed, whose row gets the focus back after the render. */
+  private closed: DetailKey | null = null;
 
   constructor() {
     super();
@@ -242,7 +246,12 @@ export class SpendingApp extends LitElement {
 
   private readonly onHash = (): void => {
     const next = parseHash(location.hash);
-    if (toHash(next) !== toHash(this.state)) this.change(next);
+    if (toHash(next) === toHash(this.state)) return;
+    const prev = this.state;
+    if (prev.detail !== null && next.detail === null && prev.card === next.card && prev.screen === next.screen) {
+      this.closed = prev.detail;
+    }
+    this.change(next);
   };
 
   private readonly onKey = (event: KeyboardEvent): void => {
@@ -267,6 +276,7 @@ export class SpendingApp extends LitElement {
    */
   private closeDetail(): void {
     if (this.state.detail === null) return;
+    this.closed = this.state.detail;
     const next = closeDetail(this.state);
     if (detailEntry()) {
       this.change(next);
@@ -327,6 +337,27 @@ export class SpendingApp extends LitElement {
     this.controller = null;
     this.asked = null;
     super.disconnectedCallback();
+  }
+
+  protected override updated(): void {
+    const key = this.closed;
+    if (key === null) return;
+    this.closed = null;
+    void this.focusRow(key);
+  }
+
+  /** The row's button when its list shows it, else the heading of the card or the page (detail spec §1.3). */
+  private async focusRow(key: DetailKey): Promise<void> {
+    const root = this.renderRoot;
+    await root.querySelector<LitElement>("hs-overview, hs-all-postings")?.updateComplete;
+    const wanted = `${key.kind === "subscription" ? "s" : "p"}:${key.id}`;
+    const button = [...root.querySelectorAll<HTMLElement>("[data-detail]")].find(
+      (b) => b.getAttribute("data-detail") === wanted,
+    );
+    const heading = root.querySelector<HTMLElement>(
+      this.state.screen === "overview" ? "#hs-right-title" : "hs-top-card h1",
+    );
+    (button ?? heading)?.focus();
   }
 
   /** pushState and replaceState fire no event, so the state is set here. A new card or screen closes the detail. */
