@@ -18,6 +18,11 @@ export interface ShopList {
 
 export type HiddenState = { kind: "loading" } | { kind: "ready"; shops: string[] } | { kind: "error" };
 
+/** The length of a full bar: the biggest sum among the rows shown, shown hidden rows included. */
+export function barScale(rows: ShopRow[]): number {
+  return rows.reduce((max, r) => Math.max(max, r.sum), 0);
+}
+
 /** Shares are of the whole base, hidden shops and postings with no shop included, so hiding moves no share. */
 export function shopList(base: ClassifiedPosting[], hidden: ReadonlySet<string>): ShopList {
   const sums = new Map<string, number>();

@@ -3,7 +3,7 @@ import { css, html, LitElement, nothing } from "lit";
 import { styleMap } from "lit/directives/style-map.js";
 import { kr } from "../format";
 import { da } from "../i18n/da";
-import type { ShopList, ShopRow } from "../model/shops";
+import { barScale, type ShopList, type ShopRow } from "../model/shops";
 import { fire } from "./chip";
 
 /**
@@ -49,8 +49,7 @@ export class Shops extends LitElement {
   }
 
   private row(r: ShopRow, place: number | null, scale: number) {
-    const fraction = scale > 0 ? r.sum / scale : 0;
-    const width = `${fraction * 100}%`;
+    const width = scale > 0 ? `${(r.sum / scale) * 100}%` : "0";
     return html`<li class="shop-row">
       <span class="shop-place" aria-hidden="true">${place ?? ""}</span>
       <button
@@ -62,9 +61,7 @@ export class Shops extends LitElement {
       >
         ${r.name}
       </button>
-      <span class="shop-bar" aria-hidden="true"
-        ><span data-fraction=${String(fraction)} style=${styleMap({ width })}></span
-      ></span>
+      <span class="shop-bar" aria-hidden="true"><span style=${styleMap({ width })}></span></span>
       <span class="shop-sum">${kr(r.sum)}</span>
       <span class="shop-share">${da.share(r.share)}</span>
       ${this.canHide
@@ -86,7 +83,7 @@ export class Shops extends LitElement {
     const rows = limited && !this.all ? visible.slice(0, this.limit ?? undefined) : visible;
     const offerHidden = this.canHide && hidden.length > 0;
     const shownHidden = offerHidden && this.showHidden ? hidden : [];
-    const scale = Math.max(rows[0]?.sum ?? 0, shownHidden[0]?.sum ?? 0);
+    const scale = barScale([...rows, ...shownHidden]);
     return html`<ol class="shops">
         ${rows.map((r, i) => this.row(r, i + 1, scale))}
       </ol>

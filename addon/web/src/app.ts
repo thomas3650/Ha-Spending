@@ -211,7 +211,7 @@ export class SpendingApp extends LitElement {
   private request = 0;
   private controller: AbortController | null = null;
   private hiddenAsked = false;
-  private write = 0;
+  private writes: Promise<void> = Promise.resolve();
 
   constructor() {
     super();
@@ -257,20 +257,21 @@ export class SpendingApp extends LitElement {
   }
 
   /**
-   * Not a view choice, so no history entry (spec §3); the row moves only once the server answers. The server writes in
-   * arrival order, so the latest write's answer holds every earlier one and an older answer is dropped.
+   * Not a view choice, so no history entry (spec §3); the row moves only once the server answers. Each write waits for
+   * the one before, so every answer holds the earlier writes and is applied as it comes.
    */
   private onShopHide(event: CustomEvent<HiddenShopChange>): void {
-    const id = ++this.write;
-    setHiddenShop(event.detail.shop, event.detail.hidden).then(
-      (shops) => {
-        if (id !== this.write) return;
-        this.hiddenShops = { kind: "ready", shops };
-        this.hiddenWriteFailed = false;
-      },
-      () => {
-        if (id === this.write) this.hiddenWriteFailed = true;
-      },
+    const { shop, hidden } = event.detail;
+    this.writes = this.writes.then(() =>
+      setHiddenShop(shop, hidden).then(
+        (shops) => {
+          this.hiddenShops = { kind: "ready", shops };
+          this.hiddenWriteFailed = false;
+        },
+        () => {
+          this.hiddenWriteFailed = true;
+        },
+      ),
     );
   }
 

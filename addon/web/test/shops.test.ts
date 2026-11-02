@@ -5,6 +5,7 @@ import {
   getAllByText,
   getByRole,
   getByText,
+  queryAllByRole,
   queryByRole,
   queryByText,
   within,
@@ -15,7 +16,7 @@ import "../src/components/shops";
 import type { Shops } from "../src/components/shops";
 import { kr } from "../src/format";
 import { da } from "../src/i18n/da";
-import { type ShopList, shopList } from "../src/model/shops";
+import { barScale, type ShopList, shopList } from "../src/model/shops";
 import { answerFor } from "./fixture";
 import { json, mount, settle, unmount } from "./mount";
 import { KEEP_NBSP } from "./text";
@@ -78,6 +79,16 @@ describe("the shop list", () => {
   it("noShop sums postings with no shop", () => {
     expect(shopList([posting(null, 15000), posting(null, -5000), posting("Netto", 100)], new Set()).noShop).toBe(10000);
     expect(shopList([posting("Netto", 100)], new Set()).noShop).toBe(0);
+  });
+
+  it("the bar scale is the biggest sum among the rows shown, shown hidden rows included", () => {
+    const visible = [
+      { name: "Rema", sum: 10000, share: 10 },
+      { name: "Føtex", sum: 4000, share: 4 },
+    ];
+    expect(barScale(visible)).toBe(10000);
+    expect(barScale([...visible, { name: "Udlejer", sum: 50000, share: 50 }])).toBe(50000);
+    expect(barScale([])).toBe(0);
   });
 
   it("hidden shops are split out with their sum", () => {
@@ -381,11 +392,6 @@ function rowOf(region: HTMLElement, name: string): HTMLElement {
   return rows.find((r) => within(r).queryByRole("button", { name: new RegExp(`^${name},`) }) !== null) as HTMLElement;
 }
 
-/** The bar's length as a fraction of the longest bar shown, read from its data-fraction attribute. */
-function fraction(row: HTMLElement): number {
-  return Number(row.querySelector("[data-fraction]")?.getAttribute("data-fraction"));
-}
-
 function circleCard(root: HTMLElement): HTMLElement {
   return getByRole(root, "region", { name: da.mainGroups });
 }
@@ -462,13 +468,19 @@ describe("hiding a shop", () => {
     expect(names(card(root, "Butikker i Mad"))).toEqual(["Café Søde", "Pizzeria Roma"]);
   });
 
-  it("the bars' scale is the biggest row shown, hidden rows included", async () => {
-    const { app, root } = await mount("card=shops", { hidden: () => json({ shops: ["Netto"] }) });
-    expect(fraction(rowOf(card(root), "Boghandlen"))).toBe(1);
-    fireEvent.click(getByRole(card(root), "button", { name: da.showHidden(1, kr(3150000)) }));
-    await settle(app);
-    expect(fraction(rowOf(card(root), "Netto"))).toBe(1);
-    expect(fraction(rowOf(card(root), "Boghandlen"))).toBeLessThan(1);
+  it("the rows follow the period", async () => {
+    const { root } = await mount("period=lastYear&card=shops");
+    expect(labels(card(root))).toEqual([
+      da.shopOption("Netto", kr(300000)),
+      da.shopOption("Legetøjsbutikken", kr(100000)),
+    ]);
+  });
+
+  it("with every shop hidden the list is empty, Vis skjulte shows and Ingen butikker at vise does not", async () => {
+    const { root } = await mount("card=shops", { hidden: () => json({ shops: ALL }) });
+    expect(queryAllByRole(getAllByRole(card(root), "list")[0] as HTMLElement, "listitem")).toHaveLength(0);
+    expect(queryByText(card(root), da.noShops)).toBeNull();
+    getByRole(card(root), "button", { name: /^Vis skjulte \(6 · / });
   });
 
   it("a failed write keeps the row and says so until the next successful write", async () => {
@@ -491,7 +503,7 @@ describe("hiding a shop", () => {
     expect(names(card(root))).toEqual(ALL.slice(1));
   });
 
-  it("only the latest write's answer is applied when the answers arrive out of order", async () => {
+  it("a write is sent only after the one before has answered, and each answer is applied", async () => {
     const writes = [deferred<Response>(), deferred<Response>()];
     let posts = 0;
     const { app, root } = await mount("card=shops", {
@@ -500,11 +512,31 @@ describe("hiding a shop", () => {
     fireEvent.click(getByRole(card(root), "button", { name: da.hideShop("Netto") }));
     fireEvent.click(getByRole(card(root), "button", { name: da.hideShop("Boghandlen") }));
     await settle(app);
-    writes[1]?.resolve(json({ shops: ["Boghandlen", "Netto"] }));
-    await settle(app);
+    expect(posts).toBe(1);
     writes[0]?.resolve(json({ shops: ["Netto"] }));
     await settle(app);
+    expect(posts).toBe(2);
+    expect(names(card(root))).toEqual(ALL.slice(1));
+    writes[1]?.resolve(json({ shops: ["Boghandlen", "Netto"] }));
+    await settle(app);
     expect(names(card(root))).toEqual(ALL.slice(2));
+  });
+
+  it("an earlier write's answer stays when a later write fails", async () => {
+    let posts = 0;
+    const { app, root } = await mount("card=shops", {
+      hidden: (init) => {
+        if (init?.method !== "POST") return json({ shops: [] });
+        posts += 1;
+        return posts === 1 ? json({ shops: ["Netto"] }) : json({ error: "internal" }, 500);
+      },
+    });
+    fireEvent.click(getByRole(card(root), "button", { name: da.hideShop("Netto") }));
+    fireEvent.click(getByRole(card(root), "button", { name: da.hideShop("Boghandlen") }));
+    await settle(app);
+    expect(posts).toBe(2);
+    expect(names(card(root))).toEqual(ALL.slice(1));
+    expect(getByRole(card(root), "alert").textContent).toBe(da.saveFailed);
   });
 
   it("the hidden shops are read at start without waiting for the data, and only once", async () => {
