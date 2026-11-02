@@ -62,8 +62,9 @@ export class PeriodPicker extends Dropdown {
     this.toText = "";
   }
 
-  /** A redraw of the calendar removes the focused day and leaves focus nowhere; that is not leaving the menu. */
-  protected override keepsOpenOn = (event: FocusEvent): boolean => event.relatedTarget === null;
+  /** A redraw of the calendar removes the focused day and leaves focus nowhere; that is not leaving the menu. While
+   * the document has lost focus too, focus went outside the frame or to another window, and the menu closes. */
+  protected override keepsOpenOn = (event: FocusEvent): boolean => event.relatedTarget === null && document.hasFocus();
 
   protected override toggle(): void {
     if (!this.open) {
@@ -153,7 +154,10 @@ export class PeriodPicker extends Dropdown {
         const date = dateElement.dataset.vcDate;
         if (date !== undefined) dateElement.querySelector("button")?.setAttribute("aria-label", longDate(date));
       },
-      onClickDate: (self) => this.picked(self.context.selectedDates),
+      onClickDate: (self, event) => {
+        this.picked(self.context.selectedDates);
+        this.refocus((event.target as Element | null)?.closest<HTMLElement>("[data-vc-date]")?.dataset.vcDate);
+      },
     });
     this.calendar.init();
   }
@@ -161,6 +165,15 @@ export class PeriodPicker extends Dropdown {
   private destroyCalendar(): void {
     this.calendar?.destroy();
     this.calendar = null;
+  }
+
+  /** The redraw after a pick leaves focus nowhere; it goes back to the picked day, or the menu, so Escape and Tab
+   * keep working. */
+  private refocus(date: string | undefined): void {
+    const root = this.getRootNode() as Document | ShadowRoot;
+    if (root.activeElement !== null && this.contains(root.activeElement)) return;
+    const day = date === undefined ? null : this.querySelector<HTMLElement>(`[data-vc-date="${date}"] button`);
+    (day ?? this.querySelector<HTMLElement>(".period-menu"))?.focus();
   }
 
   private picked(dates: readonly (string | undefined)[]): void {
