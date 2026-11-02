@@ -97,12 +97,13 @@ The page's list. Every screenshot is at 1440×960 with the console free of error
 10. `15-hovedgruppe`, `16-kategori-soejler`, `17-kategori-posteringer`: Mad, then a category with bars, then with
     postings. Compare `2-hovedgruppe*.png`.
 11. `18-uden-hovedgruppe`: Uden hovedgruppe as a screen, with its categories and Uden kategori.
-12. `19-alle-posteringer`, `20-stoerste-foerst` (a click on the Beløb header), `21-filter`, `22-ingen-match`: screen 3 with chips; sorted by size as a
-    flat list, the Beløb header with ▼ and the other columns sorting by a click; the "+ Filter" panel open; a search nothing matches (`da.noMatch`). Compare `3-posteringer.png`.
+12. `19-alle-posteringer`, `20-stoerste-foerst` (a click on the Beløb header), `21-filter`, `22-ingen-match`: screen 3
+    with chips; sorted by size as a flat list, the Beløb header with ▼ and the other columns sorting by a click; the
+    "+ Filter" panel open; a search nothing matches (`da.noMatch`). Compare `3-posteringer.png`.
 13. `23-soejle`, `24-soejle-kategori`: a click on a bar opens Posteringer for that month; press Forskel. A chosen month
     with Forskel at all spending, then in Mad with a category chosen, with both chips. Compare `4-soejle.png`.
-14. `25-loading` (`FAKE_FIREFLY_FAULT=slow`), `26-refused` (`refused`), `27-unreachable` (`error`), `28-empty` (a period typed
-    in Fra and Til in a year with no data).
+14. `25-loading` (`FAKE_FIREFLY_FAULT=slow`), `26-refused` (`refused`), `27-unreachable` (`error`), `28-empty` (a period
+    typed in Fra and Til in a year with no data).
 15. `29-ingen-regelgruppe`: `scripts/develop` with `HA_SPENDING_OPTIONS` pointing at a copy of `addon/dev/options.json`
     in `local/` whose `main_group_rule_group` names a group that does not exist. The page shows `da.noRuleGroup` once.
 16. `30-1024`: the window at 1024×960 (five key numbers in a row). The frame is 1024 px or wider, so the

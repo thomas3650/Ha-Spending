@@ -393,11 +393,10 @@ to set their status to `superseded by D<n>`, or to name a part a later decision 
 ### D39: The custom period uses Vanilla Calendar Pro
 - **Date:** 2026-11-02 · **Status:** active
 - **Decision:** The period's custom interval is one calendar from Vanilla Calendar Pro, mounted inline in the menu,
-  with Fra and Til fields for typing. It replaces the two `<input type="date">` fields and is a runtime dependency
-  beside Lit and ECharts (technical spec §6). The one chunk's `chunkSizeWarningLimit` is 800 kB, since the library
-  takes it past D19's 700.
+  with Fra and Til fields for typing. The one chunk's `chunkSizeWarningLimit` is 800 kB.
 - **Why:** Safari would not take a typed year in the date field, and the browsers' date fields differ. A library gives
-  one behaviour everywhere.
+  one behaviour everywhere. It replaces the two `<input type="date">` fields and is a runtime dependency beside Lit and
+  ECharts (technical spec §6). It takes the one chunk past D19's 700 kB.
 - **Source:** Thomas, 2026-11-02, [the lists spec](superpowers/specs/2026-11-02-lists-period-postings.md) §1.2
 
 ### D40: Tables sort by their headers
