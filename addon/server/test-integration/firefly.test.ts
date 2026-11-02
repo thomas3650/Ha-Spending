@@ -46,8 +46,8 @@ describe("a real Firefly III", () => {
   it("reads the example dataset as the fake does", async () => {
     const warn = vi.fn();
     const d = await readSpendingData(client, settings, R1, { today, warn });
-    expect(d.postings).toHaveLength(13);
-    expect(sum(d.postings)).toBe(1059958);
+    expect(d.postings).toHaveLength(15);
+    expect(sum(d.postings)).toBe(1199858);
     expect(d.earliestPostingDate).toBe("2025-12-03");
     expect(d.accounts.map((a) => a.name)).toEqual(["Konto A", "Konto B", "Konto C"]);
     expect(d.categories).toEqual([
@@ -69,7 +69,7 @@ describe("a real Firefly III", () => {
     const count = async (type: string) =>
       ((await client.get("transactions", { start: "1900-01-01", end: today, type, limit: "50" })) as WirePage<unknown>)
         .data.length;
-    expect(await count("withdrawal")).toBe(13);
+    expect(await count("withdrawal")).toBe(15);
     expect(await count("deposit")).toBe(4);
     expect(await count("transfer")).toBe(2);
   });
@@ -90,9 +90,9 @@ describe("a real Firefly III", () => {
     const d = await read(R1);
     const classified = classify(d.postings, d.categories);
     expect(parts(classified, { kind: "all" })).toEqual([
-      { key: "Abonnementer", amount: 12900 },
+      { key: "Abonnementer", amount: 32800 },
       { key: "Bil", amount: 55000 },
-      { key: "Bolig", amount: 800000 },
+      { key: "Bolig", amount: 920000 },
       { key: "Mad", amount: 172558 },
       { key: null, amount: 19500 },
     ]);
@@ -110,7 +110,7 @@ describe("a real Firefly III", () => {
       const name = byAccount.get(p.account)!;
       sums[name] = (sums[name] ?? 0) + p.amount;
     }
-    expect(sums).toEqual({ "Konto A": 897125, "Konto B": 129500, "Konto C": 33333 });
+    expect(sums).toEqual({ "Konto A": 1037025, "Konto B": 129500, "Konto C": 33333 });
   });
 
   it("reads more than one page", async () => {
@@ -122,7 +122,7 @@ describe("a real Firefly III", () => {
       return fetch(input, init);
     };
     const d = await read(R1, createFireflyClient({ baseUrl: url, token, fetch: counting }));
-    expect(d.postings).toHaveLength(13);
+    expect(d.postings).toHaveLength(15);
     expect(pages).toBe(4);
   });
 
@@ -152,7 +152,7 @@ describe("a real Firefly III", () => {
       expect(res.status).toBe(200);
       return (await res.json()) as SpendingData;
     };
-    expect(sum((await served("2025-12-01", "2026-07-31")).postings)).toBe(1059958);
+    expect(sum((await served("2025-12-01", "2026-07-31")).postings)).toBe(1199858);
     const january = await served("2026-01-01", "2026-01-31");
     expect(january.postings).toHaveLength(5);
     expect(sum(january.postings)).toBe(126900);

@@ -40,8 +40,8 @@ describe("/api/data over the fake Firefly III", () => {
     const res = await app.request(R1, {}, ingress);
     expect(res.status).toBe(200);
     const data = (await res.json()) as SpendingData;
-    expect(data.postings).toHaveLength(13);
-    expect(data.postings.reduce((s, p) => s + p.amount, 0)).toBe(1059958);
+    expect(data.postings).toHaveLength(15);
+    expect(data.postings.reduce((s, p) => s + p.amount, 0)).toBe(1199858);
   });
 
   it("never puts the token in an answer or a log line", async () => {

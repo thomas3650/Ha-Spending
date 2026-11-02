@@ -171,6 +171,7 @@ function buildData(data: SeedData) {
           category_name: s.category ?? null,
           tags: s.tags ?? [],
           notes: s.notes ?? null,
+          bill_id: null as string | null,
         };
       }),
     },
@@ -213,8 +214,17 @@ function buildData(data: SeedData) {
       repeat_freq: b.repeat,
       skip: b.skip ?? 0,
       active: b.active ?? true,
+      object_group_title: b.objectGroup ?? null,
     },
   }));
+
+  const billIds = new Map(bills.map((b) => [b.name, b.id]));
+  for (const link of links) {
+    const split = groups
+      .find((g) => g.id === link.groupId)!
+      .attributes.transactions.find((t) => t.transaction_journal_id === link.journalId)!;
+    split.bill_id = billIds.get(link.subscription)!;
+  }
 
   return { assets, accounts, categories, groups, ruleGroups, bills, links, nextId };
 }

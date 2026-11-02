@@ -60,4 +60,12 @@ describe("generateSeed", () => {
     expect(linked.length).toBeGreaterThan(0);
     for (const x of linked) expect(names).toContain(x.subscription);
   });
+
+  it("puts bills in both object groups and leaves one without", () => {
+    const group = (name: string) => (s.subscriptions ?? []).find((x) => x.name === name)?.objectGroup;
+    expect(group("Netflix")).toBe("Abonnementer");
+    expect(group("Spotify")).toBe("Abonnementer");
+    expect(group("Husleje")).toBe("Faste udgifter");
+    expect(group("Havehjælp")).toBeUndefined();
+  });
 });

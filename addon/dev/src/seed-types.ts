@@ -27,6 +27,8 @@ export interface SeedSubscription {
   skip?: number;
   active?: boolean;
   end?: string;
+  /** The bill's object group in Firefly III; left out for a bill in none. */
+  objectGroup?: string;
 }
 
 export interface SeedRule {

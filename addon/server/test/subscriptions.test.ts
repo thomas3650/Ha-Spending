@@ -165,7 +165,7 @@ describe("/api/data's subscriptions over the fake Firefly III", () => {
       const dates = b.attributes.paid_dates;
       return dates.length === 0 ? [] : [`/api/v1/transactions/${dates[dates.length - 1].transaction_group_id}`];
     });
-    expect(paid).toHaveLength(6);
+    expect(paid).toHaveLength(8);
     expect(read.sort()).toEqual(paid.sort());
     expect(most).toBe(5);
   });
