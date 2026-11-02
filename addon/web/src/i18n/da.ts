@@ -213,6 +213,9 @@ export const da = {
   noShop: (sum: string) => `Uden butik: ${sum}`,
   noShops: "Ingen butikker at vise",
   share: (p: number) => `${p} %`,
+  fetching: "Henter …",
+  hiddenUnreadable: "Skjulte butikker kunne ikke hentes.",
+  saveFailed: "Kunne ikke gemme. Prøv igen.",
 
   periodClosed: (label: string, range: string) => `${label} · ${range}`,
 

@@ -1,5 +1,14 @@
 import type { ClassifiedPosting, Posting } from "@ha-spending/shared";
-import { fireEvent, getAllByRole, getByRole, getByText, queryByRole, queryByText, within } from "@testing-library/dom";
+import {
+  fireEvent,
+  getAllByRole,
+  getAllByText,
+  getByRole,
+  getByText,
+  queryByRole,
+  queryByText,
+  within,
+} from "@testing-library/dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import "../src/components/shops";
@@ -166,12 +175,16 @@ describe("the Butikker list", () => {
 
   it("marks the chosen shop", async () => {
     const { el } = await render({ chosen: "Rema" });
-    expect(getByRole(el, "button", { name: da.shopOption("Rema", kr(10000)) }).getAttribute("aria-pressed")).toBe(
-      "true",
-    );
-    expect(getByRole(el, "button", { name: da.shopOption("Netto", kr(30000)) }).getAttribute("aria-pressed")).toBe(
-      "false",
-    );
+    expect(getAllByRole(el, "button", { pressed: true }).map(text)).toEqual(["Rema"]);
+    getByRole(el, "button", { name: da.shopOption("Netto", kr(30000)), pressed: false });
+  });
+
+  it("has no Uden butik when the postings with no shop net to zero or below", async () => {
+    for (const noShop of [0, -500]) {
+      const { el } = await render({ list: { ...LIST, noShop } });
+      expect(queryByText(el, /Uden butik/)).toBeNull();
+      el.remove();
+    }
   });
 
   it("toggles Vis alle", async () => {
@@ -290,8 +303,8 @@ describe("the Butikker card", () => {
   it("the search and the chosen shop do not narrow the list, and the chosen shop is pressed", async () => {
     const { root } = await mount("card=shops&q=Shell&shop=Q8");
     expect(names(card(root))).toEqual(["Netto", "Boghandlen", "Q8", "Café Søde", "Shell", "Pizzeria Roma"]);
-    const pressed = nameButtons(card(root)).filter((b) => b.getAttribute("aria-pressed") === "true");
-    expect(pressed.map(text)).toEqual(["Q8"]);
+    const rows = getAllByRole(card(root), "list")[0] as HTMLElement;
+    expect(getAllByRole(rows, "button", { pressed: true }).map(text)).toEqual(["Q8"]);
   });
 
   it("a share reads 27 %", async () => {
@@ -354,5 +367,124 @@ describe("the Butikker card", () => {
     unmount();
     ({ root } = await mount("group=Bolig&card=shops"));
     getByText(card(root, "Butikker i Bolig"), da.noShops);
+  });
+});
+
+function deferred<T>() {
+  let resolve: (value: T) => void = () => undefined;
+  const promise = new Promise<T>((r) => (resolve = r));
+  return { promise, resolve };
+}
+
+function rowOf(region: HTMLElement, name: string): HTMLElement {
+  const rows = getAllByRole(region, "listitem");
+  return rows.find((r) => within(r).queryByRole("button", { name: new RegExp(`^${name},`) }) !== null) as HTMLElement;
+}
+
+/** The bar's length as a fraction of the longest bar shown, read from its data-fraction attribute. */
+function fraction(row: HTMLElement): number {
+  return Number(row.querySelector("[data-fraction]")?.getAttribute("data-fraction"));
+}
+
+function circleCard(root: HTMLElement): HTMLElement {
+  return getByRole(root, "region", { name: da.mainGroups });
+}
+
+const TOTAL = 11566012;
+const ALL = ["Netto", "Boghandlen", "Q8", "Café Søde", "Shell", "Pizzeria Roma"];
+
+describe("hiding a shop", () => {
+  it("Henter … until the hidden shops answer, and no hidden shop before", async () => {
+    const answer = deferred<Response>();
+    const { app, root } = await mount("card=shops", { hidden: () => answer.promise });
+    getByText(card(root), da.fetching);
+    expect(queryByRole(card(root), "button", { name: NETTO })).toBeNull();
+    expect(queryByRole(card(root), "list")).toBeNull();
+    answer.resolve(json({ shops: ["Netto"] }));
+    await settle(app);
+    expect(queryByText(card(root), da.fetching)).toBeNull();
+    expect(names(card(root))).toEqual(ALL.slice(1));
+  });
+
+  it("Skjul removes the row once the server answers, and shares and the circle's total stay", async () => {
+    const write = deferred<Response>();
+    const { app, root, hidden } = await mount("card=shops", {
+      hidden: (init) => (init?.method === "POST" ? write.promise : json({ shops: [] })),
+    });
+    const length = history.length;
+    const before = text(rowOf(card(root), "Boghandlen"));
+    fireEvent.click(getByRole(card(root), "button", { name: da.hideShop("Netto") }));
+    await settle(app);
+    const init = hidden.mock.calls.at(-1)?.[0];
+    expect(init?.method).toBe("POST");
+    expect(new Headers(init?.headers).get("content-type")).toBe("application/json");
+    expect(init?.body).toBe('{"shop":"Netto","hidden":true}');
+    expect(names(card(root))).toEqual(ALL);
+    write.resolve(json({ shops: ["Netto"] }));
+    await settle(app);
+    expect(names(card(root))).toEqual(ALL.slice(1));
+    expect(text(rowOf(card(root), "Boghandlen"))).toBe(before.replace(/^2 /, "1 "));
+    expect(getAllByText(circleCard(root), kr(TOTAL))).toHaveLength(2);
+    expect(history.length).toBe(length);
+    expect(location.hash).toBe("#card=shops");
+  });
+
+  it("Vis skjulte shows the hidden rows greyed with Vis, and Vis brings one back", async () => {
+    const { app, root } = await mount("card=shops");
+    fireEvent.click(getByRole(card(root), "button", { name: da.hideShop("Netto") }));
+    await settle(app);
+    const label = da.showHidden(1, kr(3150000));
+    expect(label.replace(/\s/g, " ")).toBe("Vis skjulte (1 · 31.500 kr.)");
+    fireEvent.click(getByRole(card(root), "button", { name: label }));
+    await settle(app);
+    const lists = getAllByRole(card(root), "list");
+    expect(lists).toHaveLength(2);
+    const shown = getAllByRole(lists[1] as HTMLElement, "listitem");
+    expect(shown).toHaveLength(1);
+    getByRole(shown[0] as HTMLElement, "button", { name: NETTO });
+    getByRole(card(root), "button", { name: da.hideHidden });
+    fireEvent.click(getByRole(card(root), "button", { name: da.showShop("Netto") }));
+    await settle(app);
+    expect(names(card(root))).toEqual(ALL);
+    expect(getAllByRole(card(root), "list")).toHaveLength(1);
+  });
+
+  it("a hidden shop is hidden at a main group too", async () => {
+    const { root } = await mount("group=Mad&card=shops", { hidden: () => json({ shops: ["Netto"] }) });
+    expect(names(card(root, "Butikker i Mad"))).toEqual(["Café Søde", "Pizzeria Roma"]);
+  });
+
+  it("the bars' scale is the biggest row shown, hidden rows included", async () => {
+    const { app, root } = await mount("card=shops", { hidden: () => json({ shops: ["Netto"] }) });
+    expect(fraction(rowOf(card(root), "Boghandlen"))).toBe(1);
+    fireEvent.click(getByRole(card(root), "button", { name: da.showHidden(1, kr(3150000)) }));
+    await settle(app);
+    expect(fraction(rowOf(card(root), "Netto"))).toBe(1);
+    expect(fraction(rowOf(card(root), "Boghandlen"))).toBeLessThan(1);
+  });
+
+  it("a failed write keeps the row and says so", async () => {
+    const { app, root } = await mount("card=shops", {
+      hidden: (init) => (init?.method === "POST" ? json({ error: "internal" }, 500) : json({ shops: [] })),
+    });
+    expect(queryByText(card(root), da.saveFailed)).toBeNull();
+    fireEvent.click(getByRole(card(root), "button", { name: da.hideShop("Netto") }));
+    await settle(app);
+    getByText(card(root), da.saveFailed);
+    expect(names(card(root))).toEqual(ALL);
+  });
+
+  it("a failed read shows every shop with no Skjul and says so", async () => {
+    const { root } = await mount("card=shops", { hidden: () => json({ error: "internal" }, 500) });
+    getByText(card(root), da.hiddenUnreadable);
+    expect(names(card(root))).toEqual(ALL);
+    expect(queryByRole(card(root), "button", { name: da.hideShop("Netto") })).toBeNull();
+    expect(queryByRole(card(root), "button", { name: /^Vis skjulte/ })).toBeNull();
+  });
+
+  it("Vis skjulte is not offered when no hidden shop is in the base", async () => {
+    const { root } = await mount("group=Mad&card=shops", { hidden: () => json({ shops: ["Boghandlen", "Gone"] }) });
+    expect(names(card(root, "Butikker i Mad"))).toEqual(["Netto", "Café Søde", "Pizzeria Roma"]);
+    expect(queryByRole(card(root, "Butikker i Mad"), "button", { name: /^Vis skjulte/ })).toBeNull();
   });
 });

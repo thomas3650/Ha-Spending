@@ -49,7 +49,8 @@ export class Shops extends LitElement {
   }
 
   private row(r: ShopRow, place: number | null, scale: number) {
-    const width = scale > 0 ? `${(r.sum / scale) * 100}%` : "0";
+    const fraction = scale > 0 ? r.sum / scale : 0;
+    const width = `${fraction * 100}%`;
     return html`<li class="shop-row">
       <span class="shop-place" aria-hidden="true">${place ?? ""}</span>
       <button
@@ -61,7 +62,9 @@ export class Shops extends LitElement {
       >
         ${r.name}
       </button>
-      <span class="shop-bar" aria-hidden="true"><span style=${styleMap({ width })}></span></span>
+      <span class="shop-bar" aria-hidden="true"
+        ><span data-fraction=${String(fraction)} style=${styleMap({ width })}></span
+      ></span>
       <span class="shop-sum">${kr(r.sum)}</span>
       <span class="shop-share">${da.share(r.share)}</span>
       ${this.canHide

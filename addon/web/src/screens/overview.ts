@@ -212,9 +212,11 @@ export class Overview extends LitElement {
     const base = within(ctx.shown, ctx.chosen ?? ctx.timeline.period);
     if (base.length === 0) return this.empty();
     const state = this.hiddenShops;
+    if (state.kind === "loading") return html`<p class="empty">${da.fetching}</p>`;
     const list = shopList(base, new Set(state.kind === "ready" ? state.shops : []));
     if (list.visible.length === 0 && list.hidden.length === 0) return html`<p class="empty">${da.noShops}</p>`;
-    return html`<hs-shops
+    return html`${state.kind === "error" ? html`<p class="line status">${da.hiddenUnreadable}</p>` : nothing}
+      <hs-shops
       .list=${list}
       .chosen=${ctx.state.shop}
       .all=${this.shopsAll}
@@ -263,6 +265,9 @@ export class Overview extends LitElement {
           </button>
         </div>
       </div>
+      ${card === "shops" && this.hiddenWriteFailed
+        ? html`<p class="line alert" role="alert">${da.saveFailed}</p>`
+        : nothing}
       ${body}
     </section>`;
   }

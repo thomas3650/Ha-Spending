@@ -2,6 +2,7 @@ import {
   type Account,
   fetchRange,
   type Grouping,
+  type HiddenShopChange,
   localToday,
   type Period,
   type SpendingData,
@@ -21,10 +22,11 @@ import { searchStyles } from "./components/search";
 import { shopsStyles } from "./components/shops";
 import { subscriptionsStyles } from "./components/subscriptions";
 import { topCardStyles } from "./components/top-card";
-import { LoadError, type LoadErrorCode, loadData } from "./data/api";
+import { LoadError, type LoadErrorCode, loadData, loadHiddenShops, setHiddenShop } from "./data/api";
 import { da } from "./i18n/da";
 import { type ViewContext, viewContext } from "./model/context";
 import { keyCards, objectGroupCards } from "./model/key-numbers";
+import type { HiddenState } from "./model/shops";
 import { DEFAULT_SUBSCRIPTION_SORT, shownSubscriptionSort, subscriptionFirstDescending } from "./model/subscriptions";
 import { allPostingsStyles, type CategoryChoice } from "./screens/all-postings";
 import "./screens/overview";
@@ -94,6 +96,8 @@ export class SpendingApp extends LitElement {
     subscriptionsSort: { state: true },
     shopsAll: { state: true },
     shopsHidden: { state: true },
+    hiddenShops: { state: true },
+    hiddenWriteFailed: { state: true },
   };
 
   static override styles = [
@@ -199,10 +203,14 @@ export class SpendingApp extends LitElement {
   /** Butikker's "Vis alle" and "Vis skjulte" are held here like the sorts: not in the hash (D40). */
   declare private shopsAll: boolean;
   declare private shopsHidden: boolean;
+  /** Read once at start, beside the data and not waiting for it, so Butikker never shows a hidden shop (spec §3). */
+  declare private hiddenShops: HiddenState;
+  declare private hiddenWriteFailed: boolean;
 
   private asked: Period | null = null;
   private request = 0;
   private controller: AbortController | null = null;
+  private hiddenAsked = false;
 
   constructor() {
     super();
@@ -216,6 +224,8 @@ export class SpendingApp extends LitElement {
     this.subscriptionsSort = DEFAULT_SUBSCRIPTION_SORT;
     this.shopsAll = false;
     this.shopsHidden = false;
+    this.hiddenShops = { kind: "loading" };
+    this.hiddenWriteFailed = false;
   }
 
   private readonly onHash = (): void => {
@@ -233,6 +243,27 @@ export class SpendingApp extends LitElement {
     window.addEventListener("popstate", this.onHash);
     window.addEventListener("keydown", this.onKey);
     this.change(parseHash(location.hash));
+    this.readHiddenShops();
+  }
+
+  private readHiddenShops(): void {
+    if (this.hiddenAsked) return;
+    this.hiddenAsked = true;
+    loadHiddenShops().then(
+      (shops) => (this.hiddenShops = { kind: "ready", shops }),
+      () => (this.hiddenShops = { kind: "error" }),
+    );
+  }
+
+  /** Not a view choice, so no history entry (spec §3); the row moves only once the server answers. */
+  private onShopHide(event: CustomEvent<HiddenShopChange>): void {
+    setHiddenShop(event.detail.shop, event.detail.hidden).then(
+      (shops) => {
+        this.hiddenShops = { kind: "ready", shops };
+        this.hiddenWriteFailed = false;
+      },
+      () => (this.hiddenWriteFailed = true),
+    );
   }
 
   override disconnectedCallback(): void {
@@ -375,7 +406,8 @@ export class SpendingApp extends LitElement {
               .fullScreen=${this.fullScreen}
               .postingsSort=${this.postingsSort}
               .subscriptionsSort=${this.subscriptionsSort}
-              .hiddenShops=${{ kind: "ready", shops: [] }}
+              .hiddenShops=${this.hiddenShops}
+              .hiddenWriteFailed=${this.hiddenWriteFailed}
               .shopsAll=${this.shopsAll}
               .shopsHidden=${this.shopsHidden}
               @posting-sort=${(e: CustomEvent<PostingColumn>) =>
@@ -389,6 +421,7 @@ export class SpendingApp extends LitElement {
               @full-screen-toggle=${() => (this.fullScreen = !this.fullScreen)}
               @shops-all-toggle=${() => (this.shopsAll = !this.shopsAll)}
               @shops-hidden-toggle=${() => (this.shopsHidden = !this.shopsHidden)}
+              @shop-hide=${this.onShopHide}
               @shop-open=${(e: CustomEvent<string>) => this.push(openShop(this.state, e.detail))}
               @part-click=${(e: CustomEvent<CircleSelection>) => this.push(openPart(this.state, e.detail.key))}
               @unit-click=${(e: CustomEvent<UnitSelection>) => this.push(chooseUnit(this.state, e.detail.fullStart))}
