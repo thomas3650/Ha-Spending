@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.0](https://github.com/thomas3650/Ha-Spending/compare/v0.6.0...v0.7.0) (2026-11-02)
+
+
+### Features
+
+* sortable lists, a period calendar with Alt, one click to all postings, and key numbers per object group ([#69](https://github.com/thomas3650/Ha-Spending/issues/69)) ([8cc2694](https://github.com/thomas3650/Ha-Spending/commit/8cc2694037e3d79a6ec047befb3eb25b28207e8f))
+
 ## [0.6.0](https://github.com/thomas3650/Ha-Spending/compare/v0.5.0...v0.6.0) (2026-11-02)
 
 
