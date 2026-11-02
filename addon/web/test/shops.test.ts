@@ -391,6 +391,13 @@ function circleCard(root: HTMLElement): HTMLElement {
 }
 
 const TOTAL = 11566012;
+
+/** What a browser does on a new hash: the app hears it. */
+async function go(app: Parameters<typeof settle>[0], hash: string): Promise<void> {
+  location.hash = hash;
+  window.dispatchEvent(new HashChangeEvent("hashchange"));
+  await settle(app);
+}
 const ALL = ["Netto", "Boghandlen", "Q8", "Café Søde", "Shell", "Pizzeria Roma"];
 
 describe("hiding a shop", () => {
@@ -413,6 +420,7 @@ describe("hiding a shop", () => {
     });
     const length = history.length;
     const before = text(rowOf(card(root), "Boghandlen"));
+    const totals = getAllByText(circleCard(root), kr(TOTAL)).length;
     fireEvent.click(getByRole(card(root), "button", { name: da.hideShop("Netto") }));
     await settle(app);
     const init = hidden.mock.calls.at(-1)?.[0];
@@ -424,7 +432,7 @@ describe("hiding a shop", () => {
     await settle(app);
     expect(names(card(root))).toEqual(ALL.slice(1));
     expect(text(rowOf(card(root), "Boghandlen"))).toBe(before.replace(/^2 /, "1 "));
-    expect(getAllByText(circleCard(root), kr(TOTAL))).toHaveLength(2);
+    expect(getAllByText(circleCard(root), kr(TOTAL))).toHaveLength(totals);
     expect(history.length).toBe(length);
     expect(location.hash).toBe("#card=shops");
   });
@@ -463,20 +471,61 @@ describe("hiding a shop", () => {
     expect(fraction(rowOf(card(root), "Boghandlen"))).toBeLessThan(1);
   });
 
-  it("a failed write keeps the row and says so", async () => {
+  it("a failed write keeps the row and says so until the next successful write", async () => {
+    let posts = 0;
     const { app, root } = await mount("card=shops", {
-      hidden: (init) => (init?.method === "POST" ? json({ error: "internal" }, 500) : json({ shops: [] })),
+      hidden: (init) => {
+        if (init?.method !== "POST") return json({ shops: [] });
+        posts += 1;
+        return posts === 1 ? json({ error: "internal" }, 500) : json({ shops: ["Netto"] });
+      },
     });
-    expect(queryByText(card(root), da.saveFailed)).toBeNull();
+    expect(queryByRole(card(root), "alert")).toBeNull();
     fireEvent.click(getByRole(card(root), "button", { name: da.hideShop("Netto") }));
     await settle(app);
-    getByText(card(root), da.saveFailed);
+    expect(getByRole(card(root), "alert").textContent).toBe(da.saveFailed);
     expect(names(card(root))).toEqual(ALL);
+    fireEvent.click(getByRole(card(root), "button", { name: da.hideShop("Netto") }));
+    await settle(app);
+    expect(queryByText(card(root), da.saveFailed)).toBeNull();
+    expect(names(card(root))).toEqual(ALL.slice(1));
+  });
+
+  it("only the latest write's answer is applied when the answers arrive out of order", async () => {
+    const writes = [deferred<Response>(), deferred<Response>()];
+    let posts = 0;
+    const { app, root } = await mount("card=shops", {
+      hidden: (init) => (init?.method === "POST" ? writes[posts++]?.promise : undefined) ?? json({ shops: [] }),
+    });
+    fireEvent.click(getByRole(card(root), "button", { name: da.hideShop("Netto") }));
+    fireEvent.click(getByRole(card(root), "button", { name: da.hideShop("Boghandlen") }));
+    await settle(app);
+    writes[1]?.resolve(json({ shops: ["Boghandlen", "Netto"] }));
+    await settle(app);
+    writes[0]?.resolve(json({ shops: ["Netto"] }));
+    await settle(app);
+    expect(names(card(root))).toEqual(ALL.slice(2));
+  });
+
+  it("the hidden shops are read at start without waiting for the data, and only once", async () => {
+    const data = deferred<Response>();
+    const { app, root, fetch, hidden } = await mount("card=shops", {
+      answer: (range, n) => (n === 1 ? data.promise : json(answerFor(range))),
+    });
+    expect(fetch).toHaveBeenCalledTimes(1);
+    expect(hidden).toHaveBeenCalledTimes(1);
+    data.resolve(json(answerFor({ start: "2025-12-01", end: "2026-10-30" })));
+    await settle(app);
+    await go(app, "card=shops&period=lastYear");
+    await go(app, "card=shops&period=lastYear&group=Mad");
+    card(root, "Butikker i Mad");
+    expect(fetch.mock.calls.length).toBeGreaterThan(1);
+    expect(hidden.mock.calls.filter(([init]) => init?.method !== "POST")).toHaveLength(1);
   });
 
   it("a failed read shows every shop with no Skjul and says so", async () => {
     const { root } = await mount("card=shops", { hidden: () => json({ error: "internal" }, 500) });
-    getByText(card(root), da.hiddenUnreadable);
+    expect(getByRole(card(root), "status").textContent).toBe(da.hiddenUnreadable);
     expect(names(card(root))).toEqual(ALL);
     expect(queryByRole(card(root), "button", { name: da.hideShop("Netto") })).toBeNull();
     expect(queryByRole(card(root), "button", { name: /^Vis skjulte/ })).toBeNull();

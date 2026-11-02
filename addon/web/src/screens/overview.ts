@@ -215,7 +215,7 @@ export class Overview extends LitElement {
     if (state.kind === "loading") return html`<p class="empty">${da.fetching}</p>`;
     const list = shopList(base, new Set(state.kind === "ready" ? state.shops : []));
     if (list.visible.length === 0 && list.hidden.length === 0) return html`<p class="empty">${da.noShops}</p>`;
-    return html`${state.kind === "error" ? html`<p class="line status">${da.hiddenUnreadable}</p>` : nothing}
+    return html`${state.kind === "error" ? html`<p class="line status" role="status">${da.hiddenUnreadable}</p>` : nothing}
       <hs-shops
       .list=${list}
       .chosen=${ctx.state.shop}
