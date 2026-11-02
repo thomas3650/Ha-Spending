@@ -125,9 +125,9 @@ full-screen spec §2 says.
   inactive bill (Avis) and a bill ended before the tests' today (Gammel forsikring) each gain a linked posting in the
   data's range, so the mark on an ended or inactive bill's posting can be tested; Fitness ends on the tests' today
   and is still kept, so it does not test this. Every linked posting these tests rely on, also the one of the bill
-  with no object group, is one the page shows: a withdrawal from an asset account, or a refund. The knock-on: the existing subscriptions tests
-  whose expectations depend on those bills having no payment, or on which bills are kept, are updated in the same
-  change.
+  with no object group, is one the page shows: a withdrawal from an asset account, or a refund.
+  The knock-on: the existing subscriptions tests whose expectations depend on those bills having no payment, or on
+  which bills are kept, are updated in the same change.
 - **`generateSeed`** (`generate.ts`, the fast loop and the Chrome check): the same split, with at least one bill in
   each object group and one bill with linked postings and no object group, so the drop-out and the marks can be seen.
 - **The seeding of the real Firefly III** for `scripts/integration` sets the object group on the bills it creates.
