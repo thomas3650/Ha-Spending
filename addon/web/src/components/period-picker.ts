@@ -6,9 +6,11 @@ import { da } from "../i18n/da";
 import { type PeriodChoice, periodOf } from "../state/view";
 import { Dropdown } from "./dropdown";
 
-export function periodClosedText(choice: PeriodChoice, today: string): string {
+/** `earliest` is undefined until the first answer, when "Alt"'s dates are not known yet. */
+export function periodClosedText(choice: PeriodChoice, today: string, earliest: string | null | undefined): string {
+  if (choice.preset === "all" && earliest === undefined) return da.presets.all;
   const label = choice.preset === "custom" ? da.customLabel : da.presets[choice.preset];
-  return da.periodClosed(label, rangeText(periodOf(choice, today)));
+  return da.periodClosed(label, rangeText(periodOf(choice, today, earliest ?? null)));
 }
 
 /** Fires `hs-period` with the chosen PeriodChoice. */
@@ -16,12 +18,14 @@ export class PeriodPicker extends Dropdown {
   static override properties: PropertyDeclarations = {
     choice: { attribute: false },
     today: { attribute: false },
+    earliest: { attribute: false },
     from: { state: true },
     to: { state: true },
   };
 
   declare choice: PeriodChoice;
   declare today: string;
+  declare earliest: string | null | undefined;
   declare from: string;
   declare to: string;
 
@@ -35,7 +39,7 @@ export class PeriodPicker extends Dropdown {
 
   protected override toggle(): void {
     if (!this.open) {
-      const period = periodOf(this.choice, this.today);
+      const period = periodOf(this.choice, this.today, this.earliest ?? null);
       this.from = period.start;
       this.to = period.end;
     }
@@ -52,7 +56,7 @@ export class PeriodPicker extends Dropdown {
   }
 
   override render() {
-    const closed = periodClosedText(this.choice, this.today);
+    const closed = periodClosedText(this.choice, this.today, this.earliest);
     return html`<div class="dd">
       <button
         class="field"

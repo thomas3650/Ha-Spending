@@ -28,6 +28,7 @@ export const da = {
     last12Months: "Sidste 12 måneder",
     thisYear: "I år",
     lastYear: "Sidste år",
+    all: "Alt",
   } satisfies Record<Preset, string>,
   custom: "Vælg periode …",
   customLabel: "Valgt periode",

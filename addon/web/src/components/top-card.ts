@@ -32,11 +32,13 @@ export class TopCard extends LitElement {
     state: { attribute: false },
     today: { attribute: false },
     accounts: { attribute: false },
+    earliest: { attribute: false },
   };
 
   declare state: ViewState;
   declare today: string;
   declare accounts: Account[] | null;
+  declare earliest: string | null | undefined;
 
   constructor() {
     super();
@@ -60,7 +62,7 @@ export class TopCard extends LitElement {
         <h1>${current}</h1>
       </nav>
       <div class="top-filters">
-        <hs-period-picker .choice=${this.state.period} .today=${this.today}></hs-period-picker>
+        <hs-period-picker .choice=${this.state.period} .today=${this.today} .earliest=${this.earliest}></hs-period-picker>
         <label class="field">
           <small>${da.groupBy}</small>
           <select .value=${live(this.state.grouping)} @change=${(e: Event) => this.onGrouping(e)}>

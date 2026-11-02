@@ -1,4 +1,4 @@
-import { addDays, change, unitAt } from "@ha-spending/shared";
+import { addDays, change, fetchRange, unitAt } from "@ha-spending/shared";
 import {
   findByRole,
   fireEvent,
@@ -291,6 +291,41 @@ describe("the frame", () => {
     await choosePreset(root, app, da.presets.lastYear);
     expect(fetch.mock.calls[2][0]).toBe("api/data?start=2024-12-01&end=2025-12-31");
     expect(fetch).toHaveBeenCalledTimes(4);
+  });
+
+  it("choosing Alt shows the earliest posting to today", async () => {
+    const { app, root } = await mount("");
+    await choosePreset(root, app, da.presets.all);
+    expect(location.hash).toBe("#period=all");
+    getByRole(root, "button", { name: new RegExp(rangeText({ start: "2025-12-01", end: TODAY })) });
+  });
+
+  it("a hash with Alt asks for I år's range, then once for Alt's", async () => {
+    const { app, fetch } = await mount("period=all");
+    const url = (p: { start: string; end: string }) => `api/data?start=${p.start}&end=${p.end}`;
+    expect(fetch).toHaveBeenCalledTimes(2);
+    expect(fetch.mock.calls[0][0]).toBe(url(fetchRange({ start: "2026-01-01", end: TODAY }, "month", TODAY)));
+    expect(fetch.mock.calls[1][0]).toBe(url(fetchRange({ start: "2025-12-01", end: TODAY }, "month", TODAY)));
+    await settle(app);
+    expect(fetch).toHaveBeenCalledTimes(2);
+  });
+
+  it("Alt keeps a unit from an earlier year", async () => {
+    const { app } = await mount("period=all&unit=2025-12-01");
+    await settle(app);
+    expect(location.hash).toContain("unit=2025-12-01");
+  });
+
+  it("a later change of the period makes one request", async () => {
+    const { app, root, fetch } = await mount("period=all");
+    expect(fetch).toHaveBeenCalledTimes(2);
+    await choosePreset(root, app, da.presets.lastYear);
+    expect(fetch).toHaveBeenCalledTimes(3);
+  });
+
+  it("the period reads Alt alone before the first answer", async () => {
+    const { root } = await mount("period=all", { answer: () => new Promise<Response>(() => {}) });
+    getByRole(root, "button", { name: `${da.period} ${da.presets.all}` });
   });
 
   it("falls back from an unknown main group and replaces the hash", async () => {

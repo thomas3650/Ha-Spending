@@ -117,7 +117,7 @@ function knownLevel(level: Level, data: SpendingData): Level {
 /** Drops what the answer does not know. */
 export function normalise(s: ViewState, data: SpendingData, today: string): ViewState {
   const accounts = s.accounts && s.accounts.filter((id) => data.accounts.some((a) => a.id === id));
-  const units = unitsOf(periodOf(s.period, today), s.grouping, today);
+  const units = unitsOf(periodOf(s.period, today, data.earliestPostingDate), s.grouping, today);
   const unit = s.unit !== null && units.some((u) => u.fullStart === s.unit) ? s.unit : null;
   const card =
     (s.card === "difference" && unit === null) || (s.card === "subscriptions" && data.subscriptions.length === 0)

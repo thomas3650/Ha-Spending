@@ -139,6 +139,8 @@ export function toHash(s: ViewState): string {
   return p.toString();
 }
 
-export function periodOf(choice: PeriodChoice, today: string): Period {
-  return choice.preset === "custom" ? { start: choice.start, end: choice.end } : presetPeriod(choice.preset, today);
+export function periodOf(choice: PeriodChoice, today: string, earliest: string | null): Period {
+  return choice.preset === "custom"
+    ? { start: choice.start, end: choice.end }
+    : presetPeriod(choice.preset, today, earliest);
 }

@@ -112,6 +112,13 @@ describe("the view state's hash", () => {
     expect(toHash({ ...DEFAULT_STATE, accounts: [] })).toBe("accounts=");
   });
 
+  it("round-trips Alt", () => {
+    expect(parseHash("period=all").period).toEqual({ preset: "all" });
+    const s: ViewState = { ...DEFAULT_STATE, period: { preset: "all" } };
+    expect(toHash(s)).toBe("period=all");
+    expect(parseHash("#" + toHash(s))).toEqual(s);
+  });
+
   it("encodes Danish names", () => {
     const s: ViewState = { ...DEFAULT_STATE, level: { kind: "mainGroup", mainGroup: "Børn & unge" } };
     expect(parseHash(toHash(s)).level).toEqual(s.level);
@@ -121,11 +128,11 @@ describe("the view state's hash", () => {
 
 describe("periodOf", () => {
   it("gives a preset's dates on today", () => {
-    expect(periodOf({ preset: "thisYear" }, "2026-10-30")).toEqual({ start: "2026-01-01", end: "2026-10-30" });
+    expect(periodOf({ preset: "thisYear" }, "2026-10-30", null)).toEqual({ start: "2026-01-01", end: "2026-10-30" });
   });
 
   it("gives the custom dates as they are", () => {
-    expect(periodOf({ preset: "custom", start: "2026-02-01", end: "2026-03-31" }, "2026-10-30")).toEqual({
+    expect(periodOf({ preset: "custom", start: "2026-02-01", end: "2026-03-31" }, "2026-10-30", null)).toEqual({
       start: "2026-02-01",
       end: "2026-03-31",
     });

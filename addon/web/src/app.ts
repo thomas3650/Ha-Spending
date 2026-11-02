@@ -75,6 +75,7 @@ export class SpendingApp extends LitElement {
     today: { state: true },
     load: { state: true },
     accounts: { state: true },
+    earliest: { state: true },
     fullScreen: { state: true },
   };
 
@@ -168,6 +169,8 @@ export class SpendingApp extends LitElement {
   declare load: Load;
   /** The last answer's accounts; null until the first answer. */
   declare accounts: Account[] | null;
+  /** The last answer's earliest posting date; undefined until the first answer. */
+  declare earliest: string | null | undefined;
   /** A layout setting of this page load, so it stays out of the view state and the hash. */
   declare private fullScreen: boolean;
 
@@ -181,6 +184,7 @@ export class SpendingApp extends LitElement {
     this.today = localToday(new Date());
     this.load = { kind: "idle" };
     this.accounts = null;
+    this.earliest = undefined;
     this.fullScreen = false;
   }
 
@@ -227,7 +231,7 @@ export class SpendingApp extends LitElement {
   }
 
   private wantedRange(): Period {
-    return fetchRange(periodOf(this.state.period, this.today), this.state.grouping, this.today);
+    return fetchRange(periodOf(this.state.period, this.today, this.earliest ?? null), this.state.grouping, this.today);
   }
 
   private ensureData(): void {
@@ -254,10 +258,14 @@ export class SpendingApp extends LitElement {
     );
   }
 
-  /** The add-on's today wins once per user-started fetch; a retry's answer is shown as it is. */
+  /**
+   * The add-on's today and the earliest posting date can change the wanted range, so a user-started fetch asks once
+   * more when they do; a retry's answer is shown as it is.
+   */
   private onAnswer(data: SpendingData, retry: boolean): void {
     this.accounts = data.accounts;
-    if (!retry && data.today !== this.today) {
+    this.earliest = data.earliestPostingDate;
+    if (!retry) {
       this.today = data.today;
       const range = this.wantedRange();
       if (!sameRange(range, data.range)) {
@@ -382,6 +390,7 @@ export class SpendingApp extends LitElement {
         .state=${this.state}
         .today=${this.today}
         .accounts=${this.accounts}
+        .earliest=${this.earliest}
         @hs-period=${this.onPeriod}
         @hs-grouping=${this.onGrouping}
         @hs-accounts=${this.onAccounts}
