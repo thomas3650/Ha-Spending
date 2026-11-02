@@ -253,8 +253,8 @@ everything about typing is a gate test whatever the library allows in happy-dom.
   count is that level's; with a chosen unit it is the unit's; with no postings there is no link.
 - **The object group key numbers:** one per object group, ordered by name; a group whose bills have all ended has one
   when the period holds its payments, and none when only the fetched range before the period does; the value is the
-  period's linked payments and follows the period, the level and the accounts, not the chosen unit, the search or the shop; the per-month part is the value over the
-  period's months by days, and is left out for a period under 28 days; n counts different bills, not payments; a
+  period's linked payments and follows the period, the level and the accounts, not the chosen unit, the search or the
+  shop; the per-month part is the value over the period's months by days, and is left out for a period under 28 days; n counts different bills, not payments; a
   refund counts against; with no payment, "0 kr." and "ingen betalinger"; a click toggles the Faste udgifter card;
   with no object group at all there are three key numbers.
 - **The help texts:** the three texts are not on the page.
