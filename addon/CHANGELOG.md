@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.8.0](https://github.com/thomas3650/Ha-Spending/compare/v0.7.0...v0.8.0) (2026-11-02)
+
+
+### Features
+
+* a link from each object group's key number to its postings ([#72](https://github.com/thomas3650/Ha-Spending/issues/72)) ([b28832b](https://github.com/thomas3650/Ha-Spending/commit/b28832b3ead230ba67ef66600f6fae395eabfeca))
+
 ## [0.7.0](https://github.com/thomas3650/Ha-Spending/compare/v0.6.0...v0.7.0) (2026-11-02)
 
 
