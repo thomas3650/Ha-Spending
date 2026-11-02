@@ -21,7 +21,9 @@ The server reads Firefly III and answers `/api/data`; the page fetches it and sh
 [UI spec](superpowers/specs/2026-10-30-ui-ux-design.md) and the subscriptions card of the
 [subscriptions spec](superpowers/specs/2026-11-01-subscriptions.md) and the
 [object groups spec](superpowers/specs/2026-11-01-object-groups.md). The Butikker card of the
-[top shops spec](superpowers/specs/2026-11-02-top-shops.md) lists the shops with the most spending and hides some.
+[top shops spec](superpowers/specs/2026-11-02-top-shops.md) lists the shops with the most spending and hides some. The detail of a fixed expense, a posting or a shop, in the
+[detail view spec](superpowers/specs/2026-11-02-detail-view.md), opens from a row on the Posteringer and Faste udgifter
+cards and on Alle posteringer ([D44](decisions.md)).
 
 - **The server** is Hono on `@hono/node-server` ([D3](decisions.md)), in `addon/server/src/`. In the image it is one
   bundle at `/opt/ha-spending/server.mjs`, run by `node:24-alpine` ([D4](decisions.md)).

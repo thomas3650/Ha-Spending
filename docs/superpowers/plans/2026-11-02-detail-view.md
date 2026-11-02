@@ -313,7 +313,7 @@ Model: sonnet · Review: no
 `docs/README.md`.
 
 Each change as spec §7 lists it. D44 in the decision log's format (`docs/way-of-working.md` §5), dated 2026-11-02,
-source "Claude, 2026-11-02, [the detail view spec](superpowers/specs/2026-11-02-detail-view.md) §5"; D20's status line
+source "Claude, 2026-11-02, `docs/superpowers/specs/2026-11-02-detail-view.md` §5"; D20's status line
 becomes `active; key list superseded by D35, D42 and D44`, nothing else in D20. The mockups README gains a section
 "Detail" for `v5/` in the style of its other sections. `docs/README.md` adds the spec and this plan to its two lists.
 

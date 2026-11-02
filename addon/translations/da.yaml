@@ -10,8 +10,8 @@ configuration:
   firefly_link_url:
     name: Firefly III-linkadresse
     description: >-
-      Firefly III's adresse, som browseren når den. Når den er sat, åbner en postering der i en ny fane. Når den er
-      tom, er posteringerne ikke links.
+      Firefly III's adresse, som browseren når den. Når den er sat, linker detaljen af en postering eller en fast udgift
+      dertil i en ny fane. Når den er tom, har detaljen intet link.
   main_group_rule_group:
     name: Regelgruppe for hovedgrupper
     description: >-

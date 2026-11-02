@@ -227,7 +227,7 @@ export class SpendingApp extends LitElement {
   private writes: Promise<void> = Promise.resolve();
   /** The detail a close or Back just closed, whose row gets the focus back after the render. */
   private closed: DetailKey | null = null;
-  /** Set by a row's click only: a link, a reload or full screen leave the focus where it is (detail spec §1.3). */
+  /** Set by a row's click only: a link, a reload or full screen leave the focus where it is. */
   private openedByRow = false;
 
   constructor() {

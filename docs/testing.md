@@ -164,3 +164,7 @@ The page's list. Every screenshot is at 1440×960 with the console free of error
     grey with "Vis"; "Vis" brings it back. After a reload the hidden shops are as they were, and the circle and the
     shares are unchanged. Stop the server for a moment to see "Kunne ikke gemme. Prøv igen." on a write and
     "Skjulte butikker kunne ikke hentes." on a start.
+35. `49-detalje`: the detail of a fixed expense, a subscription and a shop (a row on Posteringer, Faste udgifter and Alle
+    posteringer), on the normal page, in full screen and on Alle posteringer. At 1440, 1728, 1000 and 420 px. Tab to a
+    row's name and press Enter: the detail opens and the focus is on its heading; "Luk" and Escape close it and the
+    focus is back on the row. Compare `docs/mockups/v5/`.

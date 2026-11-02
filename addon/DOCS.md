@@ -20,7 +20,7 @@ a posting to another category, within fixed limits ([the sorter's endpoint](#the
 | --- | --- |
 | `firefly_url` | Firefly III's address as the add-on reaches it. Required. |
 | `firefly_token` | A Personal Access Token from Firefly III (*Options → Profile → OAuth*). The page reads with it; only the sorter's endpoint writes with it. Required. |
-| `firefly_link_url` | Firefly III's address as your browser reaches it. When set, a posting opens there. Optional. |
+| `firefly_link_url` | Firefly III's address as your browser reaches it. When set, the detail of a posting or a fixed expense links there. Optional. |
 | `main_group_rule_group` | The Firefly III rule group whose rules put categories into main groups. Default `Hovedgrupper`. |
 | `excluded_main_groups` | Main groups that are not spending, such as money moved in and out. Default `Penge ind og ud`. |
 | `sorter_key` | The key of [the sorter's endpoint](#the-sorters-endpoint), at least 32 characters, for example from `openssl rand -hex 32`. When empty, the endpoint is off. Optional. |
@@ -43,8 +43,10 @@ key.
 ## The page
 
 The page is in Danish and has a light theme. Click a main group to see its categories and a category to see its
-postings. A posting opens in Firefly III only when `firefly_link_url` is set; without it the posting is plain text. If
-the rule group in `main_group_rule_group` does not exist, the page says so.
+postings. If the rule group in `main_group_rule_group` does not exist, the page says so.
+
+A click on a fixed expense or on a posting shows its detail: the sums, the bars per month and the postings. The detail
+has the link "Åbn i Firefly III" only when `firefly_link_url` is set; without it the detail has no link.
 
 The overview also shows your Firefly III subscriptions, which the page calls "Faste udgifter": a key number for each
 object group with its payments in the period, and a card with each subscription's amount, its cost per year and a
