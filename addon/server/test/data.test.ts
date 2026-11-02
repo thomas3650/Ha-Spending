@@ -127,13 +127,22 @@ describe("the bill links on /api/data's postings", () => {
 
   it("marks a posting linked to a bill with its name and object group", async () => {
     const list = await postings();
-    expect(named(list, "Husleje januar").subscription).toEqual({ name: "Husleje", objectGroup: "Faste udgifter" });
+    expect(named(list, "Husleje januar").subscription).toEqual({
+      id: expect.any(String),
+      name: "Husleje",
+      objectGroup: "Faste udgifter",
+    });
   });
 
   it("marks a posting of an inactive bill and of an ended one", async () => {
     const list = await postings();
-    expect(named(list, "Avis april").subscription).toEqual({ name: "Avis", objectGroup: "Faste udgifter" });
+    expect(named(list, "Avis april").subscription).toEqual({
+      id: expect.any(String),
+      name: "Avis",
+      objectGroup: "Faste udgifter",
+    });
     expect(named(list, "Gammel forsikring marts").subscription).toEqual({
+      id: expect.any(String),
       name: "Gammel forsikring",
       objectGroup: "Faste udgifter",
     });
@@ -150,6 +159,7 @@ describe("the bill links on /api/data's postings", () => {
   });
 
   it("marks a refund linked to a bill", async () => {
+    let husleje = "";
     const bills = async (fetch: FetchLike) => {
       const res = await fetch("http://firefly.test/api/v1/bills?limit=100", {
         headers: { Authorization: "Bearer fake-token" },
@@ -160,7 +170,7 @@ describe("the bill links on /api/data's postings", () => {
       const res = await fetch(input, init);
       const url = new URL(input instanceof Request ? input.url : input);
       if (url.pathname !== "/api/v1/transactions" || !res.ok) return res;
-      const husleje = (await bills(fetch)).find((b) => b.attributes.name === "Husleje")!.id;
+      husleje = (await bills(fetch)).find((b) => b.attributes.name === "Husleje")!.id;
       const page = (await res.json()) as WirePage<WireGroup>;
       for (const split of page.data.flatMap((g) => g.attributes.transactions)) {
         if (split.description === "Returvare Netto") split.bill_id = husleje;
@@ -170,7 +180,7 @@ describe("the bill links on /api/data's postings", () => {
     const list = await postings(linkRefund);
     expect(named(list, "Returvare Netto")).toMatchObject({
       kind: "refund",
-      subscription: { name: "Husleje", objectGroup: "Faste udgifter" },
+      subscription: { id: husleje, name: "Husleje", objectGroup: "Faste udgifter" },
     });
   });
 });

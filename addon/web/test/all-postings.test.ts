@@ -316,8 +316,8 @@ function objectGroupPart(root: HTMLElement): HTMLElement {
 function twoGroups(range: Period): Response {
   const answer = answerFor(range);
   const link = (p: Posting): Posting["subscription"] => {
-    if (p.shop === "Netto" && p.date === "2026-09-10") return { name: "Fitness", objectGroup: "Åbne aftaler" };
-    if (p.shop === "Pizzeria Roma" && p.date === "2026-09-20") return { name: "Pizzaabonnement", objectGroup: "Abonnementer" };
+    if (p.shop === "Netto" && p.date === "2026-09-10") return { id: "b8", name: "Fitness", objectGroup: "Åbne aftaler" };
+    if (p.shop === "Pizzeria Roma" && p.date === "2026-09-20") return { id: "b7", name: "Pizzaabonnement", objectGroup: "Abonnementer" };
     return null;
   };
   return json({ ...answer, postings: answer.postings.map((p) => ({ ...p, subscription: link(p) })) });
