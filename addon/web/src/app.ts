@@ -34,6 +34,7 @@ import {
   normalise,
   openAllPostings,
   openAllPostingsFresh,
+  openObjectGroupPostings,
   openPart,
   removeCategory,
   removeMainGroup,
@@ -45,6 +46,7 @@ import {
   setCategory,
   setGrouping,
   setMainGroup,
+  setObjectGroup,
   setPeriod,
   setSearch,
   setSort,
@@ -341,7 +343,7 @@ export class SpendingApp extends LitElement {
   }
 
   private objectGroupKeys(ctx: ViewContext) {
-    const cards = objectGroupCards(ctx);
+    const cards = objectGroupCards(ctx, (t) => `#${toHash(openObjectGroupPostings(this.state, t))}`);
     if (cards.length === 0) return null;
     return { cards, toggle: ctx.data.subscriptions.length > 0, pressed: this.state.card === "subscriptions" };
   }
@@ -392,6 +394,7 @@ export class SpendingApp extends LitElement {
             @remove-category=${() => this.push(removeCategory(this.state))}
             @remove-unit=${() => this.push(removeUnit(this.state))}
             @set-amount=${(e: CustomEvent<AmountRange | null>) => this.push(setAmount(this.state, e.detail))}
+            @set-object-group=${(e: CustomEvent<string | null>) => this.push(setObjectGroup(this.state, e.detail))}
             @set-main-group=${(e: CustomEvent<string | null>) => this.push(setMainGroup(this.state, e.detail))}
             @set-category=${(e: CustomEvent<CategoryChoice>) =>
               this.push(setCategory(this.state, e.detail.mainGroup, e.detail.category))}

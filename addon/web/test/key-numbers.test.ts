@@ -52,10 +52,13 @@ function bills(p: Posting): Link {
 const BILLS = linking(bills);
 
 function objectCardNames(root: HTMLElement): string[] {
-  return [...queryAllByRole(root, "button"), ...queryAllByRole(root, "group")]
-    .map((el) => (el.getAttribute("aria-label") ?? el.textContent ?? "").replace(/\s+/g, " ").trim())
-    .map((name) => /^.*? i perioden/.exec(name)?.[0] ?? "")
-    .filter((name) => name !== "" && name !== da.spendingInPeriod);
+  return queryAllByRole(root, "group")
+    .map((el) => el.getAttribute("aria-label") ?? "")
+    .filter((name) => / i perioden$/.test(name) && name !== da.spendingInPeriod);
+}
+
+function objectCard(root: HTMLElement, label: string): HTMLElement {
+  return getByRole(root, "group", { name: label });
 }
 
 function card(root: HTMLElement, label: string): HTMLElement {
@@ -266,5 +269,77 @@ describe("the key numbers of the object groups", () => {
     getByText(plain, kr(70000));
     getByText(plain, line(7000, 1));
     expect(queryByRole(root, "button", { name: new RegExp(`^${SUBS}`) })).toBeNull();
+  });
+});
+
+describe("the link on each object group's key number", () => {
+  it("each object group's key number links to its postings with its count", async () => {
+    const { root } = await mount("", { answer: BILLS });
+    expect(getByRole(objectCard(root, FIXED), "link").textContent?.trim()).toBe(linkLine(11));
+    expect(getByRole(objectCard(root, SUBS), "link").textContent?.trim()).toBe("1 postering →");
+  });
+
+  it("the count follows the period, the level, a category and one account, not the chosen unit", async () => {
+    const counts = async (hash: string, label: string, n: number) => {
+      const { root } = await mount(hash, { answer: BILLS });
+      getByRole(objectCard(root, label), "link", { name: linkLine(n) });
+      unmount();
+    };
+    await counts("period=lastMonth", FIXED, 1);
+    await counts("period=lastMonth", SUBS, 1);
+    await counts("group=Bolig", FIXED, 10);
+    await counts("group=Bil&category=Br%C3%A6ndstof", FIXED, 1);
+    await counts("accounts=2", FIXED, 1);
+    await counts("unit=2026-07-01", FIXED, 11);
+    await counts("unit=2026-07-01&card=difference", SUBS, 1);
+  });
+
+  it("no posting, no link", async () => {
+    const { root } = await mount("group=Bolig", { answer: BILLS });
+    const subs = objectCard(root, SUBS);
+    getByText(subs, count(0));
+    expect(queryByRole(subs, "link")).toBeNull();
+  });
+
+  it("the toggle keeps its name and aria-pressed, the link is outside the button, and a click still switches the right card", async () => {
+    const { app, root } = await mount("", { answer: BILLS });
+    const group = objectCard(root, FIXED);
+    const button = getByRole(group, "button", { name: new RegExp(`^${FIXED}`) });
+    expect(name(root, FIXED)).toBe(`${FIXED} ${kr(8090000)} ${line(812700, 2)}`);
+    expect(button.getAttribute("aria-pressed")).toBe("false");
+    const link = getByRole(group, "link", { name: linkLine(11) });
+    expect(button.contains(link)).toBe(false);
+    expect(queryByRole(button, "link")).toBeNull();
+
+    fireEvent.click(button);
+    await settle(app);
+    getByRole(root, "region", { name: da.subscriptions });
+    expect(card(root, FIXED).getAttribute("aria-pressed")).toBe("true");
+    expect(location.hash).toBe("#card=subscriptions");
+  });
+
+  it("a plain card has the link too, in exactly one group with its name", async () => {
+    const { root } = await mount("");
+    expect(getAllByRole(root, "group", { name: SUBS })).toHaveLength(1);
+    expect(queryByRole(root, "button", { name: new RegExp(`^${SUBS}`) })).toBeNull();
+    getByRole(objectCard(root, SUBS), "link", { name: "1 postering →" });
+  });
+
+  it("following the link shows the chip and a summary count equal to the link's, after a search, a shop and a unit", async () => {
+    const { app, root } = await mount("unit=2026-07-01&card=postings&q=Netto&shop=Q8", { answer: BILLS });
+    const link = getByRole(objectCard(root, FIXED), "link", { name: linkLine(11) });
+    await follow(app, link);
+    getByRole(root, "heading", { level: 1, name: da.allPostings });
+    getByRole(root, "button", { name: da.remove("Faste udgifter") });
+    getByText(root, da.summary(count(11), kr(8090000)));
+    expect((getByRole(root, "combobox", { name: da.searchLabel }) as HTMLInputElement).value).toBe("");
+  });
+
+  it("the link's hash has og and no q, shop, unit or card=difference", async () => {
+    const { root } = await mount("unit=2026-07-01&card=difference&q=Netto&shop=Q8", { answer: BILLS });
+    const p = params(getByRole(objectCard(root, SUBS), "link").getAttribute("href") ?? "");
+    expect(p.get("view")).toBe("all-postings");
+    expect(p.get("og")).toBe("Abonnementer");
+    for (const key of ["q", "shop", "unit", "card", "sort", "min", "max"]) expect(p.has(key)).toBe(false);
   });
 });

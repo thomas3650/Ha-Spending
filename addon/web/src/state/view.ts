@@ -36,11 +36,13 @@ export interface ViewState {
   unit: string | null;
   card: Card;
   screen: "overview" | "allPostings";
-  /** The search and the chosen shop are shared choices; sort and amount belong to Alle posteringer. */
+  /** The search and the chosen shop are shared choices; sort, amount and object group belong to Alle posteringer. */
   search: string;
   shop: string | null;
   sort: Sort;
   amount: AmountRange | null;
+  /** A Firefly III object group's title; kept even when no posting carries it (D42). */
+  objectGroup: string | null;
 }
 
 export const DEFAULT_STATE: ViewState = {
@@ -55,6 +57,7 @@ export const DEFAULT_STATE: ViewState = {
   shop: null,
   sort: { column: "date", descending: true },
   amount: null,
+  objectGroup: null,
 };
 
 const GROUPINGS: readonly Grouping[] = ["day", "week", "month", "quarter", "year"];
@@ -150,10 +153,11 @@ export function parseHash(hash: string): ViewState {
     shop: p.get("shop") || DEFAULT_STATE.shop,
     sort: allPostings ? parseSort(p.get("sort")) : DEFAULT_STATE.sort,
     amount: allPostings ? parseAmount(p) : DEFAULT_STATE.amount,
+    objectGroup: (allPostings && p.get("og")) || DEFAULT_STATE.objectGroup,
   };
 }
 
-/** Without '#'. The keys go in the order of D20 and D35, and defaults are left out, so equal states give equal hashes. */
+/** Without '#'. The keys go in the order of D20, D35 and D42, and defaults are left out, so equal states give equal hashes. */
 export function toHash(s: ViewState): string {
   const p = new URLSearchParams();
   if (s.period.preset === "custom") {
@@ -177,6 +181,7 @@ export function toHash(s: ViewState): string {
     if (sort !== undefined) p.set("sort", sort);
     if (s.amount?.min != null) p.set("min", String(s.amount.min));
     if (s.amount?.max != null) p.set("max", String(s.amount.max));
+    if (s.objectGroup !== null) p.set("og", s.objectGroup);
   }
   return p.toString();
 }

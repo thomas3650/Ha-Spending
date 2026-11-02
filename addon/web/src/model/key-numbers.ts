@@ -17,7 +17,7 @@ export interface KeyCard {
   value: string;
   sub: string;
   trend: "up" | "down" | null;
-  /** The first card's way to Alle posteringer; `href` is the hash it opens. */
+  /** The card's way to Alle posteringer; `href` is the hash it opens. */
   postings?: { count: number; href: string };
 }
 
@@ -129,7 +129,7 @@ function days(period: Period): number {
  * One card per object group that a kept bill has or a shown posting in the period is linked to; empty gives three key
  * numbers (spec §4). The fetched range does not count, and neither does a chosen unit.
  */
-export function objectGroupCards(ctx: ViewContext): KeyCard[] {
+export function objectGroupCards(ctx: ViewContext, hrefOf: (title: string) => string): KeyCard[] {
   const period = ctx.timeline.period;
   const linked = within(ctx.shown, period).flatMap((p) =>
     p.subscription === null ? [] : [{ group: p.subscription.objectGroup, bill: p.subscription.name, amount: p.amount }],
@@ -148,6 +148,12 @@ export function objectGroupCards(ctx: ViewContext): KeyCard[] {
           : length < 28
             ? da.billCount(bills)
             : `${da.perMonth(kr(sum / (length / MONTH_DAYS)))} · ${da.billCount(bills)}`;
-      return { label: da.inPeriod(name), value: kr(sum), sub, trend: null };
+      return {
+        label: da.inPeriod(name),
+        value: kr(sum),
+        sub,
+        trend: null,
+        postings: { count: payments.length, href: hrefOf(name) },
+      };
     });
 }

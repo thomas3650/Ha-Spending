@@ -152,3 +152,6 @@ The page's list. Every screenshot is at 1440×960 with the console free of error
 31. `45-noegletal`: the first key number with "N posteringer →" at Alt forbrug, a main group, a category and a chosen
     unit; a click opens Alle posteringer with no search or shop. The object group key numbers show the sum, the sum
     per month and the count, and a click toggles the Faste udgifter card. Also at 1440, 1728, 1024, 900 and 420 px.
+32. `46-objektgruppe-link`: the two object group key numbers with their "N posteringer →" links at Alt forbrug and at a
+    main group; a click on each opens Alle posteringer with that object group's chip and only its postings, the count
+    equal to the link's. Then the chip's ✕ and the "Faste udgifter" group in "+ Filter". At 1440 and 420 px.

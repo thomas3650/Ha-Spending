@@ -1,4 +1,4 @@
-import { type ClassifiedPosting, unitAt } from "@ha-spending/shared";
+import { type ClassifiedPosting, type Period, type Posting, unitAt } from "@ha-spending/shared";
 import { fireEvent, getAllByRole, getByRole, getByText, queryAllByRole, queryByRole } from "@testing-library/dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
@@ -10,7 +10,7 @@ import { inAmount } from "../src/model/filter";
 import { postingList } from "../src/model/postings";
 import { DEFAULT_STATE, type Sort } from "../src/state/view";
 import { answerFor } from "./fixture";
-import { mount, settle, unmount } from "./mount";
+import { json, mount, settle, unmount } from "./mount";
 
 const TODAY = "2026-10-30";
 const CAFE = "group=Mad&category=Caf%C3%A9&view=all-postings";
@@ -295,6 +295,131 @@ describe("screen 3, all postings", () => {
     await settle(app);
     summary(root, 4, 131012);
     expect(new URLSearchParams(location.hash.slice(1)).has("min")).toBe(false);
+  });
+});
+
+const SUBS = "view=all-postings&og=Abonnementer";
+
+function hashParam(name: string): string | null {
+  return new URLSearchParams(location.hash.slice(1)).get(name);
+}
+
+function rowLinks(root: HTMLElement): (string | undefined)[] {
+  return getAllByRole(getByRole(root, "table"), "link").map((a) => a.textContent?.trim());
+}
+
+function objectGroupPart(root: HTMLElement): HTMLElement {
+  return getByRole(root, "group", { name: da.subscriptions });
+}
+
+/** Netto of 2026-09-10 in Åbne aftaler and Pizzeria Roma of 2026-09-20 in Abonnementer. */
+function twoGroups(range: Period): Response {
+  const answer = answerFor(range);
+  const link = (p: Posting): Posting["subscription"] => {
+    if (p.shop === "Netto" && p.date === "2026-09-10") return { name: "Fitness", objectGroup: "Åbne aftaler" };
+    if (p.shop === "Pizzeria Roma" && p.date === "2026-09-20") return { name: "Pizzaabonnement", objectGroup: "Abonnementer" };
+    return null;
+  };
+  return json({ ...answer, postings: answer.postings.map((p) => ({ ...p, subscription: link(p) })) });
+}
+
+describe("the object group on Alle posteringer", () => {
+  it("the object group filters the list, the count and the sum", async () => {
+    const { root } = await mount(SUBS);
+    chip(root, "Abonnementer");
+    summary(root, 1, 70000);
+    expect(rowLinks(root)).toEqual(["Pizzeria Roma"]);
+  });
+
+  it("its chip's ✕ shows all postings", async () => {
+    const { app, root } = await mount(SUBS);
+    fireEvent.click(chip(root, "Abonnementer"));
+    await settle(app);
+    summary(root, 28, 11566012);
+    expect(queryByRole(root, "button", { name: da.remove("Abonnementer") })).toBeNull();
+    expect(hashParam("og")).toBeNull();
+    expect(hashParam("view")).toBe("all-postings");
+  });
+
+  it("a period change keeps og", async () => {
+    const { app, root } = await mount(SUBS);
+    fireEvent.click(getByRole(root, "button", { name: new RegExp(`^${da.period}`) }));
+    await app.updateComplete;
+    fireEvent.click(getByRole(getByRole(root, "group", { name: da.period }), "button", { name: da.presets.lastMonth }));
+    await settle(app);
+    expect(hashParam("period")).toBe("lastMonth");
+    expect(hashParam("og")).toBe("Abonnementer");
+    chip(root, "Abonnementer");
+    summary(root, 1, 70000);
+  });
+
+  it("a level change keeps og", async () => {
+    const { app, root } = await mount(SUBS);
+    await openFilter(app, root);
+    fireEvent.click(getByRole(getByRole(root, "group", { name: da.mainGroups }), "button", { name: "Mad" }));
+    await settle(app);
+    chip(root, da.mainGroupChip("Mad"));
+    chip(root, "Abonnementer");
+    summary(root, 1, 70000);
+    fireEvent.click(chip(root, da.mainGroupChip("Mad")));
+    await settle(app);
+    expect(hashParam("group")).toBeNull();
+    expect(hashParam("og")).toBe("Abonnementer");
+    chip(root, "Abonnementer");
+    summary(root, 1, 70000);
+  });
+
+  it("the shop suggestions follow the object group", async () => {
+    const { app, root } = await mount(SUBS);
+    const box = getByRole(root, "combobox", { name: da.searchLabel });
+    box.focus();
+    fireEvent.input(box, { target: { value: "o" } });
+    await settle(app);
+    const list = getByRole(root, "listbox", { name: da.suggestions });
+    expect(getAllByRole(list, "option")).toEqual([
+      getByRole(list, "option", { name: da.shopOption("Pizzeria Roma", kr(70000)) }),
+    ]);
+  });
+
+  it("+ Filter lists the object groups by name and a choice filters", async () => {
+    const { app, root } = await mount("view=all-postings", { answer: twoGroups });
+    await openFilter(app, root);
+    const names = () => getAllByRole(objectGroupPart(root), "button").map((b) => b.textContent?.trim());
+    const pressed = () =>
+      getAllByRole(objectGroupPart(root), "button").map((b) => b.getAttribute("aria-pressed"));
+    expect(names()).toEqual(["Abonnementer", "Åbne aftaler"]);
+    expect(pressed()).toEqual(["false", "false"]);
+    fireEvent.click(getByRole(objectGroupPart(root), "button", { name: "Åbne aftaler" }));
+    await settle(app);
+    expect(hashParam("og")).toBe("Åbne aftaler");
+    chip(root, "Åbne aftaler");
+    summary(root, 1, 300000);
+    expect(rowLinks(root)).toEqual(["Netto"]);
+
+    await openFilter(app, root);
+    expect(names()).toEqual(["Abonnementer", "Åbne aftaler"]);
+    expect(pressed()).toEqual(["false", "true"]);
+    const before = location.hash;
+    fireEvent.click(getByRole(objectGroupPart(root), "button", { name: "Åbne aftaler" }));
+    await settle(app);
+    expect(location.hash).toBe(before);
+    summary(root, 1, 300000);
+  });
+
+  it("an unknown og gives da.noMatch with the chip and its one option", async () => {
+    const first = await mount("view=all-postings&period=lastYear");
+    await openFilter(first.app, first.root);
+    getByRole(first.root, "group", { name: da.amountFilter });
+    expect(queryByRole(first.root, "group", { name: da.subscriptions })).toBeNull();
+    unmount();
+
+    const { app, root } = await mount("view=all-postings&period=lastYear&og=Ukendt");
+    getByText(root, da.noMatch);
+    expect(queryByRole(root, "table")).toBeNull();
+    chip(root, "Ukendt");
+    await openFilter(app, root);
+    const options = getAllByRole(objectGroupPart(root), "button");
+    expect(options.map((b) => [b.textContent?.trim(), b.getAttribute("aria-pressed")])).toEqual([["Ukendt", "true"]]);
   });
 });
 

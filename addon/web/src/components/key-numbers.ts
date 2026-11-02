@@ -37,17 +37,23 @@ export class KeyNumbers extends LitElement {
       : html`<a class="kpi-link" href=${p.href}>${da.postingsLink(count(p.count))}</a>`;
   }
 
-  private toggleButton(c: KeyCard, pressed: boolean) {
-    return html`<button
-      type="button"
-      class="card kpi kpi-toggle"
-      aria-pressed=${String(pressed)}
-      @click=${() => fire(this, "subscriptions-toggle")}
-    >
-      <span class="kpi-label">${c.label}</span>
+  private objectCard(c: KeyCard, groups: ObjectGroupKeys) {
+    const body = html`<span class="kpi-label">${c.label}</span>
       <span class="kpi-value">${c.value}</span>
-      <span class="kpi-sub">${c.sub}</span>
-    </button>`;
+      <span class="kpi-sub">${c.sub}</span>`;
+    return html`<div class="card kpi kpi-group" role="group" aria-label=${c.label}>
+      ${groups.toggle
+        ? html`<button
+            type="button"
+            class="kpi-toggle"
+            aria-pressed=${String(groups.pressed)}
+            @click=${() => fire(this, "subscriptions-toggle")}
+          >
+            ${body}
+          </button>`
+        : html`<div class="kpi-plain">${body}</div>`}
+      ${this.postingsLine(c)}
+    </div>`;
   }
 
   private plainCard(c: KeyCard) {
@@ -82,7 +88,7 @@ export class KeyNumbers extends LitElement {
       ${this.cards.map((c) => this.plainCard(c))}
       ${groups === null
         ? nothing
-        : extra.map((c) => (groups.toggle ? this.toggleButton(c, groups.pressed) : this.plainCard(c)))}
+        : extra.map((c) => this.objectCard(c, groups))}
     </div>`;
   }
 }
@@ -110,18 +116,31 @@ export const keyNumbersStyles = css`
   .kpi-toggle {
     display: block;
     width: 100%;
+    padding: 16px 16px 0;
+    border: 0;
+    background: none;
     font: inherit;
     color: var(--hs-text);
     text-align: left;
     cursor: pointer;
   }
-  .kpi-toggle > span {
+  .kpi-group {
+    padding: 0;
+  }
+  .kpi-plain {
+    padding: 16px 16px 0;
+  }
+  .kpi-group > .kpi-link {
+    margin: 2px 16px 16px;
+  }
+  .kpi-toggle > span,
+  .kpi-plain > span {
     display: block;
   }
-  .kpi-toggle:hover {
+  .kpi-group:has(.kpi-toggle:hover) {
     border-color: var(--hs-accent);
   }
-  .kpi-toggle[aria-pressed="true"] {
+  .kpi-group:has(.kpi-toggle[aria-pressed="true"]) {
     border-color: var(--hs-accent);
     box-shadow: inset 0 0 0 1px var(--hs-accent);
   }
