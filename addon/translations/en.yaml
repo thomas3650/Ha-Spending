@@ -10,8 +10,8 @@ configuration:
   firefly_link_url:
     name: Firefly III link address
     description: >-
-      Firefly III's address as the browser reaches it. When set, a posting opens there in a new tab. When empty,
-      postings are not links.
+      Firefly III's address as the browser reaches it. When set, the detail of a posting or a fixed expense links there,
+      in a new tab. When empty, the detail has no link.
   main_group_rule_group:
     name: Main group rule group
     description: >-

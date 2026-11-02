@@ -17,7 +17,7 @@ export interface Posting {
   /** In øre: spending positive, a refund negative. */
   amount: number;
   /** The bill the posting is linked to, when that bill has an object group; else null. */
-  subscription: { name: string; objectGroup: string } | null;
+  subscription: { id: string; name: string; objectGroup: string } | null;
 }
 
 export interface Account {

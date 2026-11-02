@@ -5,6 +5,8 @@ import {
   axisKr,
   comparisonLabel,
   count,
+  detailAmount,
+  detailKr,
   kr,
   longDate,
   parseTypedDate,
@@ -46,6 +48,16 @@ describe("money", () => {
     expect(amountChip({ min: 1000, max: 2500 })).toBe("Beløb: 1.000–2.500 kr.");
     expect(amountChip({ min: 100, max: null })).toBe("Beløb: fra 100 kr.");
     expect(amountChip({ min: null, max: 500 })).toBe("Beløb: til 500 kr.");
+  });
+  it("detailAmount writes øre, spending positive and a refund with a minus", () => {
+    expect(detailAmount(248000)).toBe("2.480,00 kr.");
+    expect(detailAmount(-15000)).toBe("-150,00 kr.");
+    expect(detailAmount(0)).toBe("0,00 kr.");
+  });
+  it("detailKr writes whole kroner with the same sign", () => {
+    expect(detailKr(514000)).toBe("5.140 kr.");
+    expect(detailKr(-15000)).toBe("-150 kr.");
+    expect(detailKr(-20)).toBe("0 kr.");
   });
   it("shortens axis values", () => {
     expect(axisKr(6200000)).toBe("62k");

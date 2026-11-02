@@ -6,7 +6,7 @@ import "../src/components/postings";
 import { count, postingAmount, tableDate, unitName } from "../src/format";
 import { da } from "../src/i18n/da";
 import { viewContext } from "../src/model/context";
-import { groupedPostings, linkBase, type PostingList } from "../src/model/postings";
+import { groupedPostings, linkBase, type PostingList, postingHref } from "../src/model/postings";
 import { DEFAULT_STATE, type ViewState } from "../src/state/view";
 import type { SpendingApp } from "../src/app";
 import { answerFor, LINK } from "./fixture";
@@ -127,55 +127,32 @@ describe("the postings list", () => {
     expect(getAllByRole(el, "row")).toHaveLength(Math.min(many.length, 200) + 1);
   });
 
-  it("links a posting to Firefly III", async () => {
+  it("shows each posting's name as a button that opens its detail, with no link to Firefly III", async () => {
     const el = await render(listOf());
-    const link = getByRole(el, "link", { name: "Café Søde" });
-    expect(link.getAttribute("href")).toBe(`${LINK}/transactions/show/g26`);
-    expect(link.getAttribute("target")).toBe("_blank");
-    expect(link.getAttribute("rel")).toBe("noopener noreferrer");
-
-    const data = answerFor(THIS_YEAR);
-    data.postings = data.postings.map((p) => (p.groupId === "g26" ? { ...p, groupId: "a/b c" } : p));
-    document.body.replaceChildren();
-    const other = await render(listOf({}, data));
-    expect(getByRole(other, "link", { name: "Café Søde" }).getAttribute("href")).toBe(
-      `${LINK}/transactions/show/a%2Fb%20c`,
-    );
+    const opened: unknown[] = [];
+    el.addEventListener("detail-open", (e) => opened.push((e as CustomEvent).detail));
+    const button = getByRole(el, "button", { name: "Café Søde" });
+    fireEvent.click(button);
+    expect(opened).toEqual([{ kind: "posting", id: "p26" }]);
+    expect(queryAllByRole(el, "link")).toEqual([]);
   });
 
-  it("links only to http and https", async () => {
+  it("builds the posting's Firefly III address, and only on http and https", () => {
+    const p = answerFor(THIS_YEAR).postings[0];
+    expect(postingHref(LINK, { ...p, groupId: "a/b c" })).toBe(`${LINK}/transactions/show/a%2Fb%20c`);
+    expect(postingHref(null, p)).toBeNull();
     expect(linkBase("javascript:alert(1)")).toBeNull();
     expect(linkBase("ftp://x.test")).toBeNull();
     expect(linkBase("not a url")).toBeNull();
     expect(linkBase(null)).toBeNull();
     expect(linkBase("https://firefly.test")).toBe("https://firefly.test");
     expect(linkBase("http://firefly.test/sub")).toBe("http://firefly.test/sub");
-
-    const data = { ...answerFor(THIS_YEAR), fireflyLinkUrl: null };
-    const el = await render(listOf({}, data));
-    getByRole(el, "cell", { name: "Café Søde" });
-    expect(queryAllByRole(el, "link")).toEqual([]);
-  });
-
-  it("renders no link for a javascript: link base", async () => {
-    const data = { ...answerFor(THIS_YEAR), fireflyLinkUrl: "javascript:alert(1)" };
-    const el = await render(listOf({}, data));
-    getByRole(el, "cell", { name: "Café Søde" });
-    expect(queryAllByRole(el, "link")).toEqual([]);
   });
 
   it("shows the shop, with the bank text as its title", async () => {
     const el = await render(listOf());
     const cell = getAllByRole(el, "cell", { name: "Netto" })[0];
     expect(cell.getAttribute("title")).toBe("DK NETTO 4521");
-    expect(getByRole(cell, "link").getAttribute("href")).toMatch(/^http:\/\/firefly\.test\/transactions\/show\//);
-
-    const data = { ...answerFor(THIS_YEAR), fireflyLinkUrl: null };
-    document.body.replaceChildren();
-    const plain = await render(listOf({}, data));
-    const unlinked = getAllByRole(plain, "cell", { name: "Netto" })[0];
-    expect(unlinked.getAttribute("title")).toBe("DK NETTO 4521");
-    expect(queryAllByRole(plain, "link")).toEqual([]);
   });
 
   it("shows the bank text of a posting with no shop, without a title", async () => {
@@ -282,11 +259,9 @@ describe("the postings list", () => {
       expect(queryByRole(row, "cell", { name: /Abonnementer\s*,\s*Pizzaabonnement/ })).not.toBeNull();
     });
 
-    it("keeps the posting's link name", async () => {
+    it("keeps the posting's name as its button's name", async () => {
       const el = await render(listOf());
-      expect(getByRole(rowOf(el, sep20), "link", { name: "Pizzeria Roma" }).getAttribute("href")).toMatch(
-        /^http:\/\/firefly\.test\/transactions\/show\//,
-      );
+      getByRole(rowOf(el, sep20), "button", { name: "Pizzeria Roma" });
     });
 
     it("does not mark an unlinked posting", async () => {
@@ -337,7 +312,7 @@ describe("sorting the postings by their headers", () => {
   }
 
   function texts(root: HTMLElement): (string | undefined)[] {
-    return rows(root).map((r) => getByRole(r, "link").textContent?.trim());
+    return rows(root).map((r) => getByRole(r, "button").textContent?.trim());
   }
 
   function distinct(values: (string | undefined)[]): (string | undefined)[] {

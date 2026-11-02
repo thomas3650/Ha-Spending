@@ -324,11 +324,11 @@ describe("subscriptionLinks", () => {
     { ...bill({ name: "Made-up blank", object_group_title: " " }), id: "83" },
   ];
 
-  it("links an id to its bill's name and object group", () => {
-    expect(subscriptionLinks(bills)("81")).toEqual({ name: "Made-up rent", objectGroup: "Made-up fixed" });
+  it("a posting linked to a bill with an object group carries the bill's id, name and object group", () => {
+    expect(subscriptionLinks(bills)("81")).toEqual({ id: "81", name: "Made-up rent", objectGroup: "Made-up fixed" });
   });
 
-  it("gives null for a bill with no object group, an unknown id and a null id", () => {
+  it("a posting whose bill has no object group carries null, as do an unknown id and a null id", () => {
     const linkOf = subscriptionLinks(bills);
     expect(linkOf("82")).toBeNull();
     expect(linkOf("83")).toBeNull();

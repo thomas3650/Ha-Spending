@@ -1,8 +1,8 @@
 import { type ClassifiedPosting, type Period, type Posting, unitAt } from "@ha-spending/shared";
-import { fireEvent, getAllByRole, getByRole, getByText, queryAllByRole, queryByRole } from "@testing-library/dom";
+import { fireEvent, getAllByRole, getByRole, getByText, queryAllByRole, queryByRole, within } from "@testing-library/dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { amountChip, count, kr, postingAmount, unitName } from "../src/format";
+import { amountChip, count, kr, postingAmount, tableDate, unitName } from "../src/format";
 import type { SpendingApp } from "../src/app";
 import { da } from "../src/i18n/da";
 import { viewContext } from "../src/model/context";
@@ -84,7 +84,7 @@ describe("screen 3, all postings", () => {
     expect(groupButtons(root)).toEqual([]);
     const rows = getAllByRole(table, "row").slice(1);
     const seen = rows.map((row) => [
-      getByRole(row, "link").textContent?.trim(),
+      getByRole(row, "button").textContent?.trim(),
       getAllByRole(row, "cell").at(-1)?.textContent?.trim(),
     ]);
     expect(seen).toEqual([
@@ -136,8 +136,7 @@ describe("screen 3, all postings", () => {
   it("a sort keeps what the filters let through", async () => {
     const { app, root } = await mount("view=all-postings&unit=2026-07-01&q=e&min=100&max=5000");
     const links = () =>
-      getAllByRole(getByRole(root, "table"), "link")
-        .map((a) => a.textContent?.trim())
+      rowNames(root)
         .sort();
     summary(root, 3, 620000);
     const before = links();
@@ -250,7 +249,7 @@ describe("screen 3, all postings", () => {
     const { root } = await mount("view=all-postings&shop=Netto");
     chip(root, da.shopChip("Netto"));
     summary(root, 10, 3150000);
-    const texts = getAllByRole(getByRole(root, "table"), "link").map((a) => a.textContent?.trim());
+    const texts = rowNames(root);
     expect(texts.length).toBeGreaterThan(0);
     expect(texts.every((text) => text === "Netto")).toBe(true);
   });
@@ -304,8 +303,11 @@ function hashParam(name: string): string | null {
   return new URLSearchParams(location.hash.slice(1)).get(name);
 }
 
-function rowLinks(root: HTMLElement): (string | undefined)[] {
-  return getAllByRole(getByRole(root, "table"), "link").map((a) => a.textContent?.trim());
+/** The name of each posting row, read from its button; group lines and the header hold no cells. */
+function rowNames(root: HTMLElement): (string | undefined)[] {
+  return getAllByRole(getByRole(root, "table"), "row")
+    .filter((r) => queryAllByRole(r, "cell").length > 0)
+    .map((r) => getByRole(r, "button").textContent?.trim());
 }
 
 function objectGroupPart(root: HTMLElement): HTMLElement {
@@ -316,8 +318,8 @@ function objectGroupPart(root: HTMLElement): HTMLElement {
 function twoGroups(range: Period): Response {
   const answer = answerFor(range);
   const link = (p: Posting): Posting["subscription"] => {
-    if (p.shop === "Netto" && p.date === "2026-09-10") return { name: "Fitness", objectGroup: "Åbne aftaler" };
-    if (p.shop === "Pizzeria Roma" && p.date === "2026-09-20") return { name: "Pizzaabonnement", objectGroup: "Abonnementer" };
+    if (p.shop === "Netto" && p.date === "2026-09-10") return { id: "b8", name: "Fitness", objectGroup: "Åbne aftaler" };
+    if (p.shop === "Pizzeria Roma" && p.date === "2026-09-20") return { id: "b7", name: "Pizzaabonnement", objectGroup: "Abonnementer" };
     return null;
   };
   return json({ ...answer, postings: answer.postings.map((p) => ({ ...p, subscription: link(p) })) });
@@ -328,7 +330,7 @@ describe("the object group on Alle posteringer", () => {
     const { root } = await mount(SUBS);
     chip(root, "Abonnementer");
     summary(root, 1, 70000);
-    expect(rowLinks(root)).toEqual(["Pizzeria Roma"]);
+    expect(rowNames(root)).toEqual(["Pizzeria Roma"]);
   });
 
   it("its chip's ✕ shows all postings", async () => {
@@ -394,7 +396,7 @@ describe("the object group on Alle posteringer", () => {
     expect(hashParam("og")).toBe("Åbne aftaler");
     chip(root, "Åbne aftaler");
     summary(root, 1, 300000);
-    expect(rowLinks(root)).toEqual(["Netto"]);
+    expect(rowNames(root)).toEqual(["Netto"]);
 
     await openFilter(app, root);
     expect(names()).toEqual(["Abonnementer", "Åbne aftaler"]);
@@ -475,6 +477,60 @@ describe("the filter rules", () => {
     const { root } = await mount(`${CAFE}&sort=largest`);
     const row = getAllByRole(getByRole(root, "table"), "row").find((r) => r.textContent?.includes("Pizzaabonnement"));
     expect(row?.textContent).toContain("Abonnementer");
-    expect(getByRole(row as HTMLElement, "link", { name: "Pizzeria Roma" })).toBeTruthy();
+    expect(getByRole(row as HTMLElement, "button", { name: "Pizzeria Roma" })).toBeTruthy();
+  });
+});
+
+describe("the detail on Alle posteringer", () => {
+  /** The list's row with that date and a button with that name. */
+  function rowButton(root: HTMLElement, name: string, date: string): HTMLElement {
+    const rows = getAllByRole(root, "row").filter(
+      (r) => (r.textContent ?? "").includes(tableDate(date)) && within(r).queryByRole("button", { name }),
+    );
+    if (rows.length !== 1) throw new Error(`${rows.length} rows with ${name} ${date}`);
+    return within(rows[0]).getByRole("button", { name });
+  }
+
+  async function click(app: SpendingApp, el: HTMLElement): Promise<void> {
+    fireEvent.click(el);
+    await settle(app);
+  }
+
+  it("a row splits Alle posteringer into the list and the detail, and Luk closes it", async () => {
+    const { app, root } = await mount("view=all-postings");
+    await click(app, rowButton(root, "Café Søde", "2026-10-26"));
+    expect(location.hash).toBe("#view=all-postings&detail=p%3Ap26");
+    const d = getByRole(root, "group", { name: "Café Søde" });
+    expect(app.shadowRoot?.activeElement).toBe(getByRole(d, "heading", { level: 3 }));
+    const row = rowButton(root, "Café Søde", "2026-10-26").closest("tr") as HTMLElement;
+    expect(row.getAttribute("aria-current")).toBe("true");
+    rowButton(root, "Netto", "2026-10-10");
+
+    await click(app, getByRole(d, "button", { name: da.close }));
+    expect(location.hash).toBe("#view=all-postings");
+    expect(queryByRole(root, "group", { name: "Café Søde" })).toBeNull();
+    expect(app.shadowRoot?.activeElement).toBe(rowButton(root, "Café Søde", "2026-10-26"));
+  });
+
+  it("the search and the chips stay while the detail is open", async () => {
+    const { app, root } = await mount(CAFE);
+    await click(app, rowButton(root, "Café Søde", "2026-10-26"));
+    getByRole(root, "group", { name: "Café Søde" });
+    getByRole(root, "combobox", { name: da.searchLabel });
+    chip(root, da.mainGroupChip("Mad"));
+    chip(root, da.categoryChip("Café"));
+    getByRole(root, "button", { name: da.addFilter });
+    summary(root, 4, 131012);
+  });
+
+  it("closing with the row filtered out puts the focus on the page's heading", async () => {
+    const { app, root } = await mount("view=all-postings");
+    await click(app, rowButton(root, "Café Søde", "2026-10-26"));
+    fireEvent.input(getByRole(root, "combobox", { name: da.searchLabel }), { target: { value: "netto" } });
+    await settle(app);
+    const d = getByRole(root, "group", { name: "Café Søde" });
+    expect(queryAllByRole(root, "button", { name: "Café Søde" })).toEqual([]);
+    await click(app, getByRole(d, "button", { name: da.close }));
+    expect(app.shadowRoot?.activeElement).toBe(getByRole(root, "heading", { level: 1, name: da.allPostings }));
   });
 });

@@ -232,12 +232,25 @@ describe("a real Firefly III", () => {
       });
       const links = (d: SpendingData) =>
         d.postings
-          .map((p) => ({ text: p.text, date: p.date, amount: p.amount, subscription: p.subscription }))
+          .map((p) => ({
+            text: p.text,
+            date: p.date,
+            amount: p.amount,
+            subscription: p.subscription && { name: p.subscription.name, objectGroup: p.subscription.objectGroup },
+          }))
           .sort((a, b) => a.date.localeCompare(b.date) || a.text.localeCompare(b.text) || a.amount - b.amount);
       const expected = await readSpendingData(fakeClient, settings, R1, { today, warn: () => {} });
       const actual = await served();
       expect(actual.postings.some((p) => p.subscription !== null)).toBe(true);
       expect(links(actual)).toEqual(links(expected));
+      let checked = 0;
+      for (const p of actual.postings) {
+        const kept = actual.subscriptions.find((s) => s.name === p.subscription?.name);
+        if (kept === undefined) continue;
+        expect(p.subscription?.id).toBe(kept.id);
+        checked++;
+      }
+      expect(checked).toBeGreaterThan(0);
     });
 
     it("lists a bill's paid dates only inside the window asked for", async () => {

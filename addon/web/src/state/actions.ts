@@ -1,5 +1,14 @@
 import { type Grouping, type Level, type SpendingData, unitsOf } from "@ha-spending/shared";
-import { type AmountRange, type Card, type PeriodChoice, periodOf, DEFAULT_STATE, type Sort, type ViewState } from "./view";
+import {
+  type AmountRange,
+  type Card,
+  DEFAULT_STATE,
+  type DetailKey,
+  type PeriodChoice,
+  periodOf,
+  type Sort,
+  type ViewState,
+} from "./view";
 
 const ALL: Level = { kind: "all" };
 
@@ -132,6 +141,35 @@ export function setObjectGroup(s: ViewState, title: string | null): ViewState {
   return { ...s, objectGroup: title };
 }
 
+export function openDetail(s: ViewState, key: DetailKey): ViewState {
+  return { ...s, detail: key };
+}
+
+export function closeDetail(s: ViewState): ViewState {
+  return { ...s, detail: null };
+}
+
+/** The detail belongs to the card and the screen it was opened on; every other choice keeps it (spec §5). */
+export function keepDetail(prev: ViewState, next: ViewState): ViewState {
+  return next.card === prev.card && next.screen === prev.screen ? next : closeDetail(next);
+}
+
+/** Spec §5's "Where it resolves", on the answer as it came; the detail itself ignores the level and the unit. */
+export function detailResolves(s: ViewState, data: SpendingData, today: string): boolean {
+  const key = s.detail;
+  if (key === null) return true;
+  const overview = s.screen === "overview";
+  const listed = (id: string) => data.subscriptions.some((b) => b.id === id);
+  if (key.kind === "subscription") return overview && s.card === "subscriptions" && listed(key.id);
+  const p = data.postings.find((q) => q.id === key.id);
+  if (p === undefined) return false;
+  const period = periodOf(s.period, today, data.earliestPostingDate);
+  if (p.date < period.start || p.date > period.end) return false;
+  if (s.accounts !== null && !s.accounts.includes(p.account)) return false;
+  if (!overview || s.card === "postings") return true;
+  return s.card === "subscriptions" && p.subscription !== null && listed(p.subscription.id);
+}
+
 function knownLevel(level: Level, data: SpendingData): Level {
   if (level.kind === "all") return level;
   if (level.mainGroup !== null && !data.mainGroups.includes(level.mainGroup)) return ALL;
@@ -155,5 +193,6 @@ export function normalise(s: ViewState, data: SpendingData, today: string): View
     (s.card === "shops" && !hasShops(data))
       ? "bars"
       : s.card;
-  return { ...s, accounts, level: knownLevel(s.level, data), unit, card };
+  const known = { ...s, accounts, level: knownLevel(s.level, data), unit, card };
+  return detailResolves(known, data, today) ? known : closeDetail(known);
 }

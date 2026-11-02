@@ -191,7 +191,7 @@ to set their status to `superseded by D<n>`, or to name a part a later decision 
 - **Source:** Claude, [page plan](superpowers/plans/2026-10-31-page.md)
 
 ### D20: The view state's hash
-- **Date:** 2026-10-31 · **Status:** active; key list superseded by D35 and D42
+- **Date:** 2026-10-31 · **Status:** active; key list superseded by D35, D42 and D44
 - **Decision:**
   - The keys are `period`, `from`, `to`, `by`, `accounts`, `group`, `category`, `unit`, `card`, `view`, `q`, `sort`,
     `min` and `max`, in a `URLSearchParams` string.
@@ -439,3 +439,13 @@ to set their status to `superseded by D<n>`, or to name a part a later decision 
   Firefly III's data. One shop per request means two devices cannot undo each other's change with a stale list.
 - **Source:** Thomas, 2026-11-02, [the top shops spec](superpowers/specs/2026-11-02-top-shops.md) §3 and §4; the
   route's shape and limits: Claude
+
+### D44: The open detail is in the hash
+- **Date:** 2026-11-02 · **Status:** active
+- **Decision:** The detail of a fixed expense or a posting is the hash key `detail`, `s:<id>` or `p:<id>`, written last.
+  It resolves on the overview's Posteringer and Faste udgifter cards and on Alle posteringer; anywhere else it is left
+  out. Opening a detail adds a history entry, a click on another row replaces it, and closing goes back one entry only
+  when the current entry is the one the open pushed.
+- **Why:** Back closes the detail, and a shared link or a reload opens it, as for the other choices ([D20](decisions.md)).
+  Closing by going back keeps Back from reopening a detail that was just closed.
+- **Source:** Claude, 2026-11-02, [the detail view spec](superpowers/specs/2026-11-02-detail-view.md) §5

@@ -36,7 +36,7 @@ const POSTINGS: Posting[] = rows.map(([category, text, amount, account, date], i
   amount,
   subscription:
     text === "Pizzeria Roma" && date === "2026-09-20"
-      ? { name: "Pizzaabonnement", objectGroup: "Abonnementer" }
+      ? { id: "b7", name: "Pizzaabonnement", objectGroup: "Abonnementer" }
       : null,
 }));
 

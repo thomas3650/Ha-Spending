@@ -3,7 +3,11 @@ import { describe, expect, it } from "vitest";
 import {
   chooseShop,
   chooseUnit,
+  closeDetail,
+  detailResolves,
+  keepDetail,
   normalise,
+  openDetail,
   openAllPostings,
   openAllPostingsFresh,
   openObjectGroupPostings,
@@ -26,8 +30,8 @@ import {
   toggleSubscriptions,
   trailLevel,
 } from "../src/state/actions";
-import { DEFAULT_STATE, type ViewState } from "../src/state/view";
-import { answerFor } from "./fixture";
+import { DEFAULT_STATE, type DetailKey, type ViewState } from "../src/state/view";
+import { answerFor, SUBSCRIPTIONS } from "./fixture";
 
 const mad: Level = { kind: "mainGroup", mainGroup: "Mad" };
 const cafe: Level = { kind: "category", mainGroup: "Mad", category: "Café" };
@@ -394,5 +398,94 @@ describe("normalise", () => {
     it("keeps the card with a subscription", () => {
       expect(normalise(state, withOne, today).card).toBe("subscriptions");
     });
+  });
+});
+
+describe("the detail", () => {
+  const today = "2026-10-30";
+  const base = answerFor({ start: "2025-12-01", end: today });
+  const data: SpendingData = {
+    ...base,
+    subscriptions: SUBSCRIPTIONS,
+    postings: base.postings.map((p) =>
+      p.id === "p11" ? { ...p, subscription: { id: "b1", name: "Husleje", objectGroup: "Faste udgifter" } } : p,
+    ),
+  };
+  const bill: DetailKey = { kind: "subscription", id: "b1" };
+  const posting = (id: string): DetailKey => ({ kind: "posting", id });
+  const state = (s: Partial<ViewState>): ViewState => ({ ...DEFAULT_STATE, ...s });
+  const kept = (s: Partial<ViewState>) => normalise(state(s), data, today).detail;
+
+  it("opens and closes", () => {
+    const open = openDetail(DEFAULT_STATE, bill);
+    expect(open).toEqual({ ...DEFAULT_STATE, detail: bill });
+    expect(closeDetail(open)).toEqual(DEFAULT_STATE);
+  });
+
+  it.each<[string, Partial<ViewState>]>([
+    ["a bill on Faste udgifter, whatever the accounts", { card: "subscriptions", accounts: ["2"], detail: bill }],
+    ["a posting on Posteringer", { card: "postings", detail: posting("p23") }],
+    ["a posting on Alle posteringer", { screen: "allPostings", detail: posting("p23") }],
+    ["a posting of a listed bill on Faste udgifter", { card: "subscriptions", detail: posting("p11") }],
+  ])("normalise keeps a detail that resolves: %s", (_, s) => {
+    expect(kept(s)).toEqual(s.detail);
+    expect(detailResolves(state(s), data, today)).toBe(true);
+  });
+
+  it.each<[string, Partial<ViewState>]>([
+    ["an unknown bill", { card: "subscriptions", detail: { kind: "subscription", id: "b99" } }],
+    ["an unknown posting", { card: "postings", detail: posting("p999") }],
+    ["s: on Posteringer", { card: "postings", detail: bill }],
+    ["s: on Alle posteringer", { card: "subscriptions", screen: "allPostings", detail: bill }],
+    ["p: on Søjler", { card: "bars", detail: posting("p23") }],
+    ["p: on Forskel", { card: "difference", unit: "2026-07-01", detail: posting("p23") }],
+    ["p: on Butikker", { card: "shops", detail: posting("p23") }],
+    ["p: of an unlinked posting on Faste udgifter", { card: "subscriptions", detail: posting("p23") }],
+    ["p: of a bill not listed on Faste udgifter", { card: "subscriptions", detail: posting("p24") }],
+    ["a posting before the period", { card: "postings", detail: posting("p1") }],
+    ["a posting on an unticked account", { card: "postings", accounts: ["1"], detail: posting("p23") }],
+  ])("and drops it: %s", (_, s) => {
+    expect(kept(s)).toBeNull();
+    expect(detailResolves(state(s), data, today)).toBe(false);
+  });
+
+  it("normalise drops a bill's detail when Faste udgifter falls back to the bars", () => {
+    const s = normalise(state({ card: "subscriptions", detail: bill }), { ...data, subscriptions: [] }, today);
+    expect(s.card).toBe("bars");
+    expect(s.detail).toBeNull();
+  });
+
+  it("keepDetail closes the detail when the card or the screen changes", () => {
+    const onSubs = state({ card: "subscriptions", detail: bill });
+    const onPostings = state({ card: "postings", detail: posting("p23") });
+    const onBars = state({ card: "bars", detail: posting("p23") });
+    const onShops = state({ card: "shops", detail: posting("p23") });
+    expect(keepDetail(onSubs, setCard(onSubs, "bars")).detail).toBeNull();
+    expect(keepDetail(onSubs, toggleSubscriptions(onSubs)).detail).toBeNull();
+    expect(keepDetail(onBars, chooseUnit(onBars, "2026-07-01")).detail).toBeNull();
+    expect(keepDetail(onPostings, openAllPostings(onPostings)).detail).toBeNull();
+    expect(keepDetail(onShops, openShop(onShops, "Netto")).detail).toBeNull();
+    const all = openAllPostings(onPostings);
+    expect(keepDetail(all, trailLevel(all, 0)).detail).toBeNull();
+  });
+
+  it("the period, the accounts, the level, the unit, the search and the sort keep it", () => {
+    const s = state({ card: "postings", detail: posting("p23") });
+    const all = state({ screen: "allPostings", detail: posting("p23") });
+    const nexts = [
+      setPeriod(s, { preset: "lastYear" }),
+      setGrouping(s, "week"),
+      setAccounts(s, ["1"], ["1", "2"]),
+      openPart(s, "Mad"),
+      chooseUnit(s, "2026-07-01"),
+      setSearch(s, "café"),
+      chooseShop(s, "Café Søde"),
+      setSort(all, { column: "amount", descending: true }),
+      setAmount(all, { min: 1, max: null }),
+      setObjectGroup(all, "Abonnementer"),
+    ];
+    for (const next of nexts) {
+      expect(keepDetail(next.screen === "allPostings" ? all : s, next).detail).toEqual(s.detail);
+    }
   });
 });

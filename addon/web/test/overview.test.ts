@@ -2,6 +2,7 @@ import { type Posting, share, unitAt } from "@ha-spending/shared";
 import {
   fireEvent,
   getAllByRole,
+  queryAllByRole,
   getAllByText,
   getAllByTitle,
   getByRole,
@@ -147,7 +148,9 @@ describe("the search on Posteringer", () => {
   }
 
   function postingTexts(card: HTMLElement): string[] {
-    return getAllByRole(card, "link").map((a) => a.textContent?.trim() ?? "");
+    return getAllByRole(card, "row")
+      .filter((r) => queryAllByRole(r, "cell").length > 0)
+      .map((r) => getByRole(r, "button").textContent?.trim() ?? "");
   }
 
   function keyNumberTexts(root: HTMLElement): string[] {

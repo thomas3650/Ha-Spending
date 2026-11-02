@@ -13,6 +13,8 @@ export type Card = "bars" | "postings" | "difference" | "subscriptions" | "shops
 export type PostingColumn = "date" | "text" | "category" | "account" | "amount";
 export type SubscriptionColumn = "name" | "category" | "amount" | "perYear" | "status";
 
+export type DetailKey = { kind: "subscription"; id: string } | { kind: "posting"; id: string };
+
 export interface Sorted<C extends string> {
   column: C;
   descending: boolean;
@@ -43,6 +45,8 @@ export interface ViewState {
   amount: AmountRange | null;
   /** A Firefly III object group's title; kept even when no posting carries it (D42). */
   objectGroup: string | null;
+  /** The open detail of a bill or a posting (D44). */
+  detail: DetailKey | null;
 }
 
 export const DEFAULT_STATE: ViewState = {
@@ -58,6 +62,7 @@ export const DEFAULT_STATE: ViewState = {
   sort: { column: "date", descending: true },
   amount: null,
   objectGroup: null,
+  detail: null,
 };
 
 const GROUPINGS: readonly Grouping[] = ["day", "week", "month", "quarter", "year"];
@@ -135,6 +140,12 @@ function parseAmount(p: URLSearchParams): AmountRange | null {
   return { min, max };
 }
 
+function parseDetail(value: string | null): DetailKey | null {
+  const match = value === null ? null : /^([sp]):(.+)$/.exec(value);
+  if (match === null) return null;
+  return { kind: match[1] === "s" ? "subscription" : "posting", id: match[2] };
+}
+
 /** What does not parse falls back to DEFAULT_STATE's value (D20). */
 export function parseHash(hash: string): ViewState {
   const p = new URLSearchParams(hash.startsWith("#") ? hash.slice(1) : hash);
@@ -154,10 +165,14 @@ export function parseHash(hash: string): ViewState {
     sort: allPostings ? parseSort(p.get("sort")) : DEFAULT_STATE.sort,
     amount: allPostings ? parseAmount(p) : DEFAULT_STATE.amount,
     objectGroup: (allPostings && p.get("og")) || DEFAULT_STATE.objectGroup,
+    detail: parseDetail(p.get("detail")),
   };
 }
 
-/** Without '#'. The keys go in the order of D20, D35 and D42, and defaults are left out, so equal states give equal hashes. */
+/**
+ * Without '#'. The keys go in the order of D20, D35, D42 and D44, and defaults are left out, so equal states give
+ * equal hashes.
+ */
 export function toHash(s: ViewState): string {
   const p = new URLSearchParams();
   if (s.period.preset === "custom") {
@@ -183,6 +198,7 @@ export function toHash(s: ViewState): string {
     if (s.amount?.max != null) p.set("max", String(s.amount.max));
     if (s.objectGroup !== null) p.set("og", s.objectGroup);
   }
+  if (s.detail !== null) p.set("detail", `${s.detail.kind === "subscription" ? "s" : "p"}:${s.detail.id}`);
   return p.toString();
 }
 

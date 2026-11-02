@@ -1,0 +1,226 @@
+<!doctype html><html lang="da"><meta charset="utf-8"><title>Detalje</title><body style="margin:16px;font-family:system-ui">
+<h2>Én detalje til alle fire</h2>
+<p class="subtitle">Opdigtede data.</p>
+
+<style>
+  .pg { font-family: Roboto, "Segoe UI", system-ui, sans-serif; font-size: 12px; color: #1f1f1f; background: #f5f5f5; padding: 14px; border-radius: 10px; min-width: 1280px; }
+  .pg * { box-sizing: border-box; }
+  .pg .card { background: #fff; border: 1px solid #e3e3e3; border-radius: 12px; padding: 14px; min-width: 0; }
+  .pg .bar { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+  .pg .bar h1 { font-size: 14px; margin: 0; flex: 1; }
+  .pg .crumb { flex: 1; font-size: 13px; } .pg .crumb a { color: #0277bd; }
+  .pg .field { border: 1px solid #c9c9c9; border-radius: 6px; padding: 3px 26px 4px 8px; position: relative; min-width: 150px; }
+  .pg .field small { display: block; font-size: 9px; color: #6b6b6b; }
+  .pg .field::after { content: "▾"; position: absolute; right: 8px; top: 9px; color: #6b6b6b; font-size: 9px; }
+  .pg .keys { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin-bottom: 12px; }
+  .pg .key small { color: #6b6b6b; font-size: 10px; }
+  .pg .key .v { font-size: 20px; margin: 4px 0 2px; }
+  .pg .key .s { color: #6b6b6b; font-size: 10px; } .pg .key .a { color: #0277bd; font-size: 10px; }
+  .pg .key.og { border: 2px solid #03a9f4; }
+  .pg .halves { display: grid; grid-template-columns: 1fr 1.25fr; gap: 12px; }
+  .pg .head { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+  .pg .head h2 { font-size: 13px; margin: 0; flex: 1; }
+  .pg .muted { color: #6b6b6b; }
+  .pg .seg { display: inline-flex; border: 1px solid #c9c9c9; border-radius: 6px; overflow: hidden; }
+  .pg .seg span { padding: 4px 10px; border-left: 1px solid #c9c9c9; } .pg .seg span:first-child { border-left: 0; }
+  .pg .seg .on { background: #03a9f4; color: #fff; font-weight: 600; }
+  .pg .fs { border: 1px solid #c9c9c9; border-radius: 6px; padding: 3px 7px; }
+  .pg .donut-wrap { display: grid; grid-template-columns: 1fr 170px 1fr; align-items: center; gap: 6px; padding: 30px 0 20px; }
+  .pg .donut { width: 170px; height: 170px; border-radius: 50%; background: conic-gradient(#2a78d6 0 23%, #eb6834 0 39%, #1fae7a 0 54%, #f0b400 0 63%, #e77fae 0 70%, #0b8a1f 0 76%, #6a4fd6 0 82%, #e84a4a 0 87%, #9e9e9e 0 100%); position: relative; }
+  .pg .donut::after { content: ""; position: absolute; inset: 22px; background: #fff; border-radius: 50%; }
+  .pg .donut b { position: absolute; inset: 0; display: grid; place-content: center; text-align: center; z-index: 1; font-size: 15px; font-weight: 500; }
+  .pg .donut b small { font-size: 10px; color: #6b6b6b; font-weight: normal; }
+  .pg .lab { line-height: 1.25; margin: 6px 0; } .pg .lab small { display: block; color: #6b6b6b; font-size: 10px; } .pg .lab.r { text-align: right; }
+  .pg .sums { display: flex; gap: 8px; margin-bottom: 10px; }
+  .pg .sums div { background: #f0f0f0; border-radius: 8px; padding: 6px 10px; } .pg .sums small { display: block; color: #6b6b6b; font-size: 10px; }
+  .pg table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+  .pg th, .pg td { padding: 6px 5px; text-align: left; border-bottom: 1px solid #e3e3e3; vertical-align: top; }
+  .pg thead th { color: #6b6b6b; font-weight: normal; }
+  .pg .r { text-align: right; } .pg .nw { white-space: nowrap; }
+  .pg .grp th, .pg .grp td { background: #f0f0f0; font-weight: 600; } .pg .grp .n { font-weight: normal; margin-left: 6px; }
+  .pg td.dt { padding-left: 18px; }
+  .pg .dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin-right: 6px; vertical-align: 1px; }
+  .pg .ogm { display: inline-block; padding: 0 7px; color: #6b6b6b; background: #f0f0f0; border-radius: 9px; font-size: 10px; margin-left: 4px; }
+  .pg .next { display: block; color: #6b6b6b; font-size: 10px; }
+  .pg .st { padding: 1px 6px; border-radius: 4px; font-size: 10px; white-space: nowrap; }
+  .pg .exp { color: #37474f; background: #eceff1; } .pg .paid { color: #1b5e20; background: #e8f5e9; } .pg .risen { color: #9a4a00; background: #fff1e0; }
+  .pg .sel td { background: #e1f3fd; } .pg .sel td:first-child { box-shadow: inset 3px 0 0 #03a9f4; }
+  .pg .back { color: #0277bd; font-weight: 600; }
+  .pg .x { float: right; color: #6b6b6b; }
+  .pg .dt-title { font-size: 18px; font-weight: 600; margin: 2px 0 4px; }
+  .pg .big { font-size: 20px; font-variant-numeric: tabular-nums; }
+  .pg .facts { display: flex; gap: 8px; margin-top: 12px; } .pg .facts div { flex: 1; background: #f0f0f0; border-radius: 8px; padding: 6px 10px; }
+  .pg .facts small { display: block; color: #6b6b6b; font-size: 10px; }
+  .pg .facts .hl { background: #e1f3fd; } .pg .facts .hl b { font-size: 16px; }
+  .pg .bars { display: flex; gap: 4px; align-items: flex-end; height: 60px; margin: 6px 0 2px; border-bottom: 1px solid #e3e3e3; }
+  .pg .bars span { flex: 1; background: #03a9f4; border-radius: 2px 2px 0 0; }
+  .pg .bl { display: flex; gap: 4px; color: #6b6b6b; font-size: 9px; } .pg .bl span { flex: 1; text-align: center; }
+  .pg .link { color: #0277bd; }
+  .pg .split { display: grid; grid-template-columns: 1.4fr 1fr; align-items: start; }
+  .pg .split > .l { padding-right: 14px; border-right: 1px solid #e3e3e3; }
+  .pg .split > .d { padding-left: 16px; }
+  .pg .search { border: 1px solid #c9c9c9; border-radius: 6px; padding: 7px 10px; color: #8a8a8a; }
+  .pg .tools { display: flex; align-items: center; margin: 10px 0 6px; }
+  .pg .filter { border: 1px solid #c9c9c9; border-radius: 12px; padding: 2px 9px; } .pg .count { margin-left: auto; color: #6b6b6b; }
+  .pg .sub { margin-top: 16px; border-top: 1px solid #e3e3e3; padding-top: 12px; }
+  .pg .sub h4 { margin: 0 0 4px; font-size: 14px; }
+  .pg .scroll { max-height: 150px; overflow: hidden; }
+  .lbl { font-size: 12px; text-transform: uppercase; letter-spacing: .05em; color: #6b6b6b; margin: 20px 0 6px; }
+</style>
+
+<div class="lbl">1 · Normal side: klik på "El" — højre kort viser den samme detalje som i fuld skærm</div>
+<div class="pg">
+  <div class="card bar"><h1>Alt forbrug</h1>
+    <div class="field"><small>Periode</small>I år · 1. jan – 2. nov 2026</div>
+    <div class="field"><small>Gruppér pr.</small>Måned</div>
+    <div class="field"><small>Konti</small>Alle konti (4)</div>
+  </div>
+  <div class="keys">
+    <div class="card key"><small>Forbrug i perioden</small><div class="v">312.480 kr.</div><div class="a">842 posteringer →</div><div class="s">1. jan – 2. nov 2026</div></div>
+    <div class="card key"><small>Gennemsnit pr. måned</small><div class="v">31.248 kr.</div><div class="s">10 måneder</div></div>
+    <div class="card key"><small>Oktober mod september</small><div class="v">-5 %</div><div class="s">▼ 1.610 kr.</div></div>
+    <div class="card key og"><small>Abonnementer i perioden</small><div class="v">18.240 kr.</div><div class="s">1.824 kr. pr. måned · 12 stk.</div><div class="a">74 posteringer →</div></div>
+    <div class="card key og"><small>Faste udgifter i perioden</small><div class="v">171.900 kr.</div><div class="s">17.190 kr. pr. måned · 9 stk.</div><div class="a">68 posteringer →</div></div>
+  </div>
+  <div class="halves">
+    <div class="card">
+      <div class="head"><h2>Hovedgrupper</h2><span class="muted">312.480 kr.</span></div>
+      <div class="donut-wrap">
+        <div><div class="lab">Bolig<small>71.870 kr. · 23 %</small></div><div class="lab">Øvrige<small>3.120 kr. · 1 %</small></div><div class="lab">Fritid<small>18.750 kr. · 6 %</small></div><div class="lab">Abonnementer<small>18.240 kr. · 6 %</small></div></div>
+        <div class="donut"><b><small>Alt forbrug</small>312.480 kr.</b></div>
+        <div><div class="lab r">Bil og transport<small>49.990 kr. · 16 %</small></div><div class="lab r">Dagligvarer<small>46.870 kr. · 15 %</small></div><div class="lab r">Børn<small>28.120 kr. · 9 %</small></div><div class="lab r">Café og restaurant<small>21.870 kr. · 7 %</small></div></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="head"><span class="back">← Faste udgifter</span><span style="flex:1"></span><span class="seg"><span>Søjler</span><span>Posteringer</span><span class="on">Faste udgifter</span><span>Butikker</span></span><span class="fs">⤢</span></div>
+      <div class="muted">Bolig · Faste udgifter</div>
+        <div class="dt-title">El</div>
+        <div style="display:flex; gap:10px; align-items:baseline"><span class="big">400 kr. pr. måned</span><span class="st exp">Forventes 2. nov</span></div>
+        <div class="facts"><div class="hl"><small>I perioden · 1. jan – 2. nov 2026</small><b>4.120 kr.</b> · 10 betalinger</div><div><small>Om året</small>4.800 kr.</div><div><small>Konto</small>Fælleskonto</div></div>
+        <div class="muted" style="margin-top:14px">Pr. måned i perioden</div>
+        <div class="bars"><span style="height:95%"></span><span style="height:88%"></span><span style="height:70%"></span><span style="height:55%"></span><span style="height:40%"></span><span style="height:36%"></span><span style="height:35%"></span><span style="height:42%"></span><span style="height:58%"></span><span style="height:76%"></span></div>
+        <div class="bl"><span>jan</span><span>feb</span><span>mar</span><span>apr</span><span>maj</span><span>jun</span><span>jul</span><span>aug</span><span>sep</span><span>okt</span></div>
+        <table style="margin-top:6px"><tbody><tr><td>2. okt 2026</td><td>Fælleskonto</td><td class="r">488,00 kr.</td></tr><tr><td>2. sep 2026</td><td>Fælleskonto</td><td class="r">372,50 kr.</td></tr><tr><td>2. aug 2026</td><td>Fælleskonto</td><td class="r">268,25 kr.</td></tr><tr><td colspan="3" class="muted">… 7 mere</td></tr></tbody></table>
+        <p style="margin:10px 0 0"><span class="link">Alle 10 posteringer →</span> · <span class="link">Åbn i Firefly III ↗</span></p>
+      </div>
+  </div>
+</div>
+
+<div class="lbl">2 · Fuld skærm: listen til venstre, detaljen til højre</div>
+<div class="pg">
+  <div class="card bar"><h1>Alt forbrug</h1>
+    <div class="field"><small>Periode</small>I år · 1. jan – 2. nov 2026</div>
+    <div class="field"><small>Gruppér pr.</small>Måned</div>
+    <div class="field"><small>Konti</small>Alle konti (4)</div>
+  </div>
+  <div class="card">
+    <div class="head"><h2>Faste udgifter</h2><span class="seg"><span>Søjler</span><span>Posteringer</span><span class="on">Faste udgifter</span><span>Butikker</span></span><span class="fs">⤡</span></div>
+    <div class="sums"><div><small>Faste udgifter</small><b>186.400 kr. om året</b></div><div><small>Abonnementer</small><b>21.900 kr. om året</b></div></div>
+    <div class="split">
+      <div class="l">
+        <table>
+          <thead><tr><th>Fast udgift</th><th>Kategori</th><th class="r">Beløb</th><th class="r">Om året</th><th>Status ▴</th></tr></thead>
+          <tbody>
+            <tr class="grp"><th colspan="3"><span class="dot" style="background:#2a78d6"></span>Bolig<span class="n">3 faste udgifter</span></th><td class="r">102.300 kr.</td><td></td></tr>
+            <tr><td>Boligafgift<span class="ogm">Faste udgifter</span><span class="next">næste 2. nov</span></td><td>Boligafgift og lån</td><td class="r nw">8.100 kr. pr. måned</td><td class="r">97.200 kr.</td><td><span class="st exp">Forventes 2. nov</span></td></tr>
+            <tr class="sel"><td>El<span class="ogm">Faste udgifter</span><span class="next">næste 2. nov</span></td><td>El</td><td class="r nw">400 kr. pr. måned</td><td class="r">4.800 kr.</td><td><span class="st exp">Forventes 2. nov</span></td></tr>
+            <tr><td>Internet<span class="ogm">Faste udgifter</span><span class="next">næste 2. jan 2027</span></td><td>Internet</td><td class="r nw">225 kr. pr. kvartal</td><td class="r">900 kr.</td><td><span class="st paid">Betalt 1. okt</span></td></tr>
+            <tr class="grp"><th colspan="3"><span class="dot" style="background:#eb6834"></span>Forsikring<span class="n">2 faste udgifter</span></th><td class="r">11.740 kr.</td><td></td></tr>
+            <tr><td>Bilforsikring<span class="ogm">Faste udgifter</span><span class="next">næste 2. nov</span></td><td>Bilforsikring</td><td class="r nw">570 kr. pr. måned</td><td class="r">6.840 kr.</td><td><span class="st exp">Forventes 2. nov</span></td></tr>
+            <tr><td>Indboforsikring<span class="ogm">Faste udgifter</span><span class="next">næste 12. maj 2027</span></td><td>Forsikring</td><td class="r nw">4.900 kr. pr. år</td><td class="r">4.900 kr.</td><td><span class="st risen">Steget</span></td></tr>
+            <tr class="grp"><th colspan="3"><span class="dot" style="background:#6a4fd6"></span>Abonnementer<span class="n">3 faste udgifter</span></th><td class="r">4.164 kr.</td><td></td></tr>
+            <tr><td>Musiktjeneste<span class="ogm">Abonnementer</span><span class="next">næste 26. nov</span></td><td>Streaming</td><td class="r nw">169 kr. pr. måned</td><td class="r">2.028 kr.</td><td><span class="st paid">Betalt 26. okt</span></td></tr>
+            <tr><td>Filmtjeneste<span class="ogm">Abonnementer</span><span class="next">næste 2. nov</span></td><td>Streaming</td><td class="r nw">99 kr. pr. måned</td><td class="r">1.188 kr.</td><td><span class="st exp">Forventes 2. nov</span></td></tr>
+            <tr><td>Svømmeklub<span class="ogm">Abonnementer</span><span class="next">næste 17. jul 2027</span></td><td>Sport</td><td class="r nw">948 kr. pr. år</td><td class="r">948 kr.</td><td><span class="st paid">Betalt 17. jul</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="d">
+        <span class="x">✕</span><div class="muted">Bolig · Faste udgifter</div>
+        <div class="dt-title">El</div>
+        <div style="display:flex; gap:10px; align-items:baseline"><span class="big">400 kr. pr. måned</span><span class="st exp">Forventes 2. nov</span></div>
+        <div class="facts"><div class="hl"><small>I perioden · 1. jan – 2. nov 2026</small><b>4.120 kr.</b> · 10 betalinger</div><div><small>Om året</small>4.800 kr.</div><div><small>Konto</small>Fælleskonto</div></div>
+        <div class="muted" style="margin-top:14px">Pr. måned i perioden</div>
+        <div class="bars"><span style="height:95%"></span><span style="height:88%"></span><span style="height:70%"></span><span style="height:55%"></span><span style="height:40%"></span><span style="height:36%"></span><span style="height:35%"></span><span style="height:42%"></span><span style="height:58%"></span><span style="height:76%"></span></div>
+        <div class="bl"><span>jan</span><span>feb</span><span>mar</span><span>apr</span><span>maj</span><span>jun</span><span>jul</span><span>aug</span><span>sep</span><span>okt</span></div>
+        <table style="margin-top:6px"><tbody><tr><td>2. okt 2026</td><td>Fælleskonto</td><td class="r">488,00 kr.</td></tr><tr><td>2. sep 2026</td><td>Fælleskonto</td><td class="r">372,50 kr.</td></tr><tr><td>2. aug 2026</td><td>Fælleskonto</td><td class="r">268,25 kr.</td></tr><tr><td colspan="3" class="muted">… 7 mere</td></tr></tbody></table>
+        <p style="margin:10px 0 0"><span class="link">Alle 10 posteringer →</span> · <span class="link">Åbn i Firefly III ↗</span></p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="lbl">3 · Alle posteringer: klik på en postering</div>
+<div class="pg">
+  <div class="card bar"><div class="crumb"><a>Alt forbrug</a> › <b>Alle posteringer</b></div>
+    <div class="field"><small>Periode</small>I år · 1. jan – 2. nov 2026</div>
+    <div class="field"><small>Gruppér pr.</small>Måned</div>
+    <div class="field"><small>Konti</small>Alle konti (4)</div>
+  </div>
+  <div class="card">
+    <div class="search">🔍 Søg i butik og tekst, fx "Netto"</div>
+    <div class="tools"><span class="filter">+ Filter</span><span class="count">842 posteringer · 312.480 kr.</span></div>
+    <div class="split">
+      <div class="l">
+        <table>
+          <thead><tr><th style="color:#1f1f1f;font-weight:600">Måned / dato ▾</th><th>Butik / tekst</th><th>Kategori</th><th>Konto</th><th class="r">Beløb</th></tr></thead>
+          <tbody>
+            <tr class="grp"><th colspan="4">▾ Oktober 2026 <span class="n">· 81 posteringer</span></th><th class="r">-31.220,40</th></tr>
+            <tr><td class="dt">29.10.2026</td><td>Netto</td><td><span class="dot" style="background:#2a78d6"></span>Dagligvarer</td><td>Fælleskonto</td><td class="r">-249,95</td></tr>
+            <tr><td class="dt">28.10.2026</td><td>Legetøjsbutikken</td><td><span class="dot" style="background:#eb6834"></span>Legetøj og børn</td><td>Fælleskonto</td><td class="r">-199,00</td></tr>
+            <tr class="sel"><td class="dt">27.10.2026</td><td>Byggemarkedet</td><td><span class="dot" style="background:#0b8a1f"></span>Vedligeholdelse</td><td>Fælleskonto</td><td class="r">-2.480,00</td></tr>
+            <tr><td class="dt">27.10.2026</td><td>Rejsekort</td><td><span class="dot" style="background:#0b8a1f"></span>Offentlig transport</td><td>Fælleskonto</td><td class="r">-23,80</td></tr>
+            <tr><td class="dt">26.10.2026</td><td>Musiktjeneste<span class="ogm">Abonnementer</span></td><td><span class="dot" style="background:#1fae7a"></span>Streaming</td><td>Fælleskonto</td><td class="r">-169,00</td></tr>
+            <tr><td class="dt">26.10.2026</td><td>Café Hjørnet</td><td><span class="dot" style="background:#f0b400"></span>Café og restaurant</td><td>Fælleskonto</td><td class="r">-122,79</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="d">
+        <span class="x">✕</span>
+        <span class="x">✕</span><div class="muted">Butik · Vedligeholdelse</div>
+        <div class="dt-title">Byggemarkedet</div>
+        <div style="display:flex; gap:10px; align-items:baseline"><span class="big">-2.480,00 kr.</span><span class="muted">27.10.2026 · VD BYGGEMARKEDET 4021</span></div>
+        <div class="facts"><div class="hl"><small>I perioden · 1. jan – 2. nov 2026</small><b>5.140 kr.</b> · 4 posteringer</div><div><small>Konto</small>Fælleskonto</div><div><small>Mærker</small>Skur</div></div>
+        <div class="muted" style="margin-top:14px">Pr. måned i perioden</div>
+        <div class="bars"><span style="height:0%"></span><span style="height:0%"></span><span style="height:22%"></span><span style="height:0%"></span><span style="height:0%"></span><span style="height:42%"></span><span style="height:0%"></span><span style="height:0%"></span><span style="height:20%"></span><span style="height:85%"></span></div>
+        <div class="bl"><span>jan</span><span>feb</span><span>mar</span><span>apr</span><span>maj</span><span>jun</span><span>jul</span><span>aug</span><span>sep</span><span>okt</span></div>
+        <table style="margin-top:6px"><tbody><tr class="sel"><td>27. okt 2026</td><td>Fælleskonto</td><td class="r">2.480,00 kr.</td></tr><tr><td>3. sep 2026</td><td>Fælleskonto</td><td class="r">640,00 kr.</td></tr><tr><td>14. jun 2026</td><td>Fælleskonto</td><td class="r">1.215,50 kr.</td></tr><tr><td>8. mar 2026</td><td>Fælleskonto</td><td class="r">804,50 kr.</td></tr></tbody></table>
+        <p style="margin:10px 0 0"><span class="link">Alle 4 hos Byggemarkedet →</span> · <span class="link">Åbn i Firefly III ↗</span></p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="lbl">4 · Alle posteringer: en postering, der hører til et abonnement</div>
+<div class="pg">
+  <div class="card">
+    <div class="tools" style="margin-top:0"><span class="filter">+ Filter</span><span class="count">842 posteringer · 312.480 kr.</span></div>
+    <div class="split">
+      <div class="l">
+        <table>
+          <thead><tr><th style="color:#1f1f1f;font-weight:600">Måned / dato ▾</th><th>Butik / tekst</th><th>Kategori</th><th>Konto</th><th class="r">Beløb</th></tr></thead>
+          <tbody>
+            <tr class="grp"><th colspan="4">▾ Oktober 2026 <span class="n">· 81 posteringer</span></th><th class="r">-31.220,40</th></tr>
+            <tr><td class="dt">27.10.2026</td><td>Rejsekort</td><td><span class="dot" style="background:#0b8a1f"></span>Offentlig transport</td><td>Fælleskonto</td><td class="r">-23,80</td></tr>
+            <tr class="sel"><td class="dt">26.10.2026</td><td>Musiktjeneste<span class="ogm">Abonnementer</span></td><td><span class="dot" style="background:#1fae7a"></span>Streaming</td><td>Fælleskonto</td><td class="r">-169,00</td></tr>
+            <tr><td class="dt">26.10.2026</td><td>Café Hjørnet</td><td><span class="dot" style="background:#f0b400"></span>Café og restaurant</td><td>Fælleskonto</td><td class="r">-122,79</td></tr>
+            <tr><td class="dt">25.10.2026</td><td>Netto</td><td><span class="dot" style="background:#2a78d6"></span>Dagligvarer</td><td>Fælleskonto</td><td class="r">-188,25</td></tr>
+            <tr><td class="dt">24.10.2026</td><td>Benzin</td><td><span class="dot" style="background:#6a4fd6"></span>Brændstof</td><td>Fælleskonto</td><td class="r">-612,40</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="d">
+        <span class="x">✕</span><div class="muted">Streaming · Abonnementer</div>
+        <div class="dt-title">Musiktjeneste</div>
+        <div style="display:flex; gap:10px; align-items:baseline"><span class="big">169 kr. pr. måned</span><span class="st paid">Betalt 26. okt</span></div>
+        <div class="facts"><div class="hl"><small>I perioden · 1. jan – 2. nov 2026</small><b>1.690 kr.</b> · 10 betalinger</div><div><small>Om året</small>2.028 kr.</div><div><small>Konto</small>Fælleskonto</div></div>
+        <div class="muted" style="margin-top:14px">Pr. måned i perioden</div>
+        <div class="bars"><span style="height:80%"></span><span style="height:80%"></span><span style="height:80%"></span><span style="height:80%"></span><span style="height:80%"></span><span style="height:80%"></span><span style="height:80%"></span><span style="height:80%"></span><span style="height:80%"></span><span style="height:80%"></span></div>
+        <div class="bl"><span>jan</span><span>feb</span><span>mar</span><span>apr</span><span>maj</span><span>jun</span><span>jul</span><span>aug</span><span>sep</span><span>okt</span></div>
+        <table style="margin-top:6px"><tbody><tr class="sel"><td>26. okt 2026</td><td>Fælleskonto</td><td class="r">169,00 kr.</td></tr><tr><td>26. sep 2026</td><td>Fælleskonto</td><td class="r">169,00 kr.</td></tr><tr><td>26. aug 2026</td><td>Fælleskonto</td><td class="r">169,00 kr.</td></tr><tr><td colspan="3" class="muted">… 7 mere</td></tr></tbody></table>
+        <p style="margin:10px 0 0"><span class="link">Alle 10 posteringer →</span> · <span class="link">Åbn i Firefly III ↗</span></p>
+      </div>
+    </div>
+  </div>
+</div>
+</body></html>

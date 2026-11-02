@@ -13,7 +13,6 @@ import { kr, shortDate, stepAmounts } from "../format";
 import { da } from "../i18n/da";
 import { partColours } from "./circle";
 import { partName, type ViewContext } from "./context";
-import { linkBase } from "./postings";
 import type { Sorted, SubscriptionColumn } from "../state/view";
 
 export const DEFAULT_SUBSCRIPTION_SORT: Sorted<SubscriptionColumn> = { column: "status", descending: false };
@@ -43,7 +42,6 @@ export interface SubscriptionRow {
   /** The category when it is a known one; null shows as "Uden kategori". */
   categoryName: string | null;
   status: { kind: SubscriptionStatus["kind"]; text: string };
-  href: string | null;
 }
 
 function unbroken(text: string): string {
@@ -81,6 +79,19 @@ function shown(ctx: ViewContext): Shown[] {
         compareKeys(a.next, b.next) ||
         a.subscription.name.localeCompare(b.subscription.name, "da"),
     );
+}
+
+/** The Beløb column's text: "8.000 kr. pr. måned", which wraps only between the amount and its repeat. */
+export function paymentText(s: Subscription): string {
+  return `${unbroken(kr(amountPerPayment(s)))} ${unbroken(da.repeatText(s.repeat, s.skip))}`;
+}
+
+export function statusCell(status: SubscriptionStatus, today: string): SubscriptionRow["status"] {
+  return { kind: status.kind, text: statusText(status, today) };
+}
+
+export function billHref(base: string | null, id: string): string | null {
+  return base === null ? null : `${base}/bills/show/${encodeURIComponent(id)}`;
 }
 
 function statusText(status: SubscriptionStatus, today: string): string {
@@ -148,7 +159,6 @@ export function subscriptionTable(ctx: ViewContext, kept: Sorted<SubscriptionCol
   const kind = ctx.state.level.kind;
   const sort = shownSubscriptionSort(kept, kind);
   const today = ctx.data.today;
-  const base = linkBase(ctx.data.fireflyLinkUrl);
   const mainGroups = new Map(ctx.data.categories.map((c) => [c.name, c.mainGroup]));
   const unsorted = shown(ctx).map(({ subscription: s, next, status }) => {
     const last = s.lastPayment?.category ?? null;
@@ -158,14 +168,13 @@ export function subscriptionTable(ctx: ViewContext, kept: Sorted<SubscriptionCol
       name: s.name,
       objectGroup: s.objectGroup,
       next: next === null ? null : shortDate(next, today),
-      amount: `${unbroken(kr(amountPerPayment(s)))} ${unbroken(da.repeatText(s.repeat, s.skip))}`,
+      amount: paymentText(s),
       perYear: kr(amountPerYear(s)),
       category: known ? last : da.noCategory,
       amountOre: amountPerPayment(s),
       perYearOre: amountPerYear(s),
       categoryName: known ? last : null,
-      status: { kind: status.kind, text: statusText(status, today) },
-      href: base === null ? null : `${base}/bills/show/${encodeURIComponent(s.id)}`,
+      status: statusCell(status, today),
     };
     return {
       row,

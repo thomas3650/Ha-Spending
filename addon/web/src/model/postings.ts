@@ -1,4 +1,4 @@
-import { byUnit, type ClassifiedPosting, NO_PIECE, type Unit } from "@ha-spending/shared";
+import { byUnit, type ClassifiedPosting, NO_PIECE, type Posting, type Unit } from "@ha-spending/shared";
 import { unitName } from "../format";
 import { type ViewContext, partName } from "./context";
 import type { PostingColumn, Sort } from "../state/view";
@@ -9,7 +9,6 @@ export interface PostingRow {
   account: string;
   category: string;
   colour: string;
-  href: string | null;
 }
 
 export interface PostingGroup {
@@ -39,15 +38,17 @@ export function linkBase(url: string | null): string | null {
   return parsed.protocol === "http:" || parsed.protocol === "https:" ? url : null;
 }
 
+export function postingHref(base: string | null, p: Posting): string | null {
+  return base === null ? null : `${base}/transactions/show/${encodeURIComponent(p.groupId)}`;
+}
+
 interface RowContext {
-  base: string | null;
   accounts: Map<string, string>;
   colours: Map<string | null, string>;
 }
 
 function rowContext(ctx: ViewContext, colours: Map<string | null, string>): RowContext {
   return {
-    base: linkBase(ctx.data.fireflyLinkUrl),
     accounts: new Map(ctx.data.accounts.map((a) => [a.id, a.name])),
     colours,
   };
@@ -59,7 +60,6 @@ function row(p: ClassifiedPosting, rc: RowContext): PostingRow {
     account: rc.accounts.get(p.account) ?? p.account,
     category: partName(p.category, "category"),
     colour: rc.colours.get(p.category) ?? NO_PIECE,
-    href: rc.base === null ? null : `${rc.base}/transactions/show/${encodeURIComponent(p.groupId)}`,
   };
 }
 

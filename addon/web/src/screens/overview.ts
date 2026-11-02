@@ -1,6 +1,7 @@
 import { chosenUnitNumbers, differences, keyNumbers, total, type Unit, within } from "@ha-spending/shared";
 import { css, html, LitElement, nothing } from "lit";
 import "../components/bars";
+import { detailSplit } from "../components/detail";
 import { chip, fire } from "../components/chip";
 import "../components/circle";
 import "../components/difference";
@@ -8,11 +9,12 @@ import type { DifferenceItem } from "../components/difference";
 import "../components/postings";
 import "../components/search";
 import "../components/shops";
-import "../components/subscriptions";
+import { objectGroupSums } from "../components/subscriptions";
 import { count, kr, unitName } from "../format";
 import { da } from "../i18n/da";
 import { barItems, categoryColours, circleItems, circleSpan, circleTotal, partColours } from "../model/circle";
 import { levelName, partName, type ViewContext } from "../model/context";
+import { detailView } from "../model/detail";
 import { matches, shopSuggestions } from "../model/filter";
 import { postingList } from "../model/postings";
 import { type HiddenState, shopList } from "../model/shops";
@@ -60,6 +62,14 @@ export class Overview extends LitElement {
 
   protected override createRenderRoot(): HTMLElement {
     return this;
+  }
+
+  /** Waits for the lists too, so the app can focus a row's button once they show (detail spec §1.3). */
+  protected override async getUpdateComplete(): Promise<boolean> {
+    const done = await super.getUpdateComplete();
+    const children = [...this.querySelectorAll<LitElement>("hs-postings, hs-subscriptions, hs-detail")];
+    await Promise.all(children.map((c) => c.updateComplete));
+    return done;
   }
 
   private empty() {
@@ -135,8 +145,7 @@ export class Overview extends LitElement {
     if (postings.length === 0) {
       const unfiltered = search.trim() === "" && shop === null;
       body = html`<p class="empty">${unfiltered ? da.noSpending : da.noMatch}</p>`;
-    }
-    else {
+    } else {
       const units = chosen === null ? ctx.units : [chosen];
       const list = postingList(postings, units, ctx, this.postingsSort, categoryColours(ctx));
       body = html`<hs-postings
@@ -145,14 +154,15 @@ export class Overview extends LitElement {
           .shop=${shop}
           .grouping=${g}
           .sort=${this.postingsSort}
+          .marked=${ctx.state.detail}
         ></hs-postings>`;
     }
-    return html`<div class="postings-search-row">
+    const above = html`<div class="postings-search-row">
         <hs-search .search=${search} .shop=${shop} .suggestions=${shopSuggestions(base, search)}></hs-search>
         <button type="button" class="show-all" @click=${() => fire(this, "open-all-postings")}>${da.showAll}</button>
       </div>
-      <p class="postings-summary">${da.summary(count(postings.length), kr(total(postings)))}</p>
-      ${body}`;
+      <p class="postings-summary">${da.summary(count(postings.length), kr(total(postings)))}</p>`;
+    return { above, list: body };
   }
 
   private differenceTitle(unit: Unit): string {
@@ -201,9 +211,14 @@ export class Overview extends LitElement {
 
   private subscriptions(title: string) {
     const table = subscriptionTable(this.ctx, this.subscriptionsSort);
-    if (table.rows.length === 0) return html`<p class="empty">${da.noSubscriptions(levelName(this.ctx.state.level))}</p>`;
-    return html`<hs-subscriptions .table=${table} .label=${title}></hs-subscriptions>
-      <p class="half-foot">${da.subscriptionsFoot}</p>`;
+    if (table.rows.length === 0) {
+      return { above: nothing, list: html`<p class="empty">${da.noSubscriptions(levelName(this.ctx.state.level))}</p>` };
+    }
+    return {
+      above: objectGroupSums(table, title),
+      list: html`<hs-subscriptions .table=${table} .label=${title} .marked=${this.ctx.state.detail}></hs-subscriptions>
+        <p class="half-foot">${da.subscriptionsFoot}</p>`,
+    };
   }
 
   /** Like Posteringer, the list follows a chosen unit but not the search or the chosen shop (top-shops spec §1). */
@@ -232,18 +247,33 @@ export class Overview extends LitElement {
     const inPeriod = within(ctx.shown, ctx.timeline.period);
     const title = this.cardTitle(card);
     const shops = hasShops(ctx.data);
+    const listed = card === "subscriptions" || card === "postings";
+    const view = listed && ctx.state.detail !== null ? detailView(ctx.state.detail, ctx) : null;
+    // Full screen has the room to put the detail beside the list (detail spec §1.2).
+    const inPlace = view !== null && !this.fullScreen;
     let body: unknown;
-    if (card === "subscriptions") body = this.subscriptions(title);
-    else if (card === "postings") body = this.postings();
-    else if (card === "shops") body = this.shops();
+    if (listed) {
+      const { above, list } = card === "subscriptions" ? this.subscriptions(title) : this.postings();
+      body = detailSplit(above, list, view, !this.fullScreen);
+    } else if (card === "shops") body = this.shops();
     else if (inPeriod.length === 0) body = this.empty();
     else if (card === "difference" && ctx.chosen !== null) body = this.difference(ctx.chosen, title);
     else body = this.bars();
     return html`<section class="card half" role="region" aria-labelledby=${RIGHT_TITLE}>
       <div class="half-head ${ctx.data.subscriptions.length === 0 && !shops ? "" : "wraps"}">
-        <div class="half-title">
-          <h2 id=${RIGHT_TITLE}>${title}</h2>
-          ${this.chips()}
+        <div class="half-title ${inPlace ? "in-detail" : ""}">
+          ${inPlace
+            ? html`<button
+                type="button"
+                class="back"
+                aria-label=${da.backTo(title)}
+                @click=${() => fire(this, "detail-close")}
+              >
+                <span aria-hidden="true">←</span>
+              </button>`
+            : nothing}
+          <h2 id=${RIGHT_TITLE} tabindex="-1">${title}</h2>
+          ${inPlace ? nothing : this.chips()}
         </div>
         <div class="card-tools">
           <div class="card-switch" role="group" aria-label=${da.view}>
@@ -297,6 +327,27 @@ export const overviewStyles = css`
     margin: 0;
     font-size: 16px;
     font-weight: 600;
+  }
+  .half-title.in-detail {
+    gap: 4px;
+    color: var(--hs-accent-text);
+  }
+  .half-title .back {
+    padding: 0 4px;
+    font: inherit;
+    font-size: 16px;
+    font-weight: 600;
+    color: inherit;
+    background: none;
+    border: 0;
+    border-radius: 4px;
+    cursor: pointer;
+  }
+  .half-title .back:focus-visible {
+    outline: 2px solid var(--hs-accent-text);
+  }
+  .half-head h2:focus {
+    outline: none;
   }
   .half-title {
     display: flex;

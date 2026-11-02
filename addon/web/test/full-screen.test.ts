@@ -3,7 +3,7 @@ import { fireEvent, getAllByRole, getByRole, queryAllByRole, queryByRole, within
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import type { SpendingApp } from "../src/app";
-import { unitName } from "../src/format";
+import { tableDate, unitName } from "../src/format";
 import { da } from "../src/i18n/da";
 import { answerFor, LINK, SUBSCRIPTIONS, withSubscriptions } from "./fixture";
 import { json, mount, type MountOptions, settle, unmount } from "./mount";
@@ -210,5 +210,83 @@ describe("the right card in full screen", () => {
     await choosePreset(root, app, da.presets.lastMonth);
     expectOn(root);
     expect(subscriptionsKey(root)).toBeNull();
+  });
+});
+
+describe("the detail in full screen", () => {
+  function postingsCard(root: HTMLElement): HTMLElement {
+    return getByRole(root, "region", { name: da.postingsTitle });
+  }
+
+  /** The list's row with that date and a button with that name. */
+  function rowButton(root: HTMLElement, name: string, date: string): HTMLElement {
+    const rows = getAllByRole(postingsCard(root), "row").filter(
+      (r) => (r.textContent ?? "").includes(tableDate(date)) && within(r).queryByRole("button", { name }),
+    );
+    if (rows.length !== 1) throw new Error(`${rows.length} rows with ${name} ${date}`);
+    return within(rows[0]).getByRole("button", { name });
+  }
+
+  function current(button: HTMLElement): string | null {
+    return (button.closest("tr") as HTMLElement).getAttribute("aria-current");
+  }
+
+  it("in full screen the list and the detail are both shown, the row is aria-current, another row changes the detail, and Luk closes it", async () => {
+    const { app, root } = await mountWith("card=postings");
+    await press(app, root);
+    fireEvent.click(rowButton(root, "Café Søde", "2026-10-26"));
+    await settle(app);
+    const card = postingsCard(root);
+    const cafe = getByRole(card, "group", { name: "Café Søde" });
+    expect(app.shadowRoot?.activeElement).toBe(getByRole(cafe, "heading", { level: 3 }));
+    getByRole(card, "combobox", { name: da.searchLabel });
+    expect(current(rowButton(root, "Café Søde", "2026-10-26"))).toBe("true");
+    expect(queryByRole(card, "button", { name: da.backTo(da.postingsTitle) })).toBeNull();
+
+    fireEvent.click(rowButton(root, "Pizzeria Roma", "2026-09-22"));
+    await settle(app);
+    const roma = getByRole(card, "group", { name: "Pizzeria Roma" });
+    expect(queryByRole(card, "group", { name: "Café Søde" })).toBeNull();
+    expect(app.shadowRoot?.activeElement).toBe(getByRole(roma, "heading", { level: 3 }));
+    expect(current(rowButton(root, "Pizzeria Roma", "2026-09-22"))).toBe("true");
+    expect(current(rowButton(root, "Café Søde", "2026-10-26"))).toBeNull();
+
+    fireEvent.click(getByRole(roma, "button", { name: da.close }));
+    await settle(app);
+    expect(location.hash).toBe("#card=postings");
+    expect(queryByRole(root, "heading", { level: 3 })).toBeNull();
+    expect(app.shadowRoot?.activeElement).toBe(rowButton(root, "Pizzeria Roma", "2026-09-22"));
+    expectOn(root);
+  });
+
+  it("turning full screen off and on keeps the detail", async () => {
+    const { app, root } = await mountWith("card=postings&detail=p%3Ap25");
+    const shown = (): number => queryAllByRole(postingsCard(root), "button", { name: "Café Søde" }).length;
+    getByRole(postingsCard(root), "group", { name: "Pizzeria Roma" });
+    expect(shown()).toBe(0);
+
+    const button = await press(app, root);
+    expectOn(root);
+    getByRole(postingsCard(root), "group", { name: "Pizzeria Roma" });
+    expect(shown()).toBeGreaterThan(0);
+    expect(app.shadowRoot?.activeElement).toBe(button);
+
+    await press(app, root);
+    expectOff(root);
+    getByRole(postingsCard(root), "group", { name: "Pizzeria Roma" });
+    expect(shown()).toBe(0);
+    expect(app.shadowRoot?.activeElement).toBe(button);
+    expect(location.hash).toBe("#card=postings&detail=p%3Ap25");
+  });
+
+  it("toggling full screen with a detail opened by a row leaves the focus on the button", async () => {
+    const { app, root } = await mountWith("card=postings");
+    fireEvent.click(rowButton(root, "Café Søde", "2026-10-26"));
+    await settle(app);
+    const button = await press(app, root);
+    getByRole(postingsCard(root), "group", { name: "Café Søde" });
+    expect(app.shadowRoot?.activeElement).toBe(button);
+    await press(app, root);
+    expect(app.shadowRoot?.activeElement).toBe(button);
   });
 });

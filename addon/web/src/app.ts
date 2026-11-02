@@ -14,6 +14,7 @@ import { dropdownStyles } from "./components/dropdown";
 import { keyNumbersStyles } from "./components/key-numbers";
 import { barsStyles, type UnitSelection } from "./components/bars";
 import { type CircleSelection, circleStyles } from "./components/circle";
+import { detailStyles } from "./components/detail";
 import { differenceStyles } from "./components/difference";
 import { calendarStyles, periodPickerStyles } from "./components/period-picker";
 import { postingsStyles } from "./components/postings";
@@ -34,9 +35,12 @@ import { overviewStyles } from "./screens/overview";
 import {
   chooseShop,
   chooseUnit,
+  closeDetail,
+  keepDetail,
   normalise,
   openAllPostings,
   openAllPostingsFresh,
+  openDetail,
   openObjectGroupPostings,
   openPart,
   openShop,
@@ -60,6 +64,7 @@ import {
   type AmountRange,
   type Card,
   DEFAULT_STATE,
+  type DetailKey,
   nextSort,
   parseHash,
   type PeriodChoice,
@@ -79,6 +84,13 @@ type Load =
   | { kind: "loading" }
   | { kind: "ready"; data: SpendingData }
   | { kind: "error"; code: LoadErrorCode };
+
+/** Marks the history entry that opening a detail pushed, so closing knows it may go back (spec §5). */
+const DETAIL_ENTRY = { detail: true };
+
+function detailEntry(): boolean {
+  return (history.state as { detail?: unknown } | null)?.detail === true;
+}
 
 function sameRange(a: Period, b: Period): boolean {
   return a.start === b.start && a.end === b.end;
@@ -115,6 +127,7 @@ export class SpendingApp extends LitElement {
     barsStyles,
     differenceStyles,
     postingsStyles,
+    detailStyles,
     sortHeaderStyles,
     searchStyles,
     subscriptionsStyles,
@@ -212,6 +225,10 @@ export class SpendingApp extends LitElement {
   private controller: AbortController | null = null;
   private hiddenAsked = false;
   private writes: Promise<void> = Promise.resolve();
+  /** The detail a close or Back just closed, whose row gets the focus back after the render. */
+  private closed: DetailKey | null = null;
+  /** Set by a row's click only: a link, a reload or full screen leave the focus where it is. */
+  private openedByRow = false;
 
   constructor() {
     super();
@@ -231,18 +248,55 @@ export class SpendingApp extends LitElement {
 
   private readonly onHash = (): void => {
     const next = parseHash(location.hash);
-    if (toHash(next) !== toHash(this.state)) this.change(next);
+    if (toHash(next) === toHash(this.state)) return;
+    const prev = this.state;
+    if (prev.detail !== null && next.detail === null && prev.card === next.card && prev.screen === next.screen) {
+      this.closed = prev.detail;
+    }
+    this.change(next);
   };
 
   private readonly onKey = (event: KeyboardEvent): void => {
-    if (event.key === "Escape" && this.fullScreen && this.state.screen === "overview") this.fullScreen = false;
+    if (event.key !== "Escape") return;
+    if (this.state.detail !== null) this.closeDetail();
+    else if (this.fullScreen && this.state.screen === "overview") this.fullScreen = false;
   };
+
+  private readonly onDetailOpen = (event: Event): void => {
+    const next = openDetail(this.state, (event as CustomEvent<DetailKey>).detail);
+    const hash = `#${toHash(next)}`;
+    if (this.state.detail === null) history.pushState(DETAIL_ENTRY, "", hash);
+    else history.replaceState(detailEntry() ? DETAIL_ENTRY : null, "", hash);
+    this.openedByRow = true;
+    this.change(next);
+  };
+
+  private readonly onDetailClose = (): void => this.closeDetail();
+
+  /**
+   * Back lands on the entry before the open, which holds the same state without the detail. The state is set at once,
+   * since Back is async: a second close before popstate then finds no detail instead of going back twice.
+   */
+  private closeDetail(): void {
+    if (this.state.detail === null) return;
+    this.closed = this.state.detail;
+    const next = closeDetail(this.state);
+    if (detailEntry()) {
+      this.change(next);
+      history.back();
+      return;
+    }
+    history.replaceState(null, "", `#${toHash(next)}`);
+    this.change(next);
+  }
 
   override connectedCallback(): void {
     super.connectedCallback();
     window.addEventListener("hashchange", this.onHash);
     window.addEventListener("popstate", this.onHash);
     window.addEventListener("keydown", this.onKey);
+    this.addEventListener("detail-open", this.onDetailOpen);
+    this.addEventListener("detail-close", this.onDetailClose);
     this.change(parseHash(location.hash));
     this.readHiddenShops();
   }
@@ -279,6 +333,8 @@ export class SpendingApp extends LitElement {
     window.removeEventListener("hashchange", this.onHash);
     window.removeEventListener("popstate", this.onHash);
     window.removeEventListener("keydown", this.onKey);
+    this.removeEventListener("detail-open", this.onDetailOpen);
+    this.removeEventListener("detail-close", this.onDetailClose);
     this.request += 1;
     this.controller?.abort();
     this.controller = null;
@@ -286,8 +342,40 @@ export class SpendingApp extends LitElement {
     super.disconnectedCallback();
   }
 
-  /** pushState and replaceState fire no event, so the state is set here. */
-  apply(next: ViewState, mode: "push" | "replace"): void {
+  protected override updated(): void {
+    if (this.openedByRow) {
+      this.openedByRow = false;
+      void this.focusDetail();
+    }
+    const key = this.closed;
+    if (key === null) return;
+    this.closed = null;
+    void this.focusRow(key);
+  }
+
+  private async focusDetail(): Promise<void> {
+    const root = this.renderRoot;
+    await root.querySelector<LitElement>("hs-overview, hs-all-postings")?.updateComplete;
+    root.querySelector<HTMLElement>("hs-detail h3")?.focus();
+  }
+
+  /** The row's button when its list shows it, else the heading of the card or the page (detail spec §1.3). */
+  private async focusRow(key: DetailKey): Promise<void> {
+    const root = this.renderRoot;
+    await root.querySelector<LitElement>("hs-overview, hs-all-postings")?.updateComplete;
+    const wanted = `${key.kind === "subscription" ? "s" : "p"}:${key.id}`;
+    const button = [...root.querySelectorAll<HTMLElement>("[data-detail]")].find(
+      (b) => b.getAttribute("data-detail") === wanted,
+    );
+    const heading = root.querySelector<HTMLElement>(
+      this.state.screen === "overview" ? "#hs-right-title" : "hs-top-card h1",
+    );
+    (button ?? heading)?.focus();
+  }
+
+  /** pushState and replaceState fire no event, so the state is set here. A new card or screen closes the detail. */
+  apply(choice: ViewState, mode: "push" | "replace"): void {
+    const next = keepDetail(this.state, choice);
     const hash = toHash(next);
     if (mode === "replace") history.replaceState(null, "", `#${hash}`);
     else if (hash !== toHash(this.state)) history.pushState(null, "", `#${hash}`);
@@ -393,7 +481,10 @@ export class SpendingApp extends LitElement {
   }
 
   private objectGroupKeys(ctx: ViewContext) {
-    const cards = objectGroupCards(ctx, (t) => `#${toHash(openObjectGroupPostings(this.state, t))}`);
+    const cards = objectGroupCards(
+      ctx,
+      (t) => `#${toHash(keepDetail(this.state, openObjectGroupPostings(this.state, t)))}`,
+    );
     if (cards.length === 0) return null;
     return { cards, toggle: ctx.data.subscriptions.length > 0, pressed: this.state.card === "subscriptions" };
   }
@@ -406,7 +497,7 @@ export class SpendingApp extends LitElement {
         ? html`${this.fullScreen
               ? nothing
               : html`<hs-key-numbers
-                  .cards=${keyCards(ctx, `#${toHash(openAllPostingsFresh(this.state))}`)}
+                  .cards=${keyCards(ctx, `#${toHash(keepDetail(this.state, openAllPostingsFresh(this.state)))}`)}
                   .objectGroups=${this.objectGroupKeys(ctx)}
                   @subscriptions-toggle=${() => this.push(toggleSubscriptions(this.state))}
                 ></hs-key-numbers>`}

@@ -43,9 +43,9 @@ function linking(links: (p: Posting) => Link, today = "2026-10-30", subscription
 
 /** Husleje and Q8 paid through bills in Faste udgifter; Pizzeria Roma's first payment in Abonnementer. */
 function bills(p: Posting): Link {
-  if (p.text === "Husleje") return { name: "Husleje", objectGroup: "Faste udgifter" };
-  if (p.text === "Q8") return { name: "Bilforsikring", objectGroup: "Faste udgifter" };
-  if (p.text === "MOBILEPAY 1234" && p.date === "2026-09-20") return { name: "Pizzaabonnement", objectGroup: "Abonnementer" };
+  if (p.text === "Husleje") return { id: "b1", name: "Husleje", objectGroup: "Faste udgifter" };
+  if (p.text === "Q8") return { id: "b4", name: "Bilforsikring", objectGroup: "Faste udgifter" };
+  if (p.text === "MOBILEPAY 1234" && p.date === "2026-09-20") return { id: "b7", name: "Pizzaabonnement", objectGroup: "Abonnementer" };
   return null;
 }
 
@@ -149,7 +149,7 @@ describe("the key numbers of the object groups", () => {
   it("one key number per object group, by name", async () => {
     const { root } = await mount("", {
       answer: linking((p) =>
-        p.text === "DK NETTO 4521" && p.date === "2026-09-10" ? { name: "Fitness", objectGroup: "Åbne aftaler" } : null,
+        p.text === "DK NETTO 4521" && p.date === "2026-09-10" ? { id: "b8", name: "Fitness", objectGroup: "Åbne aftaler" } : null,
       ),
     });
     expect(objectCardNames(root)).toEqual([SUBS, FIXED, da.inPeriod("Åbne aftaler")]);
@@ -187,8 +187,8 @@ describe("the key numbers of the object groups", () => {
   it("n counts different bills, not payments", async () => {
     const { root } = await mount("period=custom&from=2026-09-01&to=2026-10-30", {
       answer: linking((p) => {
-        if (p.text === "DK NETTO 4521") return { name: "Madkasse", objectGroup: "Abonnementer" };
-        if (p.text === "Café Søde") return { name: "Kaffeklub", objectGroup: "Abonnementer" };
+        if (p.text === "DK NETTO 4521") return { id: "b9", name: "Madkasse", objectGroup: "Abonnementer" };
+        if (p.text === "Café Søde") return { id: "b10", name: "Kaffeklub", objectGroup: "Abonnementer" };
         return null;
       }),
     });
@@ -198,7 +198,7 @@ describe("the key numbers of the object groups", () => {
 
   it("an ended bill's group shows when the period holds its payments, not when only the range before it does", async () => {
     const answer = linking((p) =>
-      p.text === "DK NETTO 4521" && p.date === "2026-09-10" ? { name: "Fitness", objectGroup: "Medlemskaber" } : null,
+      p.text === "DK NETTO 4521" && p.date === "2026-09-10" ? { id: "b8", name: "Fitness", objectGroup: "Medlemskaber" } : null,
     );
     const { fetch, root } = await mount("period=thisMonth", { answer });
     expect(fetch).toHaveBeenCalledWith("api/data?start=2025-10-01&end=2026-10-30", expect.anything());
@@ -228,7 +228,7 @@ describe("the key numbers of the object groups", () => {
   it("a refund counts against", async () => {
     const { root } = await mount("", {
       answer: linking((p) =>
-        p.text === "MOBILEPAY 1234" ? { name: "Pizzaabonnement", objectGroup: "Abonnementer" } : null,
+        p.text === "MOBILEPAY 1234" ? { id: "b7", name: "Pizzaabonnement", objectGroup: "Abonnementer" } : null,
       ),
     });
     expect(name(root, SUBS)).toBe(`${SUBS} ${kr(50000)} ${line(5000, 1)}`);

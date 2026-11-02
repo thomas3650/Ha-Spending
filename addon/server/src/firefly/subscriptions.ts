@@ -26,7 +26,7 @@ export function subscriptionLinks(bills: WireBill[]): (id: string | null) => Pos
   const links = new Map<string, NonNullable<Posting["subscription"]>>();
   for (const bill of bills) {
     const objectGroup = objectGroupOf(bill);
-    if (objectGroup !== null) links.set(bill.id, { name: bill.attributes.name, objectGroup });
+    if (objectGroup !== null) links.set(bill.id, { id: bill.id, name: bill.attributes.name, objectGroup });
   }
   return (id) => (id === null ? null : (links.get(id) ?? null));
 }

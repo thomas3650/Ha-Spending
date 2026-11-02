@@ -3,7 +3,7 @@ import { css, html, LitElement } from "lit";
 import { live } from "lit/directives/live.js";
 import { da } from "../i18n/da";
 import { partName } from "../model/context";
-import { trailLevel } from "../state/actions";
+import { keepDetail, trailLevel } from "../state/actions";
 import { toHash, type ViewState } from "../state/view";
 import "./accounts-picker";
 import "./period-picker";
@@ -22,7 +22,10 @@ function trail(state: ViewState): { links: TrailPart[]; current: string } {
   if (level.kind === "category") names.push(partName(level.category, "category"));
   if (state.screen === "allPostings") names.push(da.allPostings);
   const current = names.pop() ?? da.allSpending;
-  const links = names.map((name, depth) => ({ name, href: `#${toHash(trailLevel(state, depth as 0 | 1 | 2))}` }));
+  const links = names.map((name, depth) => ({
+    name,
+    href: `#${toHash(keepDetail(state, trailLevel(state, depth as 0 | 1 | 2)))}`,
+  }));
   return { links, current };
 }
 
@@ -59,7 +62,7 @@ export class TopCard extends LitElement {
     return html`<div class="card top-card">
       <nav class="top-trail" aria-label=${da.trail}>
         ${links.map((l) => html`<a href=${l.href}>${l.name}</a><span class="top-sep" aria-hidden="true">›</span>`)}
-        <h1>${current}</h1>
+        <h1 tabindex="-1">${current}</h1>
       </nav>
       <div class="top-filters">
         <hs-period-picker .choice=${this.state.period} .today=${this.today} .earliest=${this.earliest}></hs-period-picker>

@@ -6,7 +6,7 @@ import { sortHeader } from "./sort-header";
 import { count, postingAmount, tableDate } from "../format";
 import { da } from "../i18n/da";
 import type { PostingGroup, PostingList, PostingRow } from "../model/postings";
-import { DEFAULT_STATE, type PostingColumn, type Sort } from "../state/view";
+import { DEFAULT_STATE, type DetailKey, type PostingColumn, type Sort } from "../state/view";
 
 const GROUPS_STEP = 12;
 const ROWS_STEP = 100;
@@ -30,6 +30,7 @@ export class Postings extends LitElement {
     showCategory: { attribute: false },
     grouping: { attribute: false },
     sort: { attribute: false },
+    marked: { attribute: false },
     toggled: { state: true },
     shown: { state: true },
   };
@@ -40,6 +41,8 @@ export class Postings extends LitElement {
   declare showCategory: boolean;
   declare grouping: Grouping;
   declare sort: Sort;
+  /** The row whose detail is open. */
+  declare marked: DetailKey | null;
   /** The groups folded the other way from how they start. */
   declare private toggled: ReadonlySet<string>;
   /** Groups, or rows of a flat list. */
@@ -54,6 +57,7 @@ export class Postings extends LitElement {
     this.showCategory = false;
     this.grouping = "month";
     this.sort = DEFAULT_STATE.sort;
+    this.marked = null;
     this.toggled = new Set();
     this.shown = 0;
   }
@@ -86,21 +90,25 @@ export class Postings extends LitElement {
     return this.showCategory ? 5 : 4;
   }
 
+  /** The click is the row's, so a click beside the name opens the detail too; the button gives the keyboard a way. */
   private row(r: PostingRow) {
     const p = r.posting;
-    const shown = p.shop ?? p.text;
-    const text = r.href
-      ? html`<a href=${r.href} target="_blank" rel="noopener noreferrer">${shown}</a>`
-      : shown;
+    const marked = this.marked?.kind === "posting" && this.marked.id === p.id;
     const mark =
       p.subscription === null
         ? nothing
         : html` <span class="object-group-mark" title=${p.subscription.name}
             >${p.subscription.objectGroup}<span class="visually-hidden">, ${p.subscription.name}</span></span
           >`;
-    return html`<tr class="posting">
+    return html`<tr
+      class="posting"
+      aria-current=${marked ? "true" : nothing}
+      @click=${() => fire(this, "detail-open", { kind: "posting", id: p.id })}
+    >
       <td class="posting-date">${tableDate(p.date)}</td>
-      <td title=${p.shop === null ? nothing : p.text}>${text}${mark}</td>
+      <td title=${p.shop === null ? nothing : p.text}>
+        <button type="button" class="row-name" data-detail=${`p:${p.id}`}>${p.shop ?? p.text}</button>${mark}
+      </td>
       ${this.showCategory
         ? html`<td>
             <span class="posting-dot" aria-hidden="true" style=${styleMap({ background: r.colour })}></span>${r.category}
@@ -230,14 +238,11 @@ export const postingsStyles = css`
   .postings .group-line button:focus-visible {
     background: var(--hs-accent-soft);
   }
-  .postings a {
-    color: inherit;
-    text-decoration: none;
+  .postings tr.posting {
+    cursor: pointer;
   }
-  .postings a:hover,
-  .postings a:focus-visible {
-    color: var(--hs-accent-text);
-    text-decoration: underline;
+  .postings tr.posting:hover {
+    background: var(--hs-soft);
   }
   .postings .posting-dot {
     display: inline-block;

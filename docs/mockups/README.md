@@ -46,6 +46,18 @@ Three ideas for showing Firefly III's subscriptions; A reached as A2 is chosen. 
 | [A2](v3/abonnementer-a2-kort.png) | A's list as a fourth choice on the right card, Søjler / Posteringer / Forskel / Abonnementer; the key number opens it too. [In Bolig](v3/abonnementer-a2-kort-bolig.png) it shows only Bolig's subscriptions |
 | [A3](v3/abonnementer-a3-niveau.png) | A's list as a level of its own, "Alt forbrug › Abonnementer", reached by a click on the key number: the whole table, with what was paid in the period |
 
+## Detail
+
+The detail of a fixed expense, a subscription and a shop, opened from a row. Under [`v5/`](v5/detalje.html). Where a
+mockup differs from the [detail view spec](../superpowers/specs/2026-11-02-detail-view.md), the spec holds.
+
+| Screen | Shows |
+| --- | --- |
+| [1](v5/detalje-1-normal.png) | The normal page: a click on a fixed expense ("El") shows its detail on the right card, the same as in full screen |
+| [2](v5/detalje-2-fuld-skaerm.png) | Full screen: the list on the left, the detail on the right |
+| [3](v5/detalje-3-butik.png) | Alle posteringer: a click on a posting shows its shop's detail, with the clicked posting marked |
+| [4](v5/detalje-4-abonnement.png) | Alle posteringer: a posting that belongs to a subscription shows that subscription's detail |
+
 ## Budget
 
 Five ideas for a page of its own with Firefly III's budgets, none chosen yet. Under [`v4/`](v4/budget.html); open it
