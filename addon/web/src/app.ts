@@ -23,7 +23,7 @@ import { topCardStyles } from "./components/top-card";
 import { LoadError, type LoadErrorCode, loadData } from "./data/api";
 import { da } from "./i18n/da";
 import { type ViewContext, viewContext } from "./model/context";
-import { keyCards, subscriptionsCard } from "./model/key-numbers";
+import { keyCards, objectGroupCards } from "./model/key-numbers";
 import { DEFAULT_SUBSCRIPTION_SORT, subscriptionFirstDescending } from "./model/subscriptions";
 import { allPostingsStyles, type CategoryChoice } from "./screens/all-postings";
 import "./screens/overview";
@@ -33,6 +33,7 @@ import {
   chooseUnit,
   normalise,
   openAllPostings,
+  openAllPostingsFresh,
   openPart,
   removeCategory,
   removeMainGroup,
@@ -338,9 +339,10 @@ export class SpendingApp extends LitElement {
     </div>`;
   }
 
-  private subscriptionsKey(ctx: ViewContext) {
-    const card = subscriptionsCard(ctx);
-    return card === null ? null : { card, pressed: this.state.card === "subscriptions" };
+  private objectGroupKeys(ctx: ViewContext) {
+    const cards = objectGroupCards(ctx);
+    if (cards.length === 0) return null;
+    return { cards, toggle: ctx.data.subscriptions.length > 0, pressed: this.state.card === "subscriptions" };
   }
 
   private ready(ctx: ViewContext) {
@@ -351,8 +353,8 @@ export class SpendingApp extends LitElement {
         ? html`${this.fullScreen
               ? nothing
               : html`<hs-key-numbers
-                  .cards=${keyCards(ctx)}
-                  .subscriptions=${this.subscriptionsKey(ctx)}
+                  .cards=${keyCards(ctx, `#${toHash(openAllPostingsFresh(this.state))}`)}
+                  .objectGroups=${this.objectGroupKeys(ctx)}
                   @subscriptions-toggle=${() => this.push(toggleSubscriptions(this.state))}
                 ></hs-key-numbers>`}
             <hs-overview

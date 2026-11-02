@@ -169,7 +169,10 @@ export const da = {
 
   periodClosed: (label: string, range: string) => `${label} · ${range}`,
 
-  subscriptionsPerYear: "Faste udgifter om året",
+  perMonth: (value: string) => `${value} pr. måned`,
+  billCount: (n: number) => `${n} stk.`,
+  noPayments: "ingen betalinger",
+  postingsLink: (counted: string) => `${counted} →`,
   subscriptionCount: (n: number) => `${n} ${n === 1 ? "fast udgift" : "faste udgifter"}`,
   subscriptions: "Faste udgifter",
   subscriptionsIn: (name: string) => `Faste udgifter i ${name}`,

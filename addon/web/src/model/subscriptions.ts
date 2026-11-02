@@ -77,14 +77,6 @@ function shown(ctx: ViewContext): Shown[] {
     );
 }
 
-export function shownSubscriptions(ctx: ViewContext): Subscription[] {
-  return shown(ctx).map((s) => s.subscription);
-}
-
-export function subscriptionsYear(ctx: ViewContext): number {
-  return shownSubscriptions(ctx).reduce((sum, s) => sum + amountPerYear(s), 0);
-}
-
 function statusText(status: SubscriptionStatus, today: string): string {
   switch (status.kind) {
     case "notSeen":

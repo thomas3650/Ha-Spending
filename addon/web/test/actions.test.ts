@@ -5,6 +5,7 @@ import {
   chooseUnit,
   normalise,
   openAllPostings,
+  openAllPostingsFresh,
   openPart,
   removeCategory,
   removeMainGroup,
@@ -105,6 +106,27 @@ describe("the actions", () => {
     expect(s.sort).toEqual(DEFAULT_STATE.sort);
     expect(s.amount).toBeNull();
     expect(s.level).toEqual(cafe);
+  });
+
+  it("opens Alle posteringer fresh: no search and no shop, the rest kept", () => {
+    const from: ViewState = {
+      ...at(cafe),
+      accounts: ["2"],
+      unit: "2026-07-01",
+      card: "postings",
+      search: "rema",
+      shop: "Netto",
+      sort: { column: "amount", descending: true },
+      amount: { min: 1, max: null },
+    };
+    const s = openAllPostingsFresh(from);
+    expect(s).toEqual({ ...openAllPostings(from), search: "", shop: null });
+    expect(s.screen).toBe("allPostings");
+    expect(s.level).toEqual(cafe);
+    expect(s.accounts).toEqual(["2"]);
+    expect(s.unit).toBe("2026-07-01");
+    expect(s.period).toEqual(from.period);
+    expect(s.sort).toEqual(DEFAULT_STATE.sort);
   });
 
   it("leaves Alle posteringer through the trail", () => {

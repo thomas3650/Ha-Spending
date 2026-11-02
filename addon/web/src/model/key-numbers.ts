@@ -1,14 +1,24 @@
-import { change, chosenUnitNumbers, type Grouping, keyNumbers, type Period, share, type Unit } from "@ha-spending/shared";
+import {
+  change,
+  chosenUnitNumbers,
+  type Grouping,
+  keyNumbers,
+  type Period,
+  share,
+  type Unit,
+  within,
+} from "@ha-spending/shared";
 import { comparisonLabel, kr, percent, rangeText, signedPercent, unitName } from "../format";
 import { da } from "../i18n/da";
 import { levelName, type ViewContext } from "./context";
-import { shownSubscriptions, subscriptionsYear } from "./subscriptions";
 
 export interface KeyCard {
   label: string;
   value: string;
   sub: string;
   trend: "up" | "down" | null;
+  /** The first card's way to Alle posteringer; `href` is the hash it opens. */
+  postings?: { count: number; href: string };
 }
 
 /** ctx.parentTotal is already the chosen unit's when one is chosen. */
@@ -102,17 +112,42 @@ function unitCards(ctx: ViewContext, unit: Unit): [KeyCard, KeyCard, KeyCard] {
   return [first, second, comparisonCard(unit, numbers.amount, numbers.before, numbers.beforeAmount, g)];
 }
 
-export function keyCards(ctx: ViewContext): [KeyCard, KeyCard, KeyCard] {
-  return ctx.chosen === null ? periodCards(ctx) : unitCards(ctx, ctx.chosen);
+export function keyCards(ctx: ViewContext, href: string): [KeyCard, KeyCard, KeyCard] {
+  const [first, second, third] = ctx.chosen === null ? periodCards(ctx) : unitCards(ctx, ctx.chosen);
+  const postings = { count: within(ctx.shown, ctx.chosen ?? ctx.timeline.period).length, href };
+  return [{ ...first, postings }, second, third];
 }
 
-/** null when the household has no subscriptions: then there are three key numbers (spec §1.4). */
-export function subscriptionsCard(ctx: ViewContext): KeyCard | null {
-  if (ctx.data.subscriptions.length === 0) return null;
-  return {
-    label: da.subscriptionsPerYear,
-    value: kr(subscriptionsYear(ctx)),
-    sub: da.subscriptionCount(shownSubscriptions(ctx).length),
-    trend: null,
-  };
+const DAY = 24 * 60 * 60 * 1000;
+const MONTH_DAYS = 365.25 / 12;
+
+function days(period: Period): number {
+  return (Date.parse(period.end) - Date.parse(period.start)) / DAY + 1;
+}
+
+/**
+ * One card per object group that a kept bill has or a shown posting in the period is linked to; empty gives three key
+ * numbers (spec §4). The fetched range does not count, and neither does a chosen unit.
+ */
+export function objectGroupCards(ctx: ViewContext): KeyCard[] {
+  const period = ctx.timeline.period;
+  const linked = within(ctx.shown, period).flatMap((p) =>
+    p.subscription === null ? [] : [{ group: p.subscription.objectGroup, bill: p.subscription.name, amount: p.amount }],
+  );
+  const names = new Set([...ctx.data.subscriptions.map((s) => s.objectGroup), ...linked.map((l) => l.group)]);
+  const length = days(period);
+  return [...names]
+    .sort((a, b) => a.localeCompare(b, "da"))
+    .map((name) => {
+      const payments = linked.filter((l) => l.group === name);
+      const bills = new Set(payments.map((l) => l.bill)).size;
+      const sum = payments.reduce((acc, l) => acc + l.amount, 0);
+      const sub =
+        bills === 0
+          ? da.noPayments
+          : length < 28
+            ? da.billCount(bills)
+            : `${da.perMonth(kr(sum / (length / MONTH_DAYS)))} · ${da.billCount(bills)}`;
+      return { label: da.inPeriod(name), value: kr(sum), sub, trend: null };
+    });
 }

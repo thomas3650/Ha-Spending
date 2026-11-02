@@ -55,6 +55,11 @@ export function openAllPostings(s: ViewState): ViewState {
   return { ...s, screen: "allPostings", sort: DEFAULT_STATE.sort, amount: null };
 }
 
+/** The key number's way in: the search and the chosen shop go, unlike "Vis alle" (D31, D35). */
+export function openAllPostingsFresh(s: ViewState): ViewState {
+  return { ...openAllPostings(s), search: "", shop: null };
+}
+
 function levelAt(level: Level, depth: 0 | 1 | 2): Level {
   if (depth === 0 || level.kind === "all") return ALL;
   if (depth === 1 || level.kind === "mainGroup") return { kind: "mainGroup", mainGroup: level.mainGroup };

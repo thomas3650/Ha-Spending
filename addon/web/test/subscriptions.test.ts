@@ -11,7 +11,7 @@ import { json, mount, settle, unmount } from "./mount";
 
 afterEach(unmount);
 
-const KEY_LABEL = "Faste udgifter om året";
+const KEY_LABEL = da.inPeriod("Faste udgifter");
 
 function mountWith(hash: string, subscriptions: Subscription[] = SUBSCRIPTIONS, link: string | null = LINK) {
   return mount(hash, {
@@ -87,11 +87,10 @@ function categoryOf(region: HTMLElement, name: string): string {
 }
 
 describe("the subscriptions key number", () => {
-  it("reads the cost per year of every subscription and opens the card", async () => {
+  it("opens the card from the Faste udgifter key number", async () => {
     const { app, root } = await mountWith("");
     const button = keyNumber(root);
     expect(button.getAttribute("aria-pressed")).toBe("false");
-    getByRole(root, "button", { name: `${KEY_LABEL} 108.768 kr. 6 faste udgifter` });
 
     fireEvent.click(button);
     await settle(app);
@@ -117,8 +116,8 @@ describe("the subscriptions key number", () => {
   });
 
   it("counts one subscription in the singular", async () => {
-    const { root } = await mountWith("", [SUBSCRIPTIONS[0]]);
-    getByRole(root, "button", { name: `${KEY_LABEL} 96.000 kr. 1 fast udgift` });
+    const { root } = await mountWith("card=subscriptions", [SUBSCRIPTIONS[0]]);
+    expect(text(groupRow(card(root, "Faste udgifter"), "Bolig"))).toContain(da.subscriptionCount(1));
   });
 });
 
@@ -160,7 +159,6 @@ describe("the subscriptions card", () => {
     expect(rowNames(region)).toEqual(["Indboforsikring", "Husleje"]);
     expect(groupNames(region)).toEqual(["Husleje"]);
     getByText(region, "99.600 kr. om året");
-    getByRole(root, "button", { name: `${KEY_LABEL} 99.600 kr. 2 faste udgifter` });
   });
 
   it("puts one with no payment, and one whose category is unknown, in Uden hovedgruppe", async () => {
@@ -177,16 +175,11 @@ describe("the subscriptions card", () => {
     const region = card(root, `Faste udgifter i ${da.noMainGroup}`);
     expect(rowNames(region)).toEqual(["Tennisklub", "Fitness", "Avis"]);
     expect(groupNames(region)).toEqual(["Gaver", da.noCategory]);
-    unmount();
-
-    const again = await mountWith("", all);
-    getByRole(again.root, "button", { name: `${KEY_LABEL} 112.368 kr. 7 faste udgifter` });
   });
 
   it("leaves out those paid from an account not chosen, never one with no payment", async () => {
     const { root } = await mountWith("accounts=1&card=subscriptions");
     expect(rowNames(card(root, "Faste udgifter"))).toEqual(["Indboforsikring", "Husleje", "Avis", "Tennisklub"]);
-    getByRole(root, "button", { name: `${KEY_LABEL} 102.600 kr. 4 faste udgifter` });
   });
 
   it("shows a category's subscriptions and its chip", async () => {
@@ -194,13 +187,11 @@ describe("the subscriptions card", () => {
     const region = card(root, "Faste udgifter i Café");
     expect(rowNames(region)).toEqual(["Streaming"]);
     getByRole(region, "button", { name: da.remove("Café") });
-    getByRole(root, "button", { name: `${KEY_LABEL} 1.368 kr. 1 fast udgift` });
   });
 
   it("does not follow the search", async () => {
     const { root } = await mountWith("q=Netto&card=subscriptions");
     expect(rowNames(card(root, "Faste udgifter"))).toHaveLength(6);
-    getByRole(root, "button", { name: `${KEY_LABEL} 108.768 kr. 6 faste udgifter` });
     expect(location.hash).toBe("#q=Netto&card=subscriptions");
   });
 
@@ -209,7 +200,6 @@ describe("the subscriptions card", () => {
     const region = card(root, "Faste udgifter");
     expect(queryByRole(root, "button", { name: da.remove("Juli 2026") })).toBeNull();
     expect(rowNames(region)).toHaveLength(6);
-    getByRole(root, "button", { name: `${KEY_LABEL} 108.768 kr. 6 faste udgifter` });
     getByRole(viewSwitch(root), "button", { name: da.difference });
 
     fireEvent.click(getByRole(root, "button", { name: new RegExp(`^${da.period}`) }));
@@ -218,7 +208,6 @@ describe("the subscriptions card", () => {
     await settle(app);
     expect(location.hash).toBe("#period=lastMonth&card=subscriptions");
     expect(rowNames(card(root, "Faste udgifter"))).toHaveLength(6);
-    getByRole(root, "button", { name: `${KEY_LABEL} 108.768 kr. 6 faste udgifter` });
   });
 
   it("shows its rows in a period with no postings", async () => {
@@ -248,7 +237,6 @@ describe("the subscriptions card", () => {
     const region = card(root, "Faste udgifter i Bil");
     getByText(region, "Ingen faste udgifter i Bil");
     expect(queryByRole(region, "table")).toBeNull();
-    getByRole(root, "button", { name: `${KEY_LABEL} 0 kr. 0 faste udgifter` });
   });
 });
 
@@ -418,9 +406,11 @@ describe("the answer's today", () => {
 });
 
 describe("with no subscriptions", () => {
-  it("shows three key numbers and no Faste udgifter", async () => {
+  it("shows plain key numbers and no Faste udgifter", async () => {
     const { root } = await mount("card=subscriptions");
     expect(queryByRole(root, "button", { name: new RegExp(`^${KEY_LABEL}`) })).toBeNull();
+    expect(queryByRole(root, "button", { name: new RegExp(`^${da.inPeriod("Abonnementer")}`) })).toBeNull();
+    getByRole(root, "group", { name: da.inPeriod("Abonnementer") });
     getByRole(root, "group", { name: da.spendingInPeriod });
     expect(queryByRole(viewSwitch(root), "button", { name: "Faste udgifter" })).toBeNull();
     card(root, da.per("month"));
