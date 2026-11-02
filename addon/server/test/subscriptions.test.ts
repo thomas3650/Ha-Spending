@@ -1,13 +1,27 @@
+import { mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { createFakeFirefly, exampleSeed, type FakeFirefly } from "@ha-spending/dev";
 import type { SpendingData } from "@ha-spending/shared";
-import { describe, expect, it, vi } from "vitest";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { createApp } from "../src/app";
 import { createFireflyClient, type FetchLike, type FireflyClient } from "../src/firefly/client";
 import { readSpendingData } from "../src/firefly/read";
 import { keepSubscriptions, type RawSubscription, readSubscriptions, subscriptionLinks } from "../src/firefly/subscriptions";
 import type { WireBill, WirePaidDate, WireSplit } from "../src/firefly/wire";
+import { createHiddenShopsStore } from "../src/hidden-shops";
 
 const ingress = { incoming: { socket: { remoteAddress: "172.30.32.2" } } };
+
+let dataDir: string;
+beforeAll(() => {
+  dataDir = mkdtempSync(join(tmpdir(), "ha-spending-hidden-"));
+});
+afterAll(() => {
+  rmSync(dataDir, { recursive: true, force: true });
+});
+const hiddenShops = () => createHiddenShopsStore(join(dataDir, "hidden-shops.json"), () => {});
+
 const R1 = "/api/data?start=2025-12-01&end=2026-07-31";
 const today = "2026-10-30";
 const settings = {
@@ -29,6 +43,7 @@ function setup(wrap: Wrap = (f) => f, seed: typeof exampleSeed = exampleSeed) {
     dev: false,
     loadData: (range) => readSpendingData(client, settings, range, { today, warn }),
     log: () => {},
+    hiddenShops: hiddenShops(),
   });
   return { fake, app, warn };
 }

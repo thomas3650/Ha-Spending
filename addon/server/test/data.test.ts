@@ -1,12 +1,26 @@
+import { mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { createFakeFirefly, exampleSeed } from "@ha-spending/dev";
 import type { SpendingData } from "@ha-spending/shared";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import { createApp, type DataLoader } from "../src/app";
 import { createFireflyClient, type FetchLike } from "../src/firefly/client";
 import { readSpendingData } from "../src/firefly/read";
 import type { WireBill, WireGroup, WirePage } from "../src/firefly/wire";
+import { createHiddenShopsStore } from "../src/hidden-shops";
 
 const ingress = { incoming: { socket: { remoteAddress: "172.30.32.2" } } };
+
+let dataDir: string;
+beforeAll(() => {
+  dataDir = mkdtempSync(join(tmpdir(), "ha-spending-hidden-"));
+});
+afterAll(() => {
+  rmSync(dataDir, { recursive: true, force: true });
+});
+const hiddenShops = () => createHiddenShopsStore(join(dataDir, "hidden-shops.json"), () => {});
+
 const R1 = "/api/data?start=2025-12-01&end=2026-07-31";
 
 function loaderOver(token: string): DataLoader {
@@ -37,7 +51,13 @@ afterEach(() => {
 
 describe("/api/data over the fake Firefly III", () => {
   it("serves the example dataset end to end", async () => {
-    const app = createApp({ webDir: "/nowhere", dev: false, loadData: loaderOver("fake-token"), log: () => {} });
+    const app = createApp({
+      webDir: "/nowhere",
+      dev: false,
+      loadData: loaderOver("fake-token"),
+      log: () => {},
+      hiddenShops: hiddenShops(),
+    });
     const res = await app.request(R1, {}, ingress);
     expect(res.status).toBe(200);
     const data = (await res.json()) as SpendingData;
@@ -47,7 +67,13 @@ describe("/api/data over the fake Firefly III", () => {
 
   it("never puts the token in an answer or a log line", async () => {
     const { log, logged } = spyOnEverything();
-    const app = createApp({ webDir: "/nowhere", dev: false, loadData: loaderOver("zz-made-up-token-zz"), log });
+    const app = createApp({
+      webDir: "/nowhere",
+      dev: false,
+      loadData: loaderOver("zz-made-up-token-zz"),
+      log,
+      hiddenShops: hiddenShops(),
+    });
     const res = await app.request(R1, {}, ingress);
     const body = await res.text();
     expect(res.status).toBe(502);
@@ -59,7 +85,13 @@ describe("/api/data over the fake Firefly III", () => {
 
   it("logs no posting", async () => {
     const { log, logged } = spyOnEverything();
-    const app = createApp({ webDir: "/nowhere", dev: false, loadData: loaderOver("fake-token"), log });
+    const app = createApp({
+      webDir: "/nowhere",
+      dev: false,
+      loadData: loaderOver("fake-token"),
+      log,
+      hiddenShops: hiddenShops(),
+    });
     expect((await app.request(R1, {}, ingress)).status).toBe(200);
     for (const line of logged()) {
       expect(line).not.toContain("Netto");
@@ -84,6 +116,7 @@ describe("the bill links on /api/data's postings", () => {
       dev: false,
       loadData: (r) => readSpendingData(client, settings, r, { today: "2026-10-30", warn: () => {} }),
       log: () => {},
+      hiddenShops: hiddenShops(),
     });
     const res = await app.request(R1, {}, ingress);
     expect(res.status).toBe(200);
