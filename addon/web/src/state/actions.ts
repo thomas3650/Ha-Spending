@@ -111,6 +111,11 @@ export function chooseShop(s: ViewState, name: string): ViewState {
   return { ...s, shop: name, search: "" };
 }
 
+/** One push, so Back returns to Butikker. */
+export function openShop(s: ViewState, name: string): ViewState {
+  return { ...chooseShop(s, name), card: "postings" };
+}
+
 export function removeShop(s: ViewState): ViewState {
   return { ...s, shop: null };
 }
@@ -135,13 +140,19 @@ function knownLevel(level: Level, data: SpendingData): Level {
   return known ? level : { kind: "mainGroup", mainGroup: level.mainGroup };
 }
 
+export function hasShops(data: SpendingData): boolean {
+  return data.postings.some((p) => p.shop !== null);
+}
+
 /** Drops what the answer does not know. */
 export function normalise(s: ViewState, data: SpendingData, today: string): ViewState {
   const accounts = s.accounts && s.accounts.filter((id) => data.accounts.some((a) => a.id === id));
   const units = unitsOf(periodOf(s.period, today, data.earliestPostingDate), s.grouping, today);
   const unit = s.unit !== null && units.some((u) => u.fullStart === s.unit) ? s.unit : null;
   const card =
-    (s.card === "difference" && unit === null) || (s.card === "subscriptions" && data.subscriptions.length === 0)
+    (s.card === "difference" && unit === null) ||
+    (s.card === "subscriptions" && data.subscriptions.length === 0) ||
+    (s.card === "shops" && !hasShops(data))
       ? "bars"
       : s.card;
   return { ...s, accounts, level: knownLevel(s.level, data), unit, card };

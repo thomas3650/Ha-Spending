@@ -8,6 +8,7 @@ import {
   openAllPostingsFresh,
   openObjectGroupPostings,
   openPart,
+  openShop,
   removeCategory,
   removeMainGroup,
   removeShop,
@@ -195,6 +196,19 @@ describe("the actions", () => {
     expect(setPeriod(s, { preset: "lastMonth" }).search).toBe("rema");
     expect(setGrouping(s, "week").search).toBe("rema");
     expect(removeUnit(s).search).toBe("rema");
+  });
+
+  it("openShop chooses the shop, empties the search and shows Posteringer", () => {
+    const s: ViewState = { ...DEFAULT_STATE, card: "shops", search: "rema", level: mad, unit: "2026-07-01" };
+    expect(openShop(s, "Netto")).toEqual({ ...s, shop: "Netto", search: "", card: "postings" });
+  });
+
+  it("normalise keeps card=shops with a shop and drops it without", () => {
+    const data = answerFor({ start: "2026-01-01", end: "2026-10-30" });
+    const s: ViewState = { ...DEFAULT_STATE, card: "shops" };
+    expect(normalise(s, data, "2026-10-30").card).toBe("shops");
+    const without = { ...data, postings: data.postings.map((p) => ({ ...p, shop: null })) };
+    expect(normalise(s, without, "2026-10-30").card).toBe("bars");
   });
 
   it("removes the category with its main group (D21)", () => {

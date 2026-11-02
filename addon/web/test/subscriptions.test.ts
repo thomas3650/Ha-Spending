@@ -117,7 +117,7 @@ describe("the subscriptions key number", () => {
   it("adds Faste udgifter to the switch", async () => {
     const { app, root } = await mountWith("");
     const buttons = getAllByRole(viewSwitch(root), "button").map((b) => b.textContent?.trim());
-    expect(buttons).toEqual([da.bars, da.postings, "Faste udgifter"]);
+    expect(buttons).toEqual([da.bars, da.postings, "Faste udgifter", da.shops]);
     fireEvent.click(getByRole(viewSwitch(root), "button", { name: "Faste udgifter" }));
     await settle(app);
     card(root, "Faste udgifter");

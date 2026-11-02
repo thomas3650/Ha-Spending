@@ -18,6 +18,7 @@ import { calendarStyles, periodPickerStyles } from "./components/period-picker";
 import { postingsStyles } from "./components/postings";
 import { sortHeaderStyles } from "./components/sort-header";
 import { searchStyles } from "./components/search";
+import { shopsStyles } from "./components/shops";
 import { subscriptionsStyles } from "./components/subscriptions";
 import { topCardStyles } from "./components/top-card";
 import { LoadError, type LoadErrorCode, loadData } from "./data/api";
@@ -36,6 +37,7 @@ import {
   openAllPostingsFresh,
   openObjectGroupPostings,
   openPart,
+  openShop,
   removeCategory,
   removeMainGroup,
   removeShop,
@@ -90,6 +92,8 @@ export class SpendingApp extends LitElement {
     fullScreen: { state: true },
     postingsSort: { state: true },
     subscriptionsSort: { state: true },
+    shopsAll: { state: true },
+    shopsHidden: { state: true },
   };
 
   static override styles = [
@@ -110,6 +114,7 @@ export class SpendingApp extends LitElement {
     sortHeaderStyles,
     searchStyles,
     subscriptionsStyles,
+    shopsStyles,
     overviewStyles,
     allPostingsStyles,
     css`
@@ -191,6 +196,9 @@ export class SpendingApp extends LitElement {
   /** The Posteringer card's sort, kept here because the card is made anew when the right card switches (D37). */
   declare private postingsSort: Sort;
   declare private subscriptionsSort: Sorted<SubscriptionColumn>;
+  /** Butikker's "Vis alle" and "Vis skjulte" are held here like the sorts: not in the hash (D40). */
+  declare private shopsAll: boolean;
+  declare private shopsHidden: boolean;
 
   private asked: Period | null = null;
   private request = 0;
@@ -206,6 +214,8 @@ export class SpendingApp extends LitElement {
     this.fullScreen = false;
     this.postingsSort = DEFAULT_STATE.sort;
     this.subscriptionsSort = DEFAULT_SUBSCRIPTION_SORT;
+    this.shopsAll = false;
+    this.shopsHidden = false;
   }
 
   private readonly onHash = (): void => {
@@ -365,6 +375,9 @@ export class SpendingApp extends LitElement {
               .fullScreen=${this.fullScreen}
               .postingsSort=${this.postingsSort}
               .subscriptionsSort=${this.subscriptionsSort}
+              .hiddenShops=${{ kind: "ready", shops: [] }}
+              .shopsAll=${this.shopsAll}
+              .shopsHidden=${this.shopsHidden}
               @posting-sort=${(e: CustomEvent<PostingColumn>) =>
                 (this.postingsSort = nextSort(this.postingsSort, e.detail, postingFirstDescending))}
               @subscription-sort=${(e: CustomEvent<SubscriptionColumn>) =>
@@ -374,6 +387,9 @@ export class SpendingApp extends LitElement {
                   subscriptionFirstDescending,
                 ))}
               @full-screen-toggle=${() => (this.fullScreen = !this.fullScreen)}
+              @shops-all-toggle=${() => (this.shopsAll = !this.shopsAll)}
+              @shops-hidden-toggle=${() => (this.shopsHidden = !this.shopsHidden)}
+              @shop-open=${(e: CustomEvent<string>) => this.push(openShop(this.state, e.detail))}
               @part-click=${(e: CustomEvent<CircleSelection>) => this.push(openPart(this.state, e.detail.key))}
               @unit-click=${(e: CustomEvent<UnitSelection>) => this.push(chooseUnit(this.state, e.detail.fullStart))}
               @card-change=${(e: CustomEvent<Card>) => this.push(setCard(this.state, e.detail))}
