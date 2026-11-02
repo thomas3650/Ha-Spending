@@ -85,8 +85,9 @@ The page's list. Every screenshot is at 1440×960 with the console free of error
 3. `03-focus-piece`, `04-focus-bar`: Tab to a circle name, then to a bar. Each shows the highlight from the keyboard.
 4. Clicks, each with a screenshot after it: `05-click-piece` (on a piece), `06-click-label` (on an ECharts label) and
    `07-click-bar` (on a bar). Each does what its button does.
-5. `08-periode`, `09-gruppering`, `10-konti`: the three dropdowns open. Compare `1-alt-forbrug-period.png`,
-   `1-alt-forbrug-grain.png` and `1-alt-forbrug-konti.png`. Load the page once with `#by=week` and check that the
+5. `08-periode`, `09-gruppering`, `10-konti`: the three dropdowns open; the period menu holds the presets with "Alt"
+   and the calendar with two months. Compare `1-alt-forbrug-grain.png` and `1-alt-forbrug-konti.png`; the period menu
+   has no mockup file, its design is the lists spec §1.2. Load the page once with `#by=week` and check that the
    Gruppér pr. select shows Uge on the first render.
 6. `11-uge`: Gruppér pr. Uge. The first bar is clipped and the last is light, with "i gang".
 7. `12-denne-maaned`: Denne måned. The average reads "gns. … før".
@@ -96,19 +97,19 @@ The page's list. Every screenshot is at 1440×960 with the console free of error
 10. `15-hovedgruppe`, `16-kategori-soejler`, `17-kategori-posteringer`: Mad, then a category with bars, then with
     postings. Compare `2-hovedgruppe*.png`.
 11. `18-uden-hovedgruppe`: Uden hovedgruppe as a screen, with its categories and Uden kategori.
-12. `19-alle-posteringer`, `20-stoerste-foerst`, `21-filter`, `22-ingen-match`: screen 3 with chips; sorted by size as a
-    flat list; the "+ Filter" panel open; a search nothing matches (`da.noMatch`). Compare `3-posteringer.png`.
+12. `19-alle-posteringer`, `20-stoerste-foerst` (a click on the Beløb header), `21-filter`, `22-ingen-match`: screen 3 with chips; sorted by size as a
+    flat list, the Beløb header with ▼ and the other columns sorting by a click; the "+ Filter" panel open; a search nothing matches (`da.noMatch`). Compare `3-posteringer.png`.
 13. `23-soejle`, `24-soejle-kategori`: a click on a bar opens Posteringer for that month; press Forskel. A chosen month
     with Forskel at all spending, then in Mad with a category chosen, with both chips. Compare `4-soejle.png`.
-14. `25-loading` (`FAKE_FIREFLY_FAULT=slow`), `26-refused` (`refused`), `27-unreachable` (`error`), `28-empty` (Vælg
-    periode in 2020).
+14. `25-loading` (`FAKE_FIREFLY_FAULT=slow`), `26-refused` (`refused`), `27-unreachable` (`error`), `28-empty` (a period typed
+    in Fra and Til in a year with no data).
 15. `29-ingen-regelgruppe`: `scripts/develop` with `HA_SPENDING_OPTIONS` pointing at a copy of `addon/dev/options.json`
     in `local/` whose `main_group_rule_group` names a group that does not exist. The page shows `da.noRuleGroup` once.
-16. `30-1024`: the window at 1024×960 (four key numbers in a row). The frame is 1024 px or wider, so the
+16. `30-1024`: the window at 1024×960 (five key numbers in a row). The frame is 1024 px or wider, so the
     halves sit side by side, equal ([D24](decisions.md)). The circle's names neither overlap nor are cut.
-17. `31-900`: the window at 900×960. The halves stack, and the four key numbers sit two by two.
+17. `31-900`: the window at 900×960. The halves stack, and the five key numbers sit two by two.
 18. `32-420`: the window at 420×900. The circle's chart is narrower than 400 px, so Alt forbrug and Mad show their parts
-    as a list under the ring, with no names beside it and no name broken inside a word, and the four key
+    as a list under the ring, with no names beside it and no name broken inside a word, and the five key
     numbers stack ([D28](decisions.md)). Hover and Tab on a row bring its piece out; a click on a row chooses it, and
     the other rows fade.
 19. Back: three clicks, then back three times returns to the opening view.
@@ -117,7 +118,7 @@ The page's list. Every screenshot is at 1440×960 with the console free of error
     1728 and 420 px. Back after typing returns to the view before the first key.
 21. `34-posteringer-ingen-match`: a search nothing matches on the overview: the summary at 0 and `da.noMatch`, with
     the search row still there.
-22. `35-abonnementer`, `36-abonnementer-hovedgruppe`: the key number Faste udgifter om året pressed, so the card shows
+22. `35-abonnementer`, `36-abonnementer-hovedgruppe`: the key number Faste udgifter i perioden pressed, so the card shows
     on Alt forbrug, then on a main group. Every status shows, the order within each group is Ikke set, Steget,
     Forventes, Betalt, and the names link to the fake. Also at 1728 and 420 px, where the head wraps; compare
     `docs/mockups/v3/`.
@@ -137,3 +138,16 @@ The page's list. Every screenshot is at 1440×960 with the console free of error
     1728 and 420 px.
 28. `42-posteringer-maerke`: Posteringer and Alle posteringer with marked rows. A posting linked to a bill carries the
     pill, and its tooltip gives the bill's name. Also at 1440, 1728 and 420 px.
+29. `43-kalender`: the period menu with the calendar. Pick two days by mouse, then press Vis; the period reads
+    "Valgt periode" with those days. Repeat with the keyboard: Tab to a day, Enter or Space picks it, and the picked
+    start and end are announced. Check that a pick, a change of month or year, and a redraw that removes the focused
+    day keep the menu open, and that days after today cannot be picked. Check the month and year lists by mouse and
+    keyboard, and the year list's floor. Type `3.1.2024` in Fra and Til: the calendar moves there. Also "Alt": the
+    closed field reads "Alt" with the dates. The open menu stays inside the frame at 1440, 1728, 1024, 900 and
+    420 px, and shows one month at 420. Do this in Safari as well as Chrome; Safari is where the typed year failed.
+30. `44-sorter`: Posteringer and Alle posteringer sorted by each column: one click and a second click; the sorted
+    header is bold with its arrow; sorted by the date the groups return. Faste udgifter sorts inside each group, with
+    Status ascending at the start. The card's sort survives a switch to Søjler and back, and is gone after a reload.
+31. `45-noegletal`: the first key number with "N posteringer →" at Alt forbrug, a main group, a category and a chosen
+    unit; a click opens Alle posteringer with no search or shop. The object group key numbers show the sum, the sum
+    per month and the count, and a click toggles the Faste udgifter card. Also at 1440, 1728, 1024, 900 and 420 px.

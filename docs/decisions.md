@@ -328,7 +328,7 @@ to set their status to `superseded by D<n>`, or to name a part a later decision 
   [the shop spec](superpowers/specs/2026-11-01-sorter-shop.md); the limits: Claude
 
 ### D33: Subscriptions on the overview
-- **Date:** 2026-11-01 · **Status:** active
+- **Date:** 2026-11-01 · **Status:** active; the key number superseded by D41
 - **Decision:** The overview shows Firefly III's subscriptions as a fourth key number (the cost per year) and a fourth
   choice on the right card, `card=subscriptions` in the hash ([D20](decisions.md)). A subscription's category, main
   group and account are those of its last payment, and a failed read of the subscriptions or of a payment's posting
@@ -389,3 +389,30 @@ to set their status to `superseded by D<n>`, or to name a part a later decision 
 - **Why:** Firefly III is the one place that says which bill is which, and a new object group then needs no change
   to the page.
 - **Source:** Thomas, 2026-11-01, [the object groups spec](superpowers/specs/2026-11-01-object-groups.md) §1 and §2
+
+### D39: The custom period uses Vanilla Calendar Pro
+- **Date:** 2026-11-02 · **Status:** active
+- **Decision:** The period's custom interval is one calendar from Vanilla Calendar Pro, mounted inline in the menu,
+  with Fra and Til fields for typing. It replaces the two `<input type="date">` fields and is a runtime dependency
+  beside Lit and ECharts (technical spec §6).
+- **Why:** Safari would not take a typed year in the date field, and the browsers' date fields differ. A library gives
+  one behaviour everywhere.
+- **Source:** Thomas, 2026-11-02, [the lists spec](superpowers/specs/2026-11-02-lists-period-postings.md) §1.2
+
+### D40: Tables sort by their headers
+- **Date:** 2026-11-02 · **Status:** active
+- **Decision:** The postings tables and Faste udgifter sort by their column headers, and there is no sort dropdown.
+  Alle posteringer keeps its sort in the hash as `sort`; the two cards' sort is held by the app and not in the hash.
+- **Why:** A header is where a reader looks to sort. A card's sort is a view setting, like full screen
+  ([D37](decisions.md)), and a shared link should not carry it.
+- **Source:** Thomas, 2026-11-02, [the lists spec](superpowers/specs/2026-11-02-lists-period-postings.md) §2
+
+### D41: Key numbers for the object groups, and a link to all postings
+- **Date:** 2026-11-02 · **Status:** active
+- **Decision:** There is one key number per Firefly III object group, showing the period's payments with the sum per
+  month and the count of bills; they replace "Faste udgifter om året" ([D33](decisions.md)). The first key number links
+  to Alle posteringer and clears the search and the chosen shop, an exception to [D31](decisions.md) and
+  [D35](decisions.md).
+- **Why:** The object groups' names are Firefly III's ([D38](decisions.md)), so the page keeps no fixed two. The link
+  shows the count that Alle posteringer will list.
+- **Source:** Thomas, 2026-11-02, [the lists spec](superpowers/specs/2026-11-02-lists-period-postings.md) §3 and §4
