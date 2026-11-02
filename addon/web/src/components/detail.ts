@@ -81,7 +81,7 @@ export class Detail extends LitElement {
       </table>
       ${all.length > ROWS_SHOWN
         ? html`<button type="button" class="detail-more" @click=${() => (this.all = !this.all)}>
-            ${this.all ? da.showFewer : da.showAllShops(all.length)}
+            ${this.all ? da.showFewer : da.showAllN(all.length)}
           </button>`
         : nothing}`;
   }

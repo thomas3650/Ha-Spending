@@ -448,4 +448,4 @@ to set their status to `superseded by D<n>`, or to name a part a later decision 
   when the current entry is the one the open pushed.
 - **Why:** Back closes the detail, and a shared link or a reload opens it, as for the other choices ([D20](decisions.md)).
   Closing by going back keeps Back from reopening a detail that was just closed.
-- **Source:** Claude, 2026-11-02, the detail view spec (`docs/superpowers/specs/2026-11-02-detail-view.md`) §5
+- **Source:** Claude, 2026-11-02, [the detail view spec](superpowers/specs/2026-11-02-detail-view.md) §5

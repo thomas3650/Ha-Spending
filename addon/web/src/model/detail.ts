@@ -19,7 +19,6 @@ import { billHref, paymentText, statusCell } from "./subscriptions";
 export interface DetailBox {
   label: string;
   value: string;
-  /** "4 posteringer". */
   count?: string;
 }
 
@@ -27,7 +26,6 @@ export interface DetailBar {
   name: string;
   /** Øre, net; a unit at zero or below keeps its place but draws no bar. */
   amount: number;
-  /** "<unit>: <kr>". */
   label: string;
 }
 

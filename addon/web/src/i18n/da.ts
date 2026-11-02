@@ -207,6 +207,7 @@ export const da = {
   hideShop: (name: string) => `Skjul ${name}`,
   showShop: (name: string) => `Vis ${name}`,
   showAllShops: (n: number) => `Vis alle ${n}`,
+  showAllN: (n: number) => `Vis alle ${n}`,
   showFewer: "Vis færre",
   showHidden: (n: number, sum: string) => `Vis skjulte (${n} · ${sum})`,
   hideHidden: "Skjul skjulte",

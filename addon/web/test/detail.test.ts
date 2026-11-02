@@ -283,13 +283,11 @@ describe("the detail on the normal page", () => {
     expect(queryByRole(detail(unsafe.root, "Pizzeria Roma"), "link")).toBeNull();
   });
 
-  it("the keyboard alone: Enter on a row's button opens, Escape closes, the focus is back on the button", async () => {
+  it("a row's button opens, Escape closes, the focus is back on the button", async () => {
     const { app, root } = await mountLinked("card=postings");
     const button = rowButton(region(root, da.postingsTitle), "Café Søde", "2026-10-26");
     button.focus();
     expect(focused(app)).toBe(button);
-    // happy-dom does not turn Enter on a button into a click, as a browser does; the click is that browser step.
-    fireEvent.keyDown(button, { key: "Enter" });
     await click(app, button);
     const heading = getByRole(root, "heading", { level: 3, name: "Café Søde" });
     expect(focused(app)).toBe(heading);
@@ -306,6 +304,17 @@ describe("the detail on the normal page", () => {
     await click(app, within(row).getByText("Kreditkort"));
     getByRole(root, "heading", { level: 3, name: "Café Søde" });
     expect(history.length).toBe(length + 1);
+  });
+
+  it("unticking the account of the open shop's postings closes the detail", async () => {
+    const { app, root } = await mountLinked("card=postings&detail=p%3Ap25");
+    getByRole(root, "heading", { level: 3, name: "Pizzeria Roma" });
+    fireEvent.click(getByRole(root, "button", { name: new RegExp(`^${da.accounts}`) }));
+    await app.updateComplete;
+    fireEvent.click(getByRole(root, "checkbox", { name: "Kreditkort" }));
+    await settle(app);
+    expect(queryByRole(root, "heading", { level: 3 })).toBeNull();
+    expect(location.hash).not.toContain("detail");
   });
 
   it("the period and the accounts change the sums; the search does not", async () => {

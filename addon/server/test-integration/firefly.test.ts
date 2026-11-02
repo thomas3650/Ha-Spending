@@ -243,10 +243,14 @@ describe("a real Firefly III", () => {
       const actual = await served();
       expect(actual.postings.some((p) => p.subscription !== null)).toBe(true);
       expect(links(actual)).toEqual(links(expected));
+      let checked = 0;
       for (const p of actual.postings) {
         const kept = actual.subscriptions.find((s) => s.name === p.subscription?.name);
-        if (kept !== undefined) expect(p.subscription?.id).toBe(kept.id);
+        if (kept === undefined) continue;
+        expect(p.subscription?.id).toBe(kept.id);
+        checked++;
       }
+      expect(checked).toBeGreaterThan(0);
     });
 
     it("lists a bill's paid dates only inside the window asked for", async () => {
