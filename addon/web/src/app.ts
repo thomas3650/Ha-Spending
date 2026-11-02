@@ -24,7 +24,7 @@ import { LoadError, type LoadErrorCode, loadData } from "./data/api";
 import { da } from "./i18n/da";
 import { type ViewContext, viewContext } from "./model/context";
 import { keyCards, objectGroupCards } from "./model/key-numbers";
-import { DEFAULT_SUBSCRIPTION_SORT, subscriptionFirstDescending } from "./model/subscriptions";
+import { DEFAULT_SUBSCRIPTION_SORT, shownSubscriptionSort, subscriptionFirstDescending } from "./model/subscriptions";
 import { allPostingsStyles, type CategoryChoice } from "./screens/all-postings";
 import "./screens/overview";
 import { overviewStyles } from "./screens/overview";
@@ -366,7 +366,11 @@ export class SpendingApp extends LitElement {
               @posting-sort=${(e: CustomEvent<PostingColumn>) =>
                 (this.postingsSort = nextSort(this.postingsSort, e.detail, postingFirstDescending))}
               @subscription-sort=${(e: CustomEvent<SubscriptionColumn>) =>
-                (this.subscriptionsSort = nextSort(this.subscriptionsSort, e.detail, subscriptionFirstDescending))}
+                (this.subscriptionsSort = nextSort(
+                  shownSubscriptionSort(this.subscriptionsSort, this.state.level.kind),
+                  e.detail,
+                  subscriptionFirstDescending,
+                ))}
               @full-screen-toggle=${() => (this.fullScreen = !this.fullScreen)}
               @part-click=${(e: CustomEvent<CircleSelection>) => this.push(openPart(this.state, e.detail.key))}
               @unit-click=${(e: CustomEvent<UnitSelection>) => this.push(chooseUnit(this.state, e.detail.fullStart))}

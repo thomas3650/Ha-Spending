@@ -185,7 +185,7 @@ export class Overview extends LitElement {
   private subscriptions(title: string) {
     const table = subscriptionTable(this.ctx, this.subscriptionsSort);
     if (table.rows.length === 0) return html`<p class="empty">${da.noSubscriptions(levelName(this.ctx.state.level))}</p>`;
-    return html`<hs-subscriptions .table=${table} .label=${title} .sort=${this.subscriptionsSort}></hs-subscriptions>
+    return html`<hs-subscriptions .table=${table} .label=${title}></hs-subscriptions>
       <p class="half-foot">${da.subscriptionsFoot}</p>`;
   }
 

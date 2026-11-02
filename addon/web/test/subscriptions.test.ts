@@ -61,6 +61,14 @@ function groupRow(region: HTMLElement, name: string): HTMLElement {
   return header.closest("tr") as HTMLElement;
 }
 
+/** The rowgroup that holds the group's header row and its fixed costs. */
+function rowgroupOf(region: HTMLElement, group: string): HTMLElement {
+  const row = groupRow(region, group);
+  const found = getAllByRole(region, "rowgroup").find((g) => g.contains(row));
+  if (!found) throw new Error(`no rowgroup for ${group}`);
+  return found;
+}
+
 function groupNames(region: HTMLElement): string[] {
   return groupHeaders(region).map((h) => text(h).replace(/ \d+ faste? udgifte?r?$/, ""));
 }
@@ -304,7 +312,7 @@ describe("the subscriptions card grouped", () => {
   };
 
   function tbodyOf(region: HTMLElement, group: string): HTMLElement {
-    return groupRow(region, group).closest("tbody") as HTMLElement;
+    return rowgroupOf(region, group);
   }
 
   it("groups by main group at Alt forbrug, the biggest sum per year first, Uden hovedgruppe last", async () => {
@@ -442,8 +450,15 @@ describe("sorting the subscriptions by their headers", () => {
     await settle(app);
   }
 
+  /** What a browser does on a new hash: the app hears it. */
+  async function go(app: Parameters<typeof settle>[0], hash: string): Promise<void> {
+    location.hash = hash;
+    window.dispatchEvent(new HashChangeEvent("hashchange"));
+    await settle(app);
+  }
+
   function rowsIn(region: HTMLElement, group: string): string[] {
-    return getAllByRole(groupRow(region, group).closest("tbody") as HTMLElement, "row")
+    return getAllByRole(rowgroupOf(region, group), "row")
       .filter((r) => within(r).queryByRole("rowheader") === null)
       .map(fixedCostName);
   }
@@ -520,6 +535,24 @@ describe("sorting the subscriptions by their headers", () => {
     await sortBy(app, root, c.category);
     expect(header(card(root, "Faste udgifter"), c.category).getAttribute("aria-sort")).toBe("descending");
     expect(rowsIn(card(root, "Faste udgifter"), da.noMainGroup)).toEqual(["Tennisklub", "Avis"]);
+  });
+
+  it("a Kategori sort gives way to Status where Kategori is not shown, and comes back at Alt forbrug", async () => {
+    const { app, root } = await mountWith(CARD);
+    await sortBy(app, root, c.category);
+    await go(app, "group=Bolig&card=subscriptions");
+    const region = card(root, "Faste udgifter i Bolig");
+    expect(header(region, c.status).getAttribute("aria-sort")).toBe("ascending");
+    expect(getAllByRole(region, "columnheader").filter((h) => h.hasAttribute("aria-sort"))).toHaveLength(1);
+    expect(rowNames(region)).toEqual(["Indboforsikring", "Husleje"]);
+
+    await go(app, CARD);
+    expect(header(card(root, "Faste udgifter"), c.category).getAttribute("aria-sort")).toBe("ascending");
+
+    await go(app, "group=Bolig&card=subscriptions");
+    await sortBy(app, root, c.status, "Faste udgifter i Bolig");
+    expect(header(card(root, "Faste udgifter i Bolig"), c.status).getAttribute("aria-sort")).toBe("descending");
+    expect(rowNames(card(root, "Faste udgifter i Bolig"))).toEqual(["Husleje", "Indboforsikring"]);
   });
 
   it("the sort survives Søjler and back, and a trip to Alle posteringer", async () => {

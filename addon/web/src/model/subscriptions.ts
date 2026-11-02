@@ -2,6 +2,7 @@ import {
   amountPerPayment,
   amountPerYear,
   compareKeys,
+  type Level,
   NO_PIECE,
   nextDate,
   type Subscription,
@@ -16,6 +17,11 @@ import { linkBase } from "./postings";
 import type { Sorted, SubscriptionColumn } from "../state/view";
 
 export const DEFAULT_SUBSCRIPTION_SORT: Sorted<SubscriptionColumn> = { column: "status", descending: false };
+
+/** Kategori shows only at Alt forbrug; a kept sort on it elsewhere gives way to the default. */
+export function shownSubscriptionSort(sort: Sorted<SubscriptionColumn>, level: Level["kind"]): Sorted<SubscriptionColumn> {
+  return sort.column === "category" && level !== "all" ? DEFAULT_SUBSCRIPTION_SORT : sort;
+}
 
 export function subscriptionFirstDescending(column: SubscriptionColumn): boolean {
   return column === "amount" || column === "perYear";
@@ -109,6 +115,8 @@ export interface SubscriptionTable {
   groups: SubscriptionGroup[] | null;
   showCategory: boolean;
   rows: SubscriptionRow[];
+  /** The sort the rows have, which the headers show. */
+  sort: Sorted<SubscriptionColumn>;
 }
 
 function compareBy(column: SubscriptionColumn, a: SubscriptionRow, b: SubscriptionRow, descending: boolean): number {
@@ -136,7 +144,9 @@ function sortItems<T extends { row: SubscriptionRow }>(items: T[], sort: Sorted<
   return [...items].sort((a, b) => compareBy(sort.column, a.row, b.row, sort.descending));
 }
 
-export function subscriptionTable(ctx: ViewContext, sort: Sorted<SubscriptionColumn>): SubscriptionTable {
+export function subscriptionTable(ctx: ViewContext, kept: Sorted<SubscriptionColumn>): SubscriptionTable {
+  const kind = ctx.state.level.kind;
+  const sort = shownSubscriptionSort(kept, kind);
   const today = ctx.data.today;
   const base = linkBase(ctx.data.fireflyLinkUrl);
   const mainGroups = new Map(ctx.data.categories.map((c) => [c.name, c.mainGroup]));
@@ -171,8 +181,7 @@ export function subscriptionTable(ctx: ViewContext, sort: Sorted<SubscriptionCol
   const objectGroups = [...sums]
     .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], "da"))
     .map(([name, year]) => ({ name, perYear: da.perYear(kr(year)) }));
-  const kind = ctx.state.level.kind;
-  if (kind === "category") return { objectGroups, groups: null, showCategory: false, rows };
+  if (kind === "category") return { objectGroups, groups: null, showCategory: false, rows, sort };
 
   const of = kind === "all" ? "mainGroup" : "category";
   const colours = partColours(ctx);
@@ -200,7 +209,7 @@ export function subscriptionTable(ctx: ViewContext, sort: Sorted<SubscriptionCol
       perYear: kr(g.year),
       rows: g.rows,
     }));
-  return { objectGroups, groups, showCategory: kind === "all", rows };
+  return { objectGroups, groups, showCategory: kind === "all", rows, sort };
 }
 
 export function subscriptionRows(ctx: ViewContext): SubscriptionRow[] {
