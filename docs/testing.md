@@ -64,7 +64,8 @@ technical spec §7.2 ([technical spec](superpowers/specs/2026-10-30-technical-de
 
 ## Chrome check
 
-For every UI change, in the fast loop:
+For every UI change, in the fast loop. `reviewer` runs it last in every branch review, in Claude in Chrome
+([D45](decisions.md)):
 
 - A new Chrome tab at `http://127.0.0.1:5173/`. The window is **1440×960**, the mockups' size
   ([mockups](mockups/README.md)).

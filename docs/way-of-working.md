@@ -21,7 +21,7 @@ Hard rules live in `CLAUDE.md`; decisions in [`decisions.md`](decisions.md).
    `Review: yes|no` line. `reviewer` until Ready; then **Claude approves**.
 6. **Build** with `superpowers:subagent-driven-development`: one subagent per task, test-first, and `reviewer` on the
    tasks marked `Review: yes`.
-7. **Branch review:** `reviewer` on the whole branch until Ready.
+7. **Branch review:** `reviewer` on the whole branch until Ready, ending with its Chrome check in the fast loop.
 8. **Test:** the gates, the fast loop, and for UI changes the Chrome check ([`testing.md`](testing.md)).
 9. **PR:** title per [`releasing.md`](releasing.md#pr-titles), `Closes #n`, links to the spec and plan, the rulings and
    the decisions Claude made alone.
@@ -46,11 +46,13 @@ A typo or a one-line doc fix with no behaviour change goes straight to a branch 
 
 ## 3. The reviewer
 
-There is one agent, `reviewer` (`.claude/agents/reviewer.md`, technical spec §10). It is read-only: it has `Read`,
-`Grep` and `Glob`, and runs nothing.
+There is one agent, `reviewer` (`.claude/agents/reviewer.md`, technical spec §10). It edits nothing and runs no
+command. It reads files, and last in every branch review it runs the [Chrome check](testing.md#chrome-check) itself in
+Claude in Chrome, on the fast loop's made-up data ([D45](decisions.md)).
 
 - The dispatching session hands it the files to read: the spec, the plan, and for a branch the diff written to a file
-  (`git diff BASE..HEAD`) with the test and CI results as the session ran them.
+  (`git diff BASE..HEAD`) with the test and CI results as the session ran them. For a branch review it first starts
+  the fast loop on the branch (`scripts/develop`) and hands over its address.
 - It returns **Ready** or **Needs changes**.
 - The plan's `Model:` tag picks the model of each task's subagent in the dispatch.
 - Subagents never dispatch other subagents.
