@@ -66,7 +66,9 @@ groups; sorted by another column they are one list. The first key number shows h
 a click on that count opens the page with all postings.
 
 The key number for an object group shows the payments of that group in the period, with the sum per month and the
-number of subscriptions paid. A click on it shows the card.
+number of subscriptions paid. A click on it shows the card. Under it, a link such as "58 posteringer →" opens the page
+with all postings, filtered to that object group; the filter shows as a chip that you remove with its cross. The link
+clears any search, shop and chosen month. "+ Filter" can also choose an object group.
 
 The button "Fuld skærm" in the right card's title gives that card the page's whole width; the same button or Escape
 brings the circle and the key numbers back.

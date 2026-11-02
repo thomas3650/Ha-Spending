@@ -191,7 +191,7 @@ to set their status to `superseded by D<n>`, or to name a part a later decision 
 - **Source:** Claude, [page plan](superpowers/plans/2026-10-31-page.md)
 
 ### D20: The view state's hash
-- **Date:** 2026-10-31 · **Status:** active; key list superseded by D35
+- **Date:** 2026-10-31 · **Status:** active; key list superseded by D35 and D42
 - **Decision:**
   - The keys are `period`, `from`, `to`, `by`, `accounts`, `group`, `category`, `unit`, `card`, `view`, `q`, `sort`,
     `min` and `max`, in a `URLSearchParams` string.
@@ -416,3 +416,14 @@ to set their status to `superseded by D<n>`, or to name a part a later decision 
 - **Why:** The object groups' names are Firefly III's ([D38](decisions.md)), so the page keeps no fixed two. The link
   shows the count that Alle posteringer will list.
 - **Source:** Thomas, 2026-11-02, [the lists spec](superpowers/specs/2026-11-02-lists-period-postings.md) §3 and §4
+
+### D42: The object group is a filter of Alle posteringer
+- **Date:** 2026-11-02 · **Status:** active
+- **Decision:** The object group is a filter of Alle posteringer, in the hash as `og` after `max`, reached from the link
+  under its key number. An object group that no posting carries still filters, an exception to [D20](decisions.md)'s
+  fallback. The link clears the search and the shop, as [D41](decisions.md) does (an exception to
+  [D31](decisions.md) and [D35](decisions.md)), and the chosen unit, an exception to the UI spec §5.
+- **Why:** The link shows the count of the key number's value, which is not the chosen unit's. Dropping an unknown group
+  silently would change the list without a word.
+- **Source:** Thomas, 2026-11-02, [the object group postings spec](superpowers/specs/2026-11-02-object-group-postings.md)
+  §1 to §3

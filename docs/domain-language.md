@@ -29,7 +29,7 @@ its name in code, so the same thing has one name everywhere. The Danish word is 
 | Amount per payment | beløb | the middle of the subscription's amount range |
 | Amount per year | om året | the cost of a subscription over a year; the rule is in [the spec](superpowers/specs/2026-11-01-subscriptions.md#21-amount-per-payment-and-per-year) |
 | Subscription status | status | Ikke set, Steget, Forventes or Betalt; the rules are in [the spec](superpowers/specs/2026-11-01-subscriptions.md#23-the-status) |
-| Object group | objektgruppe | `objectGroup`: the title of the group Firefly III puts a bill in; the page shows it as the pill on a row, as a sum per group and as a key number for the period ([D38](decisions.md), [D41](decisions.md)) |
+| Object group | objektgruppe | `objectGroup`: the title of the group Firefly III puts a bill in; the page shows it as the pill on a row, as a sum per group and as a key number for the period, and as a filter of Alle posteringer ([D38](decisions.md), [D41](decisions.md), [D42](decisions.md)) |
 | Posting's subscription | — | `Posting.subscription`: the bill a posting is linked to, with its name and object group, or `null` |
 | Card | kort | `card` in the view state: which card the second half shows, Søjler, Posteringer, Forskel or Faste udgifter (`"bars"` \| `"postings"` \| `"difference"` \| `"subscriptions"`) |
 | Sort | sortér | a table sorted by a column header: a click sorts by the column, a second click reverses it; `aria-sort` marks the column ([D40](decisions.md)) |
