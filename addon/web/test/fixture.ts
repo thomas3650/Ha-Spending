@@ -34,7 +34,10 @@ const POSTINGS: Posting[] = rows.map(([category, text, amount, account, date], i
   shop: text === "Husleje" || text === "Kiosken" ? null : text,
   kind: amount < 0 ? "refund" : "spending",
   amount,
-  subscription: null,
+  subscription:
+    text === "Pizzeria Roma" && date === "2026-09-20"
+      ? { name: "Pizzaabonnement", objectGroup: "Abonnementer" }
+      : null,
 }));
 
 export function answerFor(range: Period, today = "2026-10-30"): SpendingData {

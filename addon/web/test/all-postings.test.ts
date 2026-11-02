@@ -261,4 +261,18 @@ describe("the filter rules", () => {
     expect(ids(sortPostings(ps, "largest"))).toEqual(["a", "c", "b"]);
     expect(ids(sortPostings(ps, "smallest"))).toEqual(["c", "b", "a"]);
   });
+
+  it("marks a linked posting on Alle posteringer", async () => {
+    const { root } = await mount(`${CAFE}&by=month`);
+    const row = getAllByRole(root, "row").find((r) => r.textContent?.includes("Pizzaabonnement"));
+    expect(row?.textContent).toContain("Abonnementer");
+    expect(getAllByRole(root, "row").filter((r) => r.textContent?.includes("Abonnementer"))).toHaveLength(1);
+  });
+
+  it("marks it in the flat list by size", async () => {
+    const { root } = await mount(`${CAFE}&sort=largest`);
+    const row = getAllByRole(getByRole(root, "table"), "row").find((r) => r.textContent?.includes("Pizzaabonnement"));
+    expect(row?.textContent).toContain("Abonnementer");
+    expect(getByRole(row as HTMLElement, "link", { name: "Pizzeria Roma" })).toBeTruthy();
+  });
 });
