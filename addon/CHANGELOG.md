@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.6.0](https://github.com/thomas3650/Ha-Spending/compare/v0.5.0...v0.6.0) (2026-11-02)
+
+
+### Features
+
+* Faste udgifter by Firefly III's object groups, and a mark on postings that pay a bill ([#67](https://github.com/thomas3650/Ha-Spending/issues/67)) ([535d231](https://github.com/thomas3650/Ha-Spending/commit/535d231f926699ca777ecb2d7f51320b3c7a45c9))
+* search on the shop with suggestions, and faste udgifter on the page ([#58](https://github.com/thomas3650/Ha-Spending/issues/58)) ([12cc69a](https://github.com/thomas3650/Ha-Spending/commit/12cc69af124340858f7a9c145d5a811fd90554a5))
+* the right card in full screen, and Faste udgifter by group ([#61](https://github.com/thomas3650/Ha-Spending/issues/61)) ([537bb20](https://github.com/thomas3650/Ha-Spending/commit/537bb20a71321a1e7d8f715c34accf2d8b6ef7f1))
+
+
+### Bug Fixes
+
+* **sorter:** refuse a posting not given out before reading it, and check its direction ([#56](https://github.com/thomas3650/Ha-Spending/issues/56)) ([57aff65](https://github.com/thomas3650/Ha-Spending/commit/57aff654d76474f5b03abfbcca1090556ba9fbdf))
+
 ## [0.5.0](https://github.com/thomas3650/Ha-Spending/compare/v0.4.0...v0.5.0) (2026-11-01)
 
 
