@@ -53,6 +53,11 @@ III's rules. A subscription without a payment reads "Forventes" for a few days a
 start is in the future; after that it reads "Ikke set". Inactive and ended subscriptions are left out, as are those last
 paid from a liability or into a main group in `excluded_main_groups`.
 
+The card shows only the subscriptions that are in an object group in Firefly III; one with no object group is left
+out. Each row carries its object group's title, and the card shows the cost per year of each object group. A posting
+that is linked to a subscription carries the same mark, with the subscription's name as its tooltip, in the postings
+card and on the page with all postings.
+
 The button "Fuld skærm" in the right card's title gives that card the page's whole width; the same button or Escape
 brings the circle and the key numbers back.
 

@@ -380,3 +380,12 @@ to set their status to `superseded by D<n>`, or to name a part a later decision 
   It adds no history entry; the button or Escape on the overview turns it off, and a reload starts with it off.
 - **Why:** A shared link should show the normal page, and a layout setting is not a choice of what to look at.
 - **Source:** Thomas, 2026-11-01, [the card full-screen spec §1](superpowers/specs/2026-11-01-card-full-screen.md)
+
+### D38: Firefly III's object groups decide which bills show and how they are marked
+- **Date:** 2026-11-01 · **Status:** active
+- **Decision:** The Faste udgifter card shows only the bills that have an object group in Firefly III. Each row, each
+  sum and the mark on a linked posting take the object group's title as Firefly III gives it. The page keeps no names,
+  colours or rules of its own for object groups.
+- **Why:** Firefly III is the one place that says which bill is which, and a new object group then needs no change
+  to the page.
+- **Source:** Thomas, 2026-11-01, [the object groups spec](superpowers/specs/2026-11-01-object-groups.md) §1 and §2
