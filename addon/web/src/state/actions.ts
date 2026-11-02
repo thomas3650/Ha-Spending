@@ -52,7 +52,7 @@ export function toggleSubscriptions(s: ViewState): ViewState {
 }
 
 export function openAllPostings(s: ViewState): ViewState {
-  return { ...s, screen: "allPostings", sort: DEFAULT_STATE.sort, amount: null };
+  return { ...s, screen: "allPostings", sort: DEFAULT_STATE.sort, amount: null, objectGroup: null };
 }
 
 /** The key number's way in: the search and the chosen shop go, unlike "Vis alle" (D31, D35). */
@@ -67,7 +67,14 @@ function levelAt(level: Level, depth: 0 | 1 | 2): Level {
 }
 
 export function trailLevel(s: ViewState, depth: 0 | 1 | 2): ViewState {
-  return { ...s, level: levelAt(s.level, depth), screen: "overview", sort: DEFAULT_STATE.sort, amount: null };
+  return {
+    ...s,
+    level: levelAt(s.level, depth),
+    screen: "overview",
+    sort: DEFAULT_STATE.sort,
+    amount: null,
+    objectGroup: null,
+  };
 }
 
 /** A category implies its main group, so it goes too (D21). */
@@ -109,6 +116,10 @@ export function setSort(s: ViewState, sort: Sort): ViewState {
 
 export function setAmount(s: ViewState, amount: AmountRange | null): ViewState {
   return { ...s, amount: amount && (amount.min !== null || amount.max !== null) ? amount : null };
+}
+
+export function setObjectGroup(s: ViewState, title: string | null): ViewState {
+  return { ...s, objectGroup: title };
 }
 
 function knownLevel(level: Level, data: SpendingData): Level {

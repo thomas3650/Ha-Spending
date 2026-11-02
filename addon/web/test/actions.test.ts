@@ -17,6 +17,7 @@ import {
   setCategory,
   setGrouping,
   setMainGroup,
+  setObjectGroup,
   setPeriod,
   setSearch,
   setSort,
@@ -140,6 +141,23 @@ describe("the actions", () => {
     expect(s.unit).toBe("2026-07-01");
     expect(trailLevel(openAllPostings(at(cafe)), 0).level).toEqual({ kind: "all" });
     expect(trailLevel(openAllPostings(at(cafe)), 2).level).toEqual(cafe);
+  });
+
+  it("opening Alle posteringer and the trail clear the object group", () => {
+    const inAll = setObjectGroup(openAllPostings(at(cafe)), "Abonnementer");
+    expect(inAll.objectGroup).toBe("Abonnementer");
+    expect(setObjectGroup(inAll, null).objectGroup).toBeNull();
+    expect(openAllPostings(inAll).objectGroup).toBeNull();
+    expect(openAllPostingsFresh(inAll).objectGroup).toBeNull();
+    expect(trailLevel(inAll, 1).objectGroup).toBeNull();
+    expect(setPeriod(inAll, { preset: "lastYear" }).objectGroup).toBe("Abonnementer");
+    expect(setMainGroup(inAll, "Bil").objectGroup).toBe("Abonnementer");
+    expect(removeMainGroup(inAll).objectGroup).toBe("Abonnementer");
+  });
+
+  it("normalise keeps an object group the answer does not carry", () => {
+    const s = setObjectGroup(openAllPostings(DEFAULT_STATE), "Ukendt");
+    expect(normalise(s, answerFor({ start: "2026-01-01", end: "2026-10-30" }), "2026-10-30").objectGroup).toBe("Ukendt");
   });
 
   it("keeps the search through the shared choices", () => {

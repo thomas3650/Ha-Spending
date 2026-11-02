@@ -9,7 +9,7 @@ import { amountChip, count, kr, unitName } from "../format";
 import { da } from "../i18n/da";
 import { categoryColours } from "../model/circle";
 import { partName, type ViewContext } from "../model/context";
-import { filteredPostings, searchBase, shopSuggestions } from "../model/filter";
+import { filteredPostings, objectGroupBase, searchBase, shopSuggestions } from "../model/filter";
 import { postingList } from "../model/postings";
 import {
   type AmountRange,
@@ -25,7 +25,10 @@ export interface CategoryChoice {
   category: string | null;
 }
 
-/** "+ Filter": a main group, a category or an amount range. Fires `set-main-group`, `set-category` and `set-amount`. */
+/**
+ * "+ Filter": a main group, a category, an amount range or an object group. Fires `set-main-group`, `set-category`,
+ * `set-amount` and `set-object-group`.
+ */
 export class FilterPicker extends Dropdown {
   static override properties: PropertyDeclarations = {
     ctx: { attribute: false },
@@ -72,6 +75,20 @@ export class FilterPicker extends Dropdown {
     >
       ${label}
     </button>`;
+  }
+
+  /** The chosen group is listed even when no posting carries it, so it can be seen pressed. */
+  private objectGroups() {
+    const chosen = this.ctx.state.objectGroup;
+    const titles = new Set(objectGroupBase(this.ctx).flatMap((p) => (p.subscription ? [p.subscription.objectGroup] : [])));
+    if (chosen !== null) titles.add(chosen);
+    if (titles.size === 0) return nothing;
+    return html`<div role="group" aria-labelledby="hs-filter-object-groups">
+      <h3 id="hs-filter-object-groups">${da.subscriptions}</h3>
+      ${[...titles]
+        .sort((a, b) => a.localeCompare(b, "da"))
+        .map((title) => this.option(title, title === chosen, "set-object-group", title))}
+    </div>`;
   }
 
   private panel() {
@@ -126,6 +143,7 @@ export class FilterPicker extends Dropdown {
         </label>
         <button type="button" class="filter-add" @click=${() => this.addAmount()}>${da.add}</button>
       </div>
+      ${this.objectGroups()}
     </div>`;
   }
 
@@ -140,8 +158,8 @@ export class FilterPicker extends Dropdown {
 }
 
 /**
- * Alle posteringer (UI spec §4.3). Fires `sort-change`, `remove-main-group`, `remove-category`, `remove-unit` and
- * `set-amount`; the search and the filter picker fire the rest.
+ * Alle posteringer (UI spec §4.3). Fires `sort-change`, `remove-main-group`, `remove-category`, `remove-unit`,
+ * `set-amount` and `set-object-group`; the search and the filter picker fire the rest.
  */
 export class AllPostings extends LitElement {
   static override properties = {
@@ -162,6 +180,7 @@ export class AllPostings extends LitElement {
     const { state, chosen, timeline } = this.ctx;
     const level = state.level;
     const amount = state.amount;
+    const group = state.objectGroup;
     return html`${level.kind === "all"
       ? nothing
       : this.chip(da.mainGroupChip(partName(level.mainGroup, "mainGroup")), "remove-main-group")}
@@ -169,7 +188,8 @@ export class AllPostings extends LitElement {
       ? this.chip(da.categoryChip(partName(level.category, "category")), "remove-category")
       : nothing}
     ${chosen === null ? nothing : this.chip(unitName(chosen, timeline.grouping), "remove-unit")}
-    ${amount === null ? nothing : this.chip(amountChip(amount), "set-amount", null)}`;
+    ${amount === null ? nothing : this.chip(amountChip(amount), "set-amount", null)}
+    ${group === null ? nothing : this.chip(group, "set-object-group", null)}`;
   }
 
   private table(postings: ReturnType<typeof filteredPostings>) {

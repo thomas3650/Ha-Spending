@@ -33,6 +33,7 @@ describe("the view state's hash", () => {
       shop: "Netto",
       sort: { column: "amount", descending: true },
       amount: { min: 100, max: null },
+      objectGroup: "Åbne aftaler",
     };
     expect(parseHash("#" + toHash(s))).toEqual(s);
   });
@@ -116,6 +117,29 @@ describe("the view state's hash", () => {
     expect(s.sort).toEqual(DEFAULT_STATE.sort);
     expect(s.amount).toBeNull();
     expect(toHash({ ...DEFAULT_STATE, sort: LARGEST })).toBe("");
+  });
+
+  it("round-trips og on Alle posteringer", () => {
+    const s: ViewState = {
+      ...DEFAULT_STATE,
+      screen: "allPostings",
+      amount: { min: 1, max: 500 },
+      objectGroup: "Åbne aftaler & abonnementer",
+    };
+    expect(toHash(s)).toBe("view=all-postings&min=1&max=500&og=%C3%85bne+aftaler+%26+abonnementer");
+    expect(parseHash("#" + toHash(s))).toEqual(s);
+    expect(parseHash("view=all-postings&og=Abonnementer").objectGroup).toBe("Abonnementer");
+  });
+
+  it("an empty og is none", () => {
+    expect(parseHash("view=all-postings&og=").objectGroup).toBeNull();
+    expect(parseHash("view=all-postings").objectGroup).toBeNull();
+    expect(toHash({ ...DEFAULT_STATE, screen: "allPostings", objectGroup: null })).toBe("view=all-postings");
+  });
+
+  it("og is dropped on the overview", () => {
+    expect(parseHash("og=Abonnementer").objectGroup).toBeNull();
+    expect(toHash({ ...DEFAULT_STATE, objectGroup: "Abonnementer" })).toBe("");
   });
 
   it("tells no accounts from all accounts", () => {

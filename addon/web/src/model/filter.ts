@@ -45,9 +45,16 @@ export function byDate(a: ClassifiedPosting, b: ClassifiedPosting): number {
   return a.date.localeCompare(b.date) || a.id.localeCompare(b.id);
 }
 
+/** Alle posteringer's postings before the object group, the search and the chosen shop. */
+export function objectGroupBase(ctx: ViewContext): ClassifiedPosting[] {
+  return within(ctx.shown, ctx.chosen ?? ctx.timeline.period).filter((p) => inAmount(p, ctx.state.amount));
+}
+
 /** Alle posteringer's postings before the search and the chosen shop. */
 export function searchBase(ctx: ViewContext): ClassifiedPosting[] {
-  return within(ctx.shown, ctx.chosen ?? ctx.timeline.period).filter((p) => inAmount(p, ctx.state.amount));
+  const group = ctx.state.objectGroup;
+  const base = objectGroupBase(ctx);
+  return group === null ? base : base.filter((p) => p.subscription?.objectGroup === group);
 }
 
 export function filteredPostings(ctx: ViewContext): ClassifiedPosting[] {
