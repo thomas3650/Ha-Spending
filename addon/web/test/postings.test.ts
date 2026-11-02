@@ -254,4 +254,55 @@ describe("the postings list", () => {
       ...Array<string>(10).fill("false"),
     ]);
   });
+
+  describe("the object-group mark", () => {
+    const sep20 = tableDate("2026-09-20");
+    const sep22 = tableDate("2026-09-22");
+
+    function rowOf(el: HTMLElement, date: string): HTMLElement {
+      const row = getAllByRole(el, "row").find((r) => queryByRole(r, "cell", { name: date }));
+      if (!row) throw new Error(`no row ${date}`);
+      return row;
+    }
+
+    async function openAll(el: HTMLElement) {
+      for (const b of groupButtons(el)) {
+        if (b.getAttribute("aria-expanded") === "false") fireEvent.click(b);
+      }
+      await (el as unknown as { updateComplete: Promise<boolean> }).updateComplete;
+    }
+
+    it("marks a posting linked to a bill", async () => {
+      const el = await render(listOf());
+      const row = rowOf(el, sep20);
+      expect(row.textContent).toContain("Abonnementer");
+      expect(row.textContent).toContain("Pizzaabonnement");
+      expect(queryByRole(row, "cell", { name: /Abonnementer\s*,\s*Pizzaabonnement/ })).not.toBeNull();
+    });
+
+    it("keeps the posting's link name", async () => {
+      const el = await render(listOf());
+      expect(getByRole(rowOf(el, sep20), "link", { name: "Pizzeria Roma" }).getAttribute("href")).toMatch(
+        /^http:\/\/firefly\.test\/transactions\/show\//,
+      );
+    });
+
+    it("does not mark an unlinked posting", async () => {
+      const el = await render(listOf());
+      expect(rowOf(el, sep22).textContent).not.toContain("Abonnementer");
+    });
+
+    it("marks it at another grouping", async () => {
+      const el = await render(listOf({ grouping: "week" }), { grouping: "week" });
+      await openAll(el);
+      expect(rowOf(el, sep20).textContent).toContain("Abonnementer");
+    });
+
+    it("marks it in a search's matches", async () => {
+      const el = await render(listOf({ search: "pizzeria" }));
+      await openAll(el);
+      expect(rowOf(el, sep20).textContent).toContain("Pizzaabonnement");
+      expect(rowOf(el, sep22).textContent).not.toContain("Abonnementer");
+    });
+  });
 });

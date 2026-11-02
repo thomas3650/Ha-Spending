@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from "vitest";
 import { createApp } from "../src/app";
 import { createFireflyClient, type FetchLike, type FireflyClient } from "../src/firefly/client";
 import { readSpendingData } from "../src/firefly/read";
-import { keepSubscriptions, type RawSubscription, readSubscriptions } from "../src/firefly/subscriptions";
+import { keepSubscriptions, type RawSubscription, readSubscriptions, subscriptionLinks } from "../src/firefly/subscriptions";
 import type { WireBill, WirePaidDate, WireSplit } from "../src/firefly/wire";
 
 const ingress = { incoming: { socket: { remoteAddress: "172.30.32.2" } } };
@@ -20,8 +20,8 @@ const settings = {
 
 type Wrap = (fetch: FetchLike) => FetchLike;
 
-function setup(wrap: Wrap = (f) => f) {
-  const fake = createFakeFirefly(exampleSeed, { token: "fake-token" });
+function setup(wrap: Wrap = (f) => f, seed: typeof exampleSeed = exampleSeed) {
+  const fake = createFakeFirefly(seed, { token: "fake-token" });
   const client = createFireflyClient({ baseUrl: "http://firefly.test", token: "fake-token", fetch: wrap(fake.fetch) });
   const warn = vi.fn();
   const app = createApp({
@@ -33,8 +33,8 @@ function setup(wrap: Wrap = (f) => f) {
   return { fake, app, warn };
 }
 
-async function answer(wrap?: Wrap) {
-  const { app, warn } = setup(wrap);
+async function answer(wrap?: Wrap, seed?: typeof exampleSeed) {
+  const { app, warn } = setup(wrap, seed);
   const res = await app.request(R1, {}, ingress);
   expect(res.status).toBe(200);
   return { data: (await res.json()) as SpendingData, warn };
@@ -60,7 +60,6 @@ describe("/api/data's subscriptions over the fake Firefly III", () => {
   it("keeps the subscriptions §3 keeps, by name", async () => {
     const { data } = await answer();
     expect(data.subscriptions.map((s) => s.name)).toEqual([
-      "Bilka",
       "Fitness",
       "Husleje",
       "Indboforsikring",
@@ -81,16 +80,48 @@ describe("/api/data's subscriptions over the fake Firefly III", () => {
       end: null,
       amountMin: 800000,
       amountMax: 800000,
+      objectGroup: "Faste udgifter",
       lastPayment: { date: "2025-12-30", amount: 800000, category: "Husleje", account: kontoA },
     });
   });
 
-  it("takes the category and amount of the linked split in a split group", async () => {
+  it("leaves out a bill with no object group", async () => {
     const { data } = await answer();
+    expect(data.subscriptions.map((s) => s.name)).not.toContain("Bilka");
+  });
+
+  it("gives a bill its object group", async () => {
+    const { data } = await answer();
+    expect(data.subscriptions.find((s) => s.name === "Netflix")!.objectGroup).toBe("Abonnementer");
+  });
+
+  it("reads no last payment for a bill with no object group", async () => {
+    const read: string[] = [];
+    const { app, fake } = setup((fetch) => (input, init) => {
+      read.push(pathOf(input));
+      return fetch(input, init);
+    });
+    expect((await app.request(R1, {}, ingress)).status).toBe(200);
+    const bilka = (await billsOf(fake)).find((b) => b.attributes.name === "Bilka")!;
+    const groups = bilka.attributes.paid_dates.map((p) => `/api/v1/transactions/${p.transaction_group_id}`);
+    expect(groups.length).toBeGreaterThan(0);
+    for (const group of groups) expect(read).not.toContain(group);
+  });
+
+  it("takes the category and amount of the linked split in a split group", async () => {
+    const seed = {
+      ...exampleSeed,
+      subscriptions: exampleSeed.subscriptions?.map((s) =>
+        s.name === "Bilka" ? { ...s, objectGroup: "Faste udgifter" } : s,
+      ),
+    };
+    const { data } = await answer(undefined, seed);
+    const kontoA = data.accounts.find((a) => a.name === "Konto A")!.id;
     expect(data.subscriptions.find((s) => s.name === "Bilka")!.lastPayment).toMatchObject({
       date: "2026-01-10",
       amount: 20000,
       category: "Dagligvarer",
+      account: kontoA,
     });
   });
 
@@ -161,11 +192,12 @@ describe("/api/data's subscriptions over the fake Firefly III", () => {
       return fetch(input, init);
     });
     expect((await app.request(R1, {}, ingress)).status).toBe(200);
-    const paid = (await billsOf(fake)).flatMap((b) => {
+    const grouped = (await billsOf(fake)).filter((b) => (b.attributes.object_group_title ?? "").trim() !== "");
+    const paid = grouped.flatMap((b) => {
       const dates = b.attributes.paid_dates;
       return dates.length === 0 ? [] : [`/api/v1/transactions/${dates[dates.length - 1].transaction_group_id}`];
     });
-    expect(paid).toHaveLength(6);
+    expect(paid).toHaveLength(7);
     expect(read.sort()).toEqual(paid.sort());
     expect(most).toBe(5);
   });
@@ -184,6 +216,7 @@ function bill(attributes: Partial<WireBill["attributes"]> = {}): WireBill {
       skip: 0,
       active: true,
       paid_dates: [],
+      object_group_title: "Made-up group",
       ...attributes,
     },
   };
@@ -218,6 +251,7 @@ function split(journal: string, category: string | null): WireSplit {
     category_name: category,
     tags: [],
     notes: null,
+    bill_id: null,
   };
 }
 
@@ -242,10 +276,49 @@ describe("readSubscriptions", () => {
       put: () => Promise.reject(new Error("no write")),
       post: () => Promise.reject(new Error("no write")),
     };
-    const [raw] = await readSubscriptions(client, { pageSize: 50 }, today);
+    const { kept: [raw], bills } = await readSubscriptions(client, { pageSize: 50 }, today);
+    expect(bills).toHaveLength(1);
     expect(raw.lastPaid).toEqual(paid[1]);
     expect(raw.split).toMatchObject({ transaction_journal_id: "302", category_name: "Streaming" });
     expect(asked).toEqual(["bills", "transactions/202"]);
+  });
+});
+
+describe("readSubscriptions and object groups", () => {
+  it("leaves out a bill whose object group is only spaces", async () => {
+    const client: FireflyClient = {
+      get: (path) =>
+        path === "bills"
+          ? Promise.resolve({
+              data: [bill({ object_group_title: "  ", paid_dates: [paidDate("2026-10-05", "201", "301")] })],
+            })
+          : Promise.reject(new Error(`unexpected read ${path}`)),
+      put: () => Promise.reject(new Error("no write")),
+      post: () => Promise.reject(new Error("no write")),
+    };
+    const { kept, bills } = await readSubscriptions(client, { pageSize: 50 }, today);
+    expect(kept).toEqual([]);
+    expect(bills).toHaveLength(1);
+  });
+});
+
+describe("subscriptionLinks", () => {
+  const bills = [
+    { ...bill({ name: "Made-up rent", object_group_title: "Made-up fixed" }), id: "81" },
+    { ...bill({ name: "Made-up shop", object_group_title: null }), id: "82" },
+    { ...bill({ name: "Made-up blank", object_group_title: " " }), id: "83" },
+  ];
+
+  it("links an id to its bill's name and object group", () => {
+    expect(subscriptionLinks(bills)("81")).toEqual({ name: "Made-up rent", objectGroup: "Made-up fixed" });
+  });
+
+  it("gives null for a bill with no object group, an unknown id and a null id", () => {
+    const linkOf = subscriptionLinks(bills);
+    expect(linkOf("82")).toBeNull();
+    expect(linkOf("83")).toBeNull();
+    expect(linkOf("99")).toBeNull();
+    expect(linkOf(null)).toBeNull();
   });
 });
 

@@ -21,6 +21,7 @@ interface Split {
   description: string;
   tags: string[];
   notes: string | null;
+  bill_id: string | null;
 }
 
 interface Group {
@@ -62,12 +63,12 @@ describe("the fake Firefly III", () => {
   it("pages the transactions newest first", async () => {
     const { json } = client();
     const first = await json<Page<Group>>(`${allTransactions}&limit=5&page=1`);
-    expect(first.meta.pagination).toEqual({ total: 18, count: 5, per_page: 5, current_page: 1, total_pages: 4 });
+    expect(first.meta.pagination).toEqual({ total: 20, count: 5, per_page: 5, current_page: 1, total_pages: 4 });
     expect(first.data[0].attributes.transactions[0].date).toBe("2026-09-15T00:00:00+02:00");
 
     const last = await json<Page<Group>>(`${allTransactions}&limit=5&page=4`);
-    expect(last.meta.pagination.count).toBe(3);
-    expect(last.data).toHaveLength(3);
+    expect(last.meta.pagination.count).toBe(5);
+    expect(last.data).toHaveLength(5);
 
     const past = await json<Page<Group>>(`${allTransactions}&limit=5&page=5`);
     expect(past.data).toEqual([]);
@@ -128,7 +129,7 @@ describe("the fake Firefly III", () => {
     const { json } = client(createFakeFirefly(exampleSeed, { maxPerPage: 3 }));
     const page = await json<Page<Group>>(`${allTransactions}&limit=500`);
     expect(page.meta.pagination.per_page).toBe(3);
-    expect(page.meta.pagination.total_pages).toBe(6);
+    expect(page.meta.pagination.total_pages).toBe(7);
   });
 
   it("lists accounts and categories 50 to a page", async () => {
@@ -478,10 +479,10 @@ describe("the fake Firefly III", () => {
   });
 
   it.each([
-    ["withdrawal", 13],
+    ["withdrawal", 15],
     ["deposit", 4],
     ["transfer", 2],
-    ["all", 19],
+    ["all", 21],
   ])("filters the transactions by type %s", async (type, count) => {
     const page = await client().json<Page<Group>>(`transactions?start=1900-01-01&end=2026-12-31&type=${type}`);
     expect(page.data).toHaveLength(count);
@@ -502,6 +503,7 @@ describe("the fake Firefly III", () => {
         repeat_freq: string;
         skip: number;
         active: boolean;
+        object_group_title: string | null;
         paid_dates: { transaction_group_id: string; transaction_journal_id: string; date: string; amount: string }[];
       };
     }
@@ -538,7 +540,7 @@ describe("the fake Firefly III", () => {
       expect(named(page, "Indboforsikring").attributes.paid_dates.map((p) => p.date)).toEqual([
         "2026-09-15T00:00:00+02:00",
       ]);
-      expect(named(page, "Avis").attributes.paid_dates).toEqual([]);
+      expect(named(page, "Avis").attributes.paid_dates.map((p) => p.date)).toEqual(["2026-04-15T00:00:00+02:00"]);
 
       const later = await bills("start=2025-01-01&end=2027-12-31");
       expect(named(later, "Indboforsikring").attributes.paid_dates).toHaveLength(2);
@@ -558,6 +560,23 @@ describe("the fake Firefly III", () => {
           amount: "200.000000000000",
         },
       ]);
+    });
+
+    it("answers a bill's object group, and null when the seed has none", async () => {
+      const page = await bills();
+      expect(named(page, "Netflix").attributes.object_group_title).toBe("Abonnementer");
+      expect(named(page, "Bilka").attributes.object_group_title).toBeNull();
+    });
+
+    it("puts the bill's id on a linked split and null on others", async () => {
+      const { json } = client();
+      const rentBill = named(await bills(), "Husleje");
+      const groups = await allGroups();
+      const rent = byDescription(groups, "Husleje januar");
+      expect(rent.attributes.transactions[0].bill_id).toBe(rentBill.id);
+      expect(byDescription(groups, "Kiosk").attributes.transactions[0].bill_id).toBeNull();
+      const one = await json<{ data: Group }>(`transactions/${rent.id}`);
+      expect(one.data.attributes.transactions[0].bill_id).toBe(rentBill.id);
     });
 
     it("lists an inactive and an ended bill", async () => {

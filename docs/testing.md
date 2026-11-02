@@ -132,3 +132,8 @@ The page's list. Every screenshot is at 1440×960 with the console free of error
     back. Also on Søjler, Forskel and Faste udgifter, at 1440, 1728 and 420 px.
 26. `40-faste-udgifter-grupper`: Faste udgifter at Alt forbrug, grouped by main group with a Kategori column, each
     group's dot the same colour as its part in the circle; then at a main group, grouped by category.
+27. `41-objektgrupper`: Faste udgifter at Alt forbrug and at the main group Abonnementer. Each row carries the pill
+    with its object group's title, and the boxes under the head show one yearly sum per object group. Also at 1440,
+    1728 and 420 px.
+28. `42-posteringer-maerke`: Posteringer and Alle posteringer with marked rows. A posting linked to a bill carries the
+    pill, and its tooltip gives the bill's name. Also at 1440, 1728 and 420 px.

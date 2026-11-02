@@ -289,6 +289,7 @@ describe("normalise", () => {
     const one: Subscription = {
       id: "1",
       name: "Streaming",
+      objectGroup: "Abonnementer",
       repeat: "monthly",
       skip: 0,
       start: "2026-01-05",

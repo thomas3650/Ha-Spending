@@ -32,6 +32,8 @@ export interface WireSplit {
   category_name: string | null;
   tags: string[];
   notes: string | null;
+  /** The bill the split is linked to; null when none. */
+  bill_id: string | null;
 }
 
 export interface WireGroup {
@@ -85,6 +87,7 @@ export interface WireBill {
     active: boolean;
     /** Only the payments within the asked start and end. */
     paid_dates: WirePaidDate[];
+    object_group_title: string | null;
   };
 }
 

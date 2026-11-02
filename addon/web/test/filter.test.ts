@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { matches, shopSuggestions } from "../src/model/filter";
 
 function posting(id: string, text: string, shop: string | null, amount: number): ClassifiedPosting {
-  return { id, groupId: id, date: "2026-01-01", text, account: "1", category: null, kind: "spending", shop, amount, mainGroup: null };
+  return { id, groupId: id, date: "2026-01-01", text, account: "1", category: null, kind: "spending", shop, amount, subscription: null, mainGroup: null };
 }
 
 const p = (text: string, shop: string | null) => posting("a", text, shop, 100);

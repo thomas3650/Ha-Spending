@@ -60,6 +60,7 @@ export async function seedFirefly(baseUrl: string, token: string, data: SeedData
       skip: sub.skip ?? 0,
       active: sub.active ?? true,
       ...(sub.end === undefined ? {} : { end_date: sub.end }),
+      ...(sub.objectGroup === undefined ? {} : { object_group_title: sub.objectGroup }),
       currency_code: "DKK",
     });
   }

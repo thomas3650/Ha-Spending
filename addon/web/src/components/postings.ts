@@ -85,9 +85,15 @@ export class Postings extends LitElement {
     const text = r.href
       ? html`<a href=${r.href} target="_blank" rel="noopener noreferrer">${shown}</a>`
       : shown;
+    const mark =
+      p.subscription === null
+        ? nothing
+        : html` <span class="object-group-mark" title=${p.subscription.name}
+            >${p.subscription.objectGroup}<span class="visually-hidden">, ${p.subscription.name}</span></span
+          >`;
     return html`<tr class="posting">
       <td class="posting-date">${tableDate(p.date)}</td>
-      <td title=${p.shop === null ? nothing : p.text}>${text}</td>
+      <td title=${p.shop === null ? nothing : p.text}>${text}${mark}</td>
       ${this.showCategory
         ? html`<td>
             <span class="posting-dot" aria-hidden="true" style=${styleMap({ background: r.colour })}></span>${r.category}

@@ -23,6 +23,9 @@ function subscription(
   return { name, repeat, start, amountMin, amountMax: amountMin, ...extra };
 }
 
+const FIXED_COSTS = "Faste udgifter";
+const SUBSCRIPTIONS_GROUP = "Abonnementer";
+
 /** The small, hand-made dataset the server's and the integration tests check against. */
 export const exampleSeed: SeedData = {
   accounts: [
@@ -33,17 +36,17 @@ export const exampleSeed: SeedData = {
   otherAccounts: [{ name: "Billån", type: "liabilities", active: true }],
   categories: ["Dagligvarer", "Café", "Husleje", "Brændstof", "Streaming", "Gaver", "Tandlæge", "Indskud", "Opsparing"],
   subscriptions: [
-    subscription("Husleje", "monthly", "2025-01-31", "8000.00"),
-    subscription("Netflix", "monthly", "2025-01-02", "99.00", { amountMax: "129.00" }),
+    subscription("Husleje", "monthly", "2025-01-31", "8000.00", { objectGroup: FIXED_COSTS }),
+    subscription("Netflix", "monthly", "2025-01-02", "99.00", { amountMax: "129.00", objectGroup: SUBSCRIPTIONS_GROUP }),
     subscription("Bilka", "monthly", "2025-01-10", "150.00", { amountMax: "250.00" }),
-    subscription("Opsparingsaftale", "monthly", "2025-01-07", "1000.00"),
-    subscription("Avis", "monthly", "2025-01-15", "199.00", { active: false }),
-    subscription("Fitness", "monthly", "2025-02-01", "299.00", { end: "2026-10-30" }),
-    subscription("Gammel forsikring", "yearly", "2025-03-01", "1200.00", { end: "2026-10-29" }),
-    subscription("Tandforsikring", "yearly", "2026-12-01", "600.00"),
-    subscription("Hver tredje år", "yearly", "2025-05-01", "3000.00", { skip: 2 }),
-    subscription("Billån", "monthly", "2026-08-01", "2500.00"),
-    subscription("Indboforsikring", "quarterly", "2026-09-15", "900.00"),
+    subscription("Opsparingsaftale", "monthly", "2025-01-07", "1000.00", { objectGroup: FIXED_COSTS }),
+    subscription("Avis", "monthly", "2025-01-15", "199.00", { active: false, objectGroup: FIXED_COSTS }),
+    subscription("Fitness", "monthly", "2025-02-01", "299.00", { end: "2026-10-30", objectGroup: SUBSCRIPTIONS_GROUP }),
+    subscription("Gammel forsikring", "yearly", "2025-03-01", "1200.00", { end: "2026-10-29", objectGroup: FIXED_COSTS }),
+    subscription("Tandforsikring", "yearly", "2026-12-01", "600.00", { objectGroup: FIXED_COSTS }),
+    subscription("Hver tredje år", "yearly", "2025-05-01", "3000.00", { skip: 2, objectGroup: FIXED_COSTS }),
+    subscription("Billån", "monthly", "2026-08-01", "2500.00", { objectGroup: FIXED_COSTS }),
+    subscription("Indboforsikring", "quarterly", "2026-09-15", "900.00", { objectGroup: FIXED_COSTS }),
   ],
   ruleGroups: [
     {
@@ -120,5 +123,10 @@ export const exampleSeed: SeedData = {
     // Older than every withdrawal and deposit: the earliest posting date must pass it by.
     one({ type: "transfer", date: "2024-11-20", amount: "1000.00", description: "Første overførsel",
       source: "Konto A", destination: "Konto B" }),
+    one({ type: "withdrawal", date: "2026-04-15", amount: "199.00", description: "Avis april",
+      source: "Konto A", destination: "Avisforlaget", category: "Streaming", subscription: "Avis" }),
+    one({ type: "withdrawal", date: "2026-03-02", amount: "1200.00", description: "Gammel forsikring marts",
+      source: "Konto A", destination: "Forsikringsselskabet", category: "Husleje",
+      subscription: "Gammel forsikring" }),
   ],
 };

@@ -35,8 +35,13 @@ function text(el: HTMLElement): string {
   return (el.textContent ?? "").replace(/\s+/g, " ").trim();
 }
 
+/** The name cell read without the object group's pill, which the fixture names Faste udgifter or Abonnementer. */
+function nameCell(r: HTMLElement): string {
+  return text(within(r).getAllByRole("cell")[0]).replace(/ (Faste udgifter|Abonnementer)/, "");
+}
+
 function fixedCostName(r: HTMLElement): string {
-  return text(within(r).getAllByRole("cell")[0]).replace(/ næste .*$/, "");
+  return nameCell(r).replace(/ næste .*$/, "");
 }
 
 function rowNames(region: HTMLElement): string[] {
@@ -74,7 +79,7 @@ function cells(region: HTMLElement, name: string): string[] {
   return within(row(region, name))
     .getAllByRole("cell")
     .filter((_, i) => i !== column)
-    .map(text);
+    .map((c, i) => (i === 0 ? nameCell(row(region, name)) : text(c)));
 }
 
 function categoryOf(region: HTMLElement, name: string): string {
@@ -90,8 +95,7 @@ describe("the subscriptions key number", () => {
 
     fireEvent.click(button);
     await settle(app);
-    const region = card(root, "Faste udgifter");
-    getByText(region, "106.968 kr. om året");
+    card(root, "Faste udgifter");
     expect(keyNumber(root).getAttribute("aria-pressed")).toBe("true");
     expect(getByRole(viewSwitch(root), "button", { name: "Faste udgifter" }).getAttribute("aria-pressed")).toBe("true");
     expect(location.hash).toBe("#card=subscriptions");
@@ -245,6 +249,56 @@ describe("the subscriptions card", () => {
     getByText(region, "Ingen faste udgifter i Bil");
     expect(queryByRole(region, "table")).toBeNull();
     getByRole(root, "button", { name: `${KEY_LABEL} 0 kr. 0 faste udgifter` });
+  });
+});
+
+describe("the object groups in the card", () => {
+  function sums(region: HTMLElement, title = "Faste udgifter"): string[] {
+    return getAllByRole(getByRole(region, "list", { name: title }), "listitem").map(text);
+  }
+
+  it("marks each fixed cost with its object group", async () => {
+    const { root } = await mountWith("card=subscriptions");
+    const region = card(root, "Faste udgifter");
+    expect(text(row(region, "Streaming"))).toContain("Abonnementer");
+    expect(text(row(region, "Husleje"))).toContain("Faste udgifter");
+  });
+
+  it("keeps the fixed cost's name as its link's name", async () => {
+    const { root } = await mountWith("card=subscriptions");
+    getByRole(card(root, "Faste udgifter"), "link", { name: "Husleje" });
+  });
+
+  it("shows a yearly sum per object group, biggest first", async () => {
+    const { root } = await mountWith("card=subscriptions");
+    expect(sums(card(root, "Faste udgifter"))).toEqual([
+      "Faste udgifter 105.600 kr. om året",
+      "Abonnementer 1.368 kr. om året",
+    ]);
+  });
+
+  it("has no single sum in the card's head", async () => {
+    const { root } = await mountWith("card=subscriptions");
+    expect(within(card(root, "Faste udgifter")).queryByText("106.968 kr. om året")).toBeNull();
+  });
+
+  it("shows one box at a main group with one object group", async () => {
+    const { root } = await mountWith("group=Bolig&card=subscriptions");
+    expect(sums(card(root, "Faste udgifter i Bolig"), "Faste udgifter i Bolig")).toEqual(["Faste udgifter 99.600 kr. om året"]);
+  });
+
+  it("shows no box when no fixed cost is shown", async () => {
+    const { root } = await mountWith("accounts=1&group=Bil&card=subscriptions");
+    const region = card(root, "Faste udgifter i Bil");
+    expect(text(region)).not.toContain("om året");
+  });
+
+  it("drops a box when its bills are on another account", async () => {
+    const one = await mountWith("accounts=1&card=subscriptions");
+    expect(sums(card(one.root, "Faste udgifter"))).toEqual(["Faste udgifter 100.800 kr. om året"]);
+    unmount();
+    const two = await mountWith("accounts=2&card=subscriptions");
+    expect(sums(card(two.root, "Faste udgifter"))).toHaveLength(2);
   });
 });
 

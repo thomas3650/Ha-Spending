@@ -2,7 +2,7 @@ import { type Account, type Category, compareKeys, type Period, type SpendingDat
 import { type FireflyClient, FireflyError, getAllPages } from "./client";
 import { findRuleGroup, mapCategories } from "./main-groups";
 import { toPostings } from "./normalise";
-import { keepSubscriptions, readSubscriptions } from "./subscriptions";
+import { keepSubscriptions, readSubscriptions, subscriptionLinks } from "./subscriptions";
 import { ASSET, type WireAbout, type WireAccount, type WireCategory, type WireGroup, type WirePage, type WireRule,
   type WireRuleGroup } from "./wire";
 
@@ -96,8 +96,8 @@ export async function readSpendingData(
   const mainGroupOf = (category: string | null) =>
     category === null ? null : (mainGroups.mapping.get(category) ?? null);
   const excluded = new Set(settings.excludedMainGroups);
-  const postings = toPostings(groups, mainGroupOf, excluded);
-  const subscriptions = keepSubscriptions(rawSubscriptions, mainGroupOf, excluded, context.today, context.warn);
+  const postings = toPostings(groups, mainGroupOf, excluded, subscriptionLinks(rawSubscriptions.bills));
+  const subscriptions = keepSubscriptions(rawSubscriptions.kept, mainGroupOf, excluded, context.today, context.warn);
 
   const accounts = new Map<string, Account>(listed.map((a) => [a.id, { id: a.id, name: a.attributes.name }]));
   const names = assetNames(groups);

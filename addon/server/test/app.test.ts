@@ -40,6 +40,7 @@ const D: SpendingData = {
       kind: "spending",
       shop: "Made-up shop",
       amount: 12345,
+      subscription: null,
     },
   ],
   accounts: [{ id: "a1", name: "Account A" }],

@@ -32,8 +32,8 @@ describe("readSpendingData", () => {
     expect(d.range).toEqual(R1);
     expect(d.today).toBe(today);
     expect(d.fireflyLinkUrl).toBeNull();
-    expect(d.postings).toHaveLength(13);
-    expect(sum(d.postings)).toBe(1059958);
+    expect(d.postings).toHaveLength(15);
+    expect(sum(d.postings)).toBe(1199858);
     expect(d.earliestPostingDate).toBe("2025-12-03");
     expect(d.accounts.map((a) => a.name)).toEqual(["Konto A", "Konto B", "Konto C"]);
     expect(d.categories).toEqual([
@@ -61,9 +61,9 @@ describe("readSpendingData", () => {
     const d = await readSpendingData(clientOf(), settings, R1, { today, warn: () => {} });
     const classified = classify(d.postings, d.categories);
     expect(parts(classified, { kind: "all" })).toEqual([
-      { key: "Abonnementer", amount: 12900 },
+      { key: "Abonnementer", amount: 32800 },
       { key: "Bil", amount: 55000 },
-      { key: "Bolig", amount: 800000 },
+      { key: "Bolig", amount: 920000 },
       { key: "Mad", amount: 172558 },
       { key: null, amount: 19500 },
     ]);
@@ -81,7 +81,7 @@ describe("readSpendingData", () => {
       const name = byAccount.get(p.account)!;
       sums[name] = (sums[name] ?? 0) + p.amount;
     }
-    expect(sums).toEqual({ "Konto A": 897125, "Konto B": 129500, "Konto C": 33333 });
+    expect(sums).toEqual({ "Konto A": 1037025, "Konto B": 129500, "Konto C": 33333 });
   });
 
   it("adds an account Firefly III leaves out of the list", async () => {

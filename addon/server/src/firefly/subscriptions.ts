@@ -1,4 +1,4 @@
-import { addDays, compareKeys, gapMonths, MAX_GAP_MONTHS, PAYMENTS_PER_YEAR, type Repeat,
+import { addDays, compareKeys, gapMonths, MAX_GAP_MONTHS, type Posting, PAYMENTS_PER_YEAR, type Repeat,
   type Subscription } from "@ha-spending/shared";
 import { toOre } from "./amount";
 import { type FireflyClient, FireflyError, getAllPages } from "./client";
@@ -15,6 +15,21 @@ const PAID_WINDOW_DAYS = 760;
 const GROUP_READS_AT_ONCE = 5;
 
 const day = (date: string) => date.slice(0, 10);
+
+/** A bill with no object group, or a blank one, is not a subscription the page shows. */
+function objectGroupOf(bill: WireBill): string | null {
+  const title = bill.attributes.object_group_title;
+  return typeof title === "string" && title.trim() !== "" ? title : null;
+}
+
+export function subscriptionLinks(bills: WireBill[]): (id: string | null) => Posting["subscription"] {
+  const links = new Map<string, NonNullable<Posting["subscription"]>>();
+  for (const bill of bills) {
+    const objectGroup = objectGroupOf(bill);
+    if (objectGroup !== null) links.set(bill.id, { name: bill.attributes.name, objectGroup });
+  }
+  return (id) => (id === null ? null : (links.get(id) ?? null));
+}
 
 function latestPaid(bill: WireBill, today: string): WirePaidDate | null {
   let latest: WirePaidDate | null = null;
@@ -42,10 +57,11 @@ export async function readSubscriptions(
   settings: { pageSize: number },
   today: string,
   signal?: AbortSignal,
-): Promise<RawSubscription[]> {
+): Promise<{ kept: RawSubscription[]; bills: WireBill[] }> {
   const query = { start: addDays(today, -PAID_WINDOW_DAYS), end: today };
   const bills = await getAllPages<WireBill>(client, "bills", query, settings.pageSize, signal);
-  return eachLimited(bills, GROUP_READS_AT_ONCE, async (bill) => {
+  const grouped = bills.filter((bill) => objectGroupOf(bill) !== null);
+  const kept = await eachLimited(grouped, GROUP_READS_AT_ONCE, async (bill) => {
     const lastPaid = latestPaid(bill, today);
     if (lastPaid === null) return { bill, lastPaid, split: null };
     const path = `transactions/${encodeURIComponent(lastPaid.transaction_group_id)}`;
@@ -55,6 +71,7 @@ export async function readSubscriptions(
     );
     return { bill, lastPaid, split: split ?? null };
   });
+  return { kept, bills };
 }
 
 const isRepeat = (value: string): value is Repeat => Object.hasOwn(PAYMENTS_PER_YEAR, value);
@@ -69,7 +86,8 @@ export function keepSubscriptions(
   const kept: Subscription[] = [];
   for (const { bill, lastPaid, split } of raw) {
     const a = bill.attributes;
-    if (!a.active) continue;
+    const objectGroup = objectGroupOf(bill);
+    if (objectGroup === null || !a.active) continue;
     const end = a.end_date === null ? null : day(a.end_date);
     if (end !== null && end < today) continue;
     const repeat = a.repeat_freq;
@@ -105,6 +123,7 @@ export function keepSubscriptions(
       end,
       amountMin: toOre(a.amount_min),
       amountMax: toOre(a.amount_max),
+      objectGroup,
       lastPayment,
     });
   }

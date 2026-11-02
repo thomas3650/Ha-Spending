@@ -34,6 +34,10 @@ const POSTINGS: Posting[] = rows.map(([category, text, amount, account, date], i
   shop: text === "Husleje" || text === "Kiosken" ? null : text,
   kind: amount < 0 ? "refund" : "spending",
   amount,
+  subscription:
+    text === "Pizzeria Roma" && date === "2026-09-20"
+      ? { name: "Pizzaabonnement", objectGroup: "Abonnementer" }
+      : null,
 }));
 
 export function answerFor(range: Period, today = "2026-10-30"): SpendingData {
@@ -66,6 +70,7 @@ export const SUBSCRIPTIONS: Subscription[] = [
   {
     id: "b1",
     name: "Husleje",
+    objectGroup: "Faste udgifter",
     repeat: "monthly",
     skip: 0,
     start: "2025-01-01",
@@ -77,6 +82,7 @@ export const SUBSCRIPTIONS: Subscription[] = [
   {
     id: "b2",
     name: "Streaming",
+    objectGroup: "Abonnementer",
     repeat: "monthly",
     skip: 0,
     start: "2025-01-15",
@@ -88,6 +94,7 @@ export const SUBSCRIPTIONS: Subscription[] = [
   {
     id: "b3",
     name: "Indboforsikring",
+    objectGroup: "Faste udgifter",
     repeat: "quarterly",
     skip: 0,
     start: "2025-01-05",
@@ -99,6 +106,7 @@ export const SUBSCRIPTIONS: Subscription[] = [
   {
     id: "b4",
     name: "Bilforsikring",
+    objectGroup: "Faste udgifter",
     repeat: "yearly",
     skip: 0,
     start: "2025-03-01",
@@ -110,6 +118,7 @@ export const SUBSCRIPTIONS: Subscription[] = [
   {
     id: "b5",
     name: "Avis",
+    objectGroup: "Faste udgifter",
     repeat: "monthly",
     skip: 1,
     start: "2026-11-20",

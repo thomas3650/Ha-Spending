@@ -14,7 +14,7 @@ import { barItems, categoryColours, circleItems, circleSpan, circleTotal, partCo
 import { levelName, partName, type ViewContext } from "../model/context";
 import { matches, shopSuggestions } from "../model/filter";
 import { groupedPostings } from "../model/postings";
-import { subscriptionsYear, subscriptionTable } from "../model/subscriptions";
+import { subscriptionTable } from "../model/subscriptions";
 import type { Card } from "../state/view";
 
 const LEFT_TITLE = "hs-left-title";
@@ -196,9 +196,6 @@ export class Overview extends LitElement {
           <h2 id=${RIGHT_TITLE}>${title}</h2>
           ${this.chips()}
         </div>
-        ${card === "subscriptions"
-          ? html`<span class="half-sum">${da.perYear(kr(subscriptionsYear(ctx)))}</span>`
-          : nothing}
         <div class="card-tools">
           <div class="card-switch" role="group" aria-label=${da.view}>
             ${this.switchButton("bars", da.bars)} ${this.switchButton("postings", da.postings)}
