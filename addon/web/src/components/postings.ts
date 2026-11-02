@@ -1,9 +1,12 @@
 import type { Grouping } from "@ha-spending/shared";
 import { css, html, LitElement, nothing, type PropertyValues } from "lit";
 import { styleMap } from "lit/directives/style-map.js";
+import { fire } from "./chip";
+import { sortHeader } from "./sort-header";
 import { count, postingAmount, tableDate } from "../format";
 import { da } from "../i18n/da";
 import type { PostingGroup, PostingList, PostingRow } from "../model/postings";
+import { DEFAULT_STATE, type PostingColumn, type Sort } from "../state/view";
 
 const GROUPS_STEP = 12;
 const ROWS_STEP = 100;
@@ -16,7 +19,8 @@ function resetKey(list: PostingList, query: string, shop: string | null): string
 
 /**
  * Posteringer's table (UI spec §4.2): one `<tbody>` per unit with a group line that folds it in and out, or one flat
- * list. Folding and showing more are kept here, not in the view state (D20).
+ * list. Folding and showing more are kept here, not in the view state (D20). A header click fires `posting-sort`
+ * with its column; the owner keeps the sort.
  */
 export class Postings extends LitElement {
   static override properties = {
@@ -25,6 +29,7 @@ export class Postings extends LitElement {
     shop: { attribute: false },
     showCategory: { attribute: false },
     grouping: { attribute: false },
+    sort: { attribute: false },
     toggled: { state: true },
     shown: { state: true },
   };
@@ -34,6 +39,7 @@ export class Postings extends LitElement {
   declare shop: string | null;
   declare showCategory: boolean;
   declare grouping: Grouping;
+  declare sort: Sort;
   /** The groups folded the other way from how they start. */
   declare private toggled: ReadonlySet<string>;
   /** Groups, or rows of a flat list. */
@@ -47,6 +53,7 @@ export class Postings extends LitElement {
     this.shop = null;
     this.showCategory = false;
     this.grouping = "month";
+    this.sort = DEFAULT_STATE.sort;
     this.toggled = new Set();
     this.shown = 0;
   }
@@ -133,13 +140,13 @@ export class Postings extends LitElement {
 
   override render() {
     const list = this.list;
+    const th = (column: PostingColumn, label: string, className?: string) =>
+      sortHeader(column, label, this.sort, (c) => fire(this, "posting-sort", c), className);
     const head = html`<thead>
       <tr>
-        <th scope="col">${da.columns.unitAndDate(this.grouping)}</th>
-        <th scope="col">${da.columns.text}</th>
-        ${this.showCategory ? html`<th scope="col">${da.columns.category}</th>` : nothing}
-        <th scope="col">${da.columns.account}</th>
-        <th scope="col" class="posting-amount">${da.columns.amount}</th>
+        ${th("date", da.columns.unitAndDate(this.grouping))} ${th("text", da.columns.text)}
+        ${this.showCategory ? th("category", da.columns.category) : nothing} ${th("account", da.columns.account)}
+        ${th("amount", da.columns.amount, "posting-amount")}
       </tr>
     </thead>`;
     if (list.kind === "grouped") {

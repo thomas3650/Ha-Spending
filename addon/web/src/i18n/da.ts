@@ -1,5 +1,4 @@
 import type { Grouping, Preset, Repeat } from "@ha-spending/shared";
-import type { Sort } from "../state/view";
 
 interface GroupingTexts {
   label: string;
@@ -140,13 +139,6 @@ export const da = {
   shopChip: (name: string) => `Butik: ${name}`,
   shopOption: (name: string, sum: string) => `${name}, ${sum}`,
   suggestions: "Butikker",
-  sort: "Sortér",
-  sorts: {
-    newest: "Nyeste først",
-    oldest: "Ældste først",
-    largest: "Største først",
-    smallest: "Mindste først",
-  } satisfies Record<Sort, string>,
   addFilter: "+ Filter",
   mainGroupChip: (name: string) => `Hovedgruppe: ${name}`,
   categoryChip: (name: string) => `Kategori: ${name}`,

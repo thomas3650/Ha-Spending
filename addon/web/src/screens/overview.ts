@@ -13,9 +13,9 @@ import { da } from "../i18n/da";
 import { barItems, categoryColours, circleItems, circleSpan, circleTotal, partColours } from "../model/circle";
 import { levelName, partName, type ViewContext } from "../model/context";
 import { matches, shopSuggestions } from "../model/filter";
-import { groupedPostings } from "../model/postings";
+import { postingList } from "../model/postings";
 import { subscriptionTable } from "../model/subscriptions";
-import type { Card } from "../state/view";
+import { type Card, DEFAULT_STATE, type Sort } from "../state/view";
 
 const LEFT_TITLE = "hs-left-title";
 const RIGHT_TITLE = "hs-right-title";
@@ -26,14 +26,17 @@ export class Overview extends LitElement {
   static override properties = {
     ctx: { attribute: false },
     fullScreen: { attribute: false },
+    postingsSort: { attribute: false },
   };
 
   declare ctx: ViewContext;
   declare fullScreen: boolean;
+  declare postingsSort: Sort;
 
   constructor() {
     super();
     this.fullScreen = false;
+    this.postingsSort = DEFAULT_STATE.sort;
   }
 
   protected override createRenderRoot(): HTMLElement {
@@ -117,8 +120,15 @@ export class Overview extends LitElement {
       body = html`<p class="empty">${unfiltered ? da.noSpending : da.noMatch}</p>`;
     }
     else {
-      const list = groupedPostings(postings, chosen === null ? ctx.units : [chosen], ctx, true, categoryColours(ctx));
-      body = html`<hs-postings .list=${list} .query=${search} .shop=${shop} .grouping=${g}></hs-postings>
+      const units = chosen === null ? ctx.units : [chosen];
+      const list = postingList(postings, units, ctx, this.postingsSort, categoryColours(ctx));
+      body = html`<hs-postings
+          .list=${list}
+          .query=${search}
+          .shop=${shop}
+          .grouping=${g}
+          .sort=${this.postingsSort}
+        ></hs-postings>
         <p class="half-foot">${da.postingsHint(g)}</p>`;
     }
     return html`<div class="postings-search-row">

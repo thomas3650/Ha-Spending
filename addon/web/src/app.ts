@@ -16,6 +16,7 @@ import { type CircleSelection, circleStyles } from "./components/circle";
 import { differenceStyles } from "./components/difference";
 import { periodPickerStyles } from "./components/period-picker";
 import { postingsStyles } from "./components/postings";
+import { sortHeaderStyles } from "./components/sort-header";
 import { searchStyles } from "./components/search";
 import { subscriptionsStyles } from "./components/subscriptions";
 import { topCardStyles } from "./components/top-card";
@@ -50,9 +51,13 @@ import {
 import {
   type AmountRange,
   type Card,
+  DEFAULT_STATE,
+  nextSort,
   parseHash,
   type PeriodChoice,
   periodOf,
+  type PostingColumn,
+  postingFirstDescending,
   type Sort,
   toHash,
   type ViewState,
@@ -77,6 +82,7 @@ export class SpendingApp extends LitElement {
     accounts: { state: true },
     earliest: { state: true },
     fullScreen: { state: true },
+    postingsSort: { state: true },
   };
 
   static override styles = [
@@ -93,6 +99,7 @@ export class SpendingApp extends LitElement {
     barsStyles,
     differenceStyles,
     postingsStyles,
+    sortHeaderStyles,
     searchStyles,
     subscriptionsStyles,
     overviewStyles,
@@ -173,6 +180,8 @@ export class SpendingApp extends LitElement {
   declare earliest: string | null | undefined;
   /** A layout setting of this page load, so it stays out of the view state and the hash. */
   declare private fullScreen: boolean;
+  /** The Posteringer card's sort, kept here because the card is made anew when the right card switches (D37). */
+  declare private postingsSort: Sort;
 
   private asked: Period | null = null;
   private request = 0;
@@ -186,6 +195,7 @@ export class SpendingApp extends LitElement {
     this.accounts = null;
     this.earliest = undefined;
     this.fullScreen = false;
+    this.postingsSort = DEFAULT_STATE.sort;
   }
 
   private readonly onHash = (): void => {
@@ -342,6 +352,9 @@ export class SpendingApp extends LitElement {
             <hs-overview
               .ctx=${ctx}
               .fullScreen=${this.fullScreen}
+              .postingsSort=${this.postingsSort}
+              @posting-sort=${(e: CustomEvent<PostingColumn>) =>
+                (this.postingsSort = nextSort(this.postingsSort, e.detail, postingFirstDescending))}
               @full-screen-toggle=${() => (this.fullScreen = !this.fullScreen)}
               @part-click=${(e: CustomEvent<CircleSelection>) => this.push(openPart(this.state, e.detail.key))}
               @unit-click=${(e: CustomEvent<UnitSelection>) => this.push(chooseUnit(this.state, e.detail.fullStart))}

@@ -1,5 +1,17 @@
 import { describe, expect, it } from "vitest";
-import { DEFAULT_STATE, parseHash, periodOf, toHash, type ViewState } from "../src/state/view";
+import {
+  DEFAULT_STATE,
+  nextSort,
+  parseHash,
+  periodOf,
+  postingFirstDescending,
+  sameSort,
+  type Sort,
+  toHash,
+  type ViewState,
+} from "../src/state/view";
+
+const LARGEST: Sort = { column: "amount", descending: true };
 
 describe("the view state's hash", () => {
   it("opens on I år by month with every account", () => {
@@ -19,7 +31,7 @@ describe("the view state's hash", () => {
       screen: "allPostings",
       search: "pizza",
       shop: "Netto",
-      sort: "largest",
+      sort: { column: "amount", descending: true },
       amount: { min: 100, max: null },
     };
     expect(parseHash("#" + toHash(s))).toEqual(s);
@@ -66,7 +78,7 @@ describe("the view state's hash", () => {
     expect(parseHash("category=Café").level).toEqual({ kind: "all" });
     expect(parseHash("unit=2026-13-01").unit).toBeNull();
     expect(parseHash("card=pie").card).toBe(DEFAULT_STATE.card);
-    expect(parseHash("view=all-postings&sort=random").sort).toBe(DEFAULT_STATE.sort);
+    expect(parseHash("view=all-postings&sort=random").sort).toEqual(DEFAULT_STATE.sort);
     expect(parseHash("view=all-postings&min=500&max=100").amount).toBeNull();
     expect(parseHash("view=all-postings&min=-5").amount).toBeNull();
     expect(parseHash("view=all-postings&min=1.5&max=10").amount).toEqual({ min: null, max: 10 });
@@ -90,20 +102,20 @@ describe("the view state's hash", () => {
   });
 
   it("writes the shop right after the search and before the sort", () => {
-    const s: ViewState = { ...DEFAULT_STATE, screen: "allPostings", search: "rema", shop: "Netto", sort: "largest" };
+    const s: ViewState = { ...DEFAULT_STATE, screen: "allPostings", search: "rema", shop: "Netto", sort: LARGEST };
     expect(toHash(s)).toBe("view=all-postings&q=rema&shop=Netto&sort=largest");
   });
 
   it("writes the keys of Alle posteringer in a fixed order", () => {
-    const s: ViewState = { ...DEFAULT_STATE, screen: "allPostings", search: "rema", sort: "largest", card: "postings" };
+    const s: ViewState = { ...DEFAULT_STATE, screen: "allPostings", search: "rema", sort: LARGEST, card: "postings" };
     expect(toHash(s)).toBe("card=postings&view=all-postings&q=rema&sort=largest");
   });
 
   it("reads the sort and amount only on Alle posteringer", () => {
     const s = parseHash("q=rema&sort=largest&min=5&card=postings");
-    expect(s.sort).toBe("newest");
+    expect(s.sort).toEqual(DEFAULT_STATE.sort);
     expect(s.amount).toBeNull();
-    expect(toHash({ ...DEFAULT_STATE, sort: "largest" })).toBe("");
+    expect(toHash({ ...DEFAULT_STATE, sort: LARGEST })).toBe("");
   });
 
   it("tells no accounts from all accounts", () => {
@@ -123,6 +135,61 @@ describe("the view state's hash", () => {
     const s: ViewState = { ...DEFAULT_STATE, level: { kind: "mainGroup", mainGroup: "Børn & unge" } };
     expect(parseHash(toHash(s)).level).toEqual(s.level);
     expect(parseHash("#" + toHash(s)).level).toEqual(s.level);
+  });
+});
+
+describe("the postings' sort in the hash", () => {
+  const all = (sort: Sort): ViewState => ({ ...DEFAULT_STATE, screen: "allPostings", sort });
+  const sortIn = (hash: string) => new URLSearchParams(hash).get("sort");
+
+  it("reads the old sort names", () => {
+    const named: [string, Sort][] = [
+      ["newest", { column: "date", descending: true }],
+      ["oldest", { column: "date", descending: false }],
+      ["largest", { column: "amount", descending: true }],
+      ["smallest", { column: "amount", descending: false }],
+    ];
+    for (const [name, sort] of named) {
+      const s = parseHash(`view=all-postings&sort=${name}`);
+      expect(s.sort).toEqual(sort);
+      expect(sortIn(toHash(s))).toBe(name === "newest" ? null : name);
+    }
+  });
+
+  it("round-trips a text column's sort", () => {
+    const s = parseHash("view=all-postings&sort=account-desc");
+    expect(s.sort).toEqual({ column: "account", descending: true });
+    expect(toHash(s)).toBe("view=all-postings&sort=account-desc");
+    for (const column of ["text", "category", "account"] as const) {
+      for (const descending of [false, true]) {
+        expect(parseHash(toHash(all({ column, descending }))).sort).toEqual({ column, descending });
+      }
+    }
+  });
+
+  it("falls back on an unknown sort", () => {
+    expect(parseHash("view=all-postings&sort=price").sort).toEqual(DEFAULT_STATE.sort);
+    expect(parseHash("view=all-postings&sort=date-asc").sort).toEqual(DEFAULT_STATE.sort);
+  });
+
+  it("a default sort made anew writes no sort", () => {
+    expect(toHash(all({ column: "date", descending: true }))).toBe("view=all-postings");
+  });
+});
+
+describe("the next sort", () => {
+  it("turns the sorted column around and starts another in its first direction", () => {
+    const byDate: Sort = { column: "date", descending: true };
+    expect(nextSort(byDate, "date", postingFirstDescending)).toEqual({ column: "date", descending: false });
+    expect(nextSort(byDate, "amount", postingFirstDescending)).toEqual({ column: "amount", descending: true });
+    expect(nextSort(byDate, "text", postingFirstDescending)).toEqual({ column: "text", descending: false });
+    expect(nextSort(LARGEST, "date", postingFirstDescending)).toEqual(byDate);
+  });
+
+  it("compares sorts by what they say", () => {
+    expect(sameSort(LARGEST, { column: "amount", descending: true })).toBe(true);
+    expect(sameSort(LARGEST, { column: "amount", descending: false })).toBe(false);
+    expect(sameSort(LARGEST, { column: "date", descending: true })).toBe(false);
   });
 });
 

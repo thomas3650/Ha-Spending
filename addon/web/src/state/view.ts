@@ -10,7 +10,15 @@ import {
 
 export type PeriodChoice = { preset: Preset } | { preset: "custom"; start: string; end: string };
 export type Card = "bars" | "postings" | "difference" | "subscriptions";
-export type Sort = "newest" | "oldest" | "largest" | "smallest";
+export type PostingColumn = "date" | "text" | "category" | "account" | "amount";
+export type SubscriptionColumn = "name" | "category" | "amount" | "perYear" | "status";
+
+export interface Sorted<C extends string> {
+  column: C;
+  descending: boolean;
+}
+
+export type Sort = Sorted<PostingColumn>;
 
 /** Whole kroner, both bounds included. */
 export interface AmountRange {
@@ -45,17 +53,50 @@ export const DEFAULT_STATE: ViewState = {
   screen: "overview",
   search: "",
   shop: null,
-  sort: "newest",
+  sort: { column: "date", descending: true },
   amount: null,
 };
 
 const GROUPINGS: readonly Grouping[] = ["day", "week", "month", "quarter", "year"];
 const CARDS: readonly Card[] = ["bars", "postings", "difference", "subscriptions"];
-const SORTS: readonly Sort[] = ["newest", "oldest", "largest", "smallest"];
+/** The four first names keep old links working; the text columns name their direction. */
+const SORT_NAMES: readonly [string, Sort][] = [
+  ["newest", { column: "date", descending: true }],
+  ["oldest", { column: "date", descending: false }],
+  ["largest", { column: "amount", descending: true }],
+  ["smallest", { column: "amount", descending: false }],
+  ...(["text", "category", "account"] as const).flatMap((column): [string, Sort][] => [
+    [`${column}-asc`, { column, descending: false }],
+    [`${column}-desc`, { column, descending: true }],
+  ]),
+];
 const ALL_POSTINGS = "all-postings";
 
 function oneOf<T extends string>(values: readonly T[], value: string | null, fallback: T): T {
   return values.find((v) => v === value) ?? fallback;
+}
+
+export function sameSort<C extends string>(a: Sorted<C>, b: Sorted<C>): boolean {
+  return a.column === b.column && a.descending === b.descending;
+}
+
+/** The same column turns around; another column starts in its first direction. */
+export function nextSort<C extends string>(current: Sorted<C>, column: C, firstDescending: (c: C) => boolean): Sorted<C> {
+  return column === current.column
+    ? { column, descending: !current.descending }
+    : { column, descending: firstDescending(column) };
+}
+
+export function postingFirstDescending(column: PostingColumn): boolean {
+  return column === "date" || column === "amount";
+}
+
+function parseSort(value: string | null): Sort {
+  return SORT_NAMES.find(([name]) => name === value)?.[1] ?? DEFAULT_STATE.sort;
+}
+
+function sortName(sort: Sort): string | undefined {
+  return SORT_NAMES.find(([, s]) => sameSort(s, sort))?.[0];
 }
 
 function parsePeriod(p: URLSearchParams): PeriodChoice {
@@ -107,7 +148,7 @@ export function parseHash(hash: string): ViewState {
     screen: allPostings ? "allPostings" : "overview",
     search: p.get("q") ?? DEFAULT_STATE.search,
     shop: p.get("shop") || DEFAULT_STATE.shop,
-    sort: allPostings ? oneOf(SORTS, p.get("sort"), DEFAULT_STATE.sort) : DEFAULT_STATE.sort,
+    sort: allPostings ? parseSort(p.get("sort")) : DEFAULT_STATE.sort,
     amount: allPostings ? parseAmount(p) : DEFAULT_STATE.amount,
   };
 }
@@ -132,7 +173,8 @@ export function toHash(s: ViewState): string {
   if (s.search !== "") p.set("q", s.search);
   if (s.shop !== null) p.set("shop", s.shop);
   if (s.screen === "allPostings") {
-    if (s.sort !== DEFAULT_STATE.sort) p.set("sort", s.sort);
+    const sort = sameSort(s.sort, DEFAULT_STATE.sort) ? undefined : sortName(s.sort);
+    if (sort !== undefined) p.set("sort", sort);
     if (s.amount?.min != null) p.set("min", String(s.amount.min));
     if (s.amount?.max != null) p.set("max", String(s.amount.max));
   }

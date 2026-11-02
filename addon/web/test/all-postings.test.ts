@@ -5,7 +5,11 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { amountChip, count, kr, postingAmount, unitName } from "../src/format";
 import type { SpendingApp } from "../src/app";
 import { da } from "../src/i18n/da";
-import { inAmount, sortPostings } from "../src/model/filter";
+import { viewContext } from "../src/model/context";
+import { inAmount } from "../src/model/filter";
+import { postingList } from "../src/model/postings";
+import { DEFAULT_STATE, type Sort } from "../src/state/view";
+import { answerFor } from "./fixture";
 import { mount, settle, unmount } from "./mount";
 
 const TODAY = "2026-10-30";
@@ -27,6 +31,19 @@ function chip(root: HTMLElement, text: string): HTMLElement {
 
 function groupButtons(root: HTMLElement): HTMLElement[] {
   return queryAllByRole(getByRole(root, "table"), "button").filter((b) => b.hasAttribute("aria-expanded"));
+}
+
+function columnHeader(root: HTMLElement, name: string): HTMLElement {
+  return getByRole(getAllByRole(getByRole(root, "table"), "row")[0], "columnheader", { name });
+}
+
+async function sortBy(app: SpendingApp, root: HTMLElement, name: string): Promise<void> {
+  fireEvent.click(getByRole(columnHeader(root, name), "button", { name }));
+  await settle(app);
+}
+
+function sortInHash(): string | null {
+  return new URLSearchParams(location.hash.slice(1)).get("sort");
 }
 
 async function openFilter(app: SpendingApp, root: HTMLElement) {
@@ -62,7 +79,7 @@ describe("screen 3, all postings", () => {
 
   it("sorts by size as one flat list", async () => {
     const { root } = await mount(`${CAFE}&sort=largest`);
-    expect((getByRole(root, "combobox", { name: da.sort }) as HTMLSelectElement).value).toBe("largest");
+    expect(columnHeader(root, da.columns.amount).getAttribute("aria-sort")).toBe("descending");
     const table = getByRole(root, "table");
     expect(groupButtons(root)).toEqual([]);
     const rows = getAllByRole(table, "row").slice(1);
@@ -78,16 +95,54 @@ describe("screen 3, all postings", () => {
     ]);
   });
 
-  it("pushes a new sort from the select", async () => {
+  it("there is no Sortér dropdown", async () => {
+    const { root } = await mount(CAFE);
+    expect(queryByRole(root, "combobox", { name: "Sortér" })).toBeNull();
+  });
+
+  it("a header click puts the sort in the hash", async () => {
     const { app, root } = await mount(CAFE);
     const push = vi.spyOn(history, "pushState");
-    const select = getByRole(root, "combobox", { name: da.sort }) as HTMLSelectElement;
-    select.value = "smallest";
-    fireEvent.change(select);
-    await settle(app);
+    await sortBy(app, root, da.columns.amount);
     expect(push).toHaveBeenCalledTimes(1);
-    expect(new URLSearchParams(location.hash.slice(1)).get("sort")).toBe("smallest");
+    expect(sortInHash()).toBe("largest");
     expect(groupButtons(root)).toEqual([]);
+    await sortBy(app, root, da.columns.account);
+    expect(sortInHash()).toBe("account-asc");
+  });
+
+  it("back to the date leaves no sort in the hash", async () => {
+    const { app, root } = await mount(CAFE);
+    await sortBy(app, root, da.columns.amount);
+    await sortBy(app, root, da.columns.unitAndDate("month"));
+    expect(sortInHash()).toBeNull();
+    expect(groupButtons(root).length).toBeGreaterThan(0);
+    expect(columnHeader(root, da.columns.unitAndDate("month")).getAttribute("aria-sort")).toBe("descending");
+  });
+
+  it("an old link with sort=smallest sorts by Beløb, smallest first", async () => {
+    const { root } = await mount(`${CAFE}&sort=smallest`);
+    expect(columnHeader(root, da.columns.amount).getAttribute("aria-sort")).toBe("ascending");
+    expect(groupButtons(root)).toEqual([]);
+    const amounts = getAllByRole(getByRole(root, "table"), "row")
+      .slice(1)
+      .map((row) => getAllByRole(row, "cell").at(-1)?.textContent?.trim());
+    expect(amounts).toEqual([-20000, 31012, 50000, 70000].map(postingAmount));
+  });
+
+  it("a sort keeps what the filters let through", async () => {
+    const { app, root } = await mount("view=all-postings&unit=2026-07-01&q=e&min=100&max=5000");
+    const links = () =>
+      getAllByRole(getByRole(root, "table"), "link")
+        .map((a) => a.textContent?.trim())
+        .sort();
+    summary(root, 3, 620000);
+    const before = links();
+    await sortBy(app, root, da.columns.amount);
+    expect(links()).toEqual(before);
+    expect(before).toEqual(["Boghandlen", "Café Søde", "Netto"]);
+    summary(root, 3, 620000);
+    expect(sortInHash()).toBe("largest");
   });
 
   it("sorts oldest first in groups", async () => {
@@ -244,6 +299,11 @@ function posting(id: string, date: string, amount: number): ClassifiedPosting {
   return { id, groupId: id, date, text: id, account: "1", category: null, kind: "spending", shop: id, amount, subscription: null, mainGroup: null };
 }
 
+function contextFor(postings: ClassifiedPosting[]) {
+  const data = answerFor({ start: "2026-01-01", end: TODAY });
+  return viewContext({ ...data, postings }, DEFAULT_STATE, TODAY);
+}
+
 describe("the filter rules", () => {
   it("keeps an amount within the range in whole kroner, both bounds included", () => {
     expect(inAmount(posting("a", "2026-01-01", 40000), { min: 400, max: 600 })).toBe(true);
@@ -253,13 +313,27 @@ describe("the filter rules", () => {
     expect(inAmount(posting("a", "2026-01-01", -20000), null)).toBe(true);
   });
 
-  it("sorts by date then id, and by amount then the newest date", () => {
+  it("sorts a flat list by a column, ties by the newest date then id", () => {
     const ps = [posting("b", "2026-02-01", 100), posting("a", "2026-02-01", 300), posting("c", "2026-03-01", 100)];
-    const ids = (sorted: ClassifiedPosting[]) => sorted.map((p) => p.id);
-    expect(ids(sortPostings(ps, "newest"))).toEqual(["c", "b", "a"]);
-    expect(ids(sortPostings(ps, "oldest"))).toEqual(["a", "b", "c"]);
-    expect(ids(sortPostings(ps, "largest"))).toEqual(["a", "c", "b"]);
-    expect(ids(sortPostings(ps, "smallest"))).toEqual(["c", "b", "a"]);
+    const ids = (sort: Sort) => {
+      const list = postingList(ps, [], contextFor(ps), sort, new Map());
+      if (list.kind !== "flat") throw new Error("flat expected");
+      return list.rows.map((r) => r.posting.id);
+    };
+    expect(ids({ column: "amount", descending: true })).toEqual(["a", "c", "b"]);
+    expect(ids({ column: "amount", descending: false })).toEqual(["c", "b", "a"]);
+  });
+
+  it("sorts the text the Danish way, A to Å", () => {
+    const ps = [
+      { ...posting("1", "2026-02-01", 100), shop: "Åbutik" },
+      { ...posting("2", "2026-02-01", 100), shop: "Ærø Kro" },
+      { ...posting("3", "2026-02-01", 100), shop: "Zoo" },
+      { ...posting("4", "2026-02-01", 100), shop: null, text: "Bank" },
+    ];
+    const list = postingList(ps, [], contextFor(ps), { column: "text", descending: false }, new Map());
+    if (list.kind !== "flat") throw new Error("flat expected");
+    expect(list.rows.map((r) => r.posting.shop ?? r.posting.text)).toEqual(["Bank", "Zoo", "Ærø Kro", "Åbutik"]);
   });
 
   it("marks a linked posting on Alle posteringer", async () => {
