@@ -1,45 +1,62 @@
 import { css, html, LitElement, nothing } from "lit";
+import { styleMap } from "lit/directives/style-map.js";
+import { count } from "../format";
 import { da } from "../i18n/da";
 import type { KeyCard } from "../model/key-numbers";
 import { fire } from "./chip";
 
-export interface SubscriptionsKey {
-  card: KeyCard;
+export interface ObjectGroupKeys {
+  cards: KeyCard[];
+  /** The household has kept bills, so each card switches the right card to Faste udgifter. */
+  toggle: boolean;
   /** The right card shows Faste udgifter. */
   pressed: boolean;
 }
 
-/**
- * The three key numbers, and Faste udgifter om året as a fourth when there are subscriptions; their placeholder while
- * `cards` is null.
- */
+/** The three key numbers, then one per object group; their placeholder while `cards` is null. */
 export class KeyNumbers extends LitElement {
   static override properties = {
     cards: { attribute: false },
-    subscriptions: { attribute: false },
+    objectGroups: { attribute: false },
   };
 
   declare cards: KeyCard[] | null;
-  declare subscriptions: SubscriptionsKey | null;
+  declare objectGroups: ObjectGroupKeys | null;
 
   constructor() {
     super();
     this.cards = null;
-    this.subscriptions = null;
+    this.objectGroups = null;
   }
 
-  private subscriptionsButton(key: SubscriptionsKey) {
-    const c = key.card;
+  private postingsLine(c: KeyCard) {
+    const p = c.postings;
+    if (p === undefined) return nothing;
+    return p.count === 0
+      ? html`<div class="kpi-link">${count(0)}</div>`
+      : html`<a class="kpi-link" href=${p.href}>${da.postingsLink(count(p.count))}</a>`;
+  }
+
+  private toggleButton(c: KeyCard, pressed: boolean) {
     return html`<button
       type="button"
       class="card kpi kpi-toggle"
-      aria-pressed=${String(key.pressed)}
+      aria-pressed=${String(pressed)}
       @click=${() => fire(this, "subscriptions-toggle")}
     >
       <span class="kpi-label">${c.label}</span>
       <span class="kpi-value">${c.value}</span>
       <span class="kpi-sub">${c.sub}</span>
     </button>`;
+  }
+
+  private plainCard(c: KeyCard) {
+    return html`<div class="card kpi" role="group" aria-label=${c.label}>
+      <div class="kpi-label">${c.label}</div>
+      <div class="kpi-value">${c.value}</div>
+      ${this.postingsLine(c)}
+      <div class="kpi-sub ${c.trend === "up" ? "kpi-up" : ""}">${c.sub}</div>
+    </div>`;
   }
 
   protected override createRenderRoot(): HTMLElement {
@@ -58,16 +75,14 @@ export class KeyNumbers extends LitElement {
         )}
       </div>`;
     }
-    const subscriptions = this.subscriptions;
-    return html`<div class="kpis ${subscriptions === null ? "" : "four"}">
-      ${this.cards.map(
-        (c) => html`<div class="card kpi" role="group" aria-label=${c.label}>
-          <div class="kpi-label">${c.label}</div>
-          <div class="kpi-value">${c.value}</div>
-          <div class="kpi-sub ${c.trend === "up" ? "kpi-up" : ""}">${c.sub}</div>
-        </div>`,
-      )}
-      ${subscriptions === null ? nothing : this.subscriptionsButton(subscriptions)}
+    const groups = this.objectGroups;
+    const extra = groups?.cards ?? [];
+    const columns = Math.min(this.cards.length + extra.length, 5);
+    return html`<div class="kpis ${extra.length === 0 ? "" : "many"}" style=${styleMap({ "--kpi-columns": String(columns) })}>
+      ${this.cards.map((c) => this.plainCard(c))}
+      ${groups === null
+        ? nothing
+        : extra.map((c) => (groups.toggle ? this.toggleButton(c, groups.pressed) : this.plainCard(c)))}
     </div>`;
   }
 }
@@ -78,17 +93,17 @@ export const keyNumbersStyles = css`
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 14px;
   }
-  .kpis.four {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+  .kpis.many {
+    grid-template-columns: repeat(var(--kpi-columns), minmax(0, 1fr));
   }
   @media (max-width: 1023px) {
-    .kpis.four {
+    .kpis.many {
       grid-template-columns: repeat(2, minmax(0, 1fr));
     }
   }
   @media (max-width: 599px) {
     .kpis,
-    .kpis.four {
+    .kpis.many {
       grid-template-columns: minmax(0, 1fr);
     }
   }
@@ -122,6 +137,23 @@ export const keyNumbersStyles = css`
     font-size: 26px;
     margin-top: 4px;
     font-variant-numeric: tabular-nums;
+  }
+  .kpi-link {
+    display: inline-block;
+    font-size: 13px;
+    margin-top: 2px;
+    color: var(--hs-muted);
+  }
+  a.kpi-link {
+    color: var(--hs-accent-text);
+    text-decoration: none;
+  }
+  a.kpi-link:hover {
+    text-decoration: underline;
+  }
+  a.kpi-link:focus-visible {
+    outline: 2px solid var(--hs-accent-text);
+    outline-offset: 2px;
   }
   .kpi-sub {
     color: var(--hs-muted);

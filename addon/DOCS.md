@@ -46,17 +46,27 @@ The page is in Danish and has a light theme. Click a main group to see its categ
 postings. A posting opens in Firefly III only when `firefly_link_url` is set; without it the posting is plain text. If
 the rule group in `main_group_rule_group` does not exist, the page says so.
 
-The overview also shows your Firefly III subscriptions, which the page calls "Faste udgifter": a key number with their
-cost per year, and a card with each subscription's amount, its cost per year and a status, grouped by main group with
-its category. The card needs subscriptions in Firefly III with their postings linked to them, for example by Firefly
-III's rules. A subscription without a payment reads "Forventes" for a few days after a due date, and always when its
-start is in the future; after that it reads "Ikke set". Inactive and ended subscriptions are left out, as are those last
-paid from a liability or into a main group in `excluded_main_groups`.
+The overview also shows your Firefly III subscriptions, which the page calls "Faste udgifter": a key number for each
+object group with its payments in the period, and a card with each subscription's amount, its cost per year and a
+status, grouped by main group with its category. The card needs subscriptions in Firefly III with their postings linked
+to them, for example by Firefly III's rules. A subscription without a payment reads "Forventes" for a few days after a
+due date, and always when its start is in the future; after that it reads "Ikke set". Inactive and ended subscriptions
+are left out, as are those last paid from a liability or into a main group in `excluded_main_groups`.
 
 The card shows only the subscriptions that are in an object group in Firefly III; one with no object group is left
 out. Each row carries its object group's title, and the card shows the cost per year of each object group. A posting
 that is linked to a subscription carries the same mark, with the subscription's name as its tooltip, in the postings
 card and on the page with all postings.
+
+The period menu has the presets, among them "Alt" from your earliest posting to today, and a calendar. Click a start
+day and an end day, or type them in Fra and Til as `3.1.2024`, and press Vis.
+
+Click a column header to sort a table by it; click it again to reverse it. Sorted by date, the postings keep their
+groups; sorted by another column they are one list. The first key number shows how many postings it covers, and
+a click on that count opens the page with all postings.
+
+The key number for an object group shows the payments of that group in the period, with the sum per month and the
+number of subscriptions paid. A click on it shows the card.
 
 The button "Fuld skærm" in the right card's title gives that card the page's whole width; the same button or Escape
 brings the circle and the key numbers back.

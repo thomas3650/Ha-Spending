@@ -7,6 +7,7 @@ import {
   getByRole,
   getByText,
   queryByRole,
+  queryByText,
 } from "@testing-library/dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
@@ -47,7 +48,19 @@ describe("screen 1, all spending", () => {
     ];
     const names = parts.map(([name, amount]) => partLabel(name, amount, share(amount, TOTAL)));
     expect(getAllByRole(card, "button")).toEqual(names.map((name) => getByRole(card, "button", { name })));
-    getByText(card, da.circleHintAll);
+  });
+
+  it("the three help texts are gone", async () => {
+    const { app, root } = await mount("");
+    const texts = [
+      "Klik på et stykke eller et navn for at gå til hovedgruppen.",
+      'Grupperet pr. måned, som "Gruppér pr.".',
+      "klik på en søjle for kun den måned",
+    ];
+    for (const text of texts) expect(queryByText(root, text)).toBeNull();
+    fireEvent.click(getByRole(viewSwitch(root), "button", { name: da.postings }));
+    await settle(app);
+    for (const text of texts) expect(queryByText(root, text)).toBeNull();
   });
 
   it("opens a main group", async () => {
@@ -72,7 +85,6 @@ describe("screen 1, all spending", () => {
     getByRole(card, "heading", { name: da.per("month") });
     expect(barButtons(card)).toHaveLength(10);
     getByText(card, da.average(kr(1159444)));
-    getByText(card, da.barsHint("month"));
     expect(getByRole(viewSwitch(root), "button", { name: da.bars }).getAttribute("aria-pressed")).toBe("true");
     expect(queryByRole(viewSwitch(root), "button", { name: da.difference })).toBeNull();
   });
@@ -169,7 +181,7 @@ describe("the search on Posteringer", () => {
     fireEvent.click(getByRole(viewSwitch(root), "button", { name: da.postings }));
     await settle(app);
     const before = keyNumberTexts(root);
-    expect(before).toHaveLength(3);
+    expect(before).toHaveLength(4);
     expect(before.every((text) => text !== "")).toBe(true);
     await type(app, root, "roma");
     summary(root, 2, 50000);
@@ -417,7 +429,7 @@ describe("the search on Posteringer", () => {
     it("leaves the key numbers and the circle as they are", async () => {
       const { app, root } = await mount("card=postings");
       const before = keyNumberTexts(root);
-      expect(before).toHaveLength(3);
+      expect(before).toHaveLength(4);
       await typeFocused(app, root, "pizz");
       fireEvent.click(getByRole(root, "option", { name: ROMA }));
       await settle(app);

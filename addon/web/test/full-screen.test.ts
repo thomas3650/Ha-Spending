@@ -10,7 +10,7 @@ import { json, mount, type MountOptions, settle, unmount } from "./mount";
 
 afterEach(unmount);
 
-const KEY_LABEL = da.subscriptionsPerYear;
+const KEY_LABEL = da.inPeriod("Faste udgifter");
 const JULY = unitName(unitAt("2026-07-01", "month", "2026-10-30"), "month");
 
 function answerWith(range: Parameters<typeof answerFor>[0]): Response {

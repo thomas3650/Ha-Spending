@@ -9,9 +9,16 @@ import { amountChip, count, kr, unitName } from "../format";
 import { da } from "../i18n/da";
 import { categoryColours } from "../model/circle";
 import { partName, type ViewContext } from "../model/context";
-import { filteredPostings, searchBase, shopSuggestions, sortPostings } from "../model/filter";
-import { flatPostings, groupedPostings } from "../model/postings";
-import { type AmountRange, parseKroner, type Sort, toHash } from "../state/view";
+import { filteredPostings, searchBase, shopSuggestions } from "../model/filter";
+import { postingList } from "../model/postings";
+import {
+  type AmountRange,
+  nextSort,
+  parseKroner,
+  type PostingColumn,
+  postingFirstDescending,
+  toHash,
+} from "../state/view";
 
 export interface CategoryChoice {
   mainGroup: string | null;
@@ -169,16 +176,17 @@ export class AllPostings extends LitElement {
     const ctx = this.ctx;
     const sort = ctx.state.sort;
     if (postings.length === 0) return html`<p class="empty">${da.noMatch}</p>`;
-    const colours = categoryColours(ctx);
-    const list =
-      sort === "largest" || sort === "smallest"
-        ? flatPostings(sortPostings(postings, sort), ctx, colours)
-        : groupedPostings(postings, ctx.units, ctx, sort === "newest", colours);
+    const list = postingList(postings, ctx.units, ctx, sort, categoryColours(ctx));
     return html`<hs-postings
       .list=${list}
       .shop=${ctx.state.shop}
       .showCategory=${true}
       .grouping=${ctx.timeline.grouping}
+      .sort=${sort}
+      @posting-sort=${(e: CustomEvent<PostingColumn>) => {
+        e.stopPropagation();
+        fire(this, "sort-change", nextSort(sort, e.detail, postingFirstDescending));
+      }}
     ></hs-postings>`;
   }
 
@@ -193,19 +201,6 @@ export class AllPostings extends LitElement {
           .shop=${state.shop}
           .suggestions=${shopSuggestions(searchBase(ctx), state.search)}
         ></hs-search>
-        <label class="field">
-          <small>${da.sort}</small>
-          <!-- The options are static so that the value binding finds them when it is first set. -->
-          <select
-            .value=${live(state.sort)}
-            @change=${(e: Event) => fire(this, "sort-change", (e.target as HTMLSelectElement).value as Sort)}
-          >
-            <option value="newest">${da.sorts.newest}</option>
-            <option value="oldest">${da.sorts.oldest}</option>
-            <option value="largest">${da.sorts.largest}</option>
-            <option value="smallest">${da.sorts.smallest}</option>
-          </select>
-        </label>
       </div>
       <div class="all-chips-row">
         <div class="all-chips">

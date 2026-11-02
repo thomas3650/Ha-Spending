@@ -1,5 +1,5 @@
 import { type ClassifiedPosting, type Posting, within } from "@ha-spending/shared";
-import type { AmountRange, Sort } from "../state/view";
+import type { AmountRange } from "../state/view";
 import type { ViewContext } from "./context";
 
 const SUGGESTIONS = 8;
@@ -43,20 +43,6 @@ export function inAmount(p: ClassifiedPosting, range: AmountRange | null): boole
 /** Oldest first, and by id within a day, so the order is stable. */
 export function byDate(a: ClassifiedPosting, b: ClassifiedPosting): number {
   return a.date.localeCompare(b.date) || a.id.localeCompare(b.id);
-}
-
-export function sortPostings(ps: ClassifiedPosting[], sort: Sort): ClassifiedPosting[] {
-  const sorted = [...ps];
-  switch (sort) {
-    case "newest":
-      return sorted.sort((a, b) => byDate(b, a));
-    case "oldest":
-      return sorted.sort(byDate);
-    case "largest":
-      return sorted.sort((a, b) => b.amount - a.amount || byDate(b, a));
-    case "smallest":
-      return sorted.sort((a, b) => a.amount - b.amount || byDate(b, a));
-  }
 }
 
 /** Alle posteringer's postings before the search and the chosen shop. */

@@ -1,5 +1,4 @@
 import type { Grouping, Preset, Repeat } from "@ha-spending/shared";
-import type { Sort } from "../state/view";
 
 interface GroupingTexts {
   label: string;
@@ -28,12 +27,50 @@ export const da = {
     last12Months: "Sidste 12 måneder",
     thisYear: "I år",
     lastYear: "Sidste år",
+    all: "Alt",
   } satisfies Record<Preset, string>,
-  custom: "Vælg periode …",
   customLabel: "Valgt periode",
   from: "Fra",
   to: "Til",
   show: "Vis",
+  datePlaceholder: "dd.mm.åååå",
+  picked: (from: string, to: string | null) => (to === null ? `Startdag ${from}, vælg en slutdag` : `Fra ${from} til ${to}`),
+  /** Vanilla Calendar Pro's locale; the weekdays start on Sunday, as the library wants. */
+  calendarLocale: {
+    months: {
+      long: [
+        "januar",
+        "februar",
+        "marts",
+        "april",
+        "maj",
+        "juni",
+        "juli",
+        "august",
+        "september",
+        "oktober",
+        "november",
+        "december",
+      ],
+      short: ["jan", "feb", "mar", "apr", "maj", "jun", "jul", "aug", "sep", "okt", "nov", "dec"],
+    },
+    weekdays: {
+      long: ["søndag", "mandag", "tirsdag", "onsdag", "torsdag", "fredag", "lørdag"],
+      short: ["sø", "ma", "ti", "on", "to", "fr", "lø"],
+    },
+  },
+  calendar: {
+    application: "Kalender",
+    navigation: "Skift måned og år",
+    arrowNext: { month: "Næste måned", year: "Senere år" },
+    arrowPrev: { month: "Forrige måned", year: "Tidligere år" },
+    month: "Vælg måned, nu:",
+    months: "Måneder",
+    year: "Vælg år, nu:",
+    years: "År",
+    week: "Ugedage",
+    dates: "Dage",
+  },
   groupBy: "Gruppér pr.",
   accounts: "Konti",
   allAccounts: "Alle konti",
@@ -111,8 +148,6 @@ export const da = {
   difference: "Forskel",
   view: "Visning",
   fullScreen: "Fuld skærm",
-  barsHint: (g: Grouping) => `klik på en søjle for kun ${da.groupings[g].definite}`,
-  circleHintAll: "Klik på et stykke eller et navn for at gå til hovedgruppen.",
   circleHintGroup: "Klik på en kategori for kun den.",
   chosenHint: (name: string) => `Klik på det valgte stykke igen, eller på ✕, for hele ${name}.`,
   inProgress: "i gang",
@@ -131,7 +166,6 @@ export const da = {
   showNewer: "Vis nyere",
   showMore: "Vis flere",
   showAll: "Vis alle",
-  postingsHint: (g: Grouping) => `Grupperet pr. ${da.groupings[g].one}, som "Gruppér pr.".`,
   postingOne: "postering",
   postingMany: "posteringer",
   search: 'Søg i butik og tekst, fx "Netto"',
@@ -139,13 +173,6 @@ export const da = {
   shopChip: (name: string) => `Butik: ${name}`,
   shopOption: (name: string, sum: string) => `${name}, ${sum}`,
   suggestions: "Butikker",
-  sort: "Sortér",
-  sorts: {
-    newest: "Nyeste først",
-    oldest: "Ældste først",
-    largest: "Største først",
-    smallest: "Mindste først",
-  } satisfies Record<Sort, string>,
   addFilter: "+ Filter",
   mainGroupChip: (name: string) => `Hovedgruppe: ${name}`,
   categoryChip: (name: string) => `Kategori: ${name}`,
@@ -176,7 +203,10 @@ export const da = {
 
   periodClosed: (label: string, range: string) => `${label} · ${range}`,
 
-  subscriptionsPerYear: "Faste udgifter om året",
+  perMonth: (value: string) => `${value} pr. måned`,
+  billCount: (n: number) => `${n} stk.`,
+  noPayments: "ingen betalinger",
+  postingsLink: (counted: string) => `${counted} →`,
   subscriptionCount: (n: number) => `${n} ${n === 1 ? "fast udgift" : "faste udgifter"}`,
   subscriptions: "Faste udgifter",
   subscriptionsIn: (name: string) => `Faste udgifter i ${name}`,

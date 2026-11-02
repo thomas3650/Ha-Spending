@@ -1,6 +1,6 @@
 import type { SpendingData } from "@ha-spending/shared";
 import { fireEvent, getAllByRole, getByRole, queryAllByRole, queryByRole } from "@testing-library/dom";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import "../src/components/postings";
 import { count, postingAmount, tableDate, unitName } from "../src/format";
@@ -8,7 +8,9 @@ import { da } from "../src/i18n/da";
 import { viewContext } from "../src/model/context";
 import { groupedPostings, linkBase, type PostingList } from "../src/model/postings";
 import { DEFAULT_STATE, type ViewState } from "../src/state/view";
+import type { SpendingApp } from "../src/app";
 import { answerFor, LINK } from "./fixture";
+import { mount, settle, unmount } from "./mount";
 
 const THIS_YEAR = { start: "2026-01-01", end: "2026-10-30" };
 const TODAY = "2026-10-30";
@@ -304,5 +306,158 @@ describe("the postings list", () => {
       expect(rowOf(el, sep20).textContent).toContain("Pizzaabonnement");
       expect(rowOf(el, sep22).textContent).not.toContain("Abonnementer");
     });
+  });
+});
+
+describe("sorting the postings by their headers", () => {
+  afterEach(unmount);
+
+  const CARD = "card=postings";
+
+  function table(root: HTMLElement): HTMLElement {
+    return getByRole(root, "table");
+  }
+
+  function headers(root: HTMLElement): HTMLElement[] {
+    return getAllByRole(getAllByRole(table(root), "row")[0], "columnheader");
+  }
+
+  function header(root: HTMLElement, name: string): HTMLElement {
+    return getByRole(getAllByRole(table(root), "row")[0], "columnheader", { name });
+  }
+
+  function rows(root: HTMLElement): HTMLElement[] {
+    return getAllByRole(table(root), "row")
+      .slice(1)
+      .filter((r) => queryByRole(r, "rowheader") === null);
+  }
+
+  function amounts(root: HTMLElement): (string | undefined)[] {
+    return rows(root).map((r) => getAllByRole(r, "cell").at(-1)?.textContent?.trim());
+  }
+
+  function texts(root: HTMLElement): (string | undefined)[] {
+    return rows(root).map((r) => getByRole(r, "link").textContent?.trim());
+  }
+
+  function distinct(values: (string | undefined)[]): (string | undefined)[] {
+    return values.filter((v, i) => v !== values[i - 1]);
+  }
+
+  async function sortBy(app: SpendingApp, root: HTMLElement, name: string): Promise<void> {
+    fireEvent.click(getByRole(header(root, name), "button", { name }));
+    await settle(app);
+  }
+
+  it("every header is a button and the date is sorted, newest first", async () => {
+    const { root } = await mount(CARD);
+    const all = headers(root);
+    expect(all.map((h) => getByRole(h, "button").textContent?.replace(/[▼▲]/g, "").trim())).toEqual([
+      da.columns.unitAndDate("month"),
+      da.columns.text,
+      da.columns.account,
+      da.columns.amount,
+    ]);
+    expect(all.map((h) => h.getAttribute("aria-sort"))).toEqual(["descending", null, null, null]);
+    getByRole(all[0], "button", { name: da.columns.unitAndDate("month") });
+  });
+
+  it("Beløb sorts one flat list, largest first, and again smallest first", async () => {
+    const { app, root } = await mount(CARD);
+    await sortBy(app, root, da.columns.amount);
+    expect(queryAllByRole(table(root), "rowheader")).toEqual([]);
+    expect(amounts(root)[0]).toBe(postingAmount(800000));
+    expect(getAllByRole(rows(root)[0], "cell")[0].textContent?.trim()).toBe(tableDate("2026-10-01"));
+    expect(header(root, da.columns.amount).getAttribute("aria-sort")).toBe("descending");
+    expect(header(root, da.columns.unitAndDate("month")).hasAttribute("aria-sort")).toBe(false);
+
+    await sortBy(app, root, da.columns.amount);
+    expect(amounts(root)[0]).toBe(postingAmount(-20000));
+    expect(amounts(root).at(-1)).toBe(postingAmount(800000));
+    expect(header(root, da.columns.amount).getAttribute("aria-sort")).toBe("ascending");
+  });
+
+  it("the date gives the groups back", async () => {
+    const { app, root } = await mount(CARD);
+    await sortBy(app, root, da.columns.amount);
+    await sortBy(app, root, da.columns.unitAndDate("month"));
+    expect(queryAllByRole(table(root), "rowheader").length).toBeGreaterThan(0);
+    expect(header(root, da.columns.unitAndDate("month")).getAttribute("aria-sort")).toBe("descending");
+    expect(header(root, da.columns.amount).hasAttribute("aria-sort")).toBe(false);
+  });
+
+  it("Butik / tekst sorts by the shop, or the text without one, A to Å", async () => {
+    const { app, root } = await mount(CARD);
+    await sortBy(app, root, da.columns.text);
+    const order = [
+      "Boghandlen",
+      "Café Søde",
+      "Husleje",
+      "Kiosken",
+      "Netto",
+      "Pizzeria Roma",
+      "Q8",
+      "Shell",
+    ];
+    expect(distinct(texts(root))).toEqual(order);
+    expect(header(root, da.columns.text).getAttribute("aria-sort")).toBe("ascending");
+
+    await sortBy(app, root, da.columns.text);
+    expect(distinct(texts(root))).toEqual([...order].reverse());
+    expect(header(root, da.columns.text).getAttribute("aria-sort")).toBe("descending");
+  });
+
+  it("Uden kategori sorts last both ways", async () => {
+    const { app, root } = await mount("view=all-postings");
+    const category = (r: HTMLElement) => getAllByRole(r, "cell")[2].textContent?.trim();
+    await sortBy(app, root, da.columns.category);
+    expect(distinct(rows(root).map(category))).toEqual([
+      "Brændstof",
+      "Café",
+      "Dagligvarer",
+      "Gaver",
+      "Husleje",
+      da.noCategory,
+    ]);
+    await sortBy(app, root, da.columns.category);
+    expect(distinct(rows(root).map(category))).toEqual([
+      "Husleje",
+      "Gaver",
+      "Dagligvarer",
+      "Café",
+      "Brændstof",
+      da.noCategory,
+    ]);
+  });
+
+  it("the card's sort survives Søjler and back", async () => {
+    const { app, root } = await mount(CARD);
+    await sortBy(app, root, da.columns.amount);
+    const views = getByRole(root, "group", { name: da.view });
+    fireEvent.click(getByRole(views, "button", { name: da.bars }));
+    await settle(app);
+    expect(queryByRole(root, "table")).toBeNull();
+    fireEvent.click(getByRole(views, "button", { name: da.postings }));
+    await settle(app);
+    expect(header(root, da.columns.amount).getAttribute("aria-sort")).toBe("descending");
+    expect(amounts(root)[0]).toBe(postingAmount(800000));
+
+    fireEvent.click(getByRole(root, "button", { name: da.showAll }));
+    await settle(app);
+    fireEvent.click(getByRole(getByRole(root, "navigation", { name: da.trail }), "link", { name: da.allSpending }));
+    await settle(app);
+    fireEvent.click(getByRole(getByRole(root, "group", { name: da.view }), "button", { name: da.postings }));
+    await settle(app);
+    expect(header(root, da.columns.amount).getAttribute("aria-sort")).toBe("descending");
+    expect(amounts(root)[0]).toBe(postingAmount(800000));
+  });
+
+  it("the card's sort is not in the hash", async () => {
+    const { app, root } = await mount(CARD);
+    const push = vi.spyOn(history, "pushState");
+    const before = location.hash;
+    await sortBy(app, root, da.columns.amount);
+    expect(location.hash).toBe(before);
+    expect(push).not.toHaveBeenCalled();
   });
 });

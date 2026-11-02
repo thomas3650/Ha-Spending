@@ -1,6 +1,6 @@
 import type { Subscription } from "@ha-spending/shared";
 import { fireEvent, getAllByRole, getByRole, getByText, queryByRole, within } from "@testing-library/dom";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { da } from "../src/i18n/da";
 import { viewContext } from "../src/model/context";
@@ -11,7 +11,7 @@ import { json, mount, settle, unmount } from "./mount";
 
 afterEach(unmount);
 
-const KEY_LABEL = "Faste udgifter om året";
+const KEY_LABEL = da.inPeriod("Faste udgifter");
 
 function mountWith(hash: string, subscriptions: Subscription[] = SUBSCRIPTIONS, link: string | null = LINK) {
   return mount(hash, {
@@ -61,6 +61,14 @@ function groupRow(region: HTMLElement, name: string): HTMLElement {
   return header.closest("tr") as HTMLElement;
 }
 
+/** The rowgroup that holds the group's header row and its fixed costs. */
+function rowgroupOf(region: HTMLElement, group: string): HTMLElement {
+  const row = groupRow(region, group);
+  const found = getAllByRole(region, "rowgroup").find((g) => g.contains(row));
+  if (!found) throw new Error(`no rowgroup for ${group}`);
+  return found;
+}
+
 function groupNames(region: HTMLElement): string[] {
   return groupHeaders(region).map((h) => text(h).replace(/ \d+ faste? udgifte?r?$/, ""));
 }
@@ -87,11 +95,10 @@ function categoryOf(region: HTMLElement, name: string): string {
 }
 
 describe("the subscriptions key number", () => {
-  it("reads the cost per year of every subscription and opens the card", async () => {
+  it("opens the card from the Faste udgifter key number", async () => {
     const { app, root } = await mountWith("");
     const button = keyNumber(root);
     expect(button.getAttribute("aria-pressed")).toBe("false");
-    getByRole(root, "button", { name: `${KEY_LABEL} 106.968 kr. 5 faste udgifter` });
 
     fireEvent.click(button);
     await settle(app);
@@ -117,8 +124,8 @@ describe("the subscriptions key number", () => {
   });
 
   it("counts one subscription in the singular", async () => {
-    const { root } = await mountWith("", [SUBSCRIPTIONS[0]]);
-    getByRole(root, "button", { name: `${KEY_LABEL} 96.000 kr. 1 fast udgift` });
+    const { root } = await mountWith("card=subscriptions", [SUBSCRIPTIONS[0]]);
+    expect(text(groupRow(card(root, "Faste udgifter"), "Bolig"))).toContain(da.subscriptionCount(1));
   });
 });
 
@@ -126,14 +133,14 @@ describe("the subscriptions card", () => {
   it("lists every subscription in the order of its status within its group", async () => {
     const { root } = await mountWith("card=subscriptions");
     const region = card(root, "Faste udgifter");
-    expect(getAllByRole(region, "columnheader").map((h) => h.textContent?.trim())).toEqual([
+    expect(getAllByRole(region, "columnheader").map((h) => h.textContent?.replace(/[▲▼]/g, "").trim())).toEqual([
       "Fast udgift",
       "Kategori",
       "Beløb",
       "Om året",
       "Status",
     ]);
-    expect(rowNames(region)).toEqual(["Indboforsikring", "Husleje", "Bilforsikring", "Streaming", "Avis"]);
+    expect(rowNames(region)).toEqual(["Indboforsikring", "Husleje", "Bilforsikring", "Streaming", "Avis", "Tennisklub"]);
     expect(cells(region, "Husleje")).toEqual(["Husleje næste 1. nov", "8.000 kr. pr. måned", "96.000 kr.", "Forventes 1. nov"]);
     expect(cells(region, "Streaming").slice(1)).toEqual(["114 kr. pr. måned", "1.368 kr.", "Steget · 129 → 149 kr."]);
     expect(cells(region, "Indboforsikring").slice(1)).toEqual([
@@ -160,7 +167,6 @@ describe("the subscriptions card", () => {
     expect(rowNames(region)).toEqual(["Indboforsikring", "Husleje"]);
     expect(groupNames(region)).toEqual(["Husleje"]);
     getByText(region, "99.600 kr. om året");
-    getByRole(root, "button", { name: `${KEY_LABEL} 99.600 kr. 2 faste udgifter` });
   });
 
   it("puts one with no payment, and one whose category is unknown, in Uden hovedgruppe", async () => {
@@ -175,18 +181,13 @@ describe("the subscriptions card", () => {
     const all = [...SUBSCRIPTIONS, unknown];
     const { root } = await mountWith(`group=&card=subscriptions`, all);
     const region = card(root, `Faste udgifter i ${da.noMainGroup}`);
-    expect(rowNames(region)).toEqual(["Fitness", "Avis"]);
-    expect(groupNames(region)).toEqual([da.noCategory]);
-    unmount();
-
-    const again = await mountWith("", all);
-    getByRole(again.root, "button", { name: `${KEY_LABEL} 110.568 kr. 6 faste udgifter` });
+    expect(rowNames(region)).toEqual(["Tennisklub", "Fitness", "Avis"]);
+    expect(groupNames(region)).toEqual(["Gaver", da.noCategory]);
   });
 
   it("leaves out those paid from an account not chosen, never one with no payment", async () => {
     const { root } = await mountWith("accounts=1&card=subscriptions");
-    expect(rowNames(card(root, "Faste udgifter"))).toEqual(["Indboforsikring", "Husleje", "Avis"]);
-    getByRole(root, "button", { name: `${KEY_LABEL} 100.800 kr. 3 faste udgifter` });
+    expect(rowNames(card(root, "Faste udgifter"))).toEqual(["Indboforsikring", "Husleje", "Avis", "Tennisklub"]);
   });
 
   it("shows a category's subscriptions and its chip", async () => {
@@ -194,13 +195,11 @@ describe("the subscriptions card", () => {
     const region = card(root, "Faste udgifter i Café");
     expect(rowNames(region)).toEqual(["Streaming"]);
     getByRole(region, "button", { name: da.remove("Café") });
-    getByRole(root, "button", { name: `${KEY_LABEL} 1.368 kr. 1 fast udgift` });
   });
 
   it("does not follow the search", async () => {
     const { root } = await mountWith("q=Netto&card=subscriptions");
-    expect(rowNames(card(root, "Faste udgifter"))).toHaveLength(5);
-    getByRole(root, "button", { name: `${KEY_LABEL} 106.968 kr. 5 faste udgifter` });
+    expect(rowNames(card(root, "Faste udgifter"))).toHaveLength(6);
     expect(location.hash).toBe("#q=Netto&card=subscriptions");
   });
 
@@ -208,8 +207,7 @@ describe("the subscriptions card", () => {
     const { app, root } = await mountWith("unit=2026-07-01&card=subscriptions");
     const region = card(root, "Faste udgifter");
     expect(queryByRole(root, "button", { name: da.remove("Juli 2026") })).toBeNull();
-    expect(rowNames(region)).toHaveLength(5);
-    getByRole(root, "button", { name: `${KEY_LABEL} 106.968 kr. 5 faste udgifter` });
+    expect(rowNames(region)).toHaveLength(6);
     getByRole(viewSwitch(root), "button", { name: da.difference });
 
     fireEvent.click(getByRole(root, "button", { name: new RegExp(`^${da.period}`) }));
@@ -217,14 +215,13 @@ describe("the subscriptions card", () => {
     fireEvent.click(getByRole(getByRole(root, "group", { name: da.period }), "button", { name: da.presets.lastMonth }));
     await settle(app);
     expect(location.hash).toBe("#period=lastMonth&card=subscriptions");
-    expect(rowNames(card(root, "Faste udgifter"))).toHaveLength(5);
-    getByRole(root, "button", { name: `${KEY_LABEL} 106.968 kr. 5 faste udgifter` });
+    expect(rowNames(card(root, "Faste udgifter"))).toHaveLength(6);
   });
 
   it("shows its rows in a period with no postings", async () => {
     const { root } = await mountWith("period=custom&from=2025-01-01&to=2025-01-31&card=subscriptions");
     const region = card(root, "Faste udgifter");
-    expect(rowNames(region)).toHaveLength(5);
+    expect(rowNames(region)).toHaveLength(6);
     expect(within(region).queryByText(da.noSpending)).toBeNull();
   });
 
@@ -235,7 +232,7 @@ describe("the subscriptions card", () => {
     expect(link.getAttribute("href")).toBe(`${LINK}/bills/show/b1`);
     expect(link.getAttribute("target")).toBe("_blank");
     expect(link.getAttribute("rel")).toBe("noopener noreferrer");
-    expect(getAllByRole(region, "link")).toHaveLength(5);
+    expect(getAllByRole(region, "link")).toHaveLength(6);
   });
 
   it("has no links without the Firefly III address", async () => {
@@ -248,7 +245,6 @@ describe("the subscriptions card", () => {
     const region = card(root, "Faste udgifter i Bil");
     getByText(region, "Ingen faste udgifter i Bil");
     expect(queryByRole(region, "table")).toBeNull();
-    getByRole(root, "button", { name: `${KEY_LABEL} 0 kr. 0 faste udgifter` });
   });
 });
 
@@ -273,7 +269,7 @@ describe("the object groups in the card", () => {
     const { root } = await mountWith("card=subscriptions");
     expect(sums(card(root, "Faste udgifter"))).toEqual([
       "Faste udgifter 105.600 kr. om året",
-      "Abonnementer 1.368 kr. om året",
+      "Abonnementer 3.168 kr. om året",
     ]);
   });
 
@@ -295,7 +291,10 @@ describe("the object groups in the card", () => {
 
   it("drops a box when its bills are on another account", async () => {
     const one = await mountWith("accounts=1&card=subscriptions");
-    expect(sums(card(one.root, "Faste udgifter"))).toEqual(["Faste udgifter 100.800 kr. om året"]);
+    expect(sums(card(one.root, "Faste udgifter"))).toEqual([
+      "Faste udgifter 100.800 kr. om året",
+      "Abonnementer 1.800 kr. om året",
+    ]);
     unmount();
     const two = await mountWith("accounts=2&card=subscriptions");
     expect(sums(card(two.root, "Faste udgifter"))).toHaveLength(2);
@@ -313,7 +312,7 @@ describe("the subscriptions card grouped", () => {
   };
 
   function tbodyOf(region: HTMLElement, group: string): HTMLElement {
-    return groupRow(region, group).closest("tbody") as HTMLElement;
+    return rowgroupOf(region, group);
   }
 
   it("groups by main group at Alt forbrug, the biggest sum per year first, Uden hovedgruppe last", async () => {
@@ -323,7 +322,7 @@ describe("the subscriptions card grouped", () => {
       "Bolig 2 faste udgifter",
       "Bil 1 fast udgift",
       "Mad 1 fast udgift",
-      `${da.noMainGroup} 1 fast udgift`,
+      `${da.noMainGroup} 2 faste udgifter`,
     ]);
     expect(within(groupRow(region, "Bolig")).getAllByRole("cell").map(text)).toEqual(["", "", "99.600 kr.", ""]);
     expect(within(groupRow(region, "Bil")).getAllByRole("cell").map(text)).toEqual(["", "", "4.800 kr.", ""]);
@@ -345,7 +344,8 @@ describe("the subscriptions card grouped", () => {
         .getAllByRole("row")
         .filter((r) => within(r).queryByRole("rowheader") === null)
         .map(fixedCostName),
-    ).toEqual(["Fitness", "Avis"]);
+    ).toEqual(["Fitness", "Avis", "Tennisklub"]);
+    expect(categoryOf(region, "Tennisklub")).toBe("Gaver");
     expect(categoryOf(region, "Avis")).toBe(da.noCategory);
     expect(categoryOf(region, "Fitness")).toBe(da.noCategory);
   });
@@ -368,7 +368,7 @@ describe("the subscriptions card grouped", () => {
     const { root } = await mountWith("period=custom&from=2025-01-01&to=2025-01-31&card=subscriptions");
     const region = card(root, "Faste udgifter");
     expect(groupNames(region)).toEqual(["Bolig", "Bil", "Mad", da.noMainGroup]);
-    expect(rowNames(region)).toHaveLength(5);
+    expect(rowNames(region)).toHaveLength(6);
   });
 
   it("groups by category at a main group, with no Kategori column", async () => {
@@ -414,9 +414,11 @@ describe("the answer's today", () => {
 });
 
 describe("with no subscriptions", () => {
-  it("shows three key numbers and no Faste udgifter", async () => {
+  it("shows plain key numbers and no Faste udgifter", async () => {
     const { root } = await mount("card=subscriptions");
     expect(queryByRole(root, "button", { name: new RegExp(`^${KEY_LABEL}`) })).toBeNull();
+    expect(queryByRole(root, "button", { name: new RegExp(`^${da.inPeriod("Abonnementer")}`) })).toBeNull();
+    getByRole(root, "group", { name: da.inPeriod("Abonnementer") });
     getByRole(root, "group", { name: da.spendingInPeriod });
     expect(queryByRole(viewSwitch(root), "button", { name: "Faste udgifter" })).toBeNull();
     card(root, da.per("month"));
@@ -428,5 +430,159 @@ describe("with no subscriptions", () => {
     const busy = getAllByRole(root, "group", { name: da.loading })[0];
     expect(busy.children).toHaveLength(3);
     expect(queryByRole(root, "button", { name: new RegExp(`^${KEY_LABEL}`) })).toBeNull();
+  });
+});
+
+describe("sorting the subscriptions by their headers", () => {
+  const CARD = "card=subscriptions";
+
+  function header(region: HTMLElement, name: string): HTMLElement {
+    return getByRole(region, "columnheader", { name });
+  }
+
+  async function sortBy(
+    app: Parameters<typeof settle>[0],
+    root: HTMLElement,
+    name: string,
+    title = "Faste udgifter",
+  ): Promise<void> {
+    fireEvent.click(getByRole(header(card(root, title), name), "button", { name }));
+    await settle(app);
+  }
+
+  /** What a browser does on a new hash: the app hears it. */
+  async function go(app: Parameters<typeof settle>[0], hash: string): Promise<void> {
+    location.hash = hash;
+    window.dispatchEvent(new HashChangeEvent("hashchange"));
+    await settle(app);
+  }
+
+  function rowsIn(region: HTMLElement, group: string): string[] {
+    return getAllByRole(rowgroupOf(region, group), "row")
+      .filter((r) => within(r).queryByRole("rowheader") === null)
+      .map(fixedCostName);
+  }
+
+  const c = da.subscriptionColumns;
+
+  it("starts sorted by Status, ascending", async () => {
+    const { root } = await mountWith(CARD);
+    const region = card(root, "Faste udgifter");
+    expect(header(region, c.status).getAttribute("aria-sort")).toBe("ascending");
+    expect(getAllByRole(region, "columnheader").filter((h) => h.hasAttribute("aria-sort"))).toHaveLength(1);
+    expect(rowNames(region)).toEqual(["Indboforsikring", "Husleje", "Bilforsikring", "Streaming", "Avis", "Tennisklub"]);
+  });
+
+  it("Om året sorts inside each group, largest first", async () => {
+    const { app, root } = await mountWith(CARD);
+    await sortBy(app, root, c.perYear);
+    const region = card(root, "Faste udgifter");
+    expect(header(region, c.perYear).getAttribute("aria-sort")).toBe("descending");
+    expect(groupNames(region)).toEqual(["Bolig", "Bil", "Mad", da.noMainGroup]);
+    expect(rowsIn(region, "Bolig")).toEqual(["Husleje", "Indboforsikring"]);
+    expect(rowsIn(region, da.noMainGroup)).toEqual(["Tennisklub", "Avis"]);
+  });
+
+  it("a second click flips it", async () => {
+    const { app, root } = await mountWith(CARD);
+    await sortBy(app, root, c.perYear);
+    await sortBy(app, root, c.perYear);
+    const region = card(root, "Faste udgifter");
+    expect(header(region, c.perYear).getAttribute("aria-sort")).toBe("ascending");
+    expect(groupNames(region)).toEqual(["Bolig", "Bil", "Mad", da.noMainGroup]);
+    expect(rowsIn(region, "Bolig")).toEqual(["Indboforsikring", "Husleje"]);
+    expect(rowsIn(region, da.noMainGroup)).toEqual(["Avis", "Tennisklub"]);
+  });
+
+  it("Beløb sorts by the amount per payment", async () => {
+    const { app, root } = await mountWith(CARD);
+    await sortBy(app, root, c.amount);
+    const region = card(root, "Faste udgifter");
+    expect(header(region, c.amount).getAttribute("aria-sort")).toBe("descending");
+    expect(rowsIn(region, "Bolig")).toEqual(["Husleje", "Indboforsikring"]);
+    expect(rowsIn(region, da.noMainGroup)).toEqual(["Avis", "Tennisklub"]);
+  });
+
+  it("Fast udgift sorts A to Å", async () => {
+    const { app, root } = await mountWith(CARD);
+    await sortBy(app, root, c.name);
+    const region = card(root, "Faste udgifter");
+    expect(header(region, c.name).getAttribute("aria-sort")).toBe("ascending");
+    expect(rowNames(region)).toEqual(["Husleje", "Indboforsikring", "Bilforsikring", "Streaming", "Avis", "Tennisklub"]);
+    await sortBy(app, root, c.name);
+    expect(rowNames(card(root, "Faste udgifter"))).toEqual([
+      "Indboforsikring",
+      "Husleje",
+      "Bilforsikring",
+      "Streaming",
+      "Tennisklub",
+      "Avis",
+    ]);
+  });
+
+  it("sorts one list at a category", async () => {
+    const { app, root } = await mountWith("group=Bolig&category=Husleje&card=subscriptions");
+    expect(rowNames(card(root, "Faste udgifter i Husleje"))).toEqual(["Indboforsikring", "Husleje"]);
+    await sortBy(app, root, c.name, "Faste udgifter i Husleje");
+    expect(rowNames(card(root, "Faste udgifter i Husleje"))).toEqual(["Husleje", "Indboforsikring"]);
+  });
+
+  it("Uden kategori sorts last both ways", async () => {
+    const { app, root } = await mountWith(CARD);
+    await sortBy(app, root, c.category);
+    const region = card(root, "Faste udgifter");
+    expect(rowsIn(region, da.noMainGroup)).toEqual(["Tennisklub", "Avis"]);
+    await sortBy(app, root, c.category);
+    expect(header(card(root, "Faste udgifter"), c.category).getAttribute("aria-sort")).toBe("descending");
+    expect(rowsIn(card(root, "Faste udgifter"), da.noMainGroup)).toEqual(["Tennisklub", "Avis"]);
+  });
+
+  it("a Kategori sort gives way to Status where Kategori is not shown, and comes back at Alt forbrug", async () => {
+    const { app, root } = await mountWith(CARD);
+    await sortBy(app, root, c.category);
+    await go(app, "group=Bolig&card=subscriptions");
+    const region = card(root, "Faste udgifter i Bolig");
+    expect(header(region, c.status).getAttribute("aria-sort")).toBe("ascending");
+    expect(getAllByRole(region, "columnheader").filter((h) => h.hasAttribute("aria-sort"))).toHaveLength(1);
+    expect(rowNames(region)).toEqual(["Indboforsikring", "Husleje"]);
+
+    await go(app, CARD);
+    expect(header(card(root, "Faste udgifter"), c.category).getAttribute("aria-sort")).toBe("ascending");
+
+    await go(app, "group=Bolig&card=subscriptions");
+    await sortBy(app, root, c.status, "Faste udgifter i Bolig");
+    expect(header(card(root, "Faste udgifter i Bolig"), c.status).getAttribute("aria-sort")).toBe("descending");
+    expect(rowNames(card(root, "Faste udgifter i Bolig"))).toEqual(["Husleje", "Indboforsikring"]);
+  });
+
+  it("the sort survives Søjler and back, and a trip to Alle posteringer", async () => {
+    const { app, root } = await mountWith(CARD);
+    await sortBy(app, root, c.perYear);
+    const views = getByRole(root, "group", { name: da.view });
+    fireEvent.click(getByRole(views, "button", { name: da.bars }));
+    await settle(app);
+    expect(queryByRole(root, "table")).toBeNull();
+    fireEvent.click(getByRole(views, "button", { name: "Faste udgifter" }));
+    await settle(app);
+    expect(header(card(root, "Faste udgifter"), c.perYear).getAttribute("aria-sort")).toBe("descending");
+
+    fireEvent.click(getByRole(views, "button", { name: da.postings }));
+    await settle(app);
+    fireEvent.click(getByRole(root, "button", { name: da.showAll }));
+    await settle(app);
+    getByRole(root, "heading", { level: 1, name: da.allPostings });
+    fireEvent.click(getByRole(getByRole(root, "navigation", { name: da.trail }), "link", { name: da.allSpending }));
+    await settle(app);
+    fireEvent.click(getByRole(getByRole(root, "group", { name: da.view }), "button", { name: "Faste udgifter" }));
+    await settle(app);
+    expect(header(card(root, "Faste udgifter"), c.perYear).getAttribute("aria-sort")).toBe("descending");
+  });
+
+  it("the sort is not in the hash", async () => {
+    const { app, root } = await mountWith(CARD);
+    const push = vi.spyOn(history, "pushState");
+    await sortBy(app, root, c.perYear);
+    expect(location.hash).toBe("#card=subscriptions");
+    expect(push).not.toHaveBeenCalled();
   });
 });

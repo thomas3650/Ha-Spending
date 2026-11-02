@@ -1,6 +1,7 @@
 import { byUnit, type ClassifiedPosting, NO_PIECE, type Unit } from "@ha-spending/shared";
 import { unitName } from "../format";
 import { type ViewContext, partName } from "./context";
+import type { PostingColumn, Sort } from "../state/view";
 import { byDate } from "./filter";
 
 export interface PostingRow {
@@ -87,11 +88,50 @@ export function groupedPostings(
   return { kind: "grouped", newestFirst, groups };
 }
 
-export function flatPostings(
+const danish = new Intl.Collator("da");
+
+/** What each column's cell shows (lists spec §2.1). */
+const BY_COLUMN: Record<Exclude<PostingColumn, "date">, (a: PostingRow, b: PostingRow) => number> = {
+  text: (a, b) => danish.compare(a.posting.shop ?? a.posting.text, b.posting.shop ?? b.posting.text),
+  category: (a, b) => danish.compare(a.category, b.category),
+  account: (a, b) => danish.compare(a.account, b.account),
+  amount: (a, b) => a.posting.amount - b.posting.amount,
+};
+
+function noCategoryLast(a: PostingRow, b: PostingRow): number {
+  return Number(a.posting.category === null) - Number(b.posting.category === null);
+}
+
+function flatPostings(
   postings: ClassifiedPosting[],
   ctx: ViewContext,
+  column: Exclude<PostingColumn, "date">,
+  descending: boolean,
   colours: Map<string | null, string>,
 ): PostingList {
   const rc = rowContext(ctx, colours);
-  return { kind: "flat", rows: postings.map((p) => row(p, rc)) };
+  const direction = descending ? -1 : 1;
+  const compare = BY_COLUMN[column];
+  const rows = postings
+    .map((p) => row(p, rc))
+    .sort(
+      (a, b) =>
+        (column === "category" ? noCategoryLast(a, b) : 0) ||
+        direction * compare(a, b) ||
+        byDate(b.posting, a.posting),
+    );
+  return { kind: "flat", rows };
+}
+
+/** By the date the postings stay in their groups; any other column gives one flat list. Ties go newest first. */
+export function postingList(
+  postings: ClassifiedPosting[],
+  units: Unit[],
+  ctx: ViewContext,
+  sort: Sort,
+  colours: Map<string | null, string>,
+): PostingList {
+  return sort.column === "date"
+    ? groupedPostings(postings, units, ctx, sort.descending, colours)
+    : flatPostings(postings, ctx, sort.column, sort.descending, colours);
 }

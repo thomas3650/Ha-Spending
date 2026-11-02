@@ -14,15 +14,17 @@ import { keyNumbersStyles } from "./components/key-numbers";
 import { barsStyles, type UnitSelection } from "./components/bars";
 import { type CircleSelection, circleStyles } from "./components/circle";
 import { differenceStyles } from "./components/difference";
-import { periodPickerStyles } from "./components/period-picker";
+import { calendarStyles, periodPickerStyles } from "./components/period-picker";
 import { postingsStyles } from "./components/postings";
+import { sortHeaderStyles } from "./components/sort-header";
 import { searchStyles } from "./components/search";
 import { subscriptionsStyles } from "./components/subscriptions";
 import { topCardStyles } from "./components/top-card";
 import { LoadError, type LoadErrorCode, loadData } from "./data/api";
 import { da } from "./i18n/da";
 import { type ViewContext, viewContext } from "./model/context";
-import { keyCards, subscriptionsCard } from "./model/key-numbers";
+import { keyCards, objectGroupCards } from "./model/key-numbers";
+import { DEFAULT_SUBSCRIPTION_SORT, shownSubscriptionSort, subscriptionFirstDescending } from "./model/subscriptions";
 import { allPostingsStyles, type CategoryChoice } from "./screens/all-postings";
 import "./screens/overview";
 import { overviewStyles } from "./screens/overview";
@@ -31,6 +33,7 @@ import {
   chooseUnit,
   normalise,
   openAllPostings,
+  openAllPostingsFresh,
   openPart,
   removeCategory,
   removeMainGroup,
@@ -50,10 +53,16 @@ import {
 import {
   type AmountRange,
   type Card,
+  DEFAULT_STATE,
+  nextSort,
   parseHash,
   type PeriodChoice,
   periodOf,
+  type PostingColumn,
+  postingFirstDescending,
   type Sort,
+  type Sorted,
+  type SubscriptionColumn,
   toHash,
   type ViewState,
 } from "./state/view";
@@ -75,7 +84,10 @@ export class SpendingApp extends LitElement {
     today: { state: true },
     load: { state: true },
     accounts: { state: true },
+    earliest: { state: true },
     fullScreen: { state: true },
+    postingsSort: { state: true },
+    subscriptionsSort: { state: true },
   };
 
   static override styles = [
@@ -86,12 +98,14 @@ export class SpendingApp extends LitElement {
     field,
     dropdownStyles,
     periodPickerStyles,
+    calendarStyles,
     topCardStyles,
     keyNumbersStyles,
     circleStyles,
     barsStyles,
     differenceStyles,
     postingsStyles,
+    sortHeaderStyles,
     searchStyles,
     subscriptionsStyles,
     overviewStyles,
@@ -168,8 +182,13 @@ export class SpendingApp extends LitElement {
   declare load: Load;
   /** The last answer's accounts; null until the first answer. */
   declare accounts: Account[] | null;
+  /** The last answer's earliest posting date; undefined until the first answer. */
+  declare earliest: string | null | undefined;
   /** A layout setting of this page load, so it stays out of the view state and the hash. */
   declare private fullScreen: boolean;
+  /** The Posteringer card's sort, kept here because the card is made anew when the right card switches (D37). */
+  declare private postingsSort: Sort;
+  declare private subscriptionsSort: Sorted<SubscriptionColumn>;
 
   private asked: Period | null = null;
   private request = 0;
@@ -181,7 +200,10 @@ export class SpendingApp extends LitElement {
     this.today = localToday(new Date());
     this.load = { kind: "idle" };
     this.accounts = null;
+    this.earliest = undefined;
     this.fullScreen = false;
+    this.postingsSort = DEFAULT_STATE.sort;
+    this.subscriptionsSort = DEFAULT_SUBSCRIPTION_SORT;
   }
 
   private readonly onHash = (): void => {
@@ -227,7 +249,7 @@ export class SpendingApp extends LitElement {
   }
 
   private wantedRange(): Period {
-    return fetchRange(periodOf(this.state.period, this.today), this.state.grouping, this.today);
+    return fetchRange(periodOf(this.state.period, this.today, this.earliest ?? null), this.state.grouping, this.today);
   }
 
   private ensureData(): void {
@@ -254,10 +276,14 @@ export class SpendingApp extends LitElement {
     );
   }
 
-  /** The add-on's today wins once per user-started fetch; a retry's answer is shown as it is. */
+  /**
+   * The add-on's today and the earliest posting date can change the wanted range, so a user-started fetch asks once
+   * more when they do; a retry's answer is shown as it is.
+   */
   private onAnswer(data: SpendingData, retry: boolean): void {
     this.accounts = data.accounts;
-    if (!retry && data.today !== this.today) {
+    this.earliest = data.earliestPostingDate;
+    if (!retry) {
       this.today = data.today;
       const range = this.wantedRange();
       if (!sameRange(range, data.range)) {
@@ -314,9 +340,10 @@ export class SpendingApp extends LitElement {
     </div>`;
   }
 
-  private subscriptionsKey(ctx: ViewContext) {
-    const card = subscriptionsCard(ctx);
-    return card === null ? null : { card, pressed: this.state.card === "subscriptions" };
+  private objectGroupKeys(ctx: ViewContext) {
+    const cards = objectGroupCards(ctx);
+    if (cards.length === 0) return null;
+    return { cards, toggle: ctx.data.subscriptions.length > 0, pressed: this.state.card === "subscriptions" };
   }
 
   private ready(ctx: ViewContext) {
@@ -327,13 +354,23 @@ export class SpendingApp extends LitElement {
         ? html`${this.fullScreen
               ? nothing
               : html`<hs-key-numbers
-                  .cards=${keyCards(ctx)}
-                  .subscriptions=${this.subscriptionsKey(ctx)}
+                  .cards=${keyCards(ctx, `#${toHash(openAllPostingsFresh(this.state))}`)}
+                  .objectGroups=${this.objectGroupKeys(ctx)}
                   @subscriptions-toggle=${() => this.push(toggleSubscriptions(this.state))}
                 ></hs-key-numbers>`}
             <hs-overview
               .ctx=${ctx}
               .fullScreen=${this.fullScreen}
+              .postingsSort=${this.postingsSort}
+              .subscriptionsSort=${this.subscriptionsSort}
+              @posting-sort=${(e: CustomEvent<PostingColumn>) =>
+                (this.postingsSort = nextSort(this.postingsSort, e.detail, postingFirstDescending))}
+              @subscription-sort=${(e: CustomEvent<SubscriptionColumn>) =>
+                (this.subscriptionsSort = nextSort(
+                  shownSubscriptionSort(this.subscriptionsSort, this.state.level.kind),
+                  e.detail,
+                  subscriptionFirstDescending,
+                ))}
               @full-screen-toggle=${() => (this.fullScreen = !this.fullScreen)}
               @part-click=${(e: CustomEvent<CircleSelection>) => this.push(openPart(this.state, e.detail.key))}
               @unit-click=${(e: CustomEvent<UnitSelection>) => this.push(chooseUnit(this.state, e.detail.fullStart))}
@@ -382,6 +419,7 @@ export class SpendingApp extends LitElement {
         .state=${this.state}
         .today=${this.today}
         .accounts=${this.accounts}
+        .earliest=${this.earliest}
         @hs-period=${this.onPeriod}
         @hs-grouping=${this.onGrouping}
         @hs-accounts=${this.onAccounts}

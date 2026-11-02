@@ -1,9 +1,8 @@
-import { addDays, change, unitAt } from "@ha-spending/shared";
+import { addDays, change, fetchRange, type Period, unitAt } from "@ha-spending/shared";
 import {
   findByRole,
   fireEvent,
   getAllByRole,
-  getByLabelText,
   getByRole,
   getByText,
   queryAllByRole,
@@ -13,7 +12,7 @@ import {
 } from "@testing-library/dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { comparisonLabel, kr, rangeText, signedPercent } from "../src/format";
+import { comparisonLabel, kr, longDate, rangeText, signedPercent } from "../src/format";
 import { da } from "../src/i18n/da";
 import { answerFor } from "./fixture";
 import { json, mount, settle, unmount } from "./mount";
@@ -26,6 +25,13 @@ const aug = unitAt("2026-08-01", "month", TODAY);
 const escaped = (text: string) => new RegExp(text.replace(/[()]/g, "\\$&"));
 
 afterEach(unmount);
+
+/** No range's start, so Alt's start can only come from it. */
+const EARLIEST = "2023-01-03";
+
+function earliestAnswer(range: Period): Response {
+  return json({ ...answerFor(range), earliestPostingDate: EARLIEST });
+}
 
 function kontiButton(root: HTMLElement): HTMLElement {
   return getByRole(root, "button", { name: new RegExp(`^${da.accounts}`) });
@@ -44,6 +50,44 @@ async function choosePreset(root: HTMLElement, app: Parameters<typeof settle>[0]
   await app.updateComplete;
   const panel = getByRole(root, "group", { name: da.period });
   fireEvent.click(getByRole(panel, "button", { name }));
+  await settle(app);
+}
+
+async function openPeriod(root: HTMLElement, app: Parameters<typeof settle>[0]) {
+  fireEvent.click(periodButton(root));
+  await settle(app);
+  const panel = getByRole(root, "group", { name: da.period });
+  return {
+    panel,
+    from: getByRole(panel, "textbox", { name: da.from }) as HTMLInputElement,
+    to: getByRole(panel, "textbox", { name: da.to }) as HTMLInputElement,
+    show: getByRole(panel, "button", { name: da.show }) as HTMLButtonElement,
+  };
+}
+
+async function type(app: Parameters<typeof settle>[0], field: HTMLInputElement, text: string) {
+  fireEvent.input(field, { target: { value: text } });
+  await settle(app);
+}
+
+function day(panel: HTMLElement, date: string): HTMLButtonElement {
+  return getByRole(panel, "button", { name: longDate(date) }) as HTMLButtonElement;
+}
+
+/** happy-dom's own API; its `matchMedia` follows the viewport. */
+function setViewport(width: number): void {
+  (window as unknown as { happyDOM: { setViewport(size: { width: number; height: number }): void } }).happyDOM.setViewport({
+    width,
+    height: 768,
+  });
+}
+
+function isPicked(panel: HTMLElement, date: string): boolean {
+  return queryAllByRole(panel, "gridcell", { selected: true }).some((cell) => cell.contains(day(panel, date)));
+}
+
+async function pick(app: Parameters<typeof settle>[0], panel: HTMLElement, date: string) {
+  fireEvent.click(day(panel, date));
   await settle(app);
 }
 
@@ -165,33 +209,12 @@ describe("the frame", () => {
     expect(app.shadowRoot!.activeElement).toBe(periodButton(root));
   });
 
-  it("chooses a period from the dropdown and a custom one", async () => {
+  it("chooses a period from the dropdown", async () => {
     const { app, root, fetch } = await mount("");
     await choosePreset(root, app, da.presets.lastYear);
     expect(fetch).toHaveBeenLastCalledWith("api/data?start=2024-12-01&end=2025-12-31", expect.anything());
     expect(location.hash).toBe("#period=lastYear");
     expect(queryByRole(root, "group", { name: da.period })).toBeNull();
-
-    fireEvent.click(periodButton(root));
-    await app.updateComplete;
-    const from = getByLabelText(root, da.from) as HTMLInputElement;
-    const to = getByLabelText(root, da.to) as HTMLInputElement;
-    const show = getByRole(root, "button", { name: da.show }) as HTMLButtonElement;
-    from.value = "2026-04-01";
-    fireEvent.input(from);
-    to.value = "2026-03-01";
-    fireEvent.input(to);
-    await app.updateComplete;
-    expect(show.disabled).toBe(true);
-    from.value = "2026-02-01";
-    fireEvent.input(from);
-    to.value = "2026-03-31";
-    fireEvent.input(to);
-    await app.updateComplete;
-    expect(show.disabled).toBe(false);
-    fireEvent.click(show);
-    await settle(app);
-    expect(location.hash).toBe("#period=custom&from=2026-02-01&to=2026-03-31");
   });
 
   it("pushes a click and follows the hash back", async () => {
@@ -293,6 +316,53 @@ describe("the frame", () => {
     expect(fetch).toHaveBeenCalledTimes(4);
   });
 
+  it("choosing Alt shows the earliest posting to today", async () => {
+    const { app, root, fetch } = await mount("", { answer: earliestAnswer });
+    await choosePreset(root, app, da.presets.all);
+    expect(location.hash).toBe("#period=all");
+    getByRole(root, "button", { name: new RegExp(rangeText({ start: EARLIEST, end: TODAY })) });
+    expect(fetch.mock.calls[1][0]).toBe(`api/data?start=2022-12-01&end=${TODAY}`);
+  });
+
+  it("a hash with Alt asks for I år's range, then once for Alt's", async () => {
+    const { app, root, fetch } = await mount("period=all", { answer: earliestAnswer });
+    const url = (p: { start: string; end: string }) => `api/data?start=${p.start}&end=${p.end}`;
+    expect(fetch).toHaveBeenCalledTimes(2);
+    expect(fetch.mock.calls[0][0]).toBe(url(fetchRange({ start: "2026-01-01", end: TODAY }, "month", TODAY)));
+    expect(fetch.mock.calls[1][0]).toBe(`api/data?start=2022-12-01&end=${TODAY}`);
+    await settle(app);
+    expect(fetch).toHaveBeenCalledTimes(2);
+    getByRole(root, "button", { name: new RegExp(rangeText({ start: EARLIEST, end: TODAY })) });
+  });
+
+  it("Alt shows nothing of the first answer while the second is on its way", async () => {
+    const { root, fetch } = await mount("period=all", {
+      answer: (range, n) => (n === 1 ? json(answerFor(range)) : new Promise<Response>(() => {})),
+    });
+    expect(fetch).toHaveBeenCalledTimes(2);
+    expect(getAllByRole(root, "group", { name: da.loading }).length).toBeGreaterThan(0);
+    expect(queryByRole(root, "group", { name: da.spendingInPeriod })).toBeNull();
+  });
+
+  it("Alt keeps a unit from an earlier year", async () => {
+    const { app, fetch } = await mount("period=all&unit=2024-03-01", { answer: earliestAnswer });
+    await settle(app);
+    expect(fetch.mock.calls[1][0]).toBe(`api/data?start=2022-12-01&end=${TODAY}`);
+    expect(location.hash).toContain("unit=2024-03-01");
+  });
+
+  it("a later change of the period makes one request", async () => {
+    const { app, root, fetch } = await mount("period=all");
+    expect(fetch).toHaveBeenCalledTimes(2);
+    await choosePreset(root, app, da.presets.lastYear);
+    expect(fetch).toHaveBeenCalledTimes(3);
+  });
+
+  it("the period reads Alt alone before the first answer", async () => {
+    const { root } = await mount("period=all", { answer: () => new Promise<Response>(() => {}) });
+    getByRole(root, "button", { name: `${da.period} ${da.presets.all}` });
+  });
+
   it("falls back from an unknown main group and replaces the hash", async () => {
     const replace = vi.spyOn(history, "replaceState");
     const push = vi.spyOn(history, "pushState");
@@ -317,5 +387,207 @@ describe("the frame", () => {
     expect(getByRole(trail, "link", { name: "Mad" }).getAttribute("href")).toBe("#group=Mad");
     getByRole(trail, "heading", { level: 1, name: "Café" });
     await waitFor(() => getByRole(root, "group", { name: da.inPeriod("Café") }));
+  });
+});
+
+describe("the period's custom interval", () => {
+  it("typing Fra and Til and pressing Vis sets a custom period", async () => {
+    const { app, root } = await mount("");
+    const { from, to, show } = await openPeriod(root, app);
+    await type(app, from, "03.01.2024");
+    await type(app, to, "3.2.2024");
+    expect(show.disabled).toBe(false);
+    fireEvent.click(show);
+    await settle(app);
+    expect(location.hash).toBe("#period=custom&from=2024-01-03&to=2024-02-03");
+    expect(queryByRole(root, "group", { name: da.period })).toBeNull();
+  });
+
+  it("a wrong date, a date after today or an end before the start leaves Vis disabled", async () => {
+    const { app, root } = await mount("");
+    const { from, to, show } = await openPeriod(root, app);
+    expect(show.disabled).toBe(false);
+    await type(app, from, "31.02.2024");
+    expect(show.disabled).toBe(true);
+    await type(app, from, "2024-01-03");
+    expect(show.disabled).toBe(true);
+    await type(app, from, "3.1.24");
+    expect(show.disabled).toBe(true);
+    await type(app, from, "03.01.2024");
+    expect(show.disabled).toBe(false);
+    await type(app, to, "31.10.2026");
+    expect(show.disabled).toBe(true);
+    await type(app, to, "02.01.2024");
+    expect(show.disabled).toBe(true);
+    await type(app, to, "03.01.2024");
+    expect(show.disabled).toBe(false);
+  });
+
+  it("a date before the year list is accepted", async () => {
+    const { app, root } = await mount("");
+    const { panel, from, to, show } = await openPeriod(root, app);
+    await type(app, from, "15.6.2012");
+    day(panel, "2012-06-15");
+    await type(app, to, "20.06.2012");
+    fireEvent.click(show);
+    await settle(app);
+    expect(location.hash).toBe("#period=custom&from=2012-06-15&to=2012-06-20");
+  });
+
+  it("the Fra and Til fields open on the shown period", async () => {
+    const { app, root } = await mount("period=custom&from=2026-02-01&to=2026-03-31");
+    const { panel, from, to } = await openPeriod(root, app);
+    expect(from.value).toBe("01.02.2026");
+    expect(to.value).toBe("31.03.2026");
+    expect(day(panel, "2026-03-31").disabled).toBe(false);
+    expect(day(panel, "2026-02-01").disabled).toBe(false);
+    expect(queryByRole(panel, "button", { name: longDate("2026-04-15") })).toBeNull();
+  });
+
+  it("Escape closes the menu without a change", async () => {
+    const { app, root } = await mount("period=lastMonth");
+    const { from } = await openPeriod(root, app);
+    await type(app, from, "03.01.2024");
+    fireEvent.keyDown(from, { key: "Escape" });
+    await settle(app);
+    expect(queryByRole(root, "group", { name: da.period })).toBeNull();
+    expect(location.hash).toBe("#period=lastMonth");
+    expect(app.shadowRoot!.activeElement).toBe(periodButton(root));
+  });
+
+  it("a focusout with no next target still closes Konti", async () => {
+    const { app, root } = await mount("");
+    fireEvent.click(kontiButton(root));
+    await app.updateComplete;
+    fireEvent.focusOut(getByRole(root, "checkbox", { name: da.allAccounts }), { relatedTarget: null });
+    await settle(app);
+    expect(queryByRole(root, "checkbox", { name: da.allAccounts })).toBeNull();
+  });
+
+  it("a focusout with no next target keeps the period menu open", async () => {
+    const { app, root } = await mount("");
+    const { from } = await openPeriod(root, app);
+    fireEvent.focusOut(from, { relatedTarget: null });
+    await settle(app);
+    getByRole(root, "group", { name: da.period });
+  });
+
+  it("a focusout with no next target closes the period menu while the document has no focus", async () => {
+    const { app, root } = await mount("");
+    const { from } = await openPeriod(root, app);
+    vi.spyOn(document, "hasFocus").mockReturnValue(false);
+    fireEvent.focusOut(from, { relatedTarget: null });
+    await settle(app);
+    expect(queryByRole(root, "group", { name: da.period })).toBeNull();
+  });
+
+  it("after a pick, focus is on the picked day and Escape closes the menu", async () => {
+    const { app, root } = await mount("period=lastMonth");
+    const { panel } = await openPeriod(root, app);
+    await pick(app, panel, "2026-09-03");
+    const focused = app.shadowRoot!.activeElement as HTMLElement;
+    expect(focused).toBe(day(panel, "2026-09-03"));
+    fireEvent.keyDown(focused, { key: "Escape" });
+    await settle(app);
+    expect(queryByRole(root, "group", { name: da.period })).toBeNull();
+    expect(location.hash).toBe("#period=lastMonth");
+    expect(app.shadowRoot!.activeElement).toBe(periodButton(root));
+  });
+
+  it("picking two days in the calendar and pressing Vis gives that period", async () => {
+    const { app, root } = await mount("period=lastMonth");
+    const { panel, from, to, show } = await openPeriod(root, app);
+    await pick(app, panel, "2026-09-03");
+    expect(from.value).toBe("03.09.2026");
+    expect(to.value).toBe("");
+    expect(show.disabled).toBe(true);
+    getByRole(root, "group", { name: da.period });
+    await pick(app, panel, "2026-09-10");
+    expect(to.value).toBe("10.09.2026");
+    expect(getByRole(panel, "status").textContent).toBe(da.picked(longDate("2026-09-03"), longDate("2026-09-10")));
+    fireEvent.click(show);
+    await settle(app);
+    expect(location.hash).toBe("#period=custom&from=2026-09-03&to=2026-09-10");
+  });
+
+  it("a second day before the first swaps them", async () => {
+    const { app, root } = await mount("period=lastMonth");
+    const { panel, from, to } = await openPeriod(root, app);
+    await pick(app, panel, "2026-09-10");
+    await pick(app, panel, "2026-08-20");
+    expect(from.value).toBe("20.08.2026");
+    expect(to.value).toBe("10.09.2026");
+  });
+
+  it("the same day picked twice is a one-day period", async () => {
+    const { app, root } = await mount("period=lastMonth");
+    const { panel, show } = await openPeriod(root, app);
+    await pick(app, panel, "2026-09-10");
+    await pick(app, panel, "2026-09-10");
+    fireEvent.click(show);
+    await settle(app);
+    expect(location.hash).toBe("#period=custom&from=2026-09-10&to=2026-09-10");
+  });
+
+  it("a day after today cannot be picked", async () => {
+    const { app, root } = await mount("period=thisMonth");
+    const { panel } = await openPeriod(root, app);
+    expect(day(panel, "2026-10-30").disabled).toBe(false);
+    expect(day(panel, "2026-10-31").disabled).toBe(true);
+  });
+
+  it("typing a date moves the calendar there and picks it", async () => {
+    const { app, root } = await mount("");
+    const { panel, from } = await openPeriod(root, app);
+    await type(app, from, "15.06.2023");
+    expect(isPicked(panel, "2023-06-15")).toBe(true);
+  });
+
+  it("clearing or spoiling a field clears its day in the calendar and keeps the month", async () => {
+    const { app, root } = await mount("period=lastMonth");
+    const { panel, from, to } = await openPeriod(root, app);
+    expect(isPicked(panel, "2026-09-30")).toBe(true);
+    await type(app, to, "");
+    expect(isPicked(panel, "2026-09-01")).toBe(true);
+    expect(isPicked(panel, "2026-09-30")).toBe(false);
+    await type(app, from, "31.02.2026");
+    expect(queryAllByRole(panel, "gridcell", { selected: true })).toEqual([]);
+    day(panel, "2026-09-15");
+  });
+
+  it("a pick and a change of month keep the menu open", async () => {
+    const { app, root } = await mount("period=lastMonth");
+    const { panel } = await openPeriod(root, app);
+    await pick(app, panel, "2026-09-03");
+    fireEvent.click(getByRole(panel, "button", { name: da.calendar.arrowPrev.month }));
+    await settle(app);
+    getByRole(root, "group", { name: da.period });
+    day(panel, "2026-07-15");
+  });
+
+  it("the arrow keys move between the days", async () => {
+    const { app, root } = await mount("period=lastMonth");
+    const { panel } = await openPeriod(root, app);
+    day(panel, "2026-09-10").focus();
+    fireEvent.keyDown(day(panel, "2026-09-10"), { key: "ArrowRight" });
+    await settle(app);
+    expect(app.shadowRoot!.activeElement).toBe(day(panel, "2026-09-11"));
+  });
+
+  it("shows two months, and one below 600 px", async () => {
+    const wide = await mount("period=lastMonth");
+    const first = await openPeriod(wide.root, wide.app);
+    day(first.panel, "2026-08-03");
+    day(first.panel, "2026-09-03");
+    unmount();
+    setViewport(420);
+    try {
+      const narrow = await mount("period=lastMonth");
+      const second = await openPeriod(narrow.root, narrow.app);
+      day(second.panel, "2026-09-03");
+      expect(queryByRole(second.panel, "button", { name: longDate("2026-08-03") })).toBeNull();
+    } finally {
+      setViewport(1024);
+    }
   });
 });

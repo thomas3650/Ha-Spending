@@ -5,6 +5,7 @@ import {
   chooseUnit,
   normalise,
   openAllPostings,
+  openAllPostingsFresh,
   openPart,
   removeCategory,
   removeMainGroup,
@@ -99,21 +100,42 @@ describe("the actions", () => {
   });
 
   it("opens Alle posteringer keeping the search", () => {
-    const s = openAllPostings({ ...at(cafe), search: "rema", sort: "largest", amount: { min: 1, max: null } });
+    const s = openAllPostings({ ...at(cafe), search: "rema", sort: { column: "amount", descending: true }, amount: { min: 1, max: null } });
     expect(s.screen).toBe("allPostings");
     expect(s.search).toBe("rema");
-    expect(s.sort).toBe("newest");
+    expect(s.sort).toEqual(DEFAULT_STATE.sort);
     expect(s.amount).toBeNull();
     expect(s.level).toEqual(cafe);
   });
 
+  it("opens Alle posteringer fresh: no search and no shop, the rest kept", () => {
+    const from: ViewState = {
+      ...at(cafe),
+      accounts: ["2"],
+      unit: "2026-07-01",
+      card: "postings",
+      search: "rema",
+      shop: "Netto",
+      sort: { column: "amount", descending: true },
+      amount: { min: 1, max: null },
+    };
+    const s = openAllPostingsFresh(from);
+    expect(s).toEqual({ ...openAllPostings(from), search: "", shop: null });
+    expect(s.screen).toBe("allPostings");
+    expect(s.level).toEqual(cafe);
+    expect(s.accounts).toEqual(["2"]);
+    expect(s.unit).toBe("2026-07-01");
+    expect(s.period).toEqual(from.period);
+    expect(s.sort).toEqual(DEFAULT_STATE.sort);
+  });
+
   it("leaves Alle posteringer through the trail", () => {
     const inAll = openAllPostings({ ...at(cafe), unit: "2026-07-01" });
-    const s = trailLevel({ ...inAll, search: "pizza", sort: "oldest", amount: { min: 1, max: null } }, 1);
+    const s = trailLevel({ ...inAll, search: "pizza", sort: { column: "date", descending: false }, amount: { min: 1, max: null } }, 1);
     expect(s.screen).toBe("overview");
     expect(s.level).toEqual(mad);
     expect(s.search).toBe("pizza");
-    expect(s.sort).toBe("newest");
+    expect(s.sort).toEqual(DEFAULT_STATE.sort);
     expect(s.amount).toBeNull();
     expect(s.unit).toBe("2026-07-01");
     expect(trailLevel(openAllPostings(at(cafe)), 0).level).toEqual({ kind: "all" });
@@ -147,7 +169,10 @@ describe("the actions", () => {
 
   it("sets the search, the sort and the amount", () => {
     expect(setSearch(DEFAULT_STATE, "pizza").search).toBe("pizza");
-    expect(setSort(DEFAULT_STATE, "smallest").sort).toBe("smallest");
+    expect(setSort(DEFAULT_STATE, { column: "text", descending: false }).sort).toEqual({
+      column: "text",
+      descending: false,
+    });
     expect(setAmount(DEFAULT_STATE, { min: null, max: 300 }).amount).toEqual({ min: null, max: 300 });
     expect(setAmount({ ...DEFAULT_STATE, amount: { min: 1, max: 2 } }, null).amount).toBeNull();
     expect(setAmount(DEFAULT_STATE, { min: null, max: null }).amount).toBeNull();

@@ -47,7 +47,7 @@ function parentOf(level: Level): Level | null {
 
 export function viewContext(data: SpendingData, state: ViewState, today: string): ViewContext {
   const timeline: Timeline = {
-    period: periodOf(state.period, today),
+    period: periodOf(state.period, today, data.earliestPostingDate),
     grouping: state.grouping,
     today,
     earliest: data.earliestPostingDate,

@@ -13,9 +13,9 @@ import { da } from "../i18n/da";
 import { barItems, categoryColours, circleItems, circleSpan, circleTotal, partColours } from "../model/circle";
 import { levelName, partName, type ViewContext } from "../model/context";
 import { matches, shopSuggestions } from "../model/filter";
-import { groupedPostings } from "../model/postings";
-import { subscriptionTable } from "../model/subscriptions";
-import type { Card } from "../state/view";
+import { postingList } from "../model/postings";
+import { DEFAULT_SUBSCRIPTION_SORT, subscriptionTable } from "../model/subscriptions";
+import { type Card, DEFAULT_STATE, type Sort, type SubscriptionColumn, type Sorted } from "../state/view";
 
 const LEFT_TITLE = "hs-left-title";
 const RIGHT_TITLE = "hs-right-title";
@@ -26,14 +26,20 @@ export class Overview extends LitElement {
   static override properties = {
     ctx: { attribute: false },
     fullScreen: { attribute: false },
+    postingsSort: { attribute: false },
+    subscriptionsSort: { attribute: false },
   };
 
   declare ctx: ViewContext;
   declare fullScreen: boolean;
+  declare postingsSort: Sort;
+  declare subscriptionsSort: Sorted<SubscriptionColumn>;
 
   constructor() {
     super();
     this.fullScreen = false;
+    this.postingsSort = DEFAULT_STATE.sort;
+    this.subscriptionsSort = DEFAULT_SUBSCRIPTION_SORT;
   }
 
   protected override createRenderRoot(): HTMLElement {
@@ -52,7 +58,7 @@ export class Overview extends LitElement {
     const items = circleItems(ctx);
     const whole = circleTotal(ctx);
     const name = levelName(ctx.circleLevel);
-    const hint = all ? da.circleHintAll : selected ? da.chosenHint(name) : da.circleHintGroup;
+    const hint = all ? null : selected ? da.chosenHint(name) : da.circleHintGroup;
     const empty = circleSpan(ctx).length === 0;
     const heading = all ? da.mainGroups : da.categories;
     const unit = ctx.chosen === null ? null : unitName(ctx.chosen, ctx.timeline.grouping);
@@ -71,7 +77,7 @@ export class Overview extends LitElement {
               .selectable=${!all}
               .selected=${selected}
             ></hs-circle>
-            <p class="half-foot">${hint}</p>`}
+            ${hint === null ? nothing : html`<p class="half-foot">${hint}</p>`}`}
     </section>`;
   }
 
@@ -88,7 +94,6 @@ export class Overview extends LitElement {
 
   private bars() {
     const ctx = this.ctx;
-    const g = ctx.timeline.grouping;
     const avg = keyNumbers(ctx.shown, ctx.timeline).average.amount;
     const average = avg === null ? null : { amount: avg, label: da.average(kr(avg)) };
     const level = ctx.state.level;
@@ -98,8 +103,7 @@ export class Overview extends LitElement {
         .colour=${colour}
         .average=${average}
         .chosen=${ctx.state.unit}
-      ></hs-bars>
-      <p class="half-foot">${da.barsHint(g)}</p>`;
+      ></hs-bars>`;
   }
 
   /** The search row stays one element whatever the list turns into, so the field keeps its focus while typing. */
@@ -117,9 +121,15 @@ export class Overview extends LitElement {
       body = html`<p class="empty">${unfiltered ? da.noSpending : da.noMatch}</p>`;
     }
     else {
-      const list = groupedPostings(postings, chosen === null ? ctx.units : [chosen], ctx, true, categoryColours(ctx));
-      body = html`<hs-postings .list=${list} .query=${search} .shop=${shop} .grouping=${g}></hs-postings>
-        <p class="half-foot">${da.postingsHint(g)}</p>`;
+      const units = chosen === null ? ctx.units : [chosen];
+      const list = postingList(postings, units, ctx, this.postingsSort, categoryColours(ctx));
+      body = html`<hs-postings
+          .list=${list}
+          .query=${search}
+          .shop=${shop}
+          .grouping=${g}
+          .sort=${this.postingsSort}
+        ></hs-postings>`;
     }
     return html`<div class="postings-search-row">
         <hs-search .search=${search} .shop=${shop} .suggestions=${shopSuggestions(base, search)}></hs-search>
@@ -173,7 +183,7 @@ export class Overview extends LitElement {
   }
 
   private subscriptions(title: string) {
-    const table = subscriptionTable(this.ctx);
+    const table = subscriptionTable(this.ctx, this.subscriptionsSort);
     if (table.rows.length === 0) return html`<p class="empty">${da.noSubscriptions(levelName(this.ctx.state.level))}</p>`;
     return html`<hs-subscriptions .table=${table} .label=${title}></hs-subscriptions>
       <p class="half-foot">${da.subscriptionsFoot}</p>`;

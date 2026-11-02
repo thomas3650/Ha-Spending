@@ -1,7 +1,10 @@
 import { css, html, LitElement, nothing } from "lit";
 import { styleMap } from "lit/directives/style-map.js";
 import { da } from "../i18n/da";
-import type { SubscriptionGroup, SubscriptionRow, SubscriptionTable } from "../model/subscriptions";
+import { DEFAULT_SUBSCRIPTION_SORT, type SubscriptionGroup, type SubscriptionRow, type SubscriptionTable } from "../model/subscriptions";
+import type { SubscriptionColumn } from "../state/view";
+import { fire } from "./chip";
+import { sortHeader } from "./sort-header";
 
 /** The Faste udgifter card's table (subscriptions spec §1.2). */
 export class Subscriptions extends LitElement {
@@ -10,13 +13,14 @@ export class Subscriptions extends LitElement {
     label: { attribute: false },
   };
 
+  /** Its `sort` is the one the headers show; a header click fires `subscription-sort` with its column. */
   declare table: SubscriptionTable;
   /** The card's title, which names the scroll box. */
   declare label: string;
 
   constructor() {
     super();
-    this.table = { objectGroups: [], groups: null, showCategory: false, rows: [] };
+    this.table = { objectGroups: [], groups: null, showCategory: false, rows: [], sort: DEFAULT_SUBSCRIPTION_SORT };
     this.label = "";
   }
 
@@ -57,6 +61,8 @@ export class Subscriptions extends LitElement {
 
   override render() {
     const c = da.subscriptionColumns;
+    const header = (column: SubscriptionColumn, label: string, className = "") =>
+      sortHeader(column, label, this.table.sort, (col) => fire(this, "subscription-sort", col), className);
     const { objectGroups, groups, showCategory, rows } = this.table;
     // The columns do not fit a 420 px card, so the box scrolls sideways there and must be reachable by keyboard.
     return html`<ul class="object-group-sums" role="list" aria-label=${this.label}>
@@ -71,11 +77,9 @@ export class Subscriptions extends LitElement {
       <table>
         <thead>
           <tr>
-            <th scope="col">${c.name}</th>
-            ${showCategory ? html`<th scope="col">${c.category}</th>` : nothing}
-            <th scope="col" class="subscription-amount">${c.amount}</th>
-            <th scope="col" class="subscription-amount">${c.perYear}</th>
-            <th scope="col">${c.status}</th>
+            ${header("name", c.name)} ${showCategory ? header("category", c.category) : nothing}
+            ${header("amount", c.amount, "subscription-amount")} ${header("perYear", c.perYear, "subscription-amount")}
+            ${header("status", c.status)}
           </tr>
         </thead>
         ${groups === null

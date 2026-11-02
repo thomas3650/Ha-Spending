@@ -1,4 +1,4 @@
-import { isoWeek, type Grouping, type Period, type Unit } from "@ha-spending/shared";
+import { isDate, isoWeek, type Grouping, type Period, type Unit } from "@ha-spending/shared";
 import { da } from "./i18n/da";
 import type { AmountRange } from "./state/view";
 
@@ -16,6 +16,12 @@ const tableDateFormat = new Intl.DateTimeFormat("da-DK", {
   timeZone: "UTC",
   day: "numeric",
   month: "numeric",
+  year: "numeric",
+});
+const longDateFormat = new Intl.DateTimeFormat("da-DK", {
+  timeZone: "UTC",
+  day: "numeric",
+  month: "long",
   year: "numeric",
 });
 const longMonth = new Intl.DateTimeFormat("da-DK", {
@@ -89,6 +95,24 @@ export function axisKr(ore: number): string {
 
 export function tableDate(date: string): string {
   return tableDateFormat.format(utc(date));
+}
+
+/** `d.m.yyyy` or `dd.mm.yyyy` to an ISO date, or null when it is not a real date. */
+export function parseTypedDate(text: string): string | null {
+  const match = /^(\d{1,2})\.(\d{1,2})\.(\d{4})$/.exec(text.trim());
+  if (match === null) return null;
+  const [, day, month, year] = match;
+  const iso = `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`;
+  return isDate(iso) ? iso : null;
+}
+
+export function typedDate(date: string): string {
+  const { year, month, day } = parts(date);
+  return `${String(day).padStart(2, "0")}.${String(month).padStart(2, "0")}.${String(year).padStart(4, "0")}`;
+}
+
+export function longDate(date: string): string {
+  return longDateFormat.format(utc(date));
 }
 
 export function rangeText(period: Period): string {
