@@ -78,10 +78,9 @@ export function postingAmount(ore: number): string {
   return text;
 }
 
-/** The detail's sign: spending positive, a refund with a minus. */
+/** Posteringer's sign, so a row beside the list reads the same: spending with a minus, a refund with a plus. */
 export function detailAmount(ore: number): string {
-  const text = cents.format(Math.abs(ore) / 100);
-  return `${ore < 0 && !isZero(text) ? "-" : ""}${text} ${da.kr}`;
+  return `${postingAmount(ore)} ${da.kr}`;
 }
 
 export function detailKr(ore: number): string {

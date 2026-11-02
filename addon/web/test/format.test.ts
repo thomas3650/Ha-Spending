@@ -49,9 +49,9 @@ describe("money", () => {
     expect(amountChip({ min: 100, max: null })).toBe("Beløb: fra 100 kr.");
     expect(amountChip({ min: null, max: 500 })).toBe("Beløb: til 500 kr.");
   });
-  it("detailAmount writes øre, spending positive and a refund with a minus", () => {
-    expect(detailAmount(248000)).toBe("2.480,00 kr.");
-    expect(detailAmount(-15000)).toBe("-150,00 kr.");
+  it("detailAmount writes øre with Posteringer's sign: spending minus, a refund plus", () => {
+    expect(detailAmount(248000)).toBe("-2.480,00 kr.");
+    expect(detailAmount(-15000)).toBe("+150,00 kr.");
     expect(detailAmount(0)).toBe("0,00 kr.");
   });
   it("detailKr writes whole kroner with the same sign", () => {

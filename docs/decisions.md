@@ -449,3 +449,21 @@ to set their status to `superseded by D<n>`, or to name a part a later decision 
 - **Why:** Back closes the detail, and a shared link or a reload opens it, as for the other choices ([D20](decisions.md)).
   Closing by going back keeps Back from reopening a detail that was just closed.
 - **Source:** Claude, 2026-11-02, [the detail view spec](superpowers/specs/2026-11-02-detail-view.md) §5
+
+### D45: The reviewer runs the Chrome check last in every branch review
+- **Date:** 2026-11-02 · **Status:** active
+- **Decision:** `reviewer` stays without edits or commands, but gains Claude in Chrome. Last in every branch review it
+  runs the [Chrome check](testing.md#chrome-check) itself, in the fast loop the dispatching session has started, on
+  made-up data only.
+- **Why:** The first real use of the detail view found a sign that read wrong beside the list and rows that could not be
+  clicked, which a review of the diff did not see.
+- **Source:** Thomas, 2026-11-02, "the review agent must always test the changes in Chrome at the end, also in future"
+
+### D46: The detail writes amounts as Posteringer does, and its rows open Firefly III
+- **Date:** 2026-11-02 · **Status:** active
+- **Decision:** In the detail, the head's amount and each row's amount use Posteringer's sign: spending with a minus, a
+  refund with a plus. The sums in the boxes and the bars stay positive for spending. Each row's date links to its
+  posting in Firefly III, and a click anywhere on the row opens it once. This replaces the
+  [detail view spec](superpowers/specs/2026-11-02-detail-view.md) §2.6's one sign.
+- **Why:** Beside the list, an opposite sign read as wrong, and a row was expected to open its posting.
+- **Source:** Thomas, 2026-11-02, from the detail in use
