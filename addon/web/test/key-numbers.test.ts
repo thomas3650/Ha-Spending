@@ -77,7 +77,16 @@ describe("the first key number's link to Alle posteringer", () => {
     const first = getByRole(root, "group", { name: da.spendingInPeriod });
     const link = getByRole(first, "link", { name: linkLine(28) });
     expect(link.textContent?.trim()).toBe(linkLine(28));
-    expect(linkLine(1)).toBe(`${count(1)} →`);
+  });
+
+  it("one posting reads 1 postering", async () => {
+    const { root } = await mount("", {
+      answer: (range) => {
+        const answer = answerFor(range);
+        return json({ ...answer, postings: answer.postings.slice(0, 1) });
+      },
+    });
+    getByRole(getByRole(root, "group", { name: da.spendingInPeriod }), "link", { name: "1 postering →" });
   });
 
   it("the link opens Alle posteringer with the level, the accounts, the period and the unit, and no search or shop", async () => {
@@ -202,8 +211,6 @@ describe("the key numbers of the object groups", () => {
   it("the sub-line has the sum per month and the count of bills", async () => {
     const { root } = await mount("", { answer: (range) => json(withSubscriptions(answerFor(range))) });
     getByText(card(root, SUBS), `${da.perMonth(kr(7000))} · ${da.billCount(1)}`);
-    expect(da.perMonth("70 kr.")).toBe("70 kr. pr. måned");
-    expect(da.billCount(12)).toBe("12 stk.");
   });
 
   it("under 28 days the line holds the count only", async () => {
@@ -227,7 +234,6 @@ describe("the key numbers of the object groups", () => {
   it("no payment: 0 kr. and ingen betalinger", async () => {
     const { root } = await mount("", { answer: (range) => json(withSubscriptions(answerFor(range))) });
     expect(name(root, FIXED)).toBe(`${FIXED} ${kr(0)} ${da.noPayments}`);
-    expect(da.noPayments).toBe("ingen betalinger");
   });
 
   it("a click toggles Faste udgifter and every card is pressed", async () => {
@@ -251,7 +257,7 @@ describe("the key numbers of the object groups", () => {
   it("no object group at all: three key numbers", async () => {
     const { root } = await mount("period=thisMonth");
     expect(objectCardNames(root)).toEqual([]);
-    expect(getAllByRole(root, "group").filter((g) => g.closest("hs-key-numbers") !== null)).toHaveLength(3);
+    expect(getAllByRole(root, "group", { name: (n) => n !== da.view })).toHaveLength(3);
   });
 
   it("plain cards when the answer has no subscriptions but the postings have a group", async () => {

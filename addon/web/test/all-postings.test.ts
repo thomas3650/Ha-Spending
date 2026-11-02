@@ -95,9 +95,12 @@ describe("screen 3, all postings", () => {
     ]);
   });
 
-  it("there is no Sortér dropdown", async () => {
+  it("there is no Sortér dropdown: Gruppér pr. and the search field are the only comboboxes", async () => {
     const { root } = await mount(CAFE);
-    expect(queryByRole(root, "combobox", { name: "Sortér" })).toBeNull();
+    expect(getAllByRole(root, "combobox")).toEqual([
+      getByRole(root, "combobox", { name: da.groupBy }),
+      getByRole(root, "combobox", { name: da.searchLabel }),
+    ]);
   });
 
   it("a header click puts the sort in the hash", async () => {
