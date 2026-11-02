@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.10.0](https://github.com/thomas3650/Ha-Spending/compare/v0.9.0...v0.10.0) (2026-11-02)
+
+
+### Features
+
+* a click on a fixed expense, a subscription or a posting shows its detail ([#79](https://github.com/thomas3650/Ha-Spending/issues/79)) ([470eac4](https://github.com/thomas3650/Ha-Spending/commit/470eac4aa8edd5012666183f9f2403ecac7b52b0))
+
 ## [0.9.0](https://github.com/thomas3650/Ha-Spending/compare/v0.8.0...v0.9.0) (2026-11-02)
 
 
