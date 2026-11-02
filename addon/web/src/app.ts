@@ -24,6 +24,7 @@ import { LoadError, type LoadErrorCode, loadData } from "./data/api";
 import { da } from "./i18n/da";
 import { type ViewContext, viewContext } from "./model/context";
 import { keyCards, subscriptionsCard } from "./model/key-numbers";
+import { DEFAULT_SUBSCRIPTION_SORT, subscriptionFirstDescending } from "./model/subscriptions";
 import { allPostingsStyles, type CategoryChoice } from "./screens/all-postings";
 import "./screens/overview";
 import { overviewStyles } from "./screens/overview";
@@ -59,6 +60,8 @@ import {
   type PostingColumn,
   postingFirstDescending,
   type Sort,
+  type Sorted,
+  type SubscriptionColumn,
   toHash,
   type ViewState,
 } from "./state/view";
@@ -83,6 +86,7 @@ export class SpendingApp extends LitElement {
     earliest: { state: true },
     fullScreen: { state: true },
     postingsSort: { state: true },
+    subscriptionsSort: { state: true },
   };
 
   static override styles = [
@@ -182,6 +186,7 @@ export class SpendingApp extends LitElement {
   declare private fullScreen: boolean;
   /** The Posteringer card's sort, kept here because the card is made anew when the right card switches (D37). */
   declare private postingsSort: Sort;
+  declare private subscriptionsSort: Sorted<SubscriptionColumn>;
 
   private asked: Period | null = null;
   private request = 0;
@@ -196,6 +201,7 @@ export class SpendingApp extends LitElement {
     this.earliest = undefined;
     this.fullScreen = false;
     this.postingsSort = DEFAULT_STATE.sort;
+    this.subscriptionsSort = DEFAULT_SUBSCRIPTION_SORT;
   }
 
   private readonly onHash = (): void => {
@@ -353,8 +359,11 @@ export class SpendingApp extends LitElement {
               .ctx=${ctx}
               .fullScreen=${this.fullScreen}
               .postingsSort=${this.postingsSort}
+              .subscriptionsSort=${this.subscriptionsSort}
               @posting-sort=${(e: CustomEvent<PostingColumn>) =>
                 (this.postingsSort = nextSort(this.postingsSort, e.detail, postingFirstDescending))}
+              @subscription-sort=${(e: CustomEvent<SubscriptionColumn>) =>
+                (this.subscriptionsSort = nextSort(this.subscriptionsSort, e.detail, subscriptionFirstDescending))}
               @full-screen-toggle=${() => (this.fullScreen = !this.fullScreen)}
               @part-click=${(e: CustomEvent<CircleSelection>) => this.push(openPart(this.state, e.detail.key))}
               @unit-click=${(e: CustomEvent<UnitSelection>) => this.push(chooseUnit(this.state, e.detail.fullStart))}

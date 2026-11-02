@@ -127,6 +127,18 @@ export const SUBSCRIPTIONS: Subscription[] = [
     amountMax: 20000,
     lastPayment: null,
   },
+  {
+    id: "b6",
+    name: "Tennisklub",
+    objectGroup: "Abonnementer",
+    repeat: "monthly",
+    skip: 0,
+    start: "2026-01-12",
+    end: null,
+    amountMin: 15000,
+    amountMax: 15000,
+    lastPayment: { date: "2026-10-12", amount: 15000, category: "Gaver", account: "1" },
+  },
 ];
 
 export function withSubscriptions(answer: SpendingData, subscriptions = SUBSCRIPTIONS): SpendingData {

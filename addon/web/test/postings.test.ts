@@ -441,6 +441,15 @@ describe("sorting the postings by their headers", () => {
     await settle(app);
     expect(header(root, da.columns.amount).getAttribute("aria-sort")).toBe("descending");
     expect(amounts(root)[0]).toBe(postingAmount(800000));
+
+    fireEvent.click(getByRole(root, "button", { name: da.showAll }));
+    await settle(app);
+    fireEvent.click(getByRole(getByRole(root, "navigation", { name: da.trail }), "link", { name: da.allSpending }));
+    await settle(app);
+    fireEvent.click(getByRole(getByRole(root, "group", { name: da.view }), "button", { name: da.postings }));
+    await settle(app);
+    expect(header(root, da.columns.amount).getAttribute("aria-sort")).toBe("descending");
+    expect(amounts(root)[0]).toBe(postingAmount(800000));
   });
 
   it("the card's sort is not in the hash", async () => {

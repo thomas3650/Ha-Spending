@@ -14,8 +14,8 @@ import { barItems, categoryColours, circleItems, circleSpan, circleTotal, partCo
 import { levelName, partName, type ViewContext } from "../model/context";
 import { matches, shopSuggestions } from "../model/filter";
 import { postingList } from "../model/postings";
-import { subscriptionTable } from "../model/subscriptions";
-import { type Card, DEFAULT_STATE, type Sort } from "../state/view";
+import { DEFAULT_SUBSCRIPTION_SORT, subscriptionTable } from "../model/subscriptions";
+import { type Card, DEFAULT_STATE, type Sort, type SubscriptionColumn, type Sorted } from "../state/view";
 
 const LEFT_TITLE = "hs-left-title";
 const RIGHT_TITLE = "hs-right-title";
@@ -27,16 +27,19 @@ export class Overview extends LitElement {
     ctx: { attribute: false },
     fullScreen: { attribute: false },
     postingsSort: { attribute: false },
+    subscriptionsSort: { attribute: false },
   };
 
   declare ctx: ViewContext;
   declare fullScreen: boolean;
   declare postingsSort: Sort;
+  declare subscriptionsSort: Sorted<SubscriptionColumn>;
 
   constructor() {
     super();
     this.fullScreen = false;
     this.postingsSort = DEFAULT_STATE.sort;
+    this.subscriptionsSort = DEFAULT_SUBSCRIPTION_SORT;
   }
 
   protected override createRenderRoot(): HTMLElement {
@@ -183,9 +186,9 @@ export class Overview extends LitElement {
   }
 
   private subscriptions(title: string) {
-    const table = subscriptionTable(this.ctx);
+    const table = subscriptionTable(this.ctx, this.subscriptionsSort);
     if (table.rows.length === 0) return html`<p class="empty">${da.noSubscriptions(levelName(this.ctx.state.level))}</p>`;
-    return html`<hs-subscriptions .table=${table} .label=${title}></hs-subscriptions>
+    return html`<hs-subscriptions .table=${table} .label=${title} .sort=${this.subscriptionsSort}></hs-subscriptions>
       <p class="half-foot">${da.subscriptionsFoot}</p>`;
   }
 

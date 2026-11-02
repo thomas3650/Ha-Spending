@@ -13,6 +13,13 @@ import { da } from "../i18n/da";
 import { partColours } from "./circle";
 import { partName, type ViewContext } from "./context";
 import { linkBase } from "./postings";
+import type { Sorted, SubscriptionColumn } from "../state/view";
+
+export const DEFAULT_SUBSCRIPTION_SORT: Sorted<SubscriptionColumn> = { column: "status", descending: false };
+
+export function subscriptionFirstDescending(column: SubscriptionColumn): boolean {
+  return column === "amount" || column === "perYear";
+}
 
 export interface SubscriptionRow {
   id: string;
@@ -24,6 +31,11 @@ export interface SubscriptionRow {
   amount: string;
   perYear: string;
   category: string;
+  /** Øre, for sorting. */
+  amountOre: number;
+  perYearOre: number;
+  /** The category when it is a known one; null shows as "Uden kategori". */
+  categoryName: string | null;
   status: { kind: SubscriptionStatus["kind"]; text: string };
   href: string | null;
 }
@@ -107,11 +119,36 @@ export interface SubscriptionTable {
   rows: SubscriptionRow[];
 }
 
-export function subscriptionTable(ctx: ViewContext): SubscriptionTable {
+function compareBy(column: SubscriptionColumn, a: SubscriptionRow, b: SubscriptionRow, descending: boolean): number {
+  const sign = descending ? -1 : 1;
+  switch (column) {
+    case "name":
+      return sign * a.name.localeCompare(b.name, "da");
+    case "category":
+      if (a.categoryName === null || b.categoryName === null) {
+        return Number(a.categoryName === null) - Number(b.categoryName === null);
+      }
+      return sign * a.categoryName.localeCompare(b.categoryName, "da");
+    case "amount":
+      return sign * (a.amountOre - b.amountOre);
+    case "perYear":
+      return sign * (a.perYearOre - b.perYearOre);
+    case "status":
+      return 0;
+  }
+}
+
+/** Ties keep today's order, which `shown` gives; the status column is that order, turned around when descending. */
+function sortItems<T extends { row: SubscriptionRow }>(items: T[], sort: Sorted<SubscriptionColumn>): T[] {
+  if (sort.column === "status") return sort.descending ? [...items].reverse() : items;
+  return [...items].sort((a, b) => compareBy(sort.column, a.row, b.row, sort.descending));
+}
+
+export function subscriptionTable(ctx: ViewContext, sort: Sorted<SubscriptionColumn>): SubscriptionTable {
   const today = ctx.data.today;
   const base = linkBase(ctx.data.fireflyLinkUrl);
   const mainGroups = new Map(ctx.data.categories.map((c) => [c.name, c.mainGroup]));
-  const items = shown(ctx).map(({ subscription: s, next, status }) => {
+  const unsorted = shown(ctx).map(({ subscription: s, next, status }) => {
     const last = s.lastPayment?.category ?? null;
     const known = last !== null && mainGroups.has(last);
     const row: SubscriptionRow = {
@@ -122,6 +159,9 @@ export function subscriptionTable(ctx: ViewContext): SubscriptionTable {
       amount: `${unbroken(kr(amountPerPayment(s)))} ${unbroken(da.repeatText(s.repeat, s.skip))}`,
       perYear: kr(amountPerYear(s)),
       category: known ? last : da.noCategory,
+      amountOre: amountPerPayment(s),
+      perYearOre: amountPerYear(s),
+      categoryName: known ? last : null,
       status: { kind: status.kind, text: statusText(status, today) },
       href: base === null ? null : `${base}/bills/show/${encodeURIComponent(s.id)}`,
     };
@@ -132,6 +172,7 @@ export function subscriptionTable(ctx: ViewContext): SubscriptionTable {
       mainGroup: known ? (mainGroups.get(last) ?? null) : null,
     };
   });
+  const items = sortItems(unsorted, sort);
   const rows = items.map((i) => i.row);
   const sums = new Map<string, number>();
   for (const item of items) sums.set(item.row.objectGroup, (sums.get(item.row.objectGroup) ?? 0) + item.year);
@@ -171,5 +212,5 @@ export function subscriptionTable(ctx: ViewContext): SubscriptionTable {
 }
 
 export function subscriptionRows(ctx: ViewContext): SubscriptionRow[] {
-  return subscriptionTable(ctx).rows;
+  return subscriptionTable(ctx, DEFAULT_SUBSCRIPTION_SORT).rows;
 }
