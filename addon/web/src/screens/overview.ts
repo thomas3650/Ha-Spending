@@ -58,7 +58,7 @@ export class Overview extends LitElement {
     const items = circleItems(ctx);
     const whole = circleTotal(ctx);
     const name = levelName(ctx.circleLevel);
-    const hint = all ? da.circleHintAll : selected ? da.chosenHint(name) : da.circleHintGroup;
+    const hint = all ? null : selected ? da.chosenHint(name) : da.circleHintGroup;
     const empty = circleSpan(ctx).length === 0;
     const heading = all ? da.mainGroups : da.categories;
     const unit = ctx.chosen === null ? null : unitName(ctx.chosen, ctx.timeline.grouping);
@@ -77,7 +77,7 @@ export class Overview extends LitElement {
               .selectable=${!all}
               .selected=${selected}
             ></hs-circle>
-            <p class="half-foot">${hint}</p>`}
+            ${hint === null ? nothing : html`<p class="half-foot">${hint}</p>`}`}
     </section>`;
   }
 
@@ -94,7 +94,6 @@ export class Overview extends LitElement {
 
   private bars() {
     const ctx = this.ctx;
-    const g = ctx.timeline.grouping;
     const avg = keyNumbers(ctx.shown, ctx.timeline).average.amount;
     const average = avg === null ? null : { amount: avg, label: da.average(kr(avg)) };
     const level = ctx.state.level;
@@ -104,8 +103,7 @@ export class Overview extends LitElement {
         .colour=${colour}
         .average=${average}
         .chosen=${ctx.state.unit}
-      ></hs-bars>
-      <p class="half-foot">${da.barsHint(g)}</p>`;
+      ></hs-bars>`;
   }
 
   /** The search row stays one element whatever the list turns into, so the field keeps its focus while typing. */
@@ -131,8 +129,7 @@ export class Overview extends LitElement {
           .shop=${shop}
           .grouping=${g}
           .sort=${this.postingsSort}
-        ></hs-postings>
-        <p class="half-foot">${da.postingsHint(g)}</p>`;
+        ></hs-postings>`;
     }
     return html`<div class="postings-search-row">
         <hs-search .search=${search} .shop=${shop} .suggestions=${shopSuggestions(base, search)}></hs-search>
