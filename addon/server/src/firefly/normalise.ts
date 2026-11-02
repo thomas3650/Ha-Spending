@@ -13,6 +13,7 @@ function posting(
   kind: Posting["kind"],
   account: string,
   shop: string | null,
+  linkOf: (id: string | null) => Posting["subscription"],
 ): Posting {
   const amount = toOre(split.amount);
   return {
@@ -25,6 +26,7 @@ function posting(
     kind,
     shop,
     amount: kind === "refund" ? -amount : amount,
+    subscription: linkOf(split.bill_id ?? null),
   };
 }
 
@@ -32,6 +34,7 @@ export function toPostings(
   groups: WireGroup[],
   mainGroupOf: (category: string | null) => string | null,
   excluded: ReadonlySet<string>,
+  linkOf: (id: string | null) => Posting["subscription"],
 ): Posting[] {
   const postings: Posting[] = [];
   for (const group of groups) {
@@ -40,10 +43,10 @@ export function toPostings(
       if (mainGroup !== null && excluded.has(mainGroup)) continue;
       if (split.type === "withdrawal" && split.source_type === ASSET) {
         postings.push(posting(group.id, split, "spending", split.source_id,
-          shopName(split.destination_name, split.destination_type, EXPENSE)));
+          shopName(split.destination_name, split.destination_type, EXPENSE), linkOf));
       } else if (split.type === "deposit" && split.destination_type === ASSET && split.category_name !== null) {
         postings.push(posting(group.id, split, "refund", split.destination_id,
-          shopName(split.source_name, split.source_type, REVENUE)));
+          shopName(split.source_name, split.source_type, REVENUE), linkOf));
       }
     }
   }

@@ -258,6 +258,7 @@ describe("the search on Posteringer", () => {
       kind: "spending",
       shop: "ØL OG VAND",
       amount: 12500,
+      subscription: null,
     };
     const answer = (range: { start: string; end: string }) => {
       const data = answerFor(range);

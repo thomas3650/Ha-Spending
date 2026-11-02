@@ -19,6 +19,7 @@ function subscription(overrides: Partial<Subscription> = {}): Subscription {
     end: null,
     amountMin: 9900,
     amountMax: 12900,
+    objectGroup: "Made-up group",
     lastPayment: null,
     ...overrides,
   };

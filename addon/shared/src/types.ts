@@ -16,6 +16,8 @@ export interface Posting {
   shop: string | null;
   /** In øre: spending positive, a refund negative. */
   amount: number;
+  /** The bill the posting is linked to, when that bill has an object group; else null. */
+  subscription: { name: string; objectGroup: string } | null;
 }
 
 export interface Account {
@@ -47,6 +49,8 @@ export interface Subscription {
   /** In øre. */
   amountMin: number;
   amountMax: number;
+  /** Firefly III's object group of the bill, as Firefly III gives it. */
+  objectGroup: string;
   /** The latest linked payment on or before today, with its posting's category and account. */
   lastPayment: { date: string; amount: number; category: string | null; account: string } | null;
 }
@@ -61,7 +65,7 @@ export interface SpendingData {
   today: string;
   /** The oldest withdrawal or deposit; null when there is none (D12). */
   earliestPostingDate: string | null;
-  /** Within range, newest first. */
+  /** Within range, newest first. Each carries its bill link (`subscription`). */
   postings: Posting[];
   /** Every asset account, active or not, by name. */
   accounts: Account[];
@@ -73,7 +77,10 @@ export interface SpendingData {
   mainGroupsFound: boolean;
   /** A posting opens at `${fireflyLinkUrl}/transactions/show/${groupId}`. */
   fireflyLinkUrl: string | null;
-  /** Kept as §3 of the subscriptions spec says, by name. */
+  /**
+   * Kept as §3 of the subscriptions spec says, by name. Only the bills with an object group: a bill with none is in no
+   * row and no box.
+   */
   subscriptions: Subscription[];
 }
 

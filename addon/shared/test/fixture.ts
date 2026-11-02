@@ -19,6 +19,7 @@ function posting(id: string, date: string, account: string, category: string | n
     shop: `Posting ${id}`,
     kind: amount < 0 ? "refund" : "spending",
     amount,
+    subscription: null,
   };
 }
 

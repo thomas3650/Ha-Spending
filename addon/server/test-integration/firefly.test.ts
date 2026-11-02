@@ -195,7 +195,25 @@ describe("a real Firefly III", () => {
       const husleje = d.subscriptions.find((s) => s.name === "Husleje")!;
       const kontoA = d.accounts.find((a) => a.name === "Konto A")!.id;
       expect(husleje.lastPayment).toEqual({ date: "2025-12-30", amount: 800000, category: "Husleje", account: kontoA });
+      expect(husleje.objectGroup).toBe("Faste udgifter");
       expect(d.subscriptions.map((s) => s.name)).not.toContain("Avis");
+      expect(d.subscriptions.map((s) => s.name)).not.toContain("Bilka");
+    });
+
+    it("gives the same bill links on postings as the fake does, ids apart", async () => {
+      const fakeClient = createFireflyClient({
+        baseUrl: "http://f",
+        token: "fake-token",
+        fetch: createFakeFirefly(exampleSeed).fetch,
+      });
+      const links = (d: SpendingData) =>
+        d.postings
+          .map((p) => ({ text: p.text, date: p.date, amount: p.amount, subscription: p.subscription }))
+          .sort((a, b) => a.date.localeCompare(b.date) || a.text.localeCompare(b.text) || a.amount - b.amount);
+      const expected = await readSpendingData(fakeClient, settings, R1, { today, warn: () => {} });
+      const actual = await served();
+      expect(actual.postings.some((p) => p.subscription !== null)).toBe(true);
+      expect(links(actual)).toEqual(links(expected));
     });
 
     it("lists a bill's paid dates only inside the window asked for", async () => {
