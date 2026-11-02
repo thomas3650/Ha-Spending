@@ -34,9 +34,12 @@ import { overviewStyles } from "./screens/overview";
 import {
   chooseShop,
   chooseUnit,
+  closeDetail,
+  keepDetail,
   normalise,
   openAllPostings,
   openAllPostingsFresh,
+  openDetail,
   openObjectGroupPostings,
   openPart,
   openShop,
@@ -60,6 +63,7 @@ import {
   type AmountRange,
   type Card,
   DEFAULT_STATE,
+  type DetailKey,
   nextSort,
   parseHash,
   type PeriodChoice,
@@ -79,6 +83,13 @@ type Load =
   | { kind: "loading" }
   | { kind: "ready"; data: SpendingData }
   | { kind: "error"; code: LoadErrorCode };
+
+/** Marks the history entry that opening a detail pushed, so closing knows it may go back (spec §5). */
+const DETAIL_ENTRY = { detail: true };
+
+function detailEntry(): boolean {
+  return (history.state as { detail?: unknown } | null)?.detail === true;
+}
 
 function sameRange(a: Period, b: Period): boolean {
   return a.start === b.start && a.end === b.end;
@@ -235,14 +246,40 @@ export class SpendingApp extends LitElement {
   };
 
   private readonly onKey = (event: KeyboardEvent): void => {
-    if (event.key === "Escape" && this.fullScreen && this.state.screen === "overview") this.fullScreen = false;
+    if (event.key !== "Escape") return;
+    if (this.state.detail !== null) this.closeDetail();
+    else if (this.fullScreen && this.state.screen === "overview") this.fullScreen = false;
   };
+
+  private readonly onDetailOpen = (event: Event): void => {
+    const next = openDetail(this.state, (event as CustomEvent<DetailKey>).detail);
+    const hash = `#${toHash(next)}`;
+    if (this.state.detail === null) history.pushState(DETAIL_ENTRY, "", hash);
+    else history.replaceState(detailEntry() ? DETAIL_ENTRY : null, "", hash);
+    this.change(next);
+  };
+
+  private readonly onDetailClose = (): void => this.closeDetail();
+
+  /** Back restores the entry before the open as it was; popstate then sets the state. */
+  private closeDetail(): void {
+    if (this.state.detail === null) return;
+    if (detailEntry()) {
+      history.back();
+      return;
+    }
+    const next = closeDetail(this.state);
+    history.replaceState(null, "", `#${toHash(next)}`);
+    this.change(next);
+  }
 
   override connectedCallback(): void {
     super.connectedCallback();
     window.addEventListener("hashchange", this.onHash);
     window.addEventListener("popstate", this.onHash);
     window.addEventListener("keydown", this.onKey);
+    this.addEventListener("detail-open", this.onDetailOpen);
+    this.addEventListener("detail-close", this.onDetailClose);
     this.change(parseHash(location.hash));
     this.readHiddenShops();
   }
@@ -279,6 +316,8 @@ export class SpendingApp extends LitElement {
     window.removeEventListener("hashchange", this.onHash);
     window.removeEventListener("popstate", this.onHash);
     window.removeEventListener("keydown", this.onKey);
+    this.removeEventListener("detail-open", this.onDetailOpen);
+    this.removeEventListener("detail-close", this.onDetailClose);
     this.request += 1;
     this.controller?.abort();
     this.controller = null;
@@ -286,8 +325,9 @@ export class SpendingApp extends LitElement {
     super.disconnectedCallback();
   }
 
-  /** pushState and replaceState fire no event, so the state is set here. */
-  apply(next: ViewState, mode: "push" | "replace"): void {
+  /** pushState and replaceState fire no event, so the state is set here. A new card or screen closes the detail. */
+  apply(choice: ViewState, mode: "push" | "replace"): void {
+    const next = keepDetail(this.state, choice);
     const hash = toHash(next);
     if (mode === "replace") history.replaceState(null, "", `#${hash}`);
     else if (hash !== toHash(this.state)) history.pushState(null, "", `#${hash}`);
@@ -393,7 +433,10 @@ export class SpendingApp extends LitElement {
   }
 
   private objectGroupKeys(ctx: ViewContext) {
-    const cards = objectGroupCards(ctx, (t) => `#${toHash(openObjectGroupPostings(this.state, t))}`);
+    const cards = objectGroupCards(
+      ctx,
+      (t) => `#${toHash(keepDetail(this.state, openObjectGroupPostings(this.state, t)))}`,
+    );
     if (cards.length === 0) return null;
     return { cards, toggle: ctx.data.subscriptions.length > 0, pressed: this.state.card === "subscriptions" };
   }
@@ -406,7 +449,7 @@ export class SpendingApp extends LitElement {
         ? html`${this.fullScreen
               ? nothing
               : html`<hs-key-numbers
-                  .cards=${keyCards(ctx, `#${toHash(openAllPostingsFresh(this.state))}`)}
+                  .cards=${keyCards(ctx, `#${toHash(keepDetail(this.state, openAllPostingsFresh(this.state)))}`)}
                   .objectGroups=${this.objectGroupKeys(ctx)}
                   @subscriptions-toggle=${() => this.push(toggleSubscriptions(this.state))}
                 ></hs-key-numbers>`}

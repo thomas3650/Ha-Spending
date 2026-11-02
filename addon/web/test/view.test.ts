@@ -34,8 +34,35 @@ describe("the view state's hash", () => {
       sort: { column: "amount", descending: true },
       amount: { min: 100, max: null },
       objectGroup: "Åbne aftaler",
+      detail: { kind: "posting", id: "p1" },
     };
     expect(parseHash("#" + toHash(s))).toEqual(s);
+  });
+
+  it("detail round-trips and is written last", () => {
+    const s: ViewState = { ...DEFAULT_STATE, card: "subscriptions", detail: { kind: "subscription", id: "b1" } };
+    expect(toHash(s)).toBe("card=subscriptions&detail=s%3Ab1");
+    expect(parseHash("#card=subscriptions&detail=s%3Ab1")).toEqual(s);
+    const all: ViewState = {
+      ...DEFAULT_STATE,
+      screen: "allPostings",
+      search: "rema",
+      sort: LARGEST,
+      amount: { min: 5, max: null },
+      objectGroup: "Abonnementer",
+      detail: { kind: "posting", id: "p 7" },
+    };
+    expect(toHash(all)).toBe("view=all-postings&q=rema&sort=largest&min=5&og=Abonnementer&detail=p%3Ap+7");
+    expect(parseHash(toHash(all))).toEqual(all);
+    expect(parseHash("detail=p:p1").detail).toEqual({ kind: "posting", id: "p1" });
+    expect(DEFAULT_STATE.detail).toBeNull();
+  });
+
+  it("a bad detail is left out", () => {
+    for (const hash of ["detail=x:1", "detail=s:", "detail=", "detail=s", "detail=p1"]) {
+      expect(parseHash(hash).detail).toBeNull();
+      expect(toHash(parseHash(hash))).toBe("");
+    }
   });
 
   it("round-trips the subscriptions card", () => {

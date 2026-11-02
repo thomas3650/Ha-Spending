@@ -3,7 +3,7 @@ import { css, html, LitElement } from "lit";
 import { live } from "lit/directives/live.js";
 import { da } from "../i18n/da";
 import { partName } from "../model/context";
-import { trailLevel } from "../state/actions";
+import { keepDetail, trailLevel } from "../state/actions";
 import { toHash, type ViewState } from "../state/view";
 import "./accounts-picker";
 import "./period-picker";
@@ -22,7 +22,10 @@ function trail(state: ViewState): { links: TrailPart[]; current: string } {
   if (level.kind === "category") names.push(partName(level.category, "category"));
   if (state.screen === "allPostings") names.push(da.allPostings);
   const current = names.pop() ?? da.allSpending;
-  const links = names.map((name, depth) => ({ name, href: `#${toHash(trailLevel(state, depth as 0 | 1 | 2))}` }));
+  const links = names.map((name, depth) => ({
+    name,
+    href: `#${toHash(keepDetail(state, trailLevel(state, depth as 0 | 1 | 2)))}`,
+  }));
   return { links, current };
 }
 
