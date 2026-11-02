@@ -173,7 +173,7 @@ to set their status to `superseded by D<n>`, or to name a part a later decision 
 - **Source:** Claude, [data plan](superpowers/plans/2026-10-31-data.md)
 
 ### D19: The charts are drawn by ECharts and named in the DOM
-- **Date:** 2026-10-31 · **Status:** active
+- **Date:** 2026-10-31 · **Status:** active; the chunk-size limit superseded by D39
 - **Decision:**
   - ECharts uses the SVG renderer and is bundled from `echarts/core` with only the parts used. The build is one JS
     chunk, with `chunkSizeWarningLimit` 700, because ECharts core and zrender dominate it.
@@ -394,7 +394,8 @@ to set their status to `superseded by D<n>`, or to name a part a later decision 
 - **Date:** 2026-11-02 · **Status:** active
 - **Decision:** The period's custom interval is one calendar from Vanilla Calendar Pro, mounted inline in the menu,
   with Fra and Til fields for typing. It replaces the two `<input type="date">` fields and is a runtime dependency
-  beside Lit and ECharts (technical spec §6).
+  beside Lit and ECharts (technical spec §6). The one chunk's `chunkSizeWarningLimit` is 800 kB, since the library
+  takes it past D19's 700.
 - **Why:** Safari would not take a typed year in the date field, and the browsers' date fields differ. A library gives
   one behaviour everywhere.
 - **Source:** Thomas, 2026-11-02, [the lists spec](superpowers/specs/2026-11-02-lists-period-postings.md) §1.2

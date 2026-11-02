@@ -75,6 +75,10 @@ function setViewport(width: number): void {
   });
 }
 
+function isPicked(panel: HTMLElement, date: string): boolean {
+  return queryAllByRole(panel, "gridcell", { selected: true }).some((cell) => cell.contains(day(panel, date)));
+}
+
 async function pick(app: Parameters<typeof settle>[0], panel: HTMLElement, date: string) {
   fireEvent.click(day(panel, date));
   await settle(app);
@@ -441,6 +445,15 @@ describe("the period's custom interval", () => {
     expect(app.shadowRoot!.activeElement).toBe(periodButton(root));
   });
 
+  it("a focusout with no next target still closes Konti", async () => {
+    const { app, root } = await mount("");
+    fireEvent.click(kontiButton(root));
+    await app.updateComplete;
+    fireEvent.focusOut(getByRole(root, "checkbox", { name: da.allAccounts }), { relatedTarget: null });
+    await settle(app);
+    expect(queryByRole(root, "checkbox", { name: da.allAccounts })).toBeNull();
+  });
+
   it("a focusout with no next target keeps the period menu open", async () => {
     const { app, root } = await mount("");
     const { from } = await openPeriod(root, app);
@@ -495,7 +508,19 @@ describe("the period's custom interval", () => {
     const { app, root } = await mount("");
     const { panel, from } = await openPeriod(root, app);
     await type(app, from, "15.06.2023");
-    expect(day(panel, "2023-06-15").closest("[role=gridcell]")?.getAttribute("aria-selected")).toBe("true");
+    expect(isPicked(panel, "2023-06-15")).toBe(true);
+  });
+
+  it("clearing or spoiling a field clears its day in the calendar and keeps the month", async () => {
+    const { app, root } = await mount("period=lastMonth");
+    const { panel, from, to } = await openPeriod(root, app);
+    expect(isPicked(panel, "2026-09-30")).toBe(true);
+    await type(app, to, "");
+    expect(isPicked(panel, "2026-09-01")).toBe(true);
+    expect(isPicked(panel, "2026-09-30")).toBe(false);
+    await type(app, from, "31.02.2026");
+    expect(queryAllByRole(panel, "gridcell", { selected: true })).toEqual([]);
+    day(panel, "2026-09-15");
   });
 
   it("a pick and a change of month keep the menu open", async () => {

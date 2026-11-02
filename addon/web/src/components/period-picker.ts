@@ -169,18 +169,20 @@ export class PeriodPicker extends Dropdown {
     this.toText = days.length > 1 ? typedDate(days[days.length - 1]) : "";
   }
 
-  /** Moves the calendar to a typed date: the start in the first month shown, the end in the last. */
+  /** Keeps the calendar's days in step with the fields, and moves it to a typed date: the start in the first month
+   * shown, the end in the last. */
   private typed(field: "from" | "to", text: string): void {
     if (field === "from") this.fromText = text;
     else this.toText = text;
+    if (this.calendar === null) return;
     const date = parseTypedDate(text);
-    if (this.calendar === null || date === null || date > this.today) return;
-    const shown = monthFrom(date, field === "from" ? 0 : 1 - this.monthsShown);
+    const move = date !== null && date <= this.today ? monthFrom(date, field === "from" ? 0 : 1 - this.monthsShown) : null;
     this.calendar.set({
       ...this.bounds(),
       selectedDates: this.selection(),
-      selectedMonth: shown.month as Options["selectedMonth"],
-      selectedYear: shown.year,
+      ...(move === null
+        ? {}
+        : { selectedMonth: move.month as Options["selectedMonth"], selectedYear: move.year }),
     });
   }
 
@@ -235,7 +237,6 @@ export class PeriodPicker extends Dropdown {
                   ><small>${da.from}</small
                   ><input
                     type="text"
-                    inputmode="numeric"
                     autocomplete="off"
                     placeholder=${da.datePlaceholder}
                     .value=${live(this.fromText)}
@@ -246,7 +247,6 @@ export class PeriodPicker extends Dropdown {
                   ><small>${da.to}</small
                   ><input
                     type="text"
-                    inputmode="numeric"
                     autocomplete="off"
                     placeholder=${da.datePlaceholder}
                     .value=${live(this.toText)}
@@ -285,29 +285,57 @@ export const calendarStyles = [
       --vc-header-color: var(--hs-text);
       --vc-title-color: var(--hs-text);
       --vc-title-color-hover: var(--hs-accent-text);
+      --vc-title-color-disabled: var(--hs-leader);
       --vc-focus-outline-color: var(--hs-accent-text);
       --vc-week-day-color: var(--hs-muted);
+      --vc-week-day-color-hover: var(--hs-text);
       --vc-week-day-off-color: var(--hs-muted);
+      --vc-week-day-off-color-hover: var(--hs-text);
+      --vc-date-bg: transparent;
       --vc-date-color: var(--hs-text);
       --vc-date-weekend-color: var(--hs-text);
+      --vc-date-bg-hover: var(--hs-soft);
+      --vc-date-weekend-bg-hover: var(--hs-soft);
       --vc-date-hover-bg: var(--hs-soft);
       --vc-date-weekend-hover-bg: var(--hs-soft);
+      --vc-date-hover-edge-bg: var(--hs-chip-x);
+      --vc-date-weekend-hover-edge-bg: var(--hs-chip-x);
       --vc-date-disabled-color: var(--hs-leader);
       --vc-date-weekend-disabled-color: var(--hs-leader);
+      --vc-date-weekend-disabled-outside-color: var(--hs-leader);
+      --vc-date-today-bg: transparent;
       --vc-date-today-color: var(--hs-accent-text);
       --vc-date-weekend-today-color: var(--hs-accent-text);
-      --vc-date-today-bg: transparent;
+      --vc-date-weekend-today-disabled-color: var(--hs-leader);
+      --vc-date-today-outside-color: var(--hs-muted);
+      --vc-date-weekend-today-outside-color: var(--hs-muted);
+      --vc-date-outside-color: var(--hs-muted);
+      --vc-date-weekend-outside-color: var(--hs-muted);
+      --vc-date-weekend-outside-bg: transparent;
+      --vc-date-weekend-outside-bg-hover: var(--hs-soft);
+      --vc-date-weekend-outside-hover-bg: var(--hs-soft);
       --vc-date-selected-bg: var(--hs-accent);
       --vc-date-selected-color: #fff;
       --vc-date-weekend-selected-bg: var(--hs-accent);
       --vc-date-weekend-selected-color: #fff;
+      --vc-date-selected-outside-bg: var(--hs-accent-soft);
+      --vc-date-selected-outside-color: var(--hs-muted);
       --vc-date-range-middle-bg: var(--hs-accent-soft);
       --vc-date-range-middle-color: var(--hs-text);
       --vc-date-range-middle-weekend-bg: var(--hs-accent-soft);
       --vc-date-range-middle-weekend-color: var(--hs-text);
+      --vc-date-range-middle-outside-bg: var(--hs-accent-soft);
+      --vc-date-range-middle-outside-color: var(--hs-muted);
+      --vc-date-popup-bg: var(--hs-card);
+      --vc-date-popup-color: var(--hs-text);
+      --vc-date-range-tooltip-bg: var(--hs-card);
+      --vc-date-range-tooltip-color: var(--hs-muted);
+      --vc-months-years-bg: transparent;
+      --vc-months-years-color: var(--hs-text);
       --vc-months-years-bg-hover: var(--hs-soft);
       --vc-months-years-bg-selected: var(--hs-accent);
       --vc-months-years-color-selected: #fff;
+      --vc-months-years-color-disabled: var(--hs-leader);
     }
     .period-calendar .vc {
       padding: 4px 0 0;
