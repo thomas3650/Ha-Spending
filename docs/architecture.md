@@ -19,7 +19,7 @@ The server and the page reach each other only through the routes below.
 
 The server reads Firefly III and answers `/api/data`; the page fetches it and shows screens 1 to 4 of the
 [UI spec](superpowers/specs/2026-10-30-ui-ux-design.md) and the subscriptions card of the
-[subscriptions spec](superpowers/specs/2026-11-01-subscriptions.md) and
+[subscriptions spec](superpowers/specs/2026-11-01-subscriptions.md) and the
 [object groups spec](superpowers/specs/2026-11-01-object-groups.md).
 
 - **The server** is Hono on `@hono/node-server` ([D3](decisions.md)), in `addon/server/src/`. In the image it is one
