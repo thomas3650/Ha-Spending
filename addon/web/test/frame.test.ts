@@ -310,6 +310,15 @@ describe("the frame", () => {
     expect(fetch).toHaveBeenCalledTimes(2);
   });
 
+  it("Alt shows nothing of the first answer while the second is on its way", async () => {
+    const { root, fetch } = await mount("period=all", {
+      answer: (range, n) => (n === 1 ? json(answerFor(range)) : new Promise<Response>(() => {})),
+    });
+    expect(fetch).toHaveBeenCalledTimes(2);
+    expect(getAllByRole(root, "group", { name: da.loading }).length).toBeGreaterThan(0);
+    expect(queryByRole(root, "group", { name: da.spendingInPeriod })).toBeNull();
+  });
+
   it("Alt keeps a unit from an earlier year", async () => {
     const { app } = await mount("period=all&unit=2025-12-01");
     await settle(app);
