@@ -6,6 +6,8 @@ import {
   comparisonLabel,
   count,
   kr,
+  longDate,
+  parseTypedDate,
   partLabel,
   percent,
   postingAmount,
@@ -15,6 +17,7 @@ import {
   shortDate,
   stepAmounts,
   tableDate,
+  typedDate,
   unitAxis,
   unitName,
 } from "../src/format";
@@ -70,6 +73,17 @@ describe("dates", () => {
     expect(rangeText({ start: "2026-07-01", end: "2026-07-31" })).toBe("1. – 31. jul 2026");
     expect(rangeText({ start: "2025-11-01", end: "2026-10-31" })).toBe("1. nov 2025 – 31. okt 2026");
     expect(rangeText({ start: "2026-10-30", end: "2026-10-30" })).toBe("30. okt 2026");
+  });
+  it("parses a typed date with one or two digits for the day and the month", () => {
+    expect(parseTypedDate("03.01.2024")).toBe("2024-01-03");
+    expect(parseTypedDate(" 3.1.2024 ")).toBe("2024-01-03");
+  });
+  it("refuses a typed date that is not a real day.month.year", () => {
+    for (const text of ["31.02.2024", "2024-01-03", "3.1.24", ""]) expect(parseTypedDate(text)).toBeNull();
+  });
+  it("writes a date for typing and for a day's name", () => {
+    expect(typedDate("2024-01-03")).toBe("03.01.2024");
+    expect(longDate("2026-09-10")).toBe("10. september 2026");
   });
 });
 

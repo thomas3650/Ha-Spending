@@ -43,8 +43,10 @@ export class Dropdown extends LitElement {
   /** The panel has tabindex -1, so a click on its background keeps focus inside. */
   private readonly onFocusOut = (event: FocusEvent): void => {
     const next = event.relatedTarget;
-    if (this.open && !(next instanceof Node && this.contains(next))) void this.close(false);
+    if (this.open && !(next instanceof Node && this.contains(next)) && !this.keepsOpenOn(event)) void this.close(false);
   };
+
+  protected keepsOpenOn: (event: FocusEvent) => boolean = () => false;
 
   override connectedCallback(): void {
     super.connectedCallback();

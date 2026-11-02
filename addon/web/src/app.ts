@@ -14,7 +14,7 @@ import { keyNumbersStyles } from "./components/key-numbers";
 import { barsStyles, type UnitSelection } from "./components/bars";
 import { type CircleSelection, circleStyles } from "./components/circle";
 import { differenceStyles } from "./components/difference";
-import { periodPickerStyles } from "./components/period-picker";
+import { calendarStyles, periodPickerStyles } from "./components/period-picker";
 import { postingsStyles } from "./components/postings";
 import { sortHeaderStyles } from "./components/sort-header";
 import { searchStyles } from "./components/search";
@@ -98,6 +98,7 @@ export class SpendingApp extends LitElement {
     field,
     dropdownStyles,
     periodPickerStyles,
+    calendarStyles,
     topCardStyles,
     keyNumbersStyles,
     circleStyles,
