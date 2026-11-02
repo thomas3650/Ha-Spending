@@ -12,10 +12,6 @@ function keyOf(view: DetailView | undefined): string | null {
 }
 
 /**
- * The detail of a fixed expense, a subscription or a shop (detail spec §2). "Vis alle" is kept here, not in the hash.
- * "Luk" fires `detail-close`.
- */
-/**
  * A click anywhere on a row opens its posting, once: the second click of a double click is not another tab, and a
  * click on the date's own link is left to the link.
  */
@@ -24,6 +20,10 @@ function openRow(event: MouseEvent, href: string | null): void {
   window.open(href, "_blank", "noopener,noreferrer");
 }
 
+/**
+ * The detail of a fixed expense, a subscription or a shop (detail spec §2). "Vis alle" is kept here, not in the hash.
+ * "Luk" fires `detail-close`.
+ */
 export class Detail extends LitElement {
   static override properties = {
     view: { attribute: false },
@@ -338,7 +338,7 @@ export const detailStyles = css`
   .detail-row-link {
     cursor: pointer;
   }
-  .detail-row-link:hover td {
+  .detail-row-link:not([aria-current="true"]):hover td {
     background: var(--hs-soft);
   }
   .detail-rows a {
@@ -360,8 +360,6 @@ export const detailStyles = css`
     background: none;
     border: 0;
     cursor: pointer;
-  }
-  .detail-more {
     display: block;
   }
   .detail-link {

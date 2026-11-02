@@ -302,12 +302,18 @@ describe("the detail on the normal page", () => {
       fireEvent.click(rows[1], { detail: 1 });
       fireEvent.click(rows[1], { detail: 2 });
       fireEvent.dblClick(rows[1]);
-      await settle(app);
       expect(opened).toEqual([`${LINK}/transactions/show/g24`]);
+      // happy-dom follows a target="_blank" link through window.open, so the link's own tab is the one more entry.
+      fireEvent.click(dates[1], { detail: 1 });
+      await settle(app);
+      expect(opened).toEqual([`${LINK}/transactions/show/g24`, `${LINK}/transactions/show/g24`]);
       unmount();
 
       const none = await mountLinked("card=postings&detail=p%3Ap25", null);
-      expect(within(getByRole(detail(none.root, "Pizzeria Roma"), "table")).queryByRole("link")).toBeNull();
+      const table = getByRole(detail(none.root, "Pizzeria Roma"), "table");
+      expect(within(table).queryByRole("link")).toBeNull();
+      fireEvent.click(getAllByRole(table, "row")[1], { detail: 1 });
+      expect(opened).toHaveLength(2);
     } finally {
       window.open = original;
     }
