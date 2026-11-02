@@ -9,6 +9,8 @@ Please report it privately through GitHub's security advisories:
 
 - The add-on holds a Firefly III Personal Access Token in its options. Only the add-on's server reads it; it never
   reaches the browser, a log line or an answer.
+- The add-on keeps a file of shop names, the shops hidden from the Butikker card, in its `/data`. The page writes it
+  through `POST /api/hidden-shops`; it holds nothing else.
 - The page never writes to Firefly III. Only the sorter's endpoint writes: a posting's category, its main group's tag
   and a withdrawal's shop, and it may make expense accounts; for the chat's `move_posting` also the tag `moved_tag` and
   one more line of the posting's notes ([`addon/DOCS.md`](addon/DOCS.md#the-sorters-endpoint)).
