@@ -13,6 +13,8 @@ export type Card = "bars" | "postings" | "difference" | "subscriptions" | "shops
 export type PostingColumn = "date" | "text" | "category" | "account" | "amount";
 export type SubscriptionColumn = "name" | "category" | "amount" | "perYear" | "status";
 
+export type DetailKey = { kind: "subscription"; id: string } | { kind: "posting"; id: string };
+
 export interface Sorted<C extends string> {
   column: C;
   descending: boolean;

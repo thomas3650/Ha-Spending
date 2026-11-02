@@ -244,6 +244,15 @@ export const da = {
     expected: (date: string | null) => (date === null ? "Forventes ikke" : `Forventes ${date}`),
     paid: (date: string) => `Betalt ${date}`,
   },
+  backTo: (title: string) => `Tilbage til ${title}`,
+  close: "Luk",
+  shopContext: "Butik",
+  detailInPeriod: (range: string) => `I perioden · ${range}`,
+  detailPer: (g: Grouping) => `Pr. ${da.groupings[g].one} i perioden`,
+  noDetailRows: "Ingen posteringer i perioden",
+  openInFirefly: "Åbn i Firefly III",
+  noAccount: "–",
+
   repeatText: (repeat: Repeat, skip: number): string => {
     const n = skip + 1;
     switch (repeat) {
