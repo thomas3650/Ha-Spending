@@ -46,8 +46,8 @@ export const objectGroupMark = css`
   .object-group-mark {
     display: inline-block;
     padding: 1px 8px;
-    color: var(--hs-expected);
-    background: var(--hs-expected-soft);
+    color: var(--hs-muted);
+    background: var(--hs-soft);
     border-radius: 10px;
     font-size: 12px;
     font-weight: normal;

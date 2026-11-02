@@ -59,7 +59,7 @@ export class Subscriptions extends LitElement {
     const c = da.subscriptionColumns;
     const { objectGroups, groups, showCategory, rows } = this.table;
     // The columns do not fit a 420 px card, so the box scrolls sideways there and must be reachable by keyboard.
-    return html`<ul class="object-group-sums" aria-label=${this.label}>
+    return html`<ul class="object-group-sums" role="list" aria-label=${this.label}>
         ${objectGroups.map(
           (g) => html`<li>
             <span class="object-group-sum-name">${g.name}</span>
