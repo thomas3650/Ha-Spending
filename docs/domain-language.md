@@ -35,6 +35,6 @@ its name in code, so the same thing has one name everywhere. The Danish word is 
 | Sort | sortér | a table sorted by a column header: a click sorts by the column, a second click reverses it; `aria-sort` marks the column ([D40](decisions.md)) |
 | Shop | butik | `shop` (`Posting.shop`): the name of the shop a posting was made at, null when it has none |
 
-The hash keys are listed in [D20](decisions.md) and [D35](decisions.md). `Posting`, `kind` and the `null` category are fixed by technical spec §3.2
+The hash keys are listed in [D20](decisions.md), [D35](decisions.md) and [D42](decisions.md). `Posting`, `kind` and the `null` category are fixed by technical spec §3.2
 ([technical spec](superpowers/specs/2026-10-30-technical-design.md)). The other names are chosen here; they are in
 `addon/shared/src/`. Their texts, such as Uden kategori, belong to the page.

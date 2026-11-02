@@ -116,13 +116,22 @@ export const keyNumbersStyles = css`
   .kpi-toggle {
     display: block;
     width: 100%;
-    padding: 0;
+    padding: 16px 16px 0;
     border: 0;
     background: none;
     font: inherit;
     color: var(--hs-text);
     text-align: left;
     cursor: pointer;
+  }
+  .kpi-group {
+    padding: 0;
+  }
+  .kpi-plain {
+    padding: 16px 16px 0;
+  }
+  .kpi-group > .kpi-link {
+    margin: 2px 16px 16px;
   }
   .kpi-toggle > span,
   .kpi-plain > span {

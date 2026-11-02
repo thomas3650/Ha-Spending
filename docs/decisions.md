@@ -422,7 +422,7 @@ to set their status to `superseded by D<n>`, or to name a part a later decision 
 - **Decision:** The object group is a filter of Alle posteringer, in the hash as `og` after `max`, reached from the link
   under its key number. An object group that no posting carries still filters, an exception to [D20](decisions.md)'s
   fallback. The link clears the search and the shop, as [D41](decisions.md) does (an exception to
-  [D31](decisions.md) and [D35](decisions.md)), and the chosen unit, an exception to the UI spec §5.
+  [D31](decisions.md) and [D35](decisions.md)), and the chosen unit, an exception to the [UI spec](superpowers/specs/2026-10-30-ui-ux-design.md) §5.
 - **Why:** The link shows the count of the key number's value, which is not the chosen unit's. Dropping an unknown group
   silently would change the list without a word.
 - **Source:** Thomas, 2026-11-02, [the object group postings spec](superpowers/specs/2026-11-02-object-group-postings.md)
