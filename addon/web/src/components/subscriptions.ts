@@ -6,6 +6,18 @@ import type { DetailKey, SubscriptionColumn } from "../state/view";
 import { fire } from "./chip";
 import { sortHeader } from "./sort-header";
 
+/** The sum per year of each object group, apart from the table so that the split keeps them above it. */
+export function objectGroupSums(table: SubscriptionTable, label: string) {
+  return html`<ul class="object-group-sums" role="list" aria-label=${label}>
+    ${table.objectGroups.map(
+      (g) => html`<li>
+        <span class="object-group-sum-name">${g.name}</span>
+        <span class="object-group-sum-value">${g.perYear}</span>
+      </li>`,
+    )}
+  </ul>`;
+}
+
 /** The Faste udgifter card's table (subscriptions spec §1.2). */
 export class Subscriptions extends LitElement {
   static override properties = {
@@ -75,17 +87,9 @@ export class Subscriptions extends LitElement {
     const c = da.subscriptionColumns;
     const header = (column: SubscriptionColumn, label: string, className = "") =>
       sortHeader(column, label, this.table.sort, (col) => fire(this, "subscription-sort", col), className);
-    const { objectGroups, groups, showCategory, rows } = this.table;
+    const { groups, showCategory, rows } = this.table;
     // The columns do not fit a 420 px card, so the box scrolls sideways there and must be reachable by keyboard.
-    return html`<ul class="object-group-sums" role="list" aria-label=${this.label}>
-        ${objectGroups.map(
-          (g) => html`<li>
-            <span class="object-group-sum-name">${g.name}</span>
-            <span class="object-group-sum-value">${g.perYear}</span>
-          </li>`,
-        )}
-      </ul>
-      <div class="subscriptions" tabindex="0" role="group" aria-label=${this.label}>
+    return html`<div class="subscriptions" tabindex="0" role="group" aria-label=${this.label}>
       <table>
         <thead>
           <tr>

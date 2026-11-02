@@ -2,6 +2,7 @@ import { compareKeys, total } from "@ha-spending/shared";
 import { css, html, LitElement, nothing, type PropertyDeclarations, type PropertyValues } from "lit";
 import { live } from "lit/directives/live.js";
 import { chip, fire } from "../components/chip";
+import { detailSplit } from "../components/detail";
 import { Dropdown } from "../components/dropdown";
 import "../components/postings";
 import "../components/search";
@@ -9,6 +10,7 @@ import { amountChip, count, kr, unitName } from "../format";
 import { da } from "../i18n/da";
 import { categoryColours } from "../model/circle";
 import { partName, type ViewContext } from "../model/context";
+import { detailView } from "../model/detail";
 import { filteredPostings, objectGroupBase, searchBase, shopSuggestions } from "../model/filter";
 import { postingList } from "../model/postings";
 import {
@@ -172,10 +174,11 @@ export class AllPostings extends LitElement {
     return this;
   }
 
-  /** Waits for the list too, so the app can focus a row's button once it shows (detail spec §1.3). */
+  /** Waits for the list and the detail too, so the app can focus a row's button or the heading (detail spec §1.3). */
   protected override async getUpdateComplete(): Promise<boolean> {
     const done = await super.getUpdateComplete();
-    await this.querySelector("hs-postings")?.updateComplete;
+    const children = [...this.querySelectorAll<LitElement>("hs-postings, hs-detail")];
+    await Promise.all(children.map((c) => c.updateComplete));
     return done;
   }
 
@@ -222,8 +225,8 @@ export class AllPostings extends LitElement {
     const ctx = this.ctx;
     const state = ctx.state;
     const postings = filteredPostings(ctx);
-    return html`<section class="card all-postings">
-      <div class="all-search-row">
+    const view = state.detail === null ? null : detailView(state.detail, ctx);
+    const above = html`<div class="all-search-row">
         <hs-search
           .search=${state.search}
           .shop=${state.shop}
@@ -236,9 +239,8 @@ export class AllPostings extends LitElement {
           <hs-filter-picker .ctx=${ctx}></hs-filter-picker>
         </div>
         <span class="all-summary">${da.summary(count(postings.length), kr(total(postings)))}</span>
-      </div>
-      ${this.table(postings)}
-    </section>`;
+      </div>`;
+    return html`<section class="card all-postings">${detailSplit(above, this.table(postings), view, false)}</section>`;
   }
 }
 

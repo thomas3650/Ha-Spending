@@ -27,7 +27,6 @@ export class Detail extends LitElement {
   declare closable: boolean;
   declare private all: boolean;
   private shownKey: string | null = null;
-  private focusHeading = false;
 
   constructor() {
     super();
@@ -46,13 +45,6 @@ export class Detail extends LitElement {
     if (key === this.shownKey) return;
     this.shownKey = key;
     this.all = false;
-    this.focusHeading = true;
-  }
-
-  protected override updated(): void {
-    if (!this.focusHeading) return;
-    this.focusHeading = false;
-    this.querySelector<HTMLElement>("h3")?.focus();
   }
 
   private bars(bars: DetailBar[]) {
@@ -134,7 +126,52 @@ export class Detail extends LitElement {
   }
 }
 
+/**
+ * The rows above a list, the list and an open detail (detail spec §1.2). In place, on the normal page, the detail takes
+ * the list's place; else it goes beside the list. The rows and the list stay rendered, only hidden, so the list keeps
+ * its folds and "Vis flere" and its row can take the focus back after a close. The shape is the same in every state,
+ * so Lit keeps the elements when a detail opens or closes or full screen turns.
+ */
+export function detailSplit(above: unknown, list: unknown, view: DetailView | null, inPlace: boolean) {
+  const hide = view !== null && inPlace;
+  return html`<div class="split-above" ?hidden=${hide}>${above}</div>
+    <div class="detail-split ${view !== null && !inPlace ? "open" : ""}">
+      <div class="split-list" ?hidden=${hide}>${list}</div>
+      ${view === null
+        ? nothing
+        : html`<div class="split-detail"><hs-detail .view=${view} .closable=${!inPlace}></hs-detail></div>`}
+    </div>`;
+}
+
 export const detailStyles = css`
+  .split-above[hidden],
+  .split-list[hidden] {
+    display: none;
+  }
+  .detail-split.open {
+    display: grid;
+    grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+  }
+  .detail-split.open > .split-list {
+    padding-right: 16px;
+  }
+  .detail-split.open > .split-detail {
+    padding-left: 16px;
+    border-left: 1px solid var(--hs-line);
+  }
+  /* Where the halves stack (D24), a four-column table does not fit beside the detail. */
+  @media (max-width: 1023px) {
+    .detail-split.open {
+      grid-template-columns: minmax(0, 1fr);
+    }
+    .detail-split.open > .split-list {
+      display: none;
+    }
+    .detail-split.open > .split-detail {
+      padding-left: 0;
+      border-left: 0;
+    }
+  }
   .row-name {
     padding: 0;
     font: inherit;

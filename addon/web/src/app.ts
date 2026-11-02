@@ -227,6 +227,8 @@ export class SpendingApp extends LitElement {
   private writes: Promise<void> = Promise.resolve();
   /** The detail a close or Back just closed, whose row gets the focus back after the render. */
   private closed: DetailKey | null = null;
+  /** Set by a row's click only: a link, a reload or full screen leave the focus where it is (detail spec §1.3). */
+  private openedByRow = false;
 
   constructor() {
     super();
@@ -265,6 +267,7 @@ export class SpendingApp extends LitElement {
     const hash = `#${toHash(next)}`;
     if (this.state.detail === null) history.pushState(DETAIL_ENTRY, "", hash);
     else history.replaceState(detailEntry() ? DETAIL_ENTRY : null, "", hash);
+    this.openedByRow = true;
     this.change(next);
   };
 
@@ -340,10 +343,20 @@ export class SpendingApp extends LitElement {
   }
 
   protected override updated(): void {
+    if (this.openedByRow) {
+      this.openedByRow = false;
+      void this.focusDetail();
+    }
     const key = this.closed;
     if (key === null) return;
     this.closed = null;
     void this.focusRow(key);
+  }
+
+  private async focusDetail(): Promise<void> {
+    const root = this.renderRoot;
+    await root.querySelector<LitElement>("hs-overview, hs-all-postings")?.updateComplete;
+    root.querySelector<HTMLElement>("hs-detail h3")?.focus();
   }
 
   /** The row's button when its list shows it, else the heading of the card or the page (detail spec §1.3). */

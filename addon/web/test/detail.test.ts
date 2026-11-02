@@ -122,6 +122,22 @@ describe("the detail on the normal page", () => {
     expect(focused(app)).toBe(rowButton(region(root, da.subscriptions), "Husleje"));
   });
 
+  it("a row in a fold opened by hand gets the focus back after a close", async () => {
+    const { app, root } = await mountLinked("card=postings");
+    const february = unitName(viewContext(linked(THIS_YEAR), DEFAULT_STATE, TODAY).units[1], "month");
+    await click(app, getByRole(region(root, da.postingsTitle), "button", { name: new RegExp(`^${february},`), expanded: false }));
+    await click(app, rowButton(region(root, da.postingsTitle), "Kiosken"));
+    getByRole(root, "heading", { level: 3, name: "Kiosken" });
+    await click(app, getByRole(root, "button", { name: da.backTo(da.postingsTitle) }));
+    expect(focused(app)).toBe(rowButton(region(root, da.postingsTitle), "Kiosken"));
+  });
+
+  it("a link with a detail opens it and leaves the focus where it was", async () => {
+    const { app, root } = await mountLinked("card=postings&detail=p%3Ap25");
+    getByRole(root, "heading", { level: 3, name: "Pizzeria Roma" });
+    expect(focused(app)).toBeNull();
+  });
+
   it("keeps the view switch and the full-screen button, and hides the chips, while open", async () => {
     const { app, root } = await mountLinked("group=Bolig&category=Husleje&card=postings");
     const title = da.postingsOf("Husleje");
