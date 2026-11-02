@@ -42,6 +42,19 @@ export const card = css`
   }
 `;
 
+export const objectGroupMark = css`
+  .object-group-mark {
+    display: inline-block;
+    padding: 1px 8px;
+    color: var(--hs-expected);
+    background: var(--hs-expected-soft);
+    border-radius: 10px;
+    font-size: 12px;
+    font-weight: normal;
+    white-space: nowrap;
+  }
+`;
+
 export const chip = css`
   .chip {
     display: inline-flex;

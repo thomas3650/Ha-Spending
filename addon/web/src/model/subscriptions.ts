@@ -17,6 +17,7 @@ import { linkBase } from "./postings";
 export interface SubscriptionRow {
   id: string;
   name: string;
+  objectGroup: string;
   /** "1. nov"; null: no next date. */
   next: string | null;
   /** "8.000 kr. pr. måned", which wraps only between the amount and its repeat. */
@@ -94,7 +95,13 @@ export interface SubscriptionGroup {
   rows: SubscriptionRow[];
 }
 
+export interface ObjectGroupSum {
+  name: string;
+  perYear: string;
+}
+
 export interface SubscriptionTable {
+  objectGroups: ObjectGroupSum[];
   groups: SubscriptionGroup[] | null;
   showCategory: boolean;
   rows: SubscriptionRow[];
@@ -110,6 +117,7 @@ export function subscriptionTable(ctx: ViewContext): SubscriptionTable {
     const row: SubscriptionRow = {
       id: s.id,
       name: s.name,
+      objectGroup: s.objectGroup,
       next: next === null ? null : shortDate(next, today),
       amount: `${unbroken(kr(amountPerPayment(s)))} ${unbroken(da.repeatText(s.repeat, s.skip))}`,
       perYear: kr(amountPerYear(s)),
@@ -125,8 +133,13 @@ export function subscriptionTable(ctx: ViewContext): SubscriptionTable {
     };
   });
   const rows = items.map((i) => i.row);
+  const sums = new Map<string, number>();
+  for (const item of items) sums.set(item.row.objectGroup, (sums.get(item.row.objectGroup) ?? 0) + item.year);
+  const objectGroups = [...sums]
+    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], "da"))
+    .map(([name, year]) => ({ name, perYear: da.perYear(kr(year)) }));
   const kind = ctx.state.level.kind;
-  if (kind === "category") return { groups: null, showCategory: false, rows };
+  if (kind === "category") return { objectGroups, groups: null, showCategory: false, rows };
 
   const of = kind === "all" ? "mainGroup" : "category";
   const colours = partColours(ctx);
@@ -154,7 +167,7 @@ export function subscriptionTable(ctx: ViewContext): SubscriptionTable {
       perYear: kr(g.year),
       rows: g.rows,
     }));
-  return { groups, showCategory: kind === "all", rows };
+  return { objectGroups, groups, showCategory: kind === "all", rows };
 }
 
 export function subscriptionRows(ctx: ViewContext): SubscriptionRow[] {

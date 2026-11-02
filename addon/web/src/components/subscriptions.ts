@@ -16,7 +16,7 @@ export class Subscriptions extends LitElement {
 
   constructor() {
     super();
-    this.table = { groups: null, showCategory: false, rows: [] };
+    this.table = { objectGroups: [], groups: null, showCategory: false, rows: [] };
     this.label = "";
   }
 
@@ -28,7 +28,7 @@ export class Subscriptions extends LitElement {
     const name = r.href ? html`<a href=${r.href} target="_blank" rel="noopener noreferrer">${r.name}</a>` : r.name;
     return html`<tr>
       <td>
-        <span class="subscription-name">${name}</span>
+        <span class="subscription-name">${name} <span class="object-group-mark">${r.objectGroup}</span></span>
         ${r.next === null ? nothing : html`<span class="subscription-next">${da.nextOn(r.next)}</span>`}
       </td>
       ${showCategory ? html`<td>${r.category}</td>` : nothing}
@@ -57,9 +57,17 @@ export class Subscriptions extends LitElement {
 
   override render() {
     const c = da.subscriptionColumns;
-    const { groups, showCategory, rows } = this.table;
+    const { objectGroups, groups, showCategory, rows } = this.table;
     // The columns do not fit a 420 px card, so the box scrolls sideways there and must be reachable by keyboard.
-    return html`<div class="subscriptions" tabindex="0" role="group" aria-label=${this.label}>
+    return html`<ul class="object-group-sums" aria-label=${this.label}>
+        ${objectGroups.map(
+          (g) => html`<li>
+            <span class="object-group-sum-name">${g.name}</span>
+            <span class="object-group-sum-value">${g.perYear}</span>
+          </li>`,
+        )}
+      </ul>
+      <div class="subscriptions" tabindex="0" role="group" aria-label=${this.label}>
       <table>
         <thead>
           <tr>
@@ -81,6 +89,32 @@ export class Subscriptions extends LitElement {
 }
 
 export const subscriptionsStyles = css`
+  .object-group-sums {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 0 0 12px;
+    padding: 0;
+    list-style: none;
+  }
+  .object-group-sums li {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 140px;
+    padding: 8px 12px;
+    background: var(--hs-soft);
+    border-radius: 8px;
+  }
+  .object-group-sum-name {
+    color: var(--hs-muted);
+    font-size: 12px;
+  }
+  .object-group-sum-value {
+    font-size: 16px;
+    font-weight: bold;
+    font-variant-numeric: tabular-nums;
+  }
   .subscriptions {
     overflow-x: auto;
   }

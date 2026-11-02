@@ -57,7 +57,7 @@ import {
   toHash,
   type ViewState,
 } from "./state/view";
-import { card, chip, field, theme } from "./theme";
+import { card, chip, field, objectGroupMark, theme } from "./theme";
 
 type Load =
   | { kind: "idle" }
@@ -82,6 +82,7 @@ export class SpendingApp extends LitElement {
     theme,
     card,
     chip,
+    objectGroupMark,
     field,
     dropdownStyles,
     periodPickerStyles,
