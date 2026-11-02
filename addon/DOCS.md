@@ -70,6 +70,12 @@ number of subscriptions paid. A click on it shows the card. Under it, a link suc
 with all postings, filtered to that object group; the filter shows as a chip that you remove with its cross. The link
 clears any search, shop and chosen unit. "+ Filter" can also choose an object group.
 
+The right card's choice "Butikker" lists the shops with the most spending, for what is chosen on the left: all
+spending, a main group or a category. It shows the ten biggest, with "Vis alle" for the rest; a click on a shop's name
+opens its postings. "Skjul" hides a shop, for example the rent, from this list on every level; "Vis skjulte" shows
+the hidden shops again. Hiding changes nothing else on the page, and nothing in Firefly III. The add-on keeps the
+hidden shops in a file in its `/data`, so they are the same on every device and are in Home Assistant's backups.
+
 The button "Fuld skærm" in the right card's title gives that card the page's whole width; the same button or Escape
 brings the circle and the key numbers back.
 

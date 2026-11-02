@@ -4,6 +4,7 @@ import { createApp, type DataLoader } from "./app";
 import { createCache } from "./cache";
 import { serverEnv } from "./env";
 import { createFireflyClient, FireflyError } from "./firefly/client";
+import { createHiddenShopsStore } from "./hidden-shops";
 import { READ_TIMEOUT_MS, type ReadSettings, readSpendingData, readVersion } from "./firefly/read";
 import { type Options, OptionsError, readOptions } from "./options";
 import { createChatTools } from "./sorter/chat";
@@ -38,7 +39,8 @@ const loadData: DataLoader = (range) =>
     readSpendingData(client, settings, range, { today: localToday(new Date()), warn: console.warn }),
   );
 
-const app = createApp({ webDir: env.webDir, dev: env.dev, loadData });
+const hiddenShops = createHiddenShopsStore(env.hiddenShopsPath, console.error);
+const app = createApp({ webDir: env.webDir, dev: env.dev, loadData, hiddenShops });
 
 serve({ fetch: app.fetch, port: PORT, hostname: env.hostname }, () => {
   console.log(

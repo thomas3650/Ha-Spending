@@ -1,6 +1,9 @@
+import { mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { createFakeFirefly, exampleSeed, seedFirefly } from "@ha-spending/dev";
 import { classify, parts, type SpendingData } from "@ha-spending/shared";
-import { beforeAll, describe, expect, it, vi } from "vitest";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { createChatTools } from "../src/sorter/chat";
 import { createSorterApp } from "../src/sorter/http";
 import { createSorterTools, readAccounts } from "../src/sorter/tools";
@@ -8,6 +11,7 @@ import { createApp } from "../src/app";
 import { createFireflyClient, type FetchLike, type FireflyClient, FireflyError } from "../src/firefly/client";
 import { type ReadSettings, readSpendingData, readVersion } from "../src/firefly/read";
 import type { WireAccount, WireBill, WireCategory, WireGroup, WirePage, WireSplit } from "../src/firefly/wire";
+import { createHiddenShopsStore } from "../src/hidden-shops";
 
 const settings: ReadSettings = {
   mainGroupRuleGroup: "Hovedgrupper",
@@ -24,6 +28,7 @@ const sum = (amounts: { amount: number }[]) => amounts.reduce((s, p) => s + p.am
 let url: string;
 let token: string;
 let client: FireflyClient;
+let dataDir: string;
 
 const read = (range: { start: string; end: string }, c = client) =>
   readSpendingData(c, settings, range, { today, warn: () => {} });
@@ -36,7 +41,14 @@ beforeAll(async () => {
   token = givenToken;
   await seedFirefly(url, token, exampleSeed);
   client = createFireflyClient({ baseUrl: url, token });
+  dataDir = mkdtempSync(join(tmpdir(), "ha-spending-hidden-"));
 });
+
+afterAll(() => {
+  rmSync(dataDir, { recursive: true, force: true });
+});
+
+const hiddenShops = () => createHiddenShopsStore(join(dataDir, "hidden-shops.json"), () => {});
 
 describe("a real Firefly III", () => {
   it("tells the pinned version", async () => {
@@ -146,7 +158,13 @@ describe("a real Firefly III", () => {
   });
 
   it("serves /api/data for a few periods", async () => {
-    const app = createApp({ webDir: "/nowhere", dev: true, loadData: (r) => read(r), log: () => {} });
+    const app = createApp({
+      webDir: "/nowhere",
+      dev: true,
+      loadData: (r) => read(r),
+      log: () => {},
+      hiddenShops: hiddenShops(),
+    });
     const served = async (start: string, end: string) => {
       const res = await app.request(`/api/data?start=${start}&end=${end}`);
       expect(res.status).toBe(200);
@@ -163,7 +181,13 @@ describe("a real Firefly III", () => {
 
   describe("subscriptions", () => {
     const served = async () => {
-      const app = createApp({ webDir: "/nowhere", dev: true, loadData: (r) => read(r), log: () => {} });
+      const app = createApp({
+        webDir: "/nowhere",
+        dev: true,
+        loadData: (r) => read(r),
+        log: () => {},
+        hiddenShops: hiddenShops(),
+      });
       const res = await app.request("/api/data?start=2025-12-01&end=2026-07-31");
       expect(res.status).toBe(200);
       return (await res.json()) as SpendingData;

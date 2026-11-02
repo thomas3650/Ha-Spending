@@ -7,6 +7,7 @@ describe("serverEnv", () => {
       dev: false,
       webDir: "/opt/ha-spending/web",
       optionsPath: "/data/options.json",
+      hiddenShopsPath: "/data/hidden-shops.json",
       hostname: undefined,
     });
   });
@@ -16,7 +17,13 @@ describe("serverEnv", () => {
       dev: true,
       webDir: "/opt/ha-spending/web",
       optionsPath: "/x.json",
+      hiddenShopsPath: "/data/hidden-shops.json",
       hostname: "127.0.0.1",
     });
+  });
+
+  it("hiddenShopsPath defaults to /data/hidden-shops.json and follows HA_SPENDING_HIDDEN_SHOPS", () => {
+    expect(serverEnv({}).hiddenShopsPath).toBe("/data/hidden-shops.json");
+    expect(serverEnv({ HA_SPENDING_HIDDEN_SHOPS: "/y/hidden.json" }).hiddenShopsPath).toBe("/y/hidden.json");
   });
 });

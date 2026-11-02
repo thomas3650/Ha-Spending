@@ -7,11 +7,14 @@ import type { SpendingData } from "@ha-spending/shared";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { createApp as createAppWith, type DataLoader } from "../src/app";
 import { FireflyError } from "../src/firefly/client";
+import { createHiddenShopsStore } from "../src/hidden-shops";
 import { VERSION } from "../src/version";
 
 let webDir: string;
+let dataDir: string;
 
 beforeAll(() => {
+  dataDir = mkdtempSync(join(tmpdir(), "ha-spending-hidden-"));
   webDir = mkdtempSync(join(tmpdir(), "ha-spending-web-"));
   writeFileSync(join(webDir, "index.html"), "<p>page</p>");
   mkdirSync(join(webDir, "web"));
@@ -20,6 +23,7 @@ beforeAll(() => {
 
 afterAll(() => {
   rmSync(webDir, { recursive: true, force: true });
+  rmSync(dataDir, { recursive: true, force: true });
 });
 
 const from = (address: string) => ({ incoming: { socket: { remoteAddress: address } } });
@@ -54,7 +58,8 @@ const D: SpendingData = {
 const unused: DataLoader = () => Promise.reject(new Error("not used"));
 
 function createApp(options: { webDir: string; dev: boolean; loadData?: DataLoader }) {
-  return createAppWith({ loadData: unused, log: () => {}, ...options });
+  const hiddenShops = createHiddenShopsStore(join(dataDir, "hidden-shops.json"), () => {});
+  return createAppWith({ loadData: unused, log: () => {}, hiddenShops, ...options });
 }
 
 describe("createApp", () => {
@@ -88,7 +93,7 @@ describe("createApp", () => {
     expect((await app.request("/web/a.js", {}, ingress)).status).toBe(200);
   });
 
-  it("has no route that writes", async () => {
+  it("answers 404 to a POST on a read route and to an unknown route", async () => {
     const app = createApp({ webDir, dev: false });
     expect((await app.request("/api/health", { method: "POST" }, ingress)).status).toBe(404);
     expect((await app.request("/api/nope", {}, ingress)).status).toBe(404);

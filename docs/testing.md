@@ -18,7 +18,8 @@ Every PR. The server and the page on the Mac, with a fake Firefly III and nothin
      so the ingress check is off, `HA_SPENDING_OPTIONS` set to `addon/dev/options.json`, which points at the fake (a
      value already set wins, so a copy of that file in `local/` can replace it), and `HA_SPENDING_WEB_DIR` unset, so it
      serves no page at `/`: the default web directory `/opt/ha-spending/web` does not exist on the Mac (log
-     `local/server.log`);
+     `local/server.log`); `HA_SPENDING_HIDDEN_SHOPS` is `local/hidden-shops.json`, the hidden shops' file (git-ignored;
+     delete it to start with none);
    - Vite's dev server with the page on `http://127.0.0.1:5173`, which passes `/api` to the server (log
      `local/web.log`).
 
@@ -155,3 +156,11 @@ The page's list. Every screenshot is at 1440×960 with the console free of error
 32. `46-objektgruppe-link`: the two object group key numbers with their "N posteringer →" links at Alt forbrug and at a
     main group; a click on each opens Alle posteringer with that object group's chip and only its postings, the count
     equal to the link's. Then the chip's ✕ and the "Faste udgifter" group in "+ Filter". At 1440 and 420 px.
+33. `47-butikker`: the Butikker card at Alt forbrug, at a main group and at a category (the title "Butikker i Mad"), and
+    with a chosen unit and its chip. The rows run biggest first, with place, bar, sum and share; "Uden butik" sits
+    under the list. A click on a name opens Posteringer with the shop's chip, and Back returns. Also "Vis alle" and
+    "Vis færre", and full screen. At 1440 and 420 px, where the switch's five buttons wrap and do not scroll the page.
+34. `48-butikker-skjult`: "Skjul" on a shop removes its row, and the places close up. "Vis skjulte (n · sum)" shows it
+    grey with "Vis"; "Vis" brings it back. After a reload the hidden shops are as they were, and the circle and the
+    shares are unchanged. Stop the server for a moment to see "Kunne ikke gemme. Prøv igen." on a write and
+    "Skjulte butikker kunne ikke hentes." on a start.

@@ -9,7 +9,7 @@ import {
 } from "@ha-spending/shared";
 
 export type PeriodChoice = { preset: Preset } | { preset: "custom"; start: string; end: string };
-export type Card = "bars" | "postings" | "difference" | "subscriptions";
+export type Card = "bars" | "postings" | "difference" | "subscriptions" | "shops";
 export type PostingColumn = "date" | "text" | "category" | "account" | "amount";
 export type SubscriptionColumn = "name" | "category" | "amount" | "perYear" | "status";
 
@@ -61,7 +61,7 @@ export const DEFAULT_STATE: ViewState = {
 };
 
 const GROUPINGS: readonly Grouping[] = ["day", "week", "month", "quarter", "year"];
-const CARDS: readonly Card[] = ["bars", "postings", "difference", "subscriptions"];
+const CARDS: readonly Card[] = ["bars", "postings", "difference", "subscriptions", "shops"];
 /** The four first names keep old links working; the text columns name their direction. */
 const SORT_NAMES: readonly [string, Sort][] = [
   ["newest", { column: "date", descending: true }],

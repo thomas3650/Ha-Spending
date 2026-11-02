@@ -7,6 +7,7 @@ import "../components/difference";
 import type { DifferenceItem } from "../components/difference";
 import "../components/postings";
 import "../components/search";
+import "../components/shops";
 import "../components/subscriptions";
 import { count, kr, unitName } from "../format";
 import { da } from "../i18n/da";
@@ -14,13 +15,16 @@ import { barItems, categoryColours, circleItems, circleSpan, circleTotal, partCo
 import { levelName, partName, type ViewContext } from "../model/context";
 import { matches, shopSuggestions } from "../model/filter";
 import { postingList } from "../model/postings";
+import { type HiddenState, shopList } from "../model/shops";
 import { DEFAULT_SUBSCRIPTION_SORT, subscriptionTable } from "../model/subscriptions";
+import { hasShops } from "../state/actions";
 import { type Card, DEFAULT_STATE, type Sort, type SubscriptionColumn, type Sorted } from "../state/view";
 
 const LEFT_TITLE = "hs-left-title";
 const RIGHT_TITLE = "hs-right-title";
 const EXPAND = "M14 4h6v6M20 4l-7 7M10 20H4v-6M4 20l7-7";
 const COLLAPSE = "M14 4v6h6M14 10l7-7M10 20v-6H4M10 14l-7 7";
+const SHOPS_LIMIT = 10;
 
 export class Overview extends LitElement {
   static override properties = {
@@ -28,18 +32,30 @@ export class Overview extends LitElement {
     fullScreen: { attribute: false },
     postingsSort: { attribute: false },
     subscriptionsSort: { attribute: false },
+    hiddenShops: { attribute: false },
+    shopsAll: { attribute: false },
+    shopsHidden: { attribute: false },
+    hiddenWriteFailed: { attribute: false },
   };
 
   declare ctx: ViewContext;
   declare fullScreen: boolean;
   declare postingsSort: Sort;
   declare subscriptionsSort: Sorted<SubscriptionColumn>;
+  declare hiddenShops: HiddenState;
+  declare shopsAll: boolean;
+  declare shopsHidden: boolean;
+  declare hiddenWriteFailed: boolean;
 
   constructor() {
     super();
     this.fullScreen = false;
     this.postingsSort = DEFAULT_STATE.sort;
     this.subscriptionsSort = DEFAULT_SUBSCRIPTION_SORT;
+    this.hiddenShops = { kind: "loading" };
+    this.shopsAll = false;
+    this.shopsHidden = false;
+    this.hiddenWriteFailed = false;
   }
 
   protected override createRenderRoot(): HTMLElement {
@@ -154,6 +170,7 @@ export class Overview extends LitElement {
     if (card === "subscriptions") return all ? da.subscriptions : da.subscriptionsIn(levelName(level));
     if (card === "difference" && this.ctx.chosen !== null) return this.differenceTitle(this.ctx.chosen);
     if (card === "postings") return all ? da.postingsTitle : da.postingsOf(levelName(level));
+    if (card === "shops") return all ? da.shops : da.shopsIn(levelName(level));
     return all ? da.per(g) : da.levelPer(levelName(level), g);
   }
 
@@ -189,19 +206,41 @@ export class Overview extends LitElement {
       <p class="half-foot">${da.subscriptionsFoot}</p>`;
   }
 
+  /** Like Posteringer, the list follows a chosen unit but not the search or the chosen shop (top-shops spec §1). */
+  private shops() {
+    const ctx = this.ctx;
+    const base = within(ctx.shown, ctx.chosen ?? ctx.timeline.period);
+    if (base.length === 0) return this.empty();
+    const state = this.hiddenShops;
+    if (state.kind === "loading") return html`<p class="empty">${da.fetching}</p>`;
+    const list = shopList(base, new Set(state.kind === "ready" ? state.shops : []));
+    if (list.visible.length === 0 && list.hidden.length === 0) return html`<p class="empty">${da.noShops}</p>`;
+    return html`${state.kind === "error" ? html`<p class="line status" role="status">${da.hiddenUnreadable}</p>` : nothing}
+      <hs-shops
+      .list=${list}
+      .chosen=${ctx.state.shop}
+      .all=${this.shopsAll}
+      .showHidden=${this.shopsHidden}
+      .canHide=${state.kind === "ready"}
+      .limit=${this.fullScreen ? null : SHOPS_LIMIT}
+    ></hs-shops>`;
+  }
+
   private right() {
     const ctx = this.ctx;
     const card = ctx.state.card;
     const inPeriod = within(ctx.shown, ctx.timeline.period);
     const title = this.cardTitle(card);
+    const shops = hasShops(ctx.data);
     let body: unknown;
     if (card === "subscriptions") body = this.subscriptions(title);
     else if (card === "postings") body = this.postings();
+    else if (card === "shops") body = this.shops();
     else if (inPeriod.length === 0) body = this.empty();
     else if (card === "difference" && ctx.chosen !== null) body = this.difference(ctx.chosen, title);
     else body = this.bars();
     return html`<section class="card half" role="region" aria-labelledby=${RIGHT_TITLE}>
-      <div class="half-head ${ctx.data.subscriptions.length === 0 ? "" : "wraps"}">
+      <div class="half-head ${ctx.data.subscriptions.length === 0 && !shops ? "" : "wraps"}">
         <div class="half-title">
           <h2 id=${RIGHT_TITLE}>${title}</h2>
           ${this.chips()}
@@ -211,6 +250,7 @@ export class Overview extends LitElement {
             ${this.switchButton("bars", da.bars)} ${this.switchButton("postings", da.postings)}
             ${ctx.chosen === null ? nothing : this.switchButton("difference", da.difference)}
             ${ctx.data.subscriptions.length === 0 ? nothing : this.switchButton("subscriptions", da.subscriptions)}
+            ${shops ? this.switchButton("shops", da.shops) : nothing}
           </div>
           <button
             type="button"
@@ -225,6 +265,9 @@ export class Overview extends LitElement {
           </button>
         </div>
       </div>
+      ${card === "shops" && this.hiddenWriteFailed
+        ? html`<p class="line alert" role="alert">${da.saveFailed}</p>`
+        : nothing}
       ${body}
     </section>`;
   }
@@ -300,8 +343,10 @@ export const overviewStyles = css`
     outline-offset: -2px;
   }
   .card-switch {
-    flex: none;
+    flex: 0 1 auto;
     display: inline-flex;
+    flex-wrap: wrap;
+    max-width: 100%;
     border: 1px solid var(--hs-field);
     border-radius: 6px;
     overflow: hidden;

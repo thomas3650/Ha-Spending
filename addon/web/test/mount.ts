@@ -1,4 +1,4 @@
-import type { Period } from "@ha-spending/shared";
+import type { HiddenShopChange, Period } from "@ha-spending/shared";
 import { vi } from "vitest";
 
 import "../src/app";
@@ -8,6 +8,8 @@ import { answerFor } from "./fixture";
 export interface MountOptions {
   now?: string;
   answer?: (range: Period, n: number) => Response | Promise<Response>;
+  /** Answers `api/hidden-shops`; the default keeps a list in memory, empty at the start. */
+  hidden?: (init: RequestInit | undefined) => Response | Promise<Response>;
 }
 
 export function json(body: unknown, status = 200): Response {
@@ -36,12 +38,24 @@ export async function mount(hash: string, opts: MountOptions = {}) {
     const range = rangeOf(url);
     return opts.answer ? opts.answer(range, n) : json(answerFor(range));
   });
-  vi.stubGlobal("fetch", fetch);
+  let shops: string[] = [];
+  const hidden = vi.fn(async (init: RequestInit | undefined) => {
+    if (opts.hidden) return opts.hidden(init);
+    if (init?.method === "POST") {
+      const change = JSON.parse(String(init.body)) as HiddenShopChange;
+      shops = shops.filter((s) => s !== change.shop);
+      if (change.hidden) shops = [...shops, change.shop].sort((a, b) => a.localeCompare(b, "da"));
+    }
+    return json({ shops });
+  });
+  vi.stubGlobal("fetch", (url: string, init?: RequestInit) =>
+    url.startsWith("api/hidden-shops") ? hidden(init) : fetch(url, init),
+  );
   history.replaceState(null, "", hash === "" ? location.pathname : `#${hash}`);
   const app = document.createElement("hs-app");
   document.body.append(app);
   await settle(app);
-  return { app, root: app.shadowRoot as unknown as HTMLElement, fetch };
+  return { app, root: app.shadowRoot as unknown as HTMLElement, fetch, hidden };
 }
 
 export function unmount(): void {

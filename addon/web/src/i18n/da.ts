@@ -201,6 +201,22 @@ export const da = {
   more: "mere end normalt ▶",
   differenceHint: "Orange: mere end gennemsnittet; blå: mindre.",
 
+  shops: "Butikker",
+  shopsIn: (name: string) => `Butikker i ${name}`,
+  hide: "Skjul",
+  hideShop: (name: string) => `Skjul ${name}`,
+  showShop: (name: string) => `Vis ${name}`,
+  showAllShops: (n: number) => `Vis alle ${n}`,
+  showFewer: "Vis færre",
+  showHidden: (n: number, sum: string) => `Vis skjulte (${n} · ${sum})`,
+  hideHidden: "Skjul skjulte",
+  noShop: (sum: string) => `Uden butik: ${sum}`,
+  noShops: "Ingen butikker at vise",
+  share: (p: number) => `${p} %`,
+  fetching: "Henter …",
+  hiddenUnreadable: "Skjulte butikker kunne ikke hentes.",
+  saveFailed: "Kunne ikke gemme. Prøv igen.",
+
   periodClosed: (label: string, range: string) => `${label} · ${range}`,
 
   perMonth: (value: string) => `${value} pr. måned`,

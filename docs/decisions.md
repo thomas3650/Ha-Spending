@@ -427,3 +427,15 @@ to set their status to `superseded by D<n>`, or to name a part a later decision 
   silently would change the list without a word.
 - **Source:** Thomas, 2026-11-02, [the object group postings spec](superpowers/specs/2026-11-02-object-group-postings.md)
   §1 to §3
+
+### D43: The hidden shops are a file of the add-on's own
+- **Date:** 2026-11-02 · **Status:** active
+- **Decision:** The page keeps the shops hidden from the Butikker card in `/data/hidden-shops.json`, written by one
+  `POST /api/hidden-shops`: one shop per request, its name in the body, never anything in Firefly III. The narrowness
+  is in the code: the content type, a 1 kB body, a 200-character name and at most 500 shops. It replaces the technical
+  spec's promises that the add-on never writes (§1), that no route writes (§5) and that the page fetches nothing else
+  on a click (§6), as D29 did for §1 and §5.
+- **Why:** The hidden shops are the same on the phone and the computer, and they are the household's choice, not
+  Firefly III's data. One shop per request means two devices cannot undo each other's change with a stale list.
+- **Source:** Thomas, 2026-11-02, [the top shops spec](superpowers/specs/2026-11-02-top-shops.md) §3 and §4; the
+  route's shape and limits: Claude

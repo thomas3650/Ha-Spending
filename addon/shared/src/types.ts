@@ -89,3 +89,20 @@ export type DataErrorCode = "unreachable" | "refused" | "bad-request" | "interna
 export interface DataError {
   error: DataErrorCode;
 }
+
+/** The answer of `/api/hidden-shops`, by name. */
+export interface HiddenShops {
+  shops: string[];
+}
+
+/** The body of `POST /api/hidden-shops`. */
+export interface HiddenShopChange {
+  shop: string;
+  hidden: boolean;
+}
+
+export type HiddenShopsErrorCode = "bad-request" | "unsupported" | "full" | "internal";
+
+export interface HiddenShopsError {
+  error: HiddenShopsErrorCode;
+}
