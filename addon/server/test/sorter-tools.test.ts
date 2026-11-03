@@ -444,9 +444,11 @@ describe("set_category", () => {
     const food = (await s.categoryIds()).get("Dagligvarer")!;
     await s.call("start", { categories: await s.tree() });
     changed = true;
-    const { value } = await s.call("set_category", { assignments: [{ posting_id: kiosk, category_id: food, amount: "45.00" }] });
+    const { value } = await s.call("set_category", { assignments: [{ posting_id: kiosk, category_id: food, amount: "45.00",
+      shop: "Ny butik" }] });
     expect(value.results).toEqual([{ posting_id: kiosk, ok: false, reason }]);
     expect(s.puts()).toEqual([]);
+    expect(s.posts()).toEqual([]);
   });
 
   it("refuses a posting or a category Firefly III does not have", async () => {
@@ -663,6 +665,7 @@ const shopSeed: SeedData = {
     { name: "Gammel butik", type: "expense", active: false },
     { name: "Billaan", type: "liabilities", active: true },
     { name: "Loen", type: "revenue", active: true },
+    { name: "Gammel kunde", type: "revenue", active: false },
   ],
   transactions: [
     ...seed.transactions,
@@ -670,6 +673,8 @@ const shopSeed: SeedData = {
       description: `Kort ${n}`, source: "Konto A" })),
     one({ type: "deposit", date: "2026-03-05", amount: "15.00", description: "Retur", source: "(no name)",
       destination: "Konto B" }),
+    one({ type: "deposit", date: "2026-03-06", amount: "16.00", description: "Retur 2", source: "(no name)",
+      destination: "Konto A" }),
     {
       groupTitle: "Kort i alt",
       splits: [
@@ -824,8 +829,6 @@ describe("set_category with a shop", () => {
   });
 
   it.each([
-    ["not-withdrawal", "a deposit whose source is (no name)", "Retur", "Ny butik"],
-    ["not-withdrawal", "a deposit, before the name", "Retur", "(no name)"],
     ["has-shop", "a withdrawal whose shop was set by hand", "Kiosk", "Ny butik"],
     ["has-shop", "a shop set by hand, before the name", "Kiosk", "(no name)"],
     ["has-shop", "a shop set by hand, before the other accounts", "Kiosk", "Billaan"],
@@ -842,7 +845,6 @@ describe("set_category with a shop", () => {
     ["name-taken", "a liability's name", "Kort 1", "billaan"],
     ["name-taken", "an inactive expense account's name", "Kort 1", "Gammel butik"],
     ["name-taken", "an asset account's name", "Kort 1", "KONTO A"],
-    ["name-taken", "a revenue account's name", "Kort 1", "Butik B"],
   ])("writes the category and refuses the shop as %s for %s", async (reason, _, description, shop) => {
     const s = setup({ data: shopSeed });
     const before = (await s.splits()).get(description)!;
@@ -856,7 +858,135 @@ describe("set_category with a shop", () => {
     expect(await s.accounts()).toEqual(accountsBefore);
     const body = s.puts()[0].body as { transactions: Record<string, unknown>[] };
     expect(body.transactions[0]).not.toHaveProperty("destination_id");
-    s.logsNoShop("Ny butik", "Billaan", "billaan", "Gammel butik", "KONTO A", "Butik B");
+    s.logsNoShop("Ny butik", "Billaan", "billaan", "Gammel butik", "KONTO A");
+  });
+
+  it("makes the expense account for a name only a revenue account has, spelled as the revenue account", async () => {
+    const s = setup({ data: shopSeed });
+    const revenue = (await s.accounts()).find((a) => a.name === "Butik B")!;
+    expect(revenue.type).toBe("revenue");
+    const { postings, answer } = await writeShops(s, [{ description: "Kort 1", shop: "butik b" }]);
+    expect(answer.value.results).toEqual([{ posting_id: postings[0], ok: true, shop: "Butik B" }]);
+    expect(s.posts().map((p) => p.body)).toEqual([{ name: "Butik B", type: "expense" }]);
+    const made = (await s.accounts()).find((a) => a.name === "Butik B" && a.type === "expense")!;
+    expect(made).toMatchObject({ active: true });
+    expect((await s.splits()).get("Kort 1")).toMatchObject({ destination_id: made.id, destination_name: "Butik B" });
+  });
+
+  it("writes the shop's expense account when a revenue account has the same name", async () => {
+    const data: SeedData = { ...shopSeed,
+      otherAccounts: [...shopSeed.otherAccounts!, { name: "Butik A", type: "revenue", active: true }] };
+    const s = setup({ data });
+    const shop = (await s.accounts()).find((a) => a.name === "Butik A" && a.type === "expense")!;
+    const { postings, answer } = await writeShops(s, [{ description: "Kort 1", shop: "Butik A" }]);
+    expect(answer.value.results).toEqual([{ posting_id: postings[0], ok: true, shop: "Butik A" }]);
+    expect((await s.splits()).get("Kort 1")).toMatchObject({ destination_id: shop.id, destination_name: "Butik A" });
+    expect(s.posts()).toEqual([]);
+  });
+
+  it.each([
+    ["has-shop", "a refund whose shop was set by hand", "Returvare Butik B", "Ny butik"],
+    ["has-shop", "a refund's shop set by hand, before the name", "Returvare Butik B", "(no name)"],
+    ["bad-shop-name", "(no name) on a refund", "Retur", "(no name)"],
+    ["name-taken", "a liability's name on a refund", "Retur", "Billaan"],
+    ["name-taken", "an asset account's name on a refund", "Retur", "Konto A"],
+    ["name-taken", "an inactive revenue account's name on a refund", "Retur", "gammel kunde"],
+  ])("writes the category and refuses the shop as %s for %s", async (reason, _, description, shop) => {
+    const s = setup({ data: shopSeed });
+    const before = (await s.splits()).get(description)!;
+    const accountsBefore = await s.accounts();
+    const { postings, answer } = await writeShops(s, [{ description, shop }]);
+    expect(answer.value.results).toEqual([{ posting_id: postings[0], ok: true, shop_refused: reason }]);
+    expect((await s.splits()).get(description)).toMatchObject({ category_name: "Dagligvarer",
+      source_id: before.source_id, source_name: before.source_name, source_type: before.source_type });
+    expect(s.posts()).toEqual([]);
+    expect(await s.accounts()).toEqual(accountsBefore);
+    const body = s.puts()[0].body as { transactions: Record<string, unknown>[] };
+    expect(body.transactions[0]).not.toHaveProperty("source_id");
+    s.logsNoShop("Ny butik", "Billaan", "Konto A", "gammel kunde");
+  });
+
+  it.each([
+    ["a liability", "Loan"],
+    ["an asset account", "Asset account"],
+  ])("writes the category and refuses the shop as has-shop for a deposit from %s named (no name)", async (_, type) => {
+    let retur = "";
+    const s = setup({
+      data: shopSeed,
+      fetch: (fetch) => async (input, init) => {
+        const res = await fetch(input, init);
+        const url = new URL(input instanceof Request ? input.url : input);
+        if ((init?.method ?? "GET") !== "GET" || url.pathname !== `/api/v1/transactions/${retur}`) return res;
+        const text = (await res.text()).replaceAll('"source_type":"Revenue account"', `"source_type":"${type}"`);
+        return new Response(text, { status: res.status, headers: res.headers });
+      },
+    });
+    retur = (await s.splits()).get("Retur")!.groupId;
+    const before = (await s.splits()).get("Retur")!;
+    const { postings, answer } = await writeShops(s, [{ description: "Retur", shop: "Ny butik" }]);
+    expect(answer.value.results).toEqual([{ posting_id: postings[0], ok: true, shop_refused: "has-shop" }]);
+    expect((await s.splits()).get("Retur")).toMatchObject({ category_name: "Dagligvarer", source_id: before.source_id });
+    expect(s.posts()).toEqual([]);
+    const body = s.puts()[0].body as { transactions: Record<string, unknown>[] };
+    expect(body.transactions[0]).not.toHaveProperty("source_id");
+  });
+
+  it("makes a refund's revenue account and writes it by id as the source, on a deposit from (no name)", async () => {
+    const s = setup({ data: shopSeed });
+    const before = (await s.splits()).get("Retur")!;
+    expect(before).toMatchObject({ source_name: "(no name)", source_type: "Revenue account" });
+    const accountsBefore = await s.accounts();
+    const food = (await s.categoryIds()).get("Dagligvarer")!;
+    const posting = Number(before.transaction_journal_id);
+
+    const { value } = await s.write([{ posting_id: posting, category_id: food, shop: " Ny butik  " }]);
+    expect(value.results).toEqual([{ posting_id: posting, ok: true, shop: "Ny butik" }]);
+
+    const made = (await s.accounts()).filter((a) => !accountsBefore.some((b) => b.id === a.id));
+    expect(made).toEqual([{ id: expect.any(String), name: "Ny butik", type: "revenue", active: true }]);
+    expect(s.posts()).toEqual([{ method: "POST", path: "/api/v1/accounts", body: { name: "Ny butik", type: "revenue" } }]);
+    expect((await s.splits()).get("Retur")).toEqual({ ...before, category_id: String(food),
+      category_name: "Dagligvarer", tags: ["Mad"], source_id: made[0].id, source_name: "Ny butik" });
+    expect(s.puts().map((p) => p.body)).toEqual([{ apply_rules: false, transactions: [{
+      transaction_journal_id: String(posting), category_id: String(food), tags: ["Mad"], source_id: made[0].id }] }]);
+    s.logsNoShop("Ny butik");
+  });
+
+  it("makes one revenue account for two refunds in one call, beside the purchase's expense account", async () => {
+    const s = setup({ data: shopSeed });
+    const { postings, answer } = await writeShops(s, [
+      { description: "Kort 1", shop: "Ny butik" },
+      { description: "Retur", shop: "Ny butik" },
+      { description: "Retur 2", shop: "NY BUTIK" },
+    ]);
+    expect(answer.value.results).toEqual(postings.map((posting_id) => ({ posting_id, ok: true, shop: "Ny butik" })));
+    expect(s.posts().map((p) => p.body)).toEqual([{ name: "Ny butik", type: "expense" }, { name: "Ny butik", type: "revenue" }]);
+    const accounts = await s.accounts();
+    const id = (type: string) => accounts.find((a) => a.name === "Ny butik" && a.type === type)!.id;
+    const after = await s.splits();
+    expect(after.get("Kort 1")!.destination_id).toBe(id("expense"));
+    expect(after.get("Retur")!.source_id).toBe(id("revenue"));
+    expect(after.get("Retur 2")!.source_id).toBe(id("revenue"));
+  });
+
+  it("writes an existing revenue account for a later refund, in its spelling", async () => {
+    const data: SeedData = { ...shopSeed,
+      otherAccounts: [...shopSeed.otherAccounts!, { name: "Butik R", type: "revenue", active: true }] };
+    const s = setup({ data });
+    const shop = (await s.accounts()).find((a) => a.name === "Butik R")!;
+    const { postings, answer } = await writeShops(s, [{ description: "Retur", shop: "butik r" }]);
+    expect(answer.value.results).toEqual([{ posting_id: postings[0], ok: true, shop: "Butik R" }]);
+    expect((await s.splits()).get("Retur")).toMatchObject({ source_id: shop.id, source_name: "Butik R" });
+    expect(s.posts()).toEqual([]);
+  });
+
+  it("names a refund's new revenue account as the shop's expense account is spelled", async () => {
+    const s = setup({ data: shopSeed });
+    const { postings, answer } = await writeShops(s, [{ description: "Retur", shop: "butik a" }]);
+    expect(answer.value.results).toEqual([{ posting_id: postings[0], ok: true, shop: "Butik A" }]);
+    expect(s.posts().map((p) => p.body)).toEqual([{ name: "Butik A", type: "revenue" }]);
+    const made = (await s.accounts()).find((a) => a.name === "Butik A" && a.type === "revenue")!;
+    expect((await s.splits()).get("Retur")).toMatchObject({ source_id: made.id, source_name: "Butik A" });
   });
 
   it("writes the category and refuses the shop as has-shop for a withdrawal paying a liability named (no name)",

@@ -315,7 +315,7 @@ to set their status to `superseded by D<n>`, or to name a part a later decision 
 - **Source:** Thomas, 2026-10-31, [the postings search spec](superpowers/specs/2026-10-31-postings-search.md).
 
 ### D32: The sorter writes a posting's shop
-- **Date:** 2026-10-31 · **Status:** active
+- **Date:** 2026-10-31 · **Status:** active; only a withdrawal, and only expense accounts, superseded by D50
 - **Decision:** `set_category` may also write a withdrawal's shop, by the account's id, in the same PUT as D30's, and
   only on a withdrawal whose destination is the expense account `(no name)`; it replaces D30's list of what is written.
   For that the endpoint may make expense accounts, through the client's `post`, used for nothing else; the name check,
@@ -479,3 +479,15 @@ to set their status to `superseded by D<n>`, or to name a part a later decision 
 - **Why:** About 1.4 s of every uncached load went to the parts that do not depend on the span, and about 0.7 s to
   each page of postings read in turn.
 - **Source:** Thomas, 2026-11-03; [UI polish spec](superpowers/specs/2026-11-03-ui-polish.md) §1.1
+
+### D50: The sorter writes a refund's shop
+- **Date:** 2026-11-03 · **Status:** active
+- **Decision:** `set_category` may also write a deposit's shop, by setting its source to a revenue account named like
+  the shop, only when the source is the revenue account `(no name)`, and may make that revenue account. A revenue
+  account of a shop's name does not make a purchase's shop `name-taken`. The name rules and the lookup are D32's, in
+  [`addon/DOCS.md`](../addon/DOCS.md#the-shops-name).
+- **Why:** A refund imported from a bank file lands on `(no name)`, so the page counted it under "Uden butik"; the
+  page already reads a deposit's shop from its revenue account. A revenue account is never a withdrawal's
+  destination, so its name cannot point a purchase at a liability.
+- **Source:** Thomas, 2026-11-03, [issue #96](https://github.com/thomas3650/Ha-Spending/issues/96); a new account's
+  spelling taken from the shop's account of the other type: Claude
