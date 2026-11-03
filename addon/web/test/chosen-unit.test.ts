@@ -98,9 +98,10 @@ describe("screen 4, a chosen unit", () => {
     expect(card.textContent).toContain(kr(500000));
   });
 
-  it("drops the unit with its chip or a second click", async () => {
+  it("drops the unit with its × in the trail or a second click", async () => {
     const { app, root } = await mount(CHOSEN);
-    fireEvent.click(getByRole(root, "button", { name: da.remove(julyName()) }));
+    const trail = getByRole(root, "navigation", { name: da.trail });
+    fireEvent.click(getByRole(trail, "button", { name: da.remove(julyName()) }));
     await settle(app);
     expect(queryByRole(root, "button", { name: da.remove(julyName()) })).toBeNull();
     expect(getByRole(viewSwitch(root), "button", { name: da.bars }).getAttribute("aria-pressed")).toBe("true");

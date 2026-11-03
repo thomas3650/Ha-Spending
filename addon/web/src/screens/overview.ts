@@ -2,7 +2,7 @@ import { keyNumbers, total, within } from "@ha-spending/shared";
 import { css, html, LitElement, nothing } from "lit";
 import "../components/bars";
 import { detailSplit } from "../components/detail";
-import { chip, fire } from "../components/chip";
+import { fire } from "../components/chip";
 import "../components/circle";
 import "../components/postings";
 import "../components/search";
@@ -166,7 +166,7 @@ export class Overview extends LitElement {
     return { above, list: body };
   }
 
-  /** A chosen category is named by its chip and the trail; the title names its main group, so it does not change. */
+  /** A chosen category is named by the trail; the title names its main group, so it does not change. */
   private cardTitle(card: Card): string {
     const level = this.ctx.state.level;
     const g = finerUnits(this.ctx)?.grouping ?? this.ctx.timeline.grouping;
@@ -181,19 +181,6 @@ export class Overview extends LitElement {
     if (card === "postings") return da.postingsOf(name);
     if (card === "shops") return da.shopsIn(name);
     return da.levelPer(name, g);
-  }
-
-  /** Faste udgifter does not follow the chosen unit, so its chip does not show there; the unit stays chosen. */
-  private chips() {
-    const ctx = this.ctx;
-    const level = ctx.state.level;
-    const unit =
-      ctx.chosen === null || ctx.state.card === "subscriptions" ? null : unitName(ctx.chosen, ctx.timeline.grouping);
-    if (level.kind !== "category" && unit === null) return nothing;
-    return html`<div class="card-chips">
-      ${level.kind === "category" ? chip(levelName(level), () => fire(this, "remove-category")) : nothing}
-      ${unit === null ? nothing : chip(unit, () => fire(this, "remove-unit"))}
-    </div>`;
   }
 
   private subscriptions(title: string) {
@@ -279,7 +266,6 @@ export class Overview extends LitElement {
           </button>
         </div>
       </div>
-      ${inPlace ? nothing : this.chips()}
       ${card === "shops" && this.hiddenWriteFailed
         ? html`<p class="line alert" role="alert">${da.saveFailed}</p>`
         : nothing}
@@ -372,12 +358,6 @@ export const overviewStyles = css`
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-  }
-  .card-chips {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    margin-bottom: 8px;
   }
   .half-sum {
     flex: none;

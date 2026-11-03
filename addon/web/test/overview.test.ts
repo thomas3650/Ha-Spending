@@ -270,7 +270,8 @@ describe("the search on Posteringer", () => {
   it("shows the field above no spending in a unit after today", async () => {
     const { root } = await mount("period=custom&from=2026-10-01&to=2026-12-31&unit=2026-12-01&card=postings");
     const card = getByRole(root, "region", { name: da.postingsTitle });
-    getByRole(card, "button", { name: da.remove(unitName(unitAt("2026-12-01", "month", TODAY), "month")) });
+    const trail = getByRole(root, "navigation", { name: da.trail });
+    getByRole(trail, "button", { name: da.remove(unitName(unitAt("2026-12-01", "month", TODAY), "month")) });
     searchbox(card);
     getByText(card, da.noSpending);
   });

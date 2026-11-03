@@ -79,30 +79,27 @@ describe("screen 2, a main group", () => {
     expect(location.hash).toBe("#group=Mad");
   });
 
-  it("removes the category with its chip", async () => {
+  it("removes the category with its × in the trail", async () => {
     const { app, root } = await mount("group=Mad&category=Café");
-    const right = getByRole(root, "region", { name: da.levelPer("Mad", "month") });
-    fireEvent.click(getByRole(right, "button", { name: da.remove("Café") }));
+    fireEvent.click(getByRole(trail(root), "button", { name: da.remove("Café") }));
     await settle(app);
     getByRole(root, "heading", { level: 1, name: "Mad" });
     expect(location.hash).toBe("#group=Mad");
     expect(queryByRole(root, "button", { name: da.remove("Café") })).toBeNull();
   });
 
-  it("titles the right card by the main group with a category chosen, and keeps the category's chip", async () => {
-    const { app, root } = await mount("group=Mad&category=Café");
+  it("titles the right card by the main group with a category chosen, with no chip", async () => {
+    const { root } = await mount("group=Mad&category=Café");
     const right = getByRole(root, "region", { name: da.levelPer("Mad", "month") });
     const heading = getByRole(right, "heading", { name: da.levelPer("Mad", "month") });
     expect(heading.textContent).not.toContain("Café");
-    fireEvent.click(getByRole(right, "button", { name: da.remove("Café") }));
-    await settle(app);
-    expect(location.hash).toBe("#group=Mad");
+    expect(queryByRole(right, "button", { name: da.remove("Café") })).toBeNull();
   });
 
-  it("titles the postings by the main group and keeps the category's chip", async () => {
+  it("titles the postings by the main group, with no chip", async () => {
     const { root } = await mount("group=Mad&category=Café&card=postings");
     const right = getByRole(root, "region", { name: da.postingsOf("Mad") });
-    getByRole(right, "button", { name: da.remove("Café") });
+    expect(queryByRole(right, "button", { name: da.remove("Café") })).toBeNull();
   });
 
   it("shows the key numbers of the main group", async () => {
@@ -113,7 +110,7 @@ describe("screen 2, a main group", () => {
 
   it("goes back up through the trail", async () => {
     const { app, root } = await mount("group=Mad&category=Café");
-    fireEvent.click(getByRole(trail(root), "link", { name: "Mad" }));
+    fireEvent.click(getByRole(trail(root), "button", { name: da.remove("Café") }));
     await settle(app);
     getByRole(root, "heading", { level: 1, name: "Mad" });
     fireEvent.click(getByRole(trail(root), "link", { name: da.allSpending }));
@@ -134,7 +131,7 @@ describe("screen 2, a main group", () => {
     expect(getAllByText(card, kr(CAFE))).toHaveLength(2);
   });
 
-  it("filters to Uden kategori with its chip", async () => {
+  it("filters to Uden kategori with its × in the trail", async () => {
     const { app, root } = await mount("group=");
     const button = () => getByRole(circleCard(root), "button", { name: new RegExp(`^${da.noCategory},`) });
     fireEvent.click(button());
@@ -142,8 +139,8 @@ describe("screen 2, a main group", () => {
     getByRole(root, "heading", { level: 1, name: da.noCategory });
     expect(button().getAttribute("aria-pressed")).toBe("true");
     expect(location.hash).toBe("#group=&category=");
-    const right = getByRole(root, "region", { name: da.levelPer(da.noMainGroup, "month") });
-    getByRole(right, "button", { name: da.remove(da.noCategory) });
+    getByRole(root, "region", { name: da.levelPer(da.noMainGroup, "month") });
+    getByRole(trail(root), "button", { name: da.remove(da.noCategory) });
   });
 
   it("keeps the chosen unit while filtering to a category", async () => {

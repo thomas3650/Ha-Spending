@@ -59,7 +59,7 @@ describe("screen 3, all postings", () => {
     chip(root, da.categoryChip("Café"));
     summary(root, 4, 131012);
     const links = getAllByRole(trail(root), "link").map((a) => a.textContent?.trim());
-    expect(links).toEqual([da.allSpending, "Mad", "Café"]);
+    expect(links).toEqual([da.allSpending]);
     expect(queryByRole(root, "region", { name: da.mainGroups })).toBeNull();
     getByRole(root, "columnheader", { name: da.columns.category });
   });
@@ -186,7 +186,6 @@ describe("screen 3, all postings", () => {
     expect(queryByRole(root, "button", { name: da.remove(da.categoryChip("Café")) })).toBeNull();
     expect(queryByRole(root, "button", { name: da.remove(da.mainGroupChip("Mad")) })).toBeNull();
     summary(root, 28, 11566012);
-    expect(queryByRole(trail(root), "link", { name: "Mad" })).toBeNull();
     getByRole(trail(root), "link", { name: da.allSpending });
   });
 
@@ -293,9 +292,9 @@ describe("screen 3, all postings", () => {
 
   it("keeps the search but not the amount through the trail", async () => {
     const { app, root } = await mount(`${CAFE}&q=pizza&min=400`);
-    fireEvent.click(getByRole(trail(root), "link", { name: "Mad" }));
+    fireEvent.click(getByRole(trail(root), "link", { name: da.allSpending }));
     await settle(app);
-    getByRole(root, "heading", { level: 1, name: "Mad" });
+    getByRole(root, "heading", { level: 1, name: "Café" });
     const params = new URLSearchParams(location.hash.slice(1));
     expect(params.get("q")).toBe("pizza");
     expect(params.has("min")).toBe(false);

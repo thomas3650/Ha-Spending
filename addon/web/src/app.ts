@@ -23,6 +23,7 @@ import { shopsStyles } from "./components/shops";
 import { subscriptionsStyles } from "./components/subscriptions";
 import { topCardStyles } from "./components/top-card";
 import { LoadError, type LoadErrorCode, loadData, loadHiddenShops, setHiddenShop } from "./data/api";
+import { unitName } from "./format";
 import { da } from "./i18n/da";
 import { type ViewContext, viewContext } from "./model/context";
 import { keyCards, objectGroupCards } from "./model/key-numbers";
@@ -538,8 +539,6 @@ export class SpendingApp extends LitElement {
               @part-click=${(e: CustomEvent<CircleSelection>) => this.push(openPart(this.state, e.detail.key))}
               @unit-click=${(e: CustomEvent<UnitSelection>) => this.push(chooseUnit(this.state, e.detail.fullStart))}
               @card-change=${(e: CustomEvent<Card>) => this.push(setCard(this.state, e.detail))}
-              @remove-unit=${() => this.push(removeUnit(this.state))}
-              @remove-category=${() => this.push(removeCategory(this.state))}
               @open-all-postings=${() => this.push(openAllPostings(this.state))}
               @search-input=${this.onSearch}
               @shop-choose=${this.onShopChoose}
@@ -563,12 +562,25 @@ export class SpendingApp extends LitElement {
     `;
   }
 
-  private body() {
+  /** The trail's × moves the focus to its heading, so the keyboard does not fall back to the page's start. */
+  private removeFromTrail(next: ViewState): void {
+    this.push(next);
+    void this.focusHeading();
+  }
+
+  private async focusHeading(): Promise<void> {
+    await this.updateComplete;
+    const top = this.renderRoot.querySelector<LitElement>("hs-top-card");
+    await top?.updateComplete;
+    this.renderRoot.querySelector<HTMLElement>("hs-top-card h1")?.focus();
+  }
+
+  private body(ctx: ViewContext | null) {
     switch (this.load.kind) {
       case "error":
         return html`<p class="card line alert" role="alert">${da.errors[this.load.code]}</p>`;
       case "ready":
-        return this.ready(viewContext(this.load.data, this.state, this.today));
+        return ctx === null ? nothing : this.ready(ctx);
       default:
         return this.state.screen === "overview"
           ? html`${this.fullScreen ? nothing : html`<hs-key-numbers .cards=${null} .boxes=${this.boxes}></hs-key-numbers>`}
@@ -578,17 +590,22 @@ export class SpendingApp extends LitElement {
   }
 
   override render() {
+    const ctx = this.load.kind === "ready" ? viewContext(this.load.data, this.state, this.today) : null;
     return html`<main class="page">
       <hs-top-card
         .state=${this.state}
         .today=${this.today}
         .accounts=${this.accounts}
         .earliest=${this.earliest}
+        .unitName=${ctx?.chosen ? unitName(ctx.chosen, ctx.timeline.grouping) : null}
         @hs-period=${this.onPeriod}
         @hs-grouping=${this.onGrouping}
         @hs-accounts=${this.onAccounts}
+        @remove-unit=${() => this.removeFromTrail(removeUnit(this.state))}
+        @remove-main-group=${() => this.removeFromTrail(removeMainGroup(this.state))}
+        @remove-category=${() => this.removeFromTrail(removeCategory(this.state))}
       ></hs-top-card>
-      ${this.body()}
+      ${this.body(ctx)}
     </main>`;
   }
 }

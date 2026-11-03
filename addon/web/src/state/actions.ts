@@ -70,21 +70,14 @@ export function openObjectGroupPostings(s: ViewState, title: string): ViewState 
   return { ...openAllPostingsFresh(s), objectGroup: title };
 }
 
-function levelAt(level: Level, depth: 0 | 1 | 2): Level {
-  if (depth === 0 || level.kind === "all") return ALL;
-  if (depth === 1 || level.kind === "mainGroup") return { kind: "mainGroup", mainGroup: level.mainGroup };
-  return level;
+/** The overview's "Alt forbrug": the unit, the main group and the category go; the search and the shop stay. */
+export function clearChoices(s: ViewState): ViewState {
+  return { ...withoutUnit(s), level: ALL };
 }
 
-export function trailLevel(s: ViewState, depth: 0 | 1 | 2): ViewState {
-  return {
-    ...s,
-    level: levelAt(s.level, depth),
-    screen: "overview",
-    sort: DEFAULT_STATE.sort,
-    amount: null,
-    objectGroup: null,
-  };
+/** Alle posteringer's "Alt forbrug": only what belongs to Alle posteringer goes. */
+export function backToOverview(s: ViewState): ViewState {
+  return { ...s, screen: "overview", sort: DEFAULT_STATE.sort, amount: null, objectGroup: null };
 }
 
 /** A category implies its main group, so it goes too (D21). */
@@ -93,7 +86,8 @@ export function removeMainGroup(s: ViewState): ViewState {
 }
 
 export function removeCategory(s: ViewState): ViewState {
-  return { ...s, level: levelAt(s.level, 1) };
+  const level = s.level;
+  return level.kind === "category" ? { ...s, level: { kind: "mainGroup", mainGroup: level.mainGroup } } : s;
 }
 
 export function removeUnit(s: ViewState): ViewState {

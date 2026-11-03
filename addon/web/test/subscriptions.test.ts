@@ -174,11 +174,11 @@ describe("the subscriptions card", () => {
     expect(rowNames(card(root, "Faste udgifter"))).toEqual(["Indboforsikring", "Husleje", "Avis", "Tennisklub"]);
   });
 
-  it("shows a category's subscriptions and its chip", async () => {
+  it("shows a category's subscriptions, with no chip", async () => {
     const { root } = await mountWith("group=Mad&category=Café&card=subscriptions");
     const region = card(root, "Faste udgifter i Mad");
     expect(rowNames(region)).toEqual(["Streaming"]);
-    getByRole(region, "button", { name: da.remove("Café") });
+    expect(queryByRole(region, "button", { name: da.remove("Café") })).toBeNull();
   });
 
   it("does not follow the search", async () => {
@@ -190,7 +190,7 @@ describe("the subscriptions card", () => {
   it("does not follow a chosen unit or the period", async () => {
     const { app, root } = await mountWith("unit=2026-07-01&card=subscriptions");
     const region = card(root, "Faste udgifter");
-    expect(queryByRole(root, "button", { name: da.remove("Juli 2026") })).toBeNull();
+    expect(queryByRole(region, "button", { name: da.remove("Juli 2026") })).toBeNull();
     expect(rowNames(region)).toHaveLength(6);
 
     fireEvent.click(getByRole(root, "button", { name: new RegExp(`^${da.period}`) }));
