@@ -51,7 +51,7 @@ function keyNumbers(root: HTMLElement): HTMLElement | null {
 }
 
 function subscriptionsKey(root: HTMLElement): HTMLElement | null {
-  return queryByRole(root, "button", { name: new RegExp(`^${KEY_LABEL}`) });
+  return queryByRole(root, "group", { name: KEY_LABEL });
 }
 
 function expectOn(root: HTMLElement): void {

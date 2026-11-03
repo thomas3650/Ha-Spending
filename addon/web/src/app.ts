@@ -58,7 +58,6 @@ import {
   setPeriod,
   setSearch,
   setSort,
-  toggleSubscriptions,
 } from "./state/actions";
 import {
   type AmountRange,
@@ -498,24 +497,14 @@ export class SpendingApp extends LitElement {
     </div>`;
   }
 
-  private objectGroupKeys(ctx: ViewContext) {
-    const cards = objectGroupCards(
+  private keyNumbers(ctx: ViewContext) {
+    const cards = keyCards(ctx, `#${toHash(keepDetail(this.state, openAllPostingsFresh(this.state)))}`);
+    const objectGroups = objectGroupCards(
       ctx,
       (t) => `#${toHash(keepDetail(this.state, openObjectGroupPostings(this.state, t)))}`,
     );
-    if (cards.length === 0) return null;
-    return { cards, toggle: ctx.data.subscriptions.length > 0, pressed: this.state.card === "subscriptions" };
-  }
-
-  private keyNumbers(ctx: ViewContext) {
-    const cards = keyCards(ctx, `#${toHash(keepDetail(this.state, openAllPostingsFresh(this.state)))}`);
-    const objectGroups = this.objectGroupKeys(ctx);
-    this.boxes = cards.length + (objectGroups?.cards.length ?? 0);
-    return html`<hs-key-numbers
-      .cards=${cards}
-      .objectGroups=${objectGroups}
-      @subscriptions-toggle=${() => this.push(toggleSubscriptions(this.state))}
-    ></hs-key-numbers>`;
+    this.boxes = cards.length + objectGroups.length;
+    return html`<hs-key-numbers .cards=${cards} .objectGroups=${objectGroups}></hs-key-numbers>`;
   }
 
   private ready(ctx: ViewContext) {

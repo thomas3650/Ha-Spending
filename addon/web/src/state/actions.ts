@@ -56,10 +56,6 @@ export function setCard(s: ViewState, card: Card): ViewState {
   return { ...s, card };
 }
 
-export function toggleSubscriptions(s: ViewState): ViewState {
-  return { ...s, card: s.card === "subscriptions" ? "bars" : "subscriptions" };
-}
-
 export function openAllPostings(s: ViewState): ViewState {
   return { ...s, screen: "allPostings", sort: DEFAULT_STATE.sort, amount: null, objectGroup: null };
 }
@@ -69,9 +65,9 @@ export function openAllPostingsFresh(s: ViewState): ViewState {
   return { ...openAllPostings(s), search: "", shop: null };
 }
 
-/** The object group's key number: its count ignores the chosen unit, so the unit goes too (D42). */
+/** The object group's key number: its count follows the chosen unit, so the unit stays. */
 export function openObjectGroupPostings(s: ViewState, title: string): ViewState {
-  return { ...withoutUnit(openAllPostingsFresh(s)), objectGroup: title };
+  return { ...openAllPostingsFresh(s), objectGroup: title };
 }
 
 function levelAt(level: Level, depth: 0 | 1 | 2): Level {

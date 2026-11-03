@@ -2,15 +2,6 @@ import { css, html, LitElement, nothing } from "lit";
 import { count } from "../format";
 import { da } from "../i18n/da";
 import type { KeyCard } from "../model/key-numbers";
-import { fire } from "./chip";
-
-export interface ObjectGroupKeys {
-  cards: KeyCard[];
-  /** The household has kept bills, so each card switches the right card to Faste udgifter. */
-  toggle: boolean;
-  /** The right card shows Faste udgifter. */
-  pressed: boolean;
-}
 
 /** The period's key numbers, then one per object group; their placeholder while `cards` is null. */
 export class KeyNumbers extends LitElement {
@@ -21,14 +12,14 @@ export class KeyNumbers extends LitElement {
   };
 
   declare cards: KeyCard[] | null;
-  declare objectGroups: ObjectGroupKeys | null;
+  declare objectGroups: KeyCard[];
   /** How many boxes the placeholder draws. */
   declare boxes: number;
 
   constructor() {
     super();
     this.cards = null;
-    this.objectGroups = null;
+    this.objectGroups = [];
     this.boxes = 2;
   }
 
@@ -38,25 +29,6 @@ export class KeyNumbers extends LitElement {
     return p.count === 0
       ? html`<div class="kpi-link">${count(0)}</div>`
       : html`<a class="kpi-link" href=${p.href}>${da.postingsLink(count(p.count))}</a>`;
-  }
-
-  private objectCard(c: KeyCard, groups: ObjectGroupKeys) {
-    const body = html`<span class="kpi-label">${c.label}</span>
-      <span class="kpi-value">${c.value}</span>
-      <span class="kpi-sub">${c.sub}</span>`;
-    return html`<div class="card kpi kpi-group" role="group" aria-label=${c.label}>
-      ${groups.toggle
-        ? html`<button
-            type="button"
-            class="kpi-toggle"
-            aria-pressed=${String(groups.pressed)}
-            @click=${() => fire(this, "subscriptions-toggle")}
-          >
-            ${body}
-          </button>`
-        : html`<div class="kpi-plain">${body}</div>`}
-      ${this.postingsLine(c)}
-    </div>`;
   }
 
   private plainCard(c: KeyCard) {
@@ -87,14 +59,7 @@ export class KeyNumbers extends LitElement {
         </div>
       </div>`;
     }
-    const groups = this.objectGroups;
-    const extra = groups?.cards ?? [];
-    return html`<div class="kpis">
-      ${this.cards.map((c) => this.plainCard(c))}
-      ${groups === null
-        ? nothing
-        : extra.map((c) => this.objectCard(c, groups))}
-    </div>`;
+    return html`<div class="kpis">${[...this.cards, ...this.objectGroups].map((c) => this.plainCard(c))}</div>`;
   }
 }
 
@@ -113,37 +78,6 @@ export const keyNumbersStyles = css`
     .kpis {
       grid-template-columns: minmax(0, 1fr);
     }
-  }
-  .kpi-toggle {
-    display: block;
-    width: 100%;
-    padding: 16px 16px 0;
-    border: 0;
-    background: none;
-    font: inherit;
-    color: var(--hs-text);
-    text-align: left;
-    cursor: pointer;
-  }
-  .kpi-group {
-    padding: 0;
-  }
-  .kpi-plain {
-    padding: 16px 16px 0;
-  }
-  .kpi-group > .kpi-link {
-    margin: 2px 16px 16px;
-  }
-  .kpi-toggle > span,
-  .kpi-plain > span {
-    display: block;
-  }
-  .kpi-group:has(.kpi-toggle:hover) {
-    border-color: var(--hs-accent);
-  }
-  .kpi-toggle:focus-visible {
-    outline: 2px solid var(--hs-accent-text);
-    outline-offset: 2px;
   }
   .kpi-label {
     color: var(--hs-muted);

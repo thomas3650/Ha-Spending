@@ -27,7 +27,6 @@ import {
   setPeriod,
   setSearch,
   setSort,
-  toggleSubscriptions,
   trailLevel,
 } from "../src/state/actions";
 import { DEFAULT_STATE, type DetailKey, type ViewState } from "../src/state/view";
@@ -136,7 +135,7 @@ describe("the actions", () => {
     expect(s.sort).toEqual(DEFAULT_STATE.sort);
   });
 
-  it("openObjectGroupPostings sets og and clears the search, the shop, the unit and the amount, with the default sort", () => {
+  it("openObjectGroupPostings sets og and clears the search, the shop and the amount, keeps the unit, with the default sort", () => {
     const from: ViewState = {
       ...at(cafe),
       accounts: ["2"],
@@ -152,12 +151,12 @@ describe("the actions", () => {
       ...from,
       screen: "allPostings",
       objectGroup: "Abonnementer",
-      unit: null,
       search: "",
       shop: null,
       sort: DEFAULT_STATE.sort,
       amount: null,
     });
+    expect(s.unit).toBe(from.unit);
     expect(openObjectGroupPostings({ ...from, card: "postings" }, "Abonnementer").card).toBe("postings");
   });
 
@@ -243,12 +242,6 @@ describe("the actions", () => {
 
 describe("the subscriptions card", () => {
   const subs: ViewState = { ...DEFAULT_STATE, card: "subscriptions" };
-
-  it("toggles on and back to the bars", () => {
-    expect(toggleSubscriptions(DEFAULT_STATE).card).toBe("subscriptions");
-    expect(toggleSubscriptions({ ...DEFAULT_STATE, card: "postings" }).card).toBe("subscriptions");
-    expect(toggleSubscriptions(subs).card).toBe("bars");
-  });
 
   it("survives the period, the grouping, the accounts and the level", () => {
     expect(setPeriod(subs, { preset: "lastMonth" }).card).toBe("subscriptions");
@@ -456,7 +449,6 @@ describe("the detail", () => {
     const onBars = state({ card: "bars", detail: posting("p23") });
     const onShops = state({ card: "shops", detail: posting("p23") });
     expect(keepDetail(onSubs, setCard(onSubs, "bars")).detail).toBeNull();
-    expect(keepDetail(onSubs, toggleSubscriptions(onSubs)).detail).toBeNull();
     expect(keepDetail(onBars, chooseUnit(onBars, "2026-07-01")).detail).toBeNull();
     expect(keepDetail(onPostings, openAllPostings(onPostings)).detail).toBeNull();
     expect(keepDetail(onShops, openShop(onShops, "Netto")).detail).toBeNull();

@@ -77,14 +77,18 @@ function days(period: Period): number {
 
 /**
  * One card per object group that a kept bill has or a shown posting in the period is linked to; empty gives the
- * period's key numbers only (spec §4). The fetched range does not count, and neither does a chosen unit.
+ * period's key numbers only (spec §4). The fetched range does not count. The set of groups is the period's; with a
+ * chosen unit only the payments counted narrow to it.
  */
 export function objectGroupCards(ctx: ViewContext, hrefOf: (title: string) => string): KeyCard[] {
   const period = ctx.timeline.period;
-  const linked = within(ctx.shown, period).flatMap((p) =>
+  const counted = ctx.chosen ?? period;
+  const unit = ctx.chosen === null ? null : unitName(ctx.chosen, ctx.timeline.grouping);
+  const linked = within(ctx.shown, counted).flatMap((p) =>
     p.subscription === null ? [] : [{ group: p.subscription.objectGroup, bill: p.subscription.name, amount: p.amount }],
   );
-  const names = new Set([...ctx.data.subscriptions.map((s) => s.objectGroup), ...linked.map((l) => l.group)]);
+  const inPeriod = within(ctx.shown, period).flatMap((p) => (p.subscription === null ? [] : [p.subscription.objectGroup]));
+  const names = new Set([...ctx.data.subscriptions.map((s) => s.objectGroup), ...inPeriod]);
   const length = days(period);
   return [...names]
     .sort((a, b) => a.localeCompare(b, "da"))
@@ -95,11 +99,11 @@ export function objectGroupCards(ctx: ViewContext, hrefOf: (title: string) => st
       const sub =
         bills === 0
           ? da.noPayments
-          : length < 28
+          : unit !== null || length < 28
             ? da.billCount(bills)
             : `${da.perMonth(kr(sum / (length / MONTH_DAYS)))} · ${da.billCount(bills)}`;
       return {
-        label: da.inPeriod(name),
+        label: unit === null ? da.inPeriod(name) : da.levelInUnit(name, unit),
         value: kr(sum),
         sub,
         postings: { count: payments.length, href: hrefOf(name) },

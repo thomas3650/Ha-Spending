@@ -19,10 +19,6 @@ function mountWith(hash: string, subscriptions: Subscription[] = SUBSCRIPTIONS, 
   });
 }
 
-function keyNumber(root: HTMLElement): HTMLElement {
-  return getByRole(root, "button", { name: new RegExp(`^${KEY_LABEL}`) });
-}
-
 function viewSwitch(root: HTMLElement): HTMLElement {
   return getByRole(root, "group", { name: da.view });
 }
@@ -95,23 +91,10 @@ function categoryOf(region: HTMLElement, name: string): string {
 }
 
 describe("the subscriptions key number", () => {
-  it("opens the card from the Faste udgifter key number", async () => {
-    const { app, root } = await mountWith("");
-    const button = keyNumber(root);
-    expect(button.getAttribute("aria-pressed")).toBe("false");
-
-    fireEvent.click(button);
-    await settle(app);
-    card(root, "Faste udgifter");
-    expect(keyNumber(root).getAttribute("aria-pressed")).toBe("true");
-    expect(getByRole(viewSwitch(root), "button", { name: "Faste udgifter" }).getAttribute("aria-pressed")).toBe("true");
-    expect(location.hash).toBe("#card=subscriptions");
-
-    fireEvent.click(keyNumber(root));
-    await settle(app);
-    card(root, da.per("month"));
-    expect(keyNumber(root).getAttribute("aria-pressed")).toBe("false");
-    expect(location.hash).toBe("");
+  it("is a plain card; the view switch is the way to the card", async () => {
+    const { root } = await mountWith("");
+    expect(queryByRole(root, "button", { name: new RegExp(`^${KEY_LABEL}`) })).toBeNull();
+    getByRole(root, "group", { name: KEY_LABEL });
   });
 
   it("adds Faste udgifter to the switch", async () => {
