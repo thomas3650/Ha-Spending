@@ -662,6 +662,13 @@ describe("the loading placeholder's key-number boxes", () => {
     return getAllByRole(busy, "listitem").length;
   }
 
+  async function chooseJuly(root: HTMLElement, app: Parameters<typeof settle>[0]) {
+    const july = unitName(unitAt("2026-07-01", "month", "2026-10-30"), "month");
+    const bars = getByRole(root, "region", { name: da.per("month") });
+    fireEvent.click(getByRole(bars, "button", { name: new RegExp(`^${july},`) }));
+    await settle(app);
+  }
+
   it("after a period change the placeholder has as many boxes as the page showed", async () => {
     const { app, root } = await mount("", {
       answer: (range, n) => (n === 1 ? json(withSubscriptions(answerFor(range))) : pending()),
@@ -680,14 +687,25 @@ describe("the loading placeholder's key-number boxes", () => {
     const { app, root } = await mount("", {
       answer: (range, n) => (n === 1 ? json(withSubscriptions(answerFor(range))) : pending()),
     });
-    const bars = getByRole(root, "region", { name: da.per("month") });
-    fireEvent.click(getByRole(bars, "button", { name: new RegExp(`^${unitName(unitAt("2026-07-01", "month", "2026-10-30"), "month")},`) }));
-    await settle(app);
+    await chooseJuly(root, app);
     await choosePreset(root, app, da.presets.lastYear);
     expect(boxes(root)).toBe(3);
   });
 
-  it("after a failed load and a new change the placeholder keeps the last answer's count", async () => {
+  it("a unit chosen in full screen does not change the row the placeholder keeps", async () => {
+    const { app, root } = await mount("", {
+      answer: (range, n) => (n === 1 ? json(withSubscriptions(answerFor(range))) : pending()),
+    });
+    fireEvent.click(getAllByRole(root, "button", { name: da.fullScreen })[0]);
+    await settle(app);
+    await chooseJuly(root, app);
+    await choosePreset(root, app, da.presets.lastYear);
+    fireEvent.keyDown(window, { key: "Escape" });
+    await settle(app);
+    expect(boxes(root)).toBe(4);
+  });
+
+  it("after a failed load and a new change the placeholder keeps the last row's count", async () => {
     const { app, root } = await mount("", {
       answer: (range, n) =>
         n === 1 ? json(withSubscriptions(answerFor(range))) : n === 2 ? new Response("", { status: 500 }) : pending(),

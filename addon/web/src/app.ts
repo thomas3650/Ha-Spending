@@ -509,21 +509,23 @@ export class SpendingApp extends LitElement {
     return { cards, toggle: ctx.data.subscriptions.length > 0, pressed: this.state.card === "subscriptions" };
   }
 
-  private ready(ctx: ViewContext) {
-    const overview = this.state.screen === "overview";
+  private keyNumbers(ctx: ViewContext) {
     const cards = keyCards(ctx, `#${toHash(keepDetail(this.state, openAllPostingsFresh(this.state)))}`);
     const objectGroups = this.objectGroupKeys(ctx);
-    if (overview && !this.fullScreen) this.boxes = cards.length + (objectGroups?.cards.length ?? 0);
+    this.boxes = cards.length + (objectGroups?.cards.length ?? 0);
+    return html`<hs-key-numbers
+      .cards=${cards}
+      .objectGroups=${objectGroups}
+      @subscriptions-toggle=${() => this.push(toggleSubscriptions(this.state))}
+    ></hs-key-numbers>`;
+  }
+
+  private ready(ctx: ViewContext) {
+    const overview = this.state.screen === "overview";
     return html`
       ${ctx.data.mainGroupsFound ? nothing : html`<p class="card line status" role="status">${da.noRuleGroup}</p>`}
       ${overview
-        ? html`${this.fullScreen
-              ? nothing
-              : html`<hs-key-numbers
-                  .cards=${cards}
-                  .objectGroups=${objectGroups}
-                  @subscriptions-toggle=${() => this.push(toggleSubscriptions(this.state))}
-                ></hs-key-numbers>`}
+        ? html`${this.fullScreen ? nothing : this.keyNumbers(ctx)}
             <hs-overview
               .ctx=${ctx}
               .fullScreen=${this.fullScreen}
