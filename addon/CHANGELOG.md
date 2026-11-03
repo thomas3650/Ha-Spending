@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.10.1](https://github.com/thomas3650/Ha-Spending/compare/v0.10.0...v0.10.1) (2026-11-03)
+
+
+### Bug Fixes
+
+* the detail writes amounts as Posteringer does, and its rows open Firefly III ([#81](https://github.com/thomas3650/Ha-Spending/issues/81)) ([969a353](https://github.com/thomas3650/Ha-Spending/commit/969a353b469e500bcf6ef5e93215ddaa5efcd2ca))
+
 ## [0.10.0](https://github.com/thomas3650/Ha-Spending/compare/v0.9.0...v0.10.0) (2026-11-02)
 
 
