@@ -508,3 +508,17 @@ to set their status to `superseded by D<n>`, or to name a part a later decision 
   destination, so its name cannot point a purchase at a liability.
 - **Source:** Thomas, 2026-11-03, [issue #96](https://github.com/thomas3650/Ha-Spending/issues/96); a new account's
   spelling taken from the shop's account of the other type: Claude
+
+### D51: A one-month period draws its days
+- **Date:** 2026-11-03 · **Status:** active
+- **Decision:**
+  - By Måned, a period inside one calendar month draws one bar per day on the Søjler card, decided by `dayUnits` in
+    `model/context.ts`; its title is "Pr. dag", with no average line. "Denne måned" draws on to the month's last day,
+    the days after today as empty slots; other periods, "I år" among them, still end where they end.
+  - The grouping, the hash, the key numbers, Posteringer, the detail and the chosen unit stay the month's. A click on a
+    day bar chooses the month (`BarItem.choose`), and the chosen month marks every day bar.
+  - A bar below zero is named with a leading "+" in its button and tooltip, unless it rounds to 0.
+- **Why:** A one-month period's single bar said nothing the key numbers do not. Keeping the state the month's keeps
+  every old link meaning what it meant (D20), and the month's Forskel reachable.
+- **Source:** Thomas, 2026-11-03 ("let's start with all the month's days"); the controller's rulings on the click and
+  the sign; [month days spec](superpowers/specs/2026-11-03-month-days.md)

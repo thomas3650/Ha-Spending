@@ -189,3 +189,8 @@ The page's list. Every screenshot is at 1440×960 with the console free of error
 42. `56-filter-soeg`: the "+ Filter" menu has a search, and its sections are in the order of spec §3.4.
 43. `57-soejle-under-nul`: a bar below zero: the axis goes only a little below it, with no odd bottom label (spec
     §5.7).
+44. `58-maanedens-dage`: "Sidste måned" and "Denne måned" at Alt forbrug and Mad, at 1440 and 1728 px, normal and full
+    screen ([month days spec](superpowers/specs/2026-11-03-month-days.md)). One bar per day, readable axis labels,
+    today lighter with "i gang", the days after today empty, no average line, the tooltip on a day, and a day below
+    zero (if the example data has one) with a "+" in its tooltip. A click on a day chooses the month: its chip shows,
+    no bar fades, and a second click removes it.
