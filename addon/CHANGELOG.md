@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.12.0](https://github.com/thomas3650/Ha-Spending/compare/v0.11.0...v0.12.0) (2026-11-03)
+
+
+### Features
+
+* the filter panel lists the categories under their main group ([#107](https://github.com/thomas3650/Ha-Spending/issues/107)) ([92d60be](https://github.com/thomas3650/Ha-Spending/commit/92d60be7de4ed4ad66ddaf3cbb4d92b06a9215b0))
+
 ## [0.11.0](https://github.com/thomas3650/Ha-Spending/compare/v0.10.1...v0.11.0) (2026-11-03)
 
 
