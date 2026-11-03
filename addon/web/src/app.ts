@@ -222,8 +222,8 @@ export class SpendingApp extends LitElement {
   declare private hiddenWriteFailed: boolean;
 
   private asked: Period | null = null;
-  /** The key-number boxes of the last answer, so the placeholder keeps the row's shape. */
-  private boxes = 3;
+  /** The key-number boxes of the last row drawn, so the placeholder keeps the row's shape. */
+  private boxes = 2;
   private request = 0;
   private controller: AbortController | null = null;
   private hiddenAsked = false;
@@ -451,8 +451,6 @@ export class SpendingApp extends LitElement {
         return;
       }
     }
-    const ctx = viewContext(data, this.state, this.today);
-    this.boxes = keyCards(ctx, "").length + objectGroupCards(ctx, () => "").length;
     this.load = { kind: "ready", data };
     this.normaliseState();
   }
@@ -513,14 +511,17 @@ export class SpendingApp extends LitElement {
 
   private ready(ctx: ViewContext) {
     const overview = this.state.screen === "overview";
+    const cards = keyCards(ctx, `#${toHash(keepDetail(this.state, openAllPostingsFresh(this.state)))}`);
+    const objectGroups = this.objectGroupKeys(ctx);
+    if (overview && !this.fullScreen) this.boxes = cards.length + (objectGroups?.cards.length ?? 0);
     return html`
       ${ctx.data.mainGroupsFound ? nothing : html`<p class="card line status" role="status">${da.noRuleGroup}</p>`}
       ${overview
         ? html`${this.fullScreen
               ? nothing
               : html`<hs-key-numbers
-                  .cards=${keyCards(ctx, `#${toHash(keepDetail(this.state, openAllPostingsFresh(this.state)))}`)}
-                  .objectGroups=${this.objectGroupKeys(ctx)}
+                  .cards=${cards}
+                  .objectGroups=${objectGroups}
                   @subscriptions-toggle=${() => this.push(toggleSubscriptions(this.state))}
                 ></hs-key-numbers>`}
             <hs-overview

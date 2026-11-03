@@ -1,5 +1,4 @@
 import { css, html, LitElement, nothing } from "lit";
-import { styleMap } from "lit/directives/style-map.js";
 import { count } from "../format";
 import { da } from "../i18n/da";
 import type { KeyCard } from "../model/key-numbers";
@@ -13,7 +12,7 @@ export interface ObjectGroupKeys {
   pressed: boolean;
 }
 
-/** The three key numbers, then one per object group; their placeholder while `cards` is null. */
+/** The period's key numbers, then one per object group; their placeholder while `cards` is null. */
 export class KeyNumbers extends LitElement {
   static override properties = {
     cards: { attribute: false },
@@ -30,7 +29,7 @@ export class KeyNumbers extends LitElement {
     super();
     this.cards = null;
     this.objectGroups = null;
-    this.boxes = 3;
+    this.boxes = 2;
   }
 
   private postingsLine(c: KeyCard) {
@@ -76,7 +75,7 @@ export class KeyNumbers extends LitElement {
   override render() {
     if (this.cards === null) {
       return html`<div class="kpis-busy" role="group" aria-busy="true" aria-label=${da.loading}>
-        <div role="list" class="kpis ${this.boxes > 3 ? "many" : ""}" style=${styleMap({ "--kpi-columns": String(Math.min(this.boxes, 5)) })}>
+        <div role="list" class="kpis">
           ${Array.from(
             { length: this.boxes },
             () => html`<div class="card kpi" role="listitem">
@@ -90,8 +89,7 @@ export class KeyNumbers extends LitElement {
     }
     const groups = this.objectGroups;
     const extra = groups?.cards ?? [];
-    const columns = Math.min(this.cards.length + extra.length, 5);
-    return html`<div class="kpis ${extra.length === 0 ? "" : "many"}" style=${styleMap({ "--kpi-columns": String(columns) })}>
+    return html`<div class="kpis">
       ${this.cards.map((c) => this.plainCard(c))}
       ${groups === null
         ? nothing
@@ -103,20 +101,16 @@ export class KeyNumbers extends LitElement {
 export const keyNumbersStyles = css`
   .kpis {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(5, minmax(0, 1fr));
     gap: 14px;
   }
-  .kpis.many {
-    grid-template-columns: repeat(var(--kpi-columns), minmax(0, 1fr));
-  }
   @media (max-width: 1023px) {
-    .kpis.many {
+    .kpis {
       grid-template-columns: repeat(2, minmax(0, 1fr));
     }
   }
   @media (max-width: 599px) {
-    .kpis,
-    .kpis.many {
+    .kpis {
       grid-template-columns: minmax(0, 1fr);
     }
   }

@@ -1,4 +1,4 @@
-import { addDays, fetchRange, type Period } from "@ha-spending/shared";
+import { addDays, fetchRange, type Period, unitAt } from "@ha-spending/shared";
 import {
   findByRole,
   fireEvent,
@@ -12,7 +12,7 @@ import {
 } from "@testing-library/dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { kr, longDate, rangeText } from "../src/format";
+import { kr, longDate, rangeText, unitName } from "../src/format";
 import { da } from "../src/i18n/da";
 import { answerFor, OBJECT_GROUP, withSubscriptions } from "./fixture";
 import { json, mount, settle, unmount } from "./mount";
@@ -671,8 +671,19 @@ describe("the loading placeholder's key-number boxes", () => {
     expect(boxes(root)).toBe(4);
   });
 
-  it("the first load's placeholder has 3 boxes", async () => {
+  it("the first load's placeholder has 2 boxes", async () => {
     const { root } = await mount("", { answer: pending });
+    expect(boxes(root)).toBe(2);
+  });
+
+  it("after choosing a unit, the placeholder has the unit's row", async () => {
+    const { app, root } = await mount("", {
+      answer: (range, n) => (n === 1 ? json(withSubscriptions(answerFor(range))) : pending()),
+    });
+    const bars = getByRole(root, "region", { name: da.per("month") });
+    fireEvent.click(getByRole(bars, "button", { name: new RegExp(`^${unitName(unitAt("2026-07-01", "month", "2026-10-30"), "month")},`) }));
+    await settle(app);
+    await choosePreset(root, app, da.presets.lastYear);
     expect(boxes(root)).toBe(3);
   });
 

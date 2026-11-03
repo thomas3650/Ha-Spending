@@ -427,10 +427,10 @@ describe("with no subscriptions", () => {
     expect(location.hash).toBe("");
   });
 
-  it("keeps three bones and no fourth number while loading", async () => {
+  it("keeps two bones and no object group button while loading", async () => {
     const { root } = await mount("", { answer: () => new Promise<Response>(() => {}) });
     const busy = getAllByRole(root, "group", { name: da.loading })[0];
-    expect(getAllByRole(busy, "listitem")).toHaveLength(3);
+    expect(getAllByRole(busy, "listitem")).toHaveLength(2);
     expect(queryByRole(root, "button", { name: new RegExp(`^${KEY_LABEL}`) })).toBeNull();
   });
 });
