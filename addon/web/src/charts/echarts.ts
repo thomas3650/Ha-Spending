@@ -12,6 +12,7 @@ export interface Chart {
   on(event: "click", handler: (p: { dataIndex: number }) => void): void;
   highlight(dataIndex: number): void;
   downplay(dataIndex: number): void;
+  hideTip(): void;
   dispose(): void;
 }
 
@@ -25,6 +26,7 @@ export function createChart(el: HTMLElement): Chart {
     on: (event, handler) => chart.on(event, (p) => handler({ dataIndex: (p as { dataIndex: number }).dataIndex })),
     highlight: (dataIndex) => chart.dispatchAction({ type: "highlight", seriesIndex: 0, dataIndex }),
     downplay: (dataIndex) => chart.dispatchAction({ type: "downplay", seriesIndex: 0, dataIndex }),
+    hideTip: () => chart.dispatchAction({ type: "hideTip" }),
     dispose: () => {
       observer.disconnect();
       chart.dispose();

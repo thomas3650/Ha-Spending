@@ -100,6 +100,8 @@ export class Bars extends LitElement {
     this.colour = "";
     this.average = null;
     this.chosen = null;
+    // ECharts hides the tooltip only on a pointerout that reaches its own drawing; a leave it misses left the tip up.
+    this.addEventListener("mouseleave", () => this.chart?.hideTip());
   }
 
   protected override createRenderRoot(): HTMLElement {

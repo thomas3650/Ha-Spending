@@ -164,6 +164,12 @@ describe("the bars", () => {
     expect(charts[0].calls.downplay).toEqual([2]);
   });
 
+  it("hides the tooltip when the mouse leaves the bars", async () => {
+    const el = await render();
+    fireEvent.mouseLeave(el);
+    expect(charts[0].calls.hideTip).toBe(1);
+  });
+
   it("marks the chosen bar", async () => {
     const items = itemsOfThisYear();
     const el = await render({ items, chosen: "2026-07-01" });
