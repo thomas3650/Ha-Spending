@@ -182,12 +182,20 @@ export class FilterPicker extends Dropdown {
         ? nothing
         : html`<div role="group" aria-labelledby="hs-filter-categories">
             <h3 id="hs-filter-categories">${da.categories}</h3>
-            ${shownCategories.map((c) =>
-              this.option(c.name, c.name === category && c.mainGroup === mainGroup, "set-category", {
-                mainGroup: c.mainGroup,
-                category: c.name,
-              } satisfies CategoryChoice),
-            )}
+            ${[...data.mainGroups, null].map((key, index) => {
+              const inGroup = shownCategories.filter((c) => c.mainGroup === key);
+              if (inGroup.length === 0) return nothing;
+              const id = `hs-filter-category-group-${index}`;
+              return html`<div role="group" aria-labelledby=${id} class="category-group">
+                <h4 id=${id}>${partName(key, "mainGroup")}</h4>
+                ${inGroup.map((c) =>
+                  this.option(c.name, c.name === category && c.mainGroup === mainGroup, "set-category", {
+                    mainGroup: c.mainGroup,
+                    category: c.name,
+                  } satisfies CategoryChoice),
+                )}
+              </div>`;
+            })}
             ${withoutCategory
               ? this.option(da.noCategory, category === null && mainGroup === null, "set-category", {
                   mainGroup: null,
@@ -357,7 +365,7 @@ export const allPostingsStyles = css`
     display: flex;
     flex-direction: column;
   }
-  .filter-menu [role="group"] + [role="group"] {
+  .filter-menu > [role="group"] + [role="group"] {
     border-top: 1px solid var(--hs-line);
     margin-top: 6px;
     padding-top: 6px;
@@ -378,6 +386,15 @@ export const allPostingsStyles = css`
     color: var(--hs-muted);
     font-size: 11px;
     font-weight: normal;
+  }
+  .filter-menu h4 {
+    margin: 6px 16px 2px;
+    color: var(--hs-text);
+    font-size: 11px;
+    font-weight: 600;
+  }
+  .category-group .dd-option {
+    padding-left: 28px;
   }
   .amount-part {
     padding: 0 16px 8px;
