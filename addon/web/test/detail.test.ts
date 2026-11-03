@@ -104,7 +104,7 @@ describe("the detail on the normal page", () => {
     const rows = detailRows(d);
     expect(rows.map(text)).toEqual(
       ["10", "09", "08", "07", "06", "05", "04", "03", "02", "01"].map(
-        (m) => `${tableDate(`2026-${m}-01`)} Fælleskonto 8.000,00 kr.`,
+        (m) => `${tableDate(`2026-${m}-01`)} Fælleskonto -8.000,00 kr.`,
       ),
     );
     expect(rows.some((r) => r.getAttribute("aria-current") === "true")).toBe(false);
@@ -158,7 +158,7 @@ describe("the detail on the normal page", () => {
     const d = detail(region(root, da.postingsTitle), "Pizzaabonnement");
     expect(text(d)).toContain("Mad · Abonnementer");
     const marked = detailRows(d).filter((r) => r.getAttribute("aria-current") === "true");
-    expect(marked.map(text)).toEqual([`${tableDate("2026-09-20")} Kreditkort 700,00 kr.`]);
+    expect(marked.map(text)).toEqual([`${tableDate("2026-09-20")} Kreditkort -700,00 kr.`]);
   });
 
   it("another posting opens its shop; Kiosken opens the rows with no shop and its text", async () => {
@@ -173,8 +173,8 @@ describe("the detail on the normal page", () => {
       `${da.columns.category} = Café`,
     ]);
     expect(detailRows(d).map((r) => [text(r), r.getAttribute("aria-current")])).toEqual([
-      [`${tableDate("2026-09-22")} Kreditkort -200,00 kr.`, "true"],
-      [`${tableDate("2026-09-20")} Kreditkort 700,00 kr.`, null],
+      [`${tableDate("2026-09-22")} Kreditkort +200,00 kr.`, "true"],
+      [`${tableDate("2026-09-20")} Kreditkort -700,00 kr.`, null],
     ]);
 
     await click(app, getByRole(root, "button", { name: da.backTo(da.postingsTitle) }));
@@ -186,17 +186,17 @@ describe("the detail on the normal page", () => {
     expect(text(d)).toContain(da.shopContext);
     expect(text(d)).toContain(tableDate("2026-02-14"));
     expect(text(d)).not.toContain(" · Kiosken");
-    expect(detailRows(d).map(text)).toEqual([`${tableDate("2026-02-14")} Fælleskonto 150,00 kr.`]);
+    expect(detailRows(d).map(text)).toEqual([`${tableDate("2026-02-14")} Fælleskonto -150,00 kr.`]);
   });
 
-  it("a refund reads with a minus in the head and in its row", async () => {
+  it("a refund reads with a plus in the head and in its row, as Posteringer writes it", async () => {
     const { app, root } = await mountLinked("card=postings");
     await click(app, rowButton(region(root, da.postingsTitle), "Pizzeria Roma", "2026-09-22"));
     const d = detail(region(root, da.postingsTitle), "Pizzeria Roma");
     const heading = getByRole(d, "heading", { level: 3 });
-    expect(text(heading.nextElementSibling as Element)).toContain("-200,00 kr.");
+    expect(text(heading.nextElementSibling as Element)).toContain("+200,00 kr.");
     const marked = detailRows(d).find((r) => r.getAttribute("aria-current") === "true");
-    expect(text(marked as HTMLElement)).toContain("-200,00 kr.");
+    expect(text(marked as HTMLElement)).toContain("+200,00 kr.");
   });
 
   it("the bars' text alternatives name each unit and its sum", async () => {
@@ -281,6 +281,42 @@ describe("the detail on the normal page", () => {
 
     const unsafe = await mountLinked("card=postings&detail=p%3Ap25", "javascript:alert(1)");
     expect(queryByRole(detail(unsafe.root, "Pizzeria Roma"), "link")).toBeNull();
+  });
+
+  it("each row in the detail links to its posting in Firefly III, and a click on the row opens it once", async () => {
+    const opened: string[] = [];
+    const original = window.open;
+    window.open = ((url?: string | URL) => {
+      opened.push(String(url));
+      return null;
+    }) as typeof window.open;
+    try {
+      const { app, root } = await mountLinked("card=postings&detail=p%3Ap25");
+      const rows = detailRows(detail(root, "Pizzeria Roma"));
+      const dates = rows.map((r) => within(r).getByRole("link"));
+      expect(dates.map((a) => a.getAttribute("href"))).toEqual([
+        `${LINK}/transactions/show/g25`,
+        `${LINK}/transactions/show/g24`,
+      ]);
+      expect(dates.every((a) => a.getAttribute("target") === "_blank")).toBe(true);
+      fireEvent.click(rows[1], { detail: 1 });
+      fireEvent.click(rows[1], { detail: 2 });
+      fireEvent.dblClick(rows[1]);
+      expect(opened).toEqual([`${LINK}/transactions/show/g24`]);
+      // happy-dom follows a target="_blank" link through window.open, so the link's own tab is the one more entry.
+      fireEvent.click(dates[1], { detail: 1 });
+      await settle(app);
+      expect(opened).toEqual([`${LINK}/transactions/show/g24`, `${LINK}/transactions/show/g24`]);
+      unmount();
+
+      const none = await mountLinked("card=postings&detail=p%3Ap25", null);
+      const table = getByRole(detail(none.root, "Pizzeria Roma"), "table");
+      expect(within(table).queryByRole("link")).toBeNull();
+      fireEvent.click(getAllByRole(table, "row")[1], { detail: 1 });
+      expect(opened).toHaveLength(2);
+    } finally {
+      window.open = original;
+    }
   });
 
   it("a row's button opens, Escape closes, the focus is back on the button", async () => {

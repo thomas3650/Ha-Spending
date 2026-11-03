@@ -45,8 +45,9 @@ key.
 The page is in Danish and has a light theme. Click a main group to see its categories and a category to see its
 postings. If the rule group in `main_group_rule_group` does not exist, the page says so.
 
-A click on a fixed expense or on a posting shows its detail: the sums, the bars and the postings. The detail
-has the link "Åbn i Firefly III" only when `firefly_link_url` is set; without it the detail has no link.
+A click on a fixed expense or on a posting shows its detail: the sums, the bars and the postings. When
+`firefly_link_url` is set, the detail has the link "Åbn i Firefly III", each posting's date links to it in Firefly III,
+and a click on a posting's row opens it; without it the detail has no link.
 
 The overview also shows your Firefly III subscriptions, which the page calls "Faste udgifter": a key number for each
 object group with its payments in the period, and a card with each subscription's amount, its cost per year and a

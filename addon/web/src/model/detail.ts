@@ -35,6 +35,7 @@ export interface DetailRow {
   account: string;
   amount: string;
   marked: boolean;
+  href: string | null;
 }
 
 export interface DetailView {
@@ -65,6 +66,7 @@ interface Common {
 
 function common(ctx: ViewContext, rows: ClassifiedPosting[], marked: string | null): Common {
   const g = ctx.timeline.grouping;
+  const base = linkBase(ctx.data.fireflyLinkUrl);
   const totals = unitTotals(rows, ctx.units);
   return {
     rows: [...rows]
@@ -75,6 +77,7 @@ function common(ctx: ViewContext, rows: ClassifiedPosting[], marked: string | nu
         account: accountName(ctx, p.account),
         amount: detailAmount(p.amount),
         marked: p.id === marked,
+        href: postingHref(base, p),
       })),
     bars: ctx.units.map((unit, i) => ({
       name: unitAxis(unit, g),

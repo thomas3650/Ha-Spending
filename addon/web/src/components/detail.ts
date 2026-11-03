@@ -12,6 +12,15 @@ function keyOf(view: DetailView | undefined): string | null {
 }
 
 /**
+ * A click anywhere on a row opens its posting, once: the second click of a double click is not another tab, and a
+ * click on the date's own link is left to the link.
+ */
+function openRow(event: MouseEvent, href: string | null): void {
+  if (href === null || event.detail > 1 || (event.target as Element).closest("a")) return;
+  window.open(href, "_blank", "noopener,noreferrer");
+}
+
+/**
  * The detail of a fixed expense, a subscription or a shop (detail spec §2). "Vis alle" is kept here, not in the hash.
  * "Luk" fires `detail-close`.
  */
@@ -71,8 +80,16 @@ export class Detail extends LitElement {
     return html`<table class="detail-rows">
         <tbody>
           ${rows.map(
-            (r) => html`<tr aria-current=${r.marked ? "true" : nothing}>
-              <td>${r.date}</td>
+            (r) => html`<tr
+              aria-current=${r.marked ? "true" : nothing}
+              class=${r.href === null ? "" : "detail-row-link"}
+              @click=${(e: MouseEvent) => openRow(e, r.href)}
+            >
+              <td>
+                ${r.href === null
+                  ? r.date
+                  : html`<a href=${r.href} target="_blank" rel="noopener noreferrer">${r.date}</a>`}
+              </td>
               <td>${r.account}</td>
               <td class="detail-amount-cell">${r.amount}</td>
             </tr>`,
@@ -318,6 +335,19 @@ export const detailStyles = css`
     padding: 8px 6px;
     border-bottom: 1px solid var(--hs-line);
   }
+  .detail-row-link {
+    cursor: pointer;
+  }
+  .detail-row-link:not([aria-current="true"]):hover td {
+    background: var(--hs-soft);
+  }
+  .detail-rows a {
+    color: inherit;
+    text-decoration: none;
+  }
+  .detail-rows a:hover {
+    text-decoration: underline;
+  }
   .detail-rows .detail-amount-cell {
     text-align: right;
     white-space: nowrap;
@@ -330,9 +360,11 @@ export const detailStyles = css`
     background: none;
     border: 0;
     cursor: pointer;
+    display: block;
   }
   .detail-link {
-    display: inline-block;
+    display: block;
+    width: fit-content;
     margin-top: 12px;
     color: var(--hs-accent-text);
     text-decoration: none;

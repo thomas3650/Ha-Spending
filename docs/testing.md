@@ -64,7 +64,8 @@ technical spec §7.2 ([technical spec](superpowers/specs/2026-10-30-technical-de
 
 ## Chrome check
 
-For every UI change, in the fast loop:
+For every UI change, in the fast loop. `reviewer` runs it last in every branch review, in Claude in Chrome
+([D45](decisions.md)):
 
 - A new Chrome tab at `http://127.0.0.1:5173/`. The window is **1440×960**, the mockups' size
   ([mockups](mockups/README.md)).
@@ -167,4 +168,7 @@ The page's list. Every screenshot is at 1440×960 with the console free of error
 35. `49-detalje`: the detail of a fixed expense, a subscription and a shop (a row on Posteringer, Faste udgifter and Alle
     posteringer), on the normal page, in full screen and on Alle posteringer. At 1440, 1728, 1000 and 420 px. Tab to a
     row's name and press Enter: the detail opens and the focus is on its heading; "Luk" and Escape close it and the
-    focus is back on the row. Compare `docs/mockups/v5/`.
+    focus is back on the row. The amounts in the detail's rows have the same sign as the list beside it (spending
+    minus, a refund plus). A click on a row, or on its date, opens that posting in Firefly III in one new tab, also on a
+    double click. "Vis alle N"/"Vis færre" and "Åbn i Firefly III" stand on lines of their own. Compare
+    `docs/mockups/v5/`.
