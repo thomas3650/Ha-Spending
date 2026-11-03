@@ -77,5 +77,6 @@ export function barItems(ctx: ViewContext): BarItem[] {
     name: unitName(unit, g),
     amount: totals[i],
     running: isRunning(unit, ctx.today),
+    choose: unit.fullStart,
   }));
 }
