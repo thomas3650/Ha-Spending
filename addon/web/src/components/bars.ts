@@ -2,7 +2,7 @@ import type { Unit } from "@ha-spending/shared";
 import { css, html, LitElement, nothing, type PropertyValues } from "lit";
 import { createRef, ref } from "lit/directives/ref.js";
 import { type Chart, createChart, type EChartsCoreOption } from "../charts/echarts";
-import { axisKr, kr, rangeText } from "../format";
+import { axisKr, barKr, rangeText } from "../format";
 import { da } from "../i18n/da";
 import { visuallyHidden } from "../theme";
 
@@ -64,7 +64,7 @@ function escapeHtml(text: string): string {
 
 function buttonName(item: BarItem): string {
   const name = item.running ? `${item.name} (${da.inProgress})` : item.name;
-  return `${name}, ${kr(item.amount)}`;
+  return `${name}, ${barKr(item.amount)}`;
 }
 
 /**
@@ -179,7 +179,7 @@ export class Bars extends LitElement {
           const item = items[p.dataIndex];
           if (!item) return "";
           const range = rangeText({ start: item.unit.start, end: item.unit.end });
-          return `${escapeHtml(item.name)}<br>${escapeHtml(range)}<br>${escapeHtml(kr(item.amount))}`;
+          return `${escapeHtml(item.name)}<br>${escapeHtml(range)}<br>${escapeHtml(barKr(item.amount))}`;
         },
       },
       xAxis: {

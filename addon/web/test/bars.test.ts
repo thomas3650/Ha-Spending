@@ -75,6 +75,14 @@ describe("the bars", () => {
     ]);
   });
 
+  it("names a bar below zero with a plus", async () => {
+    const items = itemsOfThisYear();
+    items[3] = { ...items[3], amount: -20000 };
+    const el = await render({ items });
+    getByRole(el, "button", { name: `${items[3].name}, +${kr(20000)}` });
+    getByRole(el, "button", { name: `${items[6].name}, ${kr(items[6].amount)}` });
+  });
+
   it("keeps an empty unit as a slot", async () => {
     const items = itemsOfThisYear();
     items[3] = { ...items[3], amount: 0 };

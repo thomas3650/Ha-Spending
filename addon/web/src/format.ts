@@ -63,6 +63,12 @@ export function kr(ore: number): string {
   return `${whole.format(Math.abs(ore) / 100)} ${da.kr}`;
 }
 
+/** A bar below zero is a net refund, so it reads "+" as a refund does on Posteringer. */
+export function barKr(ore: number): string {
+  const text = kr(ore);
+  return ore < 0 && !isZero(text) ? `+${text}` : text;
+}
+
 export function signedKr(ore: number): string {
   const text = whole.format(Math.abs(ore) / 100);
   if (isZero(text)) return `${text} ${da.kr}`;
