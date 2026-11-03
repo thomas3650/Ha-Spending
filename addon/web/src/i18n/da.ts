@@ -256,6 +256,7 @@ export const da = {
   close: "Luk",
   shopContext: "Butik",
   detailInPeriod: "I perioden",
+  refundMark: "retur",
   detailPer: (g: Grouping) => `Pr. ${da.groupings[g].one} i perioden`,
   noDetailRows: "Ingen posteringer i perioden",
   openInFirefly: "Åbn i Firefly III",

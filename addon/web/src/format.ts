@@ -63,10 +63,10 @@ export function kr(ore: number): string {
   return `${whole.format(Math.abs(ore) / 100)} ${da.kr}`;
 }
 
-/** A bar below zero is a net refund, so it reads "+" as a refund does on Posteringer. */
+/** A bar below zero is a net refund, so it reads "+" as a refund does on Posteringer, and says "retur". */
 export function barKr(ore: number): string {
   const text = kr(ore);
-  return ore < 0 && !isZero(text) ? `+${text}` : text;
+  return ore < 0 && !isZero(text) ? `+${text} ${da.refundMark}` : text;
 }
 
 export function signedKr(ore: number): string {
@@ -126,6 +126,11 @@ export function signedPercent(fraction: number): string {
 
 export function axisKr(ore: number): string {
   return whole.format(ore / 100);
+}
+
+/** The axis has no sign below zero: the bar is drawn below the line and the tooltip says "retur". */
+export function axisTickKr(ore: number): string {
+  return axisKr(Math.abs(ore));
 }
 
 export function tableDate(date: string): string {

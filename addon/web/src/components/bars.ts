@@ -2,7 +2,7 @@ import type { Unit } from "@ha-spending/shared";
 import { css, html, LitElement, nothing, type PropertyValues } from "lit";
 import { createRef, ref } from "lit/directives/ref.js";
 import { type Chart, createChart, type EChartsCoreOption } from "../charts/echarts";
-import { axisKr, barKr, rangeText } from "../format";
+import { axisTickKr, barKr, rangeText } from "../format";
 import { da } from "../i18n/da";
 import { visuallyHidden } from "../theme";
 
@@ -13,7 +13,7 @@ export interface BarItem {
   amount: number;
   /** Runs on today; a unit after today is an empty slot. */
   running: boolean;
-  /** The fullStart of the unit a click chooses: a day bar chooses its month. */
+  /** The fullStart of the unit a click chooses: a finer bar chooses the period's one unit. */
   choose: string;
 }
 
@@ -213,7 +213,7 @@ export class Bars extends LitElement {
         axisLabel: {
           color: muted,
           fontSize: 11,
-          formatter: (value: number) => axisKr(value),
+          formatter: (value: number) => axisTickKr(value),
           showMinLabel: !hasNegative,
         },
         splitLine: { lineStyle: { color: token("--hs-grid") } },
