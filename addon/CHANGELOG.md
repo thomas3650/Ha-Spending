@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.12.1](https://github.com/thomas3650/Ha-Spending/compare/v0.12.0...v0.12.1) (2026-11-03)
+
+
+### Bug Fixes
+
+* small fixes from the 0.11.0 walkthrough ([#115](https://github.com/thomas3650/Ha-Spending/issues/115)) ([ed4b0d3](https://github.com/thomas3650/Ha-Spending/commit/ed4b0d3247507b09ac35af2520bb579e856b97d9))
+
 ## [0.12.0](https://github.com/thomas3650/Ha-Spending/compare/v0.11.0...v0.12.0) (2026-11-03)
 
 
