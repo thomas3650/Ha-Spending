@@ -147,10 +147,6 @@ export const keyNumbersStyles = css`
   .kpi-group:has(.kpi-toggle:hover) {
     border-color: var(--hs-accent);
   }
-  .kpi-group:has(.kpi-toggle[aria-pressed="true"]) {
-    border-color: var(--hs-accent);
-    box-shadow: inset 0 0 0 1px var(--hs-accent);
-  }
   .kpi-toggle:focus-visible {
     outline: 2px solid var(--hs-accent-text);
     outline-offset: 2px;

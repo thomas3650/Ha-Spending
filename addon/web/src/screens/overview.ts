@@ -278,8 +278,8 @@ export class Overview extends LitElement {
     else if (inPeriod.length === 0) body = this.empty();
     else if (card === "difference" && ctx.chosen !== null) body = this.difference(ctx.chosen, title);
     else body = this.bars();
-    return html`<section class="card half" role="region" aria-labelledby=${RIGHT_TITLE}>
-      <div class="half-head ${ctx.data.subscriptions.length === 0 && !shops ? "" : "wraps"}">
+    return html`<section class="card half right" role="region" aria-labelledby=${RIGHT_TITLE}>
+      <div class="half-head with-tools">
         <div class="half-title ${inPlace ? "in-detail" : ""}">
           ${inPlace
             ? html`<button
@@ -338,13 +338,35 @@ export const overviewStyles = css`
     flex: 1 1 auto;
     min-width: 0;
   }
-  .half-head.wraps {
-    flex-wrap: wrap;
+  .half.right {
+    container-type: inline-size;
   }
-  /* A zero basis lets a long title end in "…" rather than push the tools to a second line; they wrap only on a phone. */
-  .half-head.wraps > .half-title {
-    flex: 1 1 0;
-    min-width: 10em;
+  /* The tools are grid items of the head, so the button stays on the title's row when the switch drops below. */
+  .half-head.with-tools {
+    display: grid;
+    grid-template-columns: minmax(10em, 1fr) auto auto;
+    grid-template-areas: "title switch button";
+    align-items: start;
+    column-gap: 8px;
+  }
+  .half-head.with-tools > .half-title {
+    grid-area: title;
+  }
+  .half-head.with-tools .card-switch {
+    grid-area: switch;
+  }
+  .half-head.with-tools .full-screen {
+    grid-area: button;
+  }
+  @container (max-width: 670px) {
+    .half-head.with-tools {
+      grid-template-columns: minmax(0, 1fr) auto;
+      grid-template-areas: "title button" "switch switch";
+      row-gap: 8px;
+    }
+    .half-head.with-tools .card-switch {
+      justify-self: end;
+    }
   }
   .half-head h2 {
     margin: 0;
@@ -396,11 +418,7 @@ export const overviewStyles = css`
     font-variant-numeric: tabular-nums;
   }
   .card-tools {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: flex-end;
-    min-width: 0;
-    gap: 8px;
+    display: contents;
   }
   .card-tools .full-screen {
     display: inline-flex;
