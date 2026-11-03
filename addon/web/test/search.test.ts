@@ -168,6 +168,38 @@ describe("the search field with shop suggestions", () => {
     expect(document.activeElement).toBe(field(el));
   });
 
+  it("chooses the first suggestion with Tab when none is highlighted, and keeps the focus in the field", async () => {
+    const { el, fired } = await render();
+    await openWithFocusElsewhere(el);
+    expect(fireEvent.keyDown(field(el), { key: "Tab" })).toBe(false);
+    expect(fired).toEqual([{ name: "shop-choose", detail: "Netto" }]);
+    expect(document.activeElement).toBe(field(el));
+  });
+
+  it("chooses the highlighted suggestion with Tab", async () => {
+    const { el, fired } = await render();
+    await focus(el);
+    await key(el, "ArrowDown");
+    await key(el, "ArrowDown");
+    await key(el, "Tab");
+    expect(fired).toEqual([{ name: "shop-choose", detail: "Nordisk Café" }]);
+  });
+
+  it("chooses nothing with Shift+Tab and leaves the event alone", async () => {
+    const { el, fired } = await render();
+    await focus(el);
+    expect(fireEvent.keyDown(field(el), { key: "Tab", shiftKey: true })).toBe(true);
+    expect(fired).toEqual([]);
+  });
+
+  it("chooses nothing with Tab when the list is closed, and leaves the event alone", async () => {
+    const { el, fired } = await render();
+    await focus(el);
+    await key(el, "Escape");
+    expect(fireEvent.keyDown(field(el), { key: "Tab" })).toBe(true);
+    expect(fired).toEqual([]);
+  });
+
   it("closes on Enter with no highlight, and fires nothing", async () => {
     const { el, fired } = await render();
     await focus(el);
@@ -237,6 +269,12 @@ describe("the search field with shop suggestions", () => {
       await focus(el);
       getByRole(el, "button", { name: da.remove(da.shopChip("Netto")) });
       expect(list(el)).toBeNull();
+    });
+
+    it("puts the chip after the field", async () => {
+      const { el } = await render({ search: "", shop: "Netto" });
+      const remove = getByRole(el, "button", { name: da.remove(da.shopChip("Netto")) });
+      expect(field(el).compareDocumentPosition(remove) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     });
 
     it("removes the shop from the chip", async () => {

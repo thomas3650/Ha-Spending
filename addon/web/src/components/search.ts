@@ -99,6 +99,13 @@ export class Search extends LitElement {
         e.preventDefault();
         this.active = this.active > 0 ? this.active - 1 : n - 1;
         return;
+      case "Tab": {
+        const chosen = open && !e.shiftKey ? this.suggestions[Math.max(this.active, 0)] : undefined;
+        if (chosen === undefined) return;
+        e.preventDefault();
+        this.choose(chosen.name);
+        return;
+      }
       case "Enter": {
         const chosen = open ? this.suggestions[this.active] : undefined;
         if (chosen !== undefined) {
@@ -142,10 +149,7 @@ export class Search extends LitElement {
     const open = this.open;
     const list = `${this.idBase}-list`;
     const active = open && this.active >= 0 && this.active < this.suggestions.length ? this.active : -1;
-    return html`${this.shop === null
-        ? nothing
-        : chip(da.shopChip(this.shop), () => this.removeShop("click"))}
-      <input
+    return html`<input
         class="all-search"
         type="search"
         role="combobox"
@@ -161,6 +165,9 @@ export class Search extends LitElement {
         @focusout=${this.onFocusOut}
         @keydown=${this.onKeyDown}
       />
+      ${this.shop === null
+        ? nothing
+        : html`<div class="search-chip-row">${chip(da.shopChip(this.shop), () => this.removeShop("click"))}</div>`}
       <ul
         role="listbox"
         id=${list}
@@ -183,6 +190,13 @@ export const searchStyles = css`
     flex-wrap: wrap;
     align-items: center;
     gap: 8px;
+  }
+  hs-search .all-search {
+    flex: 1 1 100%;
+  }
+  .search-chip-row {
+    flex-basis: 100%;
+    display: flex;
   }
   .search-list {
     position: absolute;
