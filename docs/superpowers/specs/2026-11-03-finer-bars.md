@@ -68,13 +68,16 @@ This spec changes D51 and the month days spec in these places; everything else t
   Kvartal draws August and September, August clipped to start on the 15th (its name is "August 2026", its tooltip's
   range starts 15 Aug).
 - The units are `unitsOf(span, finer, today)`. `span` runs from the period's start to the period's end, except as
-  below, where it runs to `ctx.units[0].fullEnd`, the end of the one unit of the chosen grouping (not the month's end):
-  - the preset "Denne måned" (D51; by Måned this is the month's end, as today; by Uge it is the end of the week, so
-    "Denne måned" by Uge on 3 Oct draws 1–4 Oct, the 4th an empty slot);
-  - **open for Thomas:** every other preset that ends today ("I år", "Alt"). The draft has them end today, so "I år"
-    by År on 30 Oct draws January to October, and in early January a single "jan i gang" bar, the problem #100 fixes.
-    The other choice runs them to the unit's end, with the units after today as empty slots, as "Denne måned" does.
-    Claude recommends the second. The answer is one line here and the tests below.
+  below, where it runs on to the earlier of the preset's own last day and `ctx.units[0].fullEnd` (the end of the one
+  unit of the chosen grouping), so it never draws a day or month the preset does not hold:
+  - the preset "Denne måned", whose own last day is the month's last day (D51). By Måned that is the month's end, as
+    today. By Uge it is the end of the week: "Denne måned" by Uge on 3 Oct draws 1–4 Oct, the 4th an empty slot. By
+    Kvartal or År it is the month's end; the month is then one unit, so it steps on to the month's days, as by Måned;
+  - **open for Thomas:** the other presets that end today, "I år" (its own last day 31 Dec) and "Alt" (no last day of
+    its own, so the unit's end). The draft has them end today, so "I år" by År on 30 Oct draws January to October, and
+    in early January a single "jan i gang" bar, the problem #100 fixes. The other choice runs them on as above, with
+    the units after today as empty slots. Claude recommends the second. The answer is one line here and the tests
+    below.
 - Each finer unit's amount is `unitTotals(ctx.shown, units)`; its labels are `unitAxis` and `unitName` under the finer
   grouping ("19.10." and "19.10.2026" for a day, "jul" and "Juli 2026" for a month). The tooltip of a day is its date
   and amount; it has no weekday (the mockup's "onsdag" is not built).
@@ -94,6 +97,8 @@ This spec changes D51 and the month days spec in these places; everything else t
   - `period=custom&from=2026-10-21&to=2026-10-21&by=week`: 1 button, "21.10.2026", region `da.per("day")`.
   - `period=thisMonth&by=week` with `now` 2026-10-03 (the `mount` option, as `month-days.test.ts` uses): 4 buttons,
     1–4 Oct; the 3rd's name contains `da.inProgress`, the 4th's does not.
+  - `period=thisMonth&by=quarter`: 31 day buttons, region `da.per("day")`; the 30th's name contains `da.inProgress`,
+    the 31st's does not.
   - `period=lastYear&by=year`: 12 buttons, January to December 2025.
   - `period=thisYear&by=year`: per Thomas's answer, 10 buttons (January to October), or 12 with November and December
     not running and without `da.inProgress`; October's name contains `da.inProgress`.
@@ -166,15 +171,18 @@ This spec changes D51 and the month days spec in these places; everything else t
 
 ## 6. Docs
 
-- D53: a period with one unit draws the next finer unit (days for a week or a month, months for a quarter or a
-  year) on the Søjler card and in the detail, decided by `finerUnits`; the grouping, the hash, the key numbers and the
-  chosen unit stay the period's; a click on a finer bar chooses the period's unit. A bar below zero is named "+… kr.
+- D53: a period with one unit draws finer units on the Søjler card and in the detail, decided by `finerUnits`: days
+  for a week or a month, months for a quarter or a year, stepping again while there is still one unit, down to days.
+  "Denne måned" (and, per Thomas's answer, "I år" and "Alt") draws on to the earlier of its own last day and the end
+  of its one unit, the units after today as empty slots. The grouping, the hash, the key numbers and the chosen unit
+  stay the period's; a click on a finer bar chooses the period's unit. A bar below zero is named "+… kr.
   retur", and the y-axis ticks below zero have no sign. D51's status becomes `active; the detail's bars, the one-unit
   Uge, Kvartal and År periods and the name below zero superseded by D53`.
 - `docs/README.md`: the new spec and its plan in the map.
 - `docs/mockups/README.md`: a section for `v6/`, with A chosen and B tried for the refund.
 - `docs/testing.md`: a Chrome-check item: a custom one-week period by Uge, a custom one-quarter period by Kvartal,
-  "I år" and "Sidste år" by År, and the detail of a fixed expense on "Sidste måned", at 420, 1440 and 1728 px, normal
+  "I år" and "Sidste år" by År, "Sidste måned" by Kvartal (days), "Denne måned" by Uge and by Kvartal, and the detail
+  of a fixed expense on "Sidste måned", at 420, 1440 and 1728 px, normal
   and full screen. The finer bars, their titles, no average line, the running unit lighter, the detail's names thinned
   and readable, and a click choosing the whole period. A day below zero (if the example data has one): its tooltip says
   "+… kr. retur", and the axis under zero has no minus.
