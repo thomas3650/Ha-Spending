@@ -163,8 +163,8 @@ An assignment refused for its category or its posting writes nothing, the shop i
   `not-withdrawal`; `has-shop` (the destination is not the expense account named `(no name)`, the Data Importer's name
   for a line with no counterparty, so a shop set by hand is never overwritten; a withdrawal made through Firefly III's
   API with no destination lands on its cash account instead, and is `has-shop` too); `bad-shop-name`; `name-taken`
-  (an account that is not an active expense account has the same name: an asset, a liability, a revenue account, the
-  cash account, or an inactive account of any type).
+  (an account that is not an active expense account has the same name: an asset, a liability, the cash account, or
+  an inactive expense account; a revenue account of the same name is the shop's refunds and does not count).
 
 ### The shop's name
 

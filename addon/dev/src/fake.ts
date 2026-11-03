@@ -461,7 +461,8 @@ export function createFakeFirefly(data: SeedData, options: FakeOptions = {}): Fa
       return c.json({ message: "The fake makes expense accounts with a name.", errors: {} }, 422);
     }
     const name = body.name;
-    if (built.accounts.some((a) => a.name === name)) {
+    // Firefly III lets an expense and a revenue account share a name; the fake refuses every other clash.
+    if (built.accounts.some((a) => a.name === name && a.type !== "revenue")) {
       return c.json({ message: "The name is already in use.", errors: {} }, 422);
     }
     const made: FakeAccount = { id: built.nextId(), name, type: "expense", active: true };

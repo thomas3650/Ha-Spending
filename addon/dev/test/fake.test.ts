@@ -370,12 +370,13 @@ describe("the fake Firefly III", () => {
       expect(listed.data.find((a) => a.id === made.data.id)?.attributes.name).toBe("Ny butik");
     });
 
-    it("POST accounts with a taken name is 422", async () => {
+    it("POST accounts with a taken name is 422, but a revenue account's name is free for an expense account", async () => {
       const { get } = client(createFakeFirefly(seed()));
-      for (const name of ["Bager", "Konto A", "Boliglån", "Firma", "Lukket butik"]) {
+      for (const name of ["Bager", "Konto A", "Boliglån", "Lukket butik"]) {
         expect((await post(get, { name, type: "expense" })).status).toBe(422);
       }
       expect((await post(get, { name: "bager", type: "expense" })).status).toBe(200);
+      expect((await post(get, { name: "Firma", type: "expense" })).status).toBe(200);
       expect((await post(get, { name: "Anden", type: "asset" })).status).toBe(422);
     });
 

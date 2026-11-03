@@ -361,7 +361,8 @@ async function shopAccount(
   if (split.destination_type !== EXPENSE || split.destination_name !== NO_SHOP) return "has-shop";
   const name = cleanShop(raw);
   if (name === null) return "bad-shop-name";
-  const same = accounts.filter((a) => sameShop(tidy(a.name)) === sameShop(name));
+  // A revenue account cannot be a withdrawal's destination, so the shop's refunds may share its name.
+  const same = accounts.filter((a) => a.type !== "revenue" && sameShop(tidy(a.name)) === sameShop(name));
   // A withdrawal written to a liability would book a purchase as a debt payment.
   if (!same.every(isShop)) return "name-taken";
   const found =
