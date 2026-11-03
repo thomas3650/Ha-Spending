@@ -221,6 +221,8 @@ export class SpendingApp extends LitElement {
   declare private hiddenWriteFailed: boolean;
 
   private asked: Period | null = null;
+  /** The key-number boxes of the last answer, so the placeholder keeps the row's shape. */
+  private boxes = 3;
   private request = 0;
   private controller: AbortController | null = null;
   private hiddenAsked = false;
@@ -431,6 +433,8 @@ export class SpendingApp extends LitElement {
         return;
       }
     }
+    const ctx = viewContext(data, this.state, this.today);
+    this.boxes = keyCards(ctx, "").length + objectGroupCards(ctx, () => "").length;
     this.load = { kind: "ready", data };
     this.normaliseState();
   }
@@ -559,7 +563,7 @@ export class SpendingApp extends LitElement {
         return this.ready(viewContext(this.load.data, this.state, this.today));
       default:
         return this.state.screen === "overview"
-          ? html`${this.fullScreen ? nothing : html`<hs-key-numbers .cards=${null}></hs-key-numbers>`}
+          ? html`${this.fullScreen ? nothing : html`<hs-key-numbers .cards=${null} .boxes=${this.boxes}></hs-key-numbers>`}
               ${this.loadingHalves()}`
           : html`<section class="card half" role="region" aria-busy="true" aria-label=${da.loading}></section>`;
     }

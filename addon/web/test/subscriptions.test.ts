@@ -423,7 +423,7 @@ describe("with no subscriptions", () => {
   it("keeps three bones and no fourth number while loading", async () => {
     const { root } = await mount("", { answer: () => new Promise<Response>(() => {}) });
     const busy = getAllByRole(root, "group", { name: da.loading })[0];
-    expect(busy.children).toHaveLength(3);
+    expect(getAllByRole(busy, "listitem")).toHaveLength(3);
     expect(queryByRole(root, "button", { name: new RegExp(`^${KEY_LABEL}`) })).toBeNull();
   });
 });

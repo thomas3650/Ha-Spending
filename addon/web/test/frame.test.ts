@@ -14,7 +14,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { comparisonLabel, kr, longDate, rangeText, signedPercent } from "../src/format";
 import { da } from "../src/i18n/da";
-import { answerFor } from "./fixture";
+import { answerFor, withSubscriptions } from "./fixture";
 import { json, mount, settle, unmount } from "./mount";
 import { KEEP_NBSP } from "./text";
 
@@ -589,5 +589,39 @@ describe("the period's custom interval", () => {
     } finally {
       setViewport(1024);
     }
+  });
+});
+
+describe("the loading placeholder's key-number boxes", () => {
+  const pending = () => new Promise<Response>(() => {});
+
+  function boxes(root: HTMLElement): number {
+    const busy = getByRole(root, "group", { name: da.loading });
+    return getAllByRole(busy, "listitem").length;
+  }
+
+  it("after a period change the placeholder has as many boxes as the page showed", async () => {
+    const { app, root } = await mount("", {
+      answer: (range, n) => (n === 1 ? json(withSubscriptions(answerFor(range))) : pending()),
+    });
+    getByRole(root, "group", { name: da.inPeriod("Faste udgifter") });
+    await choosePreset(root, app, da.presets.lastYear);
+    expect(boxes(root)).toBe(5);
+  });
+
+  it("the first load's placeholder has 3 boxes", async () => {
+    const { root } = await mount("", { answer: pending });
+    expect(boxes(root)).toBe(3);
+  });
+
+  it("after a failed load and a new change the placeholder keeps the last answer's count", async () => {
+    const { app, root } = await mount("", {
+      answer: (range, n) =>
+        n === 1 ? json(withSubscriptions(answerFor(range))) : n === 2 ? new Response("", { status: 500 }) : pending(),
+    });
+    await choosePreset(root, app, da.presets.lastYear);
+    getByRole(root, "alert");
+    await choosePreset(root, app, da.presets.lastMonth);
+    expect(boxes(root)).toBe(5);
   });
 });
