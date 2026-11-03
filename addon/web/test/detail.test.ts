@@ -240,7 +240,7 @@ describe("the detail on the normal page", () => {
       const items = getAllByRole(getByRole(detail(root, "Husleje"), "list", { name: da.detailPer("day") }), "listitem");
       expect(items).toHaveLength(7);
       for (const item of items) {
-        expect(text(within(item).getByText(/: /))).toMatch(new RegExp(`: ${kr(0).replace(/\./g, "\\.")}$`));
+        expect(text(within(item).getByText(/: /)).endsWith(`: ${kr(0)}`)).toBe(true);
         expect(queryByText(item, NAME)).not.toBeNull();
       }
     });
