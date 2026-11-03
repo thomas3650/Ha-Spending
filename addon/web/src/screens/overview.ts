@@ -501,7 +501,8 @@ export const overviewStyles = css`
   }
   .postings-search-row .show-all {
     flex: none;
-    padding: 0 14px;
+    align-self: flex-start;
+    padding: 10px 14px;
     font: inherit;
     color: var(--hs-accent-text);
     background: var(--hs-card);

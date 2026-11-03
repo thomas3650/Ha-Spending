@@ -210,3 +210,5 @@ The page's list. Every screenshot is at 1440×960 with the console free of error
     normal card, and it is in full screen. A chosen shop's chip sits under the search field. With the suggestion list
     open, Tab chooses the highlighted suggestion, or the first one when none is highlighted; Shift+Tab chooses nothing.
     A day bar's tooltip names its date once: two lines for a day, three for a whole month.
+    In full screen with a shop chosen, "Vis alle" keeps the field's height. The running bar is drawn faded on the bars
+    and in the detail.
