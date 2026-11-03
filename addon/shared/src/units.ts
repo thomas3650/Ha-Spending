@@ -94,9 +94,9 @@ export function isOneUnit(period: Period, grouping: Grouping, today: string): bo
   return unitsOf(period, grouping, today).filter(isWhole).length <= 1;
 }
 
-/** Widened so the comparisons have the unit before the last whole unit, and the unit before any chosen unit. */
+/** A one-unit period is widened by the 12 units before it, for its average (D16). */
 export function fetchRange(period: Period, grouping: Grouping, today: string): Period {
-  const steps = isOneUnit(period, grouping, today) ? 12 : 1;
+  const steps = isOneUnit(period, grouping, today) ? 12 : 0;
   let unit = unitAt(period.start, grouping, today);
   for (let i = 0; i < steps; i++) unit = unitBefore(unit, grouping, today);
   return { start: unit.fullStart, end: period.end };

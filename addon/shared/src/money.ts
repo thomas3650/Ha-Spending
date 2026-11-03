@@ -29,24 +29,14 @@ export interface Average {
   basis: "period" | "before";
 }
 
-export interface Comparison {
-  unit: Unit;
-  amount: number;
-  before: Unit;
-  beforeAmount: number | null;
-}
-
 export interface KeyNumbers {
   total: number;
   average: Average;
-  comparison: Comparison | null;
 }
 
 export interface ChosenNumbers {
   amount: number;
   average: Average;
-  before: Unit;
-  beforeAmount: number | null;
 }
 
 export interface Difference {
@@ -107,10 +97,6 @@ export function parts(postings: ClassifiedPosting[], level: Level): Part[] {
     .sort((a, b) => compareKeys(a.key, b.key));
 }
 
-export function change(amount: number, base: number | null): number | null {
-  return base !== null && base > 0 ? (amount - base) / base : null;
-}
-
 export function share(amount: number, whole: number): number | null {
   return whole > 0 ? amount / whole : null;
 }
@@ -156,46 +142,14 @@ function average(postings: ClassifiedPosting[], units: Unit[], basis: Average["b
   return { amount: averageOf(unitTotals(postings, units)), units: units.length, basis };
 }
 
-/** Inside the period, the clipped unit, so the comparison matches the bar beside it. */
-function unitBeforeIn(unit: Unit, t: Timeline): Unit {
-  const before = unitBefore(unit, t.grouping, t.today);
-  return unitsOf(t.period, t.grouping, t.today).find((u) => u.fullStart === before.fullStart) ?? before;
-}
-
-function beforeAmount(postings: ClassifiedPosting[], before: Unit, t: Timeline): number | null {
-  return hasData(before, t.earliest) ? unitTotal(postings, before) : null;
-}
-
 export function keyNumbers(postings: ClassifiedPosting[], t: Timeline): KeyNumbers {
-  const { units: averaged, basis } = averageUnits(t, null);
-  const units = unitsOf(t.period, t.grouping, t.today);
-  const unit = units.filter(isWhole).at(-1) ?? units.at(-1);
-  let comparison: Comparison | null = null;
-  if (unit) {
-    const before = unitBeforeIn(unit, t);
-    comparison = {
-      unit,
-      amount: unitTotal(postings, unit),
-      before,
-      beforeAmount: beforeAmount(postings, before, t),
-    };
-  }
-  return {
-    total: total(within(postings, t.period)),
-    average: average(postings, averaged, basis),
-    comparison,
-  };
+  const { units, basis } = averageUnits(t, null);
+  return { total: total(within(postings, t.period)), average: average(postings, units, basis) };
 }
 
 export function chosenUnitNumbers(postings: ClassifiedPosting[], t: Timeline, chosen: Unit): ChosenNumbers {
   const { units, basis } = averageUnits(t, chosen);
-  const before = unitBeforeIn(chosen, t);
-  return {
-    amount: unitTotal(postings, chosen),
-    average: average(postings, units, basis),
-    before,
-    beforeAmount: beforeAmount(postings, before, t),
-  };
+  return { amount: unitTotal(postings, chosen), average: average(postings, units, basis) };
 }
 
 export function differences(

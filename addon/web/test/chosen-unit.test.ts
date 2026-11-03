@@ -1,20 +1,19 @@
-import { change, share, unitAt } from "@ha-spending/shared";
+import { type Period, share, unitAt } from "@ha-spending/shared";
 import { fireEvent, getAllByRole, getByRole, getByText, queryByRole } from "@testing-library/dom";
 import { afterEach, describe, expect, it } from "vitest";
 
 import "../src/components/difference";
 import type { DifferenceItem } from "../src/components/difference";
-import { comparisonLabel, kr, partLabel, rangeText, signedKr, signedPercent, unitName } from "../src/format";
+import { kr, partLabel, rangeText, signedKr, unitName } from "../src/format";
 import { da } from "../src/i18n/da";
 import { charts, forgetCharts } from "./chart-mock";
-import { mount, settle, unmount } from "./mount";
-import { KEEP_NBSP } from "./text";
+import { answerFor, OBJECT_GROUP } from "./fixture";
+import { json, mount, settle, unmount } from "./mount";
+import { cardNames, hasArrow } from "./text";
 
 const TODAY = "2026-10-30";
 const JUL = unitAt("2026-07-01", "month", TODAY);
-const JUN = unitAt("2026-06-01", "month", TODAY);
 const JULY = 1510000;
-const AVERAGE = 1115625;
 const CHOSEN = "unit=2026-07-01&card=difference";
 
 afterEach(() => {
@@ -63,14 +62,23 @@ describe("screen 4, a chosen unit", () => {
     const first = getByRole(root, "group", { name: da.unitTotal(julyName()) });
     getByText(first, kr(JULY));
     getByText(first, rangeText({ start: "2026-07-01", end: "2026-07-31" }));
+    expect(cardNames(root, [OBJECT_GROUP])).toEqual([da.unitTotal(julyName())]);
+    expect(hasArrow(root)).toBe(false);
+  });
 
-    const second = getByRole(root, "group", { name: da.vsAverage });
-    getByText(second, signedPercent(change(JULY, AVERAGE) ?? 0), KEEP_NBSP);
-    getByText(second, da.vsAverageSub(`${da.up} ${kr(394375)}`, kr(AVERAGE), "month"));
-
-    const third = getByRole(root, "group", { name: comparisonLabel(JUL, JUN, "month") });
-    getByText(third, signedPercent(change(JULY, 1100000) ?? 0), KEEP_NBSP);
-    getByText(third, `${da.up} ${kr(410000)}`);
+  it("a chosen unit with nothing before it has only its sum", async () => {
+    const onlyFrom = (from: string) => (range: Period) => {
+      const answer = answerFor(range);
+      return json({ ...answer, postings: answer.postings.filter((p) => p.date >= from) });
+    };
+    const empty = await mount(CHOSEN, { answer: onlyFrom("2026-07-01") });
+    expect(cardNames(empty.root, [OBJECT_GROUP])).toEqual([da.unitTotal(julyName())]);
+    expect(hasArrow(empty.root)).toBe(false);
+    unmount();
+    const first = await mount("unit=2026-01-01&card=difference", { answer: onlyFrom("2026-01-01") });
+    const january = unitName(unitAt("2026-01-01", "month", TODAY), "month");
+    expect(cardNames(first.root, [OBJECT_GROUP])).toEqual([da.unitTotal(january)]);
+    expect(hasArrow(first.root)).toBe(false);
   });
 
   it("lists the differences per main group, largest first", async () => {

@@ -221,7 +221,7 @@ describe("the search on Posteringer", () => {
     fireEvent.click(getByRole(viewSwitch(root), "button", { name: da.postings }));
     await settle(app);
     const before = keyNumberTexts(root);
-    expect(before).toHaveLength(4);
+    expect(before).toHaveLength(3);
     expect(before.every((text) => text !== "")).toBe(true);
     await type(app, root, "roma");
     summary(root, 2, 50000);
@@ -471,7 +471,7 @@ describe("the search on Posteringer", () => {
     it("leaves the key numbers and the circle as they are", async () => {
       const { app, root } = await mount("card=postings");
       const before = keyNumberTexts(root);
-      expect(before).toHaveLength(4);
+      expect(before).toHaveLength(3);
       await typeFocused(app, root, "pizz");
       fireEvent.click(getByRole(root, "option", { name: ROMA }));
       await settle(app);
