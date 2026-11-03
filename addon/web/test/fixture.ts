@@ -1,5 +1,7 @@
 import type { Period, Posting, SpendingData, Subscription } from "@ha-spending/shared";
 
+import { da } from "../src/i18n/da";
+
 export const LINK = "http://firefly.test";
 
 type Row = [category: string | null, text: string, amount: number, account: string, date: string];
@@ -146,4 +148,4 @@ export function withSubscriptions(answer: SpendingData, subscriptions = SUBSCRIP
 }
 
 /** The key-number card the fixture's object group draws beside the period's own cards. */
-export const OBJECT_GROUP = "Abonnementer i perioden";
+export const OBJECT_GROUP = da.inPeriod("Abonnementer");
