@@ -75,8 +75,9 @@ This spec changes D51 and the month days spec in these places; everything else t
     Kvartal or År it is the month's end; the month is then one unit, so it steps on to the month's days, as by Måned;
   - **open for Thomas:** the other presets that end today, "I år" (its own last day 31 Dec) and "Alt" (no last day of
     its own, so the unit's end). The draft has them end today, so "I år" by År on 30 Oct draws January to October, and
-    in early January a single "jan i gang" bar, the problem #100 fixes. The other choice runs them on as above, with
-    the units after today as empty slots. Claude recommends the second. The answer is one line here and the tests
+    on 5 Jan, January being the one month, steps on to the days 1–5 Jan. The other choice runs them on as above, with
+    the units after today as empty slots: on 5 Jan, twelve months, January running, the rest empty. Claude recommends
+    the second, so the year keeps its shape all year. The answer is one line here and the tests
     below.
 - Each finer unit's amount is `unitTotals(ctx.shown, units)`; its labels are `unitAxis` and `unitName` under the finer
   grouping ("19.10." and "19.10.2026" for a day, "jul" and "Juli 2026" for a month). The tooltip of a day is its date

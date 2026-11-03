@@ -62,6 +62,15 @@
   <div class="card"><span class="tag new">Forslag B</span><div class="head"><h2>Pr. dag</h2></div><div class="chart" id="r2"></div></div>
 </div>
 
+<div class="lbl">6 · "I år" Gruppér pr. År: slutte i dag, eller køre året ud?</div>
+<p class="why">Øverst i dag, 3. november. Nederst den 5. januar: slutter året i dag, er januar den eneste måned, så kortet går et trin finere og viser dagene 1.–5. januar. "Køre året ud" gør som "Denne måned" gør i dag: månederne efter i dag er tomme pladser.</p>
+<div class="row">
+  <div class="card"><span class="tag now">Slutter i dag · 3. nov</span><div class="head"><h2>Pr. måned</h2></div><div class="chart" id="e0"></div></div>
+  <div class="card"><span class="tag new">Kører året ud · 3. nov</span><div class="head"><h2>Pr. måned</h2></div><div class="chart" id="e1"></div></div>
+  <div class="card"><span class="tag now">Slutter i dag · 5. jan</span><div class="head"><h2>Pr. dag</h2></div><div class="chart" id="e2"></div></div>
+  <div class="card"><span class="tag new">Kører året ud · 5. jan</span><div class="head"><h2>Pr. måned</h2></div><div class="chart" id="e3"></div></div>
+</div>
+
 <script>
   const ACCENT = "#03a9f4", MUTED = "#6b6b6b", LINE = "#e3e3e3", GRID = "#ececec";
   const nf = new Intl.NumberFormat("da-DK", { maximumFractionDigits: 0 });
@@ -151,5 +160,13 @@
   draw("r0", refund, { every: 2, tip: 8 });
   draw("r1", refund, { every: 2, tip: 8, unsignedBelow: true, returWord: true });
   draw("r2", refund, { every: 2, tip: 8, unsignedBelow: true, returWord: true, returLabel: true });
+
+  // 6 · "I år": end today or run the year out
+  const all12 = [...months, "dec"];
+  draw("e0", months.map((axis, i) => ({ axis, name: `${axis} 2026`, amount: ytd[i], running: i === 10 })));
+  draw("e1", all12.map((axis, i) => ({ axis, name: `${axis} 2026`, amount: i < 11 ? ytd[i] : 0, running: i === 10 })));
+  draw("e2", [[1, 420], [2, 610], [3, 0], [4, 530], [5, 280]].map(([d, amount]) =>
+    ({ axis: `${d}.1.`, name: `${d}.1.2027`, amount, running: d === 5 })));
+  draw("e3", all12.map((axis, i) => ({ axis, name: `${axis} 2027`, amount: i === 0 ? 1840 : 0, running: i === 0 })));
 </script>
 </body></html>
