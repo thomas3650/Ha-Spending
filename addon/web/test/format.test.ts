@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   amountChip,
   axisKr,
+  barKr,
   comparisonLabel,
   count,
   detailAmount,
@@ -33,6 +34,12 @@ describe("money", () => {
   it("formats key numbers without sign", () => {
     expect(kr(11566012)).toBe("115.660 kr.");
     expect(kr(-2500)).toBe("25 kr.");
+  });
+  it("barKr writes a bar below zero with a plus", () => {
+    expect(barKr(-20000)).toBe(`+${kr(20000)}`);
+    expect(barKr(800000)).toBe(kr(800000));
+    expect(barKr(0)).toBe(kr(0));
+    expect(barKr(-40)).toBe(kr(0));
   });
   it("signs differences", () => {
     expect(signedKr(193750)).toBe("+1.938 kr.");

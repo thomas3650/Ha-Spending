@@ -2,7 +2,7 @@ import type { Unit } from "@ha-spending/shared";
 import { css, html, LitElement, nothing, type PropertyValues } from "lit";
 import { createRef, ref } from "lit/directives/ref.js";
 import { type Chart, createChart, type EChartsCoreOption } from "../charts/echarts";
-import { axisKr, kr, rangeText } from "../format";
+import { axisKr, barKr, rangeText } from "../format";
 import { da } from "../i18n/da";
 import { visuallyHidden } from "../theme";
 
@@ -13,6 +13,8 @@ export interface BarItem {
   amount: number;
   /** Runs on today; a unit after today is an empty slot. */
   running: boolean;
+  /** The fullStart of the unit a click chooses: a day bar chooses its month. */
+  choose: string;
 }
 
 export function isRunning(unit: Unit, today: string): boolean {
@@ -64,12 +66,12 @@ function escapeHtml(text: string): string {
 
 function buttonName(item: BarItem): string {
   const name = item.running ? `${item.name} (${da.inProgress})` : item.name;
-  return `${name}, ${kr(item.amount)}`;
+  return `${name}, ${barKr(item.amount)}`;
 }
 
 /**
  * One bar per unit, drawn by ECharts and named by a hidden button per bar (D19). An empty unit keeps its slot (UI
- * spec §3.3). Fires `unit-click` with the unit's fullStart.
+ * spec §3.3). Fires `unit-click` with the bar's `choose`.
  */
 export class Bars extends LitElement {
   static override properties = {
@@ -113,14 +115,14 @@ export class Bars extends LitElement {
   }
 
   private isChosen(item: BarItem): boolean {
-    return item.unit.fullStart === this.chosen;
+    return item.choose === this.chosen;
   }
 
   private fire(item: BarItem | undefined): void {
     if (!item) return;
     this.dispatchEvent(
       new CustomEvent<UnitSelection>("unit-click", {
-        detail: { fullStart: item.unit.fullStart },
+        detail: { fullStart: item.choose },
         bubbles: true,
         composed: true,
       }),
@@ -179,7 +181,7 @@ export class Bars extends LitElement {
           const item = items[p.dataIndex];
           if (!item) return "";
           const range = rangeText({ start: item.unit.start, end: item.unit.end });
-          return `${escapeHtml(item.name)}<br>${escapeHtml(range)}<br>${escapeHtml(kr(item.amount))}`;
+          return `${escapeHtml(item.name)}<br>${escapeHtml(range)}<br>${escapeHtml(barKr(item.amount))}`;
         },
       },
       xAxis: {

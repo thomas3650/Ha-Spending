@@ -75,6 +75,17 @@ export function viewContext(data: SpendingData, state: ViewState, today: string)
   };
 }
 
+/**
+ * The Søjler card's days when the period lies in one calendar month by Måned, else null (D51). "Denne måned" runs on
+ * to the month's last day, so its first days do not fill the card.
+ */
+export function dayUnits(ctx: ViewContext): Unit[] | null {
+  if (ctx.timeline.grouping !== "month" || ctx.units.length !== 1) return null;
+  const period = ctx.timeline.period;
+  const end = ctx.state.period.preset === "thisMonth" ? ctx.units[0].fullEnd : period.end;
+  return unitsOf({ start: period.start, end }, "day", ctx.today);
+}
+
 export function partName(key: string | null, of: "mainGroup" | "category"): string {
   return key ?? (of === "mainGroup" ? da.noMainGroup : da.noCategory);
 }

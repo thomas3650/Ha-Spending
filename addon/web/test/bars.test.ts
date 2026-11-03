@@ -22,6 +22,19 @@ function itemsOf(period: { start: string; end: string }): BarItem[] {
     name: unitName(unit, "month"),
     amount: totals[i],
     running: isRunning(unit, TODAY),
+    choose: unit.fullStart,
+  }));
+}
+
+/** Three days of September whose click chooses the month. */
+function daysChoosingSeptember(): BarItem[] {
+  return unitsOf({ start: "2026-09-01", end: "2026-09-03" }, "day", TODAY).map((unit) => ({
+    unit,
+    axis: unitAxis(unit, "day"),
+    name: unitName(unit, "day"),
+    amount: 0,
+    running: false,
+    choose: "2026-09-01",
   }));
 }
 
@@ -75,6 +88,14 @@ describe("the bars", () => {
     ]);
   });
 
+  it("names a bar below zero with a plus", async () => {
+    const items = itemsOfThisYear();
+    items[3] = { ...items[3], amount: -20000 };
+    const el = await render({ items });
+    getByRole(el, "button", { name: `${items[3].name}, +${kr(20000)}` });
+    getByRole(el, "button", { name: `${items[6].name}, ${kr(items[6].amount)}` });
+  });
+
   it("keeps an empty unit as a slot", async () => {
     const items = itemsOfThisYear();
     items[3] = { ...items[3], amount: 0 };
@@ -99,6 +120,30 @@ describe("the bars", () => {
     expect(charts).toHaveLength(1);
     for (const handler of charts[0].clickHandlers) handler({ dataIndex: 6 });
     expect(heard).toHaveBeenCalledWith({ fullStart: "2026-07-01" });
+  });
+
+  it("a click fires the bar's choose", async () => {
+    const items = daysChoosingSeptember();
+    const el = await render({ items });
+    const heard = vi.fn();
+    el.addEventListener("unit-click", (e) => heard((e as CustomEvent).detail));
+    fireEvent.click(getByRole(el, "button", { name: `${items[1].name}, ${kr(0)}` }));
+    expect(heard).toHaveBeenLastCalledWith({ fullStart: "2026-09-01" });
+    for (const handler of charts[0].clickHandlers) handler({ dataIndex: 2 });
+    expect(heard).toHaveBeenCalledTimes(2);
+    expect(heard).toHaveBeenLastCalledWith({ fullStart: "2026-09-01" });
+  });
+
+  it("presses every bar that chooses the chosen unit", async () => {
+    const chosen = await render({ items: daysChoosingSeptember(), chosen: "2026-09-01" });
+    expect(getAllByRole(chosen, "button").map((b) => b.getAttribute("aria-pressed"))).toEqual(["true", "true", "true"]);
+    document.body.replaceChildren();
+    const none = await render({ items: daysChoosingSeptember(), chosen: null });
+    expect(getAllByRole(none, "button").map((b) => b.getAttribute("aria-pressed"))).toEqual([
+      "false",
+      "false",
+      "false",
+    ]);
   });
 
   it("redraws after a bar click, so the chosen bar comes from its properties", async () => {
