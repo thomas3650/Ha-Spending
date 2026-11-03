@@ -28,8 +28,8 @@ This spec changes D51 and the month days spec in these places; everything else t
 - A bar below zero: variant A. The y-axis ticks below zero have no sign, and the bar's tooltip says "+260 kr. retur"
   (§4).
 - A click on a finer bar chooses the whole period's unit, as a day bar chooses its month today (§2).
-
-**Open for Thomas:** see §1, whether a preset that ends today ("I år", "Alt") draws on to the end of its one unit.
+- A preset that ends today runs the year out: "I år" and "Alt" draw on to the end of their one unit, the units after
+  today as empty slots, as "Denne måned" does (§1).
 
 **Claude's calls, for Thomas to see in the PR:**
 
@@ -73,12 +73,10 @@ This spec changes D51 and the month days spec in these places; everything else t
   - the preset "Denne måned", whose own last day is the month's last day (D51). By Måned that is the month's end, as
     today. By Uge it is the end of the week: "Denne måned" by Uge on 3 Oct draws 1–4 Oct, the 4th an empty slot. By
     Kvartal or År it is the month's end; the month is then one unit, so it steps on to the month's days, as by Måned;
-  - **open for Thomas:** the other presets that end today, "I år" (its own last day 31 Dec) and "Alt" (no last day of
-    its own, so the unit's end). The draft has them end today, so "I år" by År on 30 Oct draws January to October, and
-    on 5 Jan, January being the one month, steps on to the days 1–5 Jan. The other choice runs them on as above, with
-    the units after today as empty slots: on 5 Jan, twelve months, January running, the rest empty. Claude recommends
-    the second, so the year keeps its shape all year. The answer is one line here and the tests
-    below.
+  - the presets "I år", whose own last day is 31 Dec, and "Alt", which has none, so it runs to the unit's end
+    (Thomas's ruling). "I år" by År on 30 Oct draws January to December, October running, November and December empty
+    slots; on 5 Jan it draws the same twelve places, January running. The other presets ("Sidste måned", "Sidste 3
+    måneder", "Sidste 12 måneder", "Sidste år") end before today, and a custom period ends where the user set it.
 - Each finer unit's amount is `unitTotals(ctx.shown, units)`; its labels are `unitAxis` and `unitName` under the finer
   grouping ("19.10." and "19.10.2026" for a day, "jul" and "Juli 2026" for a month). The tooltip of a day is its date
   and amount; it has no weekday (the mockup's "onsdag" is not built).
@@ -101,8 +99,9 @@ This spec changes D51 and the month days spec in these places; everything else t
   - `period=thisMonth&by=quarter`: 31 day buttons, region `da.per("day")`; the 30th's name contains `da.inProgress`,
     the 31st's does not.
   - `period=lastYear&by=year`: 12 buttons, January to December 2025.
-  - `period=thisYear&by=year`: per Thomas's answer, 10 buttons (January to October), or 12 with November and December
-    not running and without `da.inProgress`; October's name contains `da.inProgress`.
+  - `period=thisYear&by=year`: 12 buttons, January to December 2026; October's name contains `da.inProgress`,
+    November's and December's do not.
+  - `period=thisYear&by=year` with `now` 2026-01-05: 12 buttons; January's name contains `da.inProgress`.
   - `period=lastMonth` (by Måned): 30 day buttons, as today.
   - `period=lastMonth&by=day`: 30 day buttons, as today; `period=thisYear` (by Måned): month buttons, as today.
 
@@ -142,8 +141,7 @@ This spec changes D51 and the month days spec in these places; everything else t
   - `period=lastMonth&card=subscriptions&detail=s%3Ab1`: the list `da.detailPer("day")` has 30 items; their hidden
     labels name every day ("1.9.2026: …" to "30.9.2026: …"); exactly 8 items show a name, "1.9." to "29.9.", every
     fourth.
-  - `period=thisYear&by=year&card=subscriptions&detail=s%3Ab1`: the list `da.detailPer("month")` has 10 items (or 12,
-    per Thomas's answer in §1), the first labelled "Januar 2026: …"; every item shows its name.
+  - `period=thisYear&by=year&card=subscriptions&detail=s%3Ab1`: the list `da.detailPer("month")` has 12 items, the first labelled "Januar 2026: …"; every item shows its name.
   - The default period (I år by Måned): the list `da.detailPer("month")`, as today.
 
 ## 4. A bar below zero
@@ -174,7 +172,7 @@ This spec changes D51 and the month days spec in these places; everything else t
 
 - D53: a period with one unit draws finer units on the Søjler card and in the detail, decided by `finerUnits`: days
   for a week or a month, months for a quarter or a year, stepping again while there is still one unit, down to days.
-  "Denne måned" (and, per Thomas's answer, "I år" and "Alt") draws on to the earlier of its own last day and the end
+  A preset that ends today ("Denne måned", "I år", "Alt") draws on to the earlier of its own last day and the end
   of its one unit, the units after today as empty slots. The grouping, the hash, the key numbers and the chosen unit
   stay the period's; a click on a finer bar chooses the period's unit. A bar below zero is named "+… kr.
   retur", and the y-axis ticks below zero have no sign. D51's status becomes `active; the detail's bars, the one-unit
