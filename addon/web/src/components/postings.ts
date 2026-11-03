@@ -150,7 +150,7 @@ export class Postings extends LitElement {
   override render() {
     const list = this.list;
     const th = (column: PostingColumn, label: string, className?: string) =>
-      sortHeader(column, label, this.sort, (c) => fire(this, "posting-sort", c), className);
+      sortHeader(column, label, this.sort, (c) => fire(this, "posting-sort", c), className, column === "amount");
     const head = html`<thead>
       <tr>
         ${th("date", da.columns.unitAndDate(this.grouping))} ${th("text", da.columns.text)}

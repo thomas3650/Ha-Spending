@@ -1,14 +1,16 @@
-import type { Period, Posting, Subscription } from "@ha-spending/shared";
+import { type Period, type Posting, type Subscription, unitAt } from "@ha-spending/shared";
 import { fireEvent, getAllByRole, getByRole, getByText, queryAllByRole, queryByRole, queryByText } from "@testing-library/dom";
 import { afterEach, describe, expect, it } from "vitest";
 
 import type { SpendingApp } from "../src/app";
-import { count, kr } from "../src/format";
+import { comparisonLabel, count, kr } from "../src/format";
 import { da } from "../src/i18n/da";
 import { answerFor, SUBSCRIPTIONS, withSubscriptions } from "./fixture";
 import { json, mount, settle, unmount } from "./mount";
 
 afterEach(unmount);
+
+const nbsp = "\u00a0";
 
 type Link = Posting["subscription"];
 
@@ -73,6 +75,36 @@ function line(perMonth: number | null, n: number): string {
   const bills = da.billCount(n);
   return perMonth === null ? bills : `${da.perMonth(kr(perMonth))} · ${bills}`;
 }
+
+/** September's rent is moved by `delta` øre; August is 11.000 kr. and the Pizzeria Roma postings are left out. */
+function septemberMoved(delta: number) {
+  return (range: Period) => {
+    const answer = answerFor(range);
+    const postings = answer.postings
+      .filter((p) => p.text !== "MOBILEPAY 1234")
+      .map((p) => (p.text === "Husleje" && p.date === "2026-09-01" ? { ...p, amount: p.amount + delta } : p));
+    return json({ ...answer, postings });
+  };
+}
+
+describe("a small change in the comparison card", () => {
+  async function thirdCard(delta: number): Promise<string> {
+    const { root } = await mount("", { answer: septemberMoved(delta) });
+    return getByRole(root, "group", { name: comparisonLabel(unitAt("2026-09-01", "month", "2026-10-30"), unitAt("2026-08-01", "month", "2026-10-30"), "month") }).textContent ?? "";
+  }
+
+  it("shows one decimal when the change rounds to 0 %", async () => {
+    expect(await thirdCard(-3300)).toContain(`-0,3${nbsp}%`);
+  });
+
+  it("says under 0,1 % when the change is smaller than that", async () => {
+    expect(await thirdCard(-220)).toContain(`-${da.tinyChange}`);
+  });
+
+  it("shows 0 % when nothing changed", async () => {
+    expect(await thirdCard(0)).toContain(`0${nbsp}%`);
+  });
+});
 
 describe("the first key number's link to Alle posteringer", () => {
   it("the first key number links to Alle posteringer with its count", async () => {

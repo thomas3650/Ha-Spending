@@ -241,6 +241,7 @@ export const da = {
     perYear: "Om året",
     status: "Status",
   },
+  tinyChange: "under 0,1 %",
   nextOn: (date: string) => `næste ${date}`,
   noSubscriptions: (name: string) => `Ingen faste udgifter i ${name}`,
   subscriptionsFoot:

@@ -93,7 +93,7 @@ describe("screen 3, all postings", () => {
 
   it("sorts by size as one flat list", async () => {
     const { root } = await mount(`${CAFE}&sort=largest`);
-    expect(columnHeader(root, da.columns.amount).getAttribute("aria-sort")).toBe("descending");
+    expect(columnHeader(root, da.columns.amount).getAttribute("aria-sort")).toBe("ascending");
     const table = getByRole(root, "table");
     expect(groupButtons(root)).toEqual([]);
     const rows = getAllByRole(table, "row").slice(1);
@@ -139,7 +139,7 @@ describe("screen 3, all postings", () => {
 
   it("an old link with sort=smallest sorts by Beløb, smallest first", async () => {
     const { root } = await mount(`${CAFE}&sort=smallest`);
-    expect(columnHeader(root, da.columns.amount).getAttribute("aria-sort")).toBe("ascending");
+    expect(columnHeader(root, da.columns.amount).getAttribute("aria-sort")).toBe("descending");
     expect(groupButtons(root)).toEqual([]);
     const amounts = getAllByRole(getByRole(root, "table"), "row")
       .slice(1)
