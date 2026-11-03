@@ -473,8 +473,8 @@ to set their status to `superseded by D<n>`, or to name a part a later decision 
 ### D49: The server keeps the span-free parts per day and reads a list's pages 4 at a time
 - **Date:** 2026-11-03 · **Status:** active
 - **Decision:** The main-group rules, the categories, the asset accounts, the earliest posting date and the
-  subscriptions are read once per day and kept 5 minutes, under their own signal, so a new span reads only its
-  postings. A list's pages after the first are read at most 4 at a time. This replaces the pages "one after another" of
+  subscriptions are read under their own signal and kept 5 minutes per day (`today`), so a new span reads only its
+  postings and a new day reads them again. A list's pages after the first are read at most 4 at a time. This replaces the pages "one after another" of
   the [technical spec](superpowers/specs/2026-10-30-technical-design.md) §3.3.
 - **Why:** About 1.4 s of every uncached load went to the parts that do not depend on the span, and about 0.7 s to
   each page of postings read in turn.

@@ -1,5 +1,5 @@
 import { createFakeFirefly, exampleSeed } from "@ha-spending/dev";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { createFireflyClient, type FetchLike, FireflyError } from "../src/firefly/client";
 import type { ReadSettings } from "../src/firefly/read";
 import { createDataLoader } from "../src/loader";
@@ -28,9 +28,10 @@ function setUp(fail: (url: URL) => boolean = () => false) {
   };
   const client = createFireflyClient({ baseUrl: "http://f", token: "fake-token", fetch });
   const clock = { now: new Date(2026, 9, 30, 12) };
-  const load = createDataLoader(client, settings, () => clock.now, () => {});
+  const warn = vi.fn();
+  const load = createDataLoader(client, settings, () => clock.now, warn);
   const asked = (pattern: RegExp) => paths.filter((path) => pattern.test(path)).length;
-  return { load, clock, asked };
+  return { load, clock, asked, warn };
 }
 
 const SPAN_FREE = {
@@ -52,11 +53,15 @@ describe("createDataLoader", () => {
 
   it("a new day reads the span-free parts again", async () => {
     const { load, clock, asked } = setUp();
+    clock.now = new Date(2026, 9, 30, 23, 58);
     await load(JANUARY);
     clock.now = new Date(2026, 9, 31, 0, 1);
     const march = await load(MARCH);
     for (const pattern of Object.values(SPAN_FREE)) expect(asked(pattern)).toBe(2);
     expect(march.today).toBe("2026-10-31");
+    const january = await load(JANUARY);
+    expect(january.today).toBe("2026-10-31");
+    for (const pattern of Object.values(SPAN_FREE)) expect(asked(pattern)).toBe(2);
   });
 
   it("after a failed read of the rules the next call asks for them again", async () => {
@@ -66,6 +71,24 @@ describe("createDataLoader", () => {
     const january = await load(JANUARY);
     expect(asked(SPAN_FREE.rules)).toBe(2);
     expect(january.mainGroupsFound).toBe(true);
+  });
+
+  it("after a failed read of the bills the next call asks for them again", async () => {
+    let failures = 1;
+    const { load, asked } = setUp((url) => SPAN_FREE.bills.test(url.pathname) && failures-- > 0);
+    await expect(load(JANUARY)).rejects.toBeInstanceOf(FireflyError);
+    const january = await load(JANUARY);
+    expect(asked(SPAN_FREE.bills)).toBe(2);
+    expect(january.subscriptions.length).toBeGreaterThan(0);
+  });
+
+  it("warns of a main-group conflict on each answer that shares the kept parts", async () => {
+    const { load, asked, warn } = setUp();
+    await load(JANUARY);
+    await load(FEBRUARY);
+    expect(asked(SPAN_FREE.rules)).toBe(1);
+    const conflicts = warn.mock.calls.filter(([message]) => String(message).includes("Streaming"));
+    expect(conflicts).toHaveLength(2);
   });
 
   it("two spans at once, one whose transactions fail: the other answers with its data", async () => {

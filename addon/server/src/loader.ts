@@ -17,7 +17,7 @@ export function createDataLoader(
   return (range) => {
     const today = localToday(now());
     const spanFree = () => spanFrees.get(today, () => readSpanFree(client, settings, today));
-    return answers.get(`${range.start}|${range.end}`, () =>
+    return answers.get(`${today}|${range.start}|${range.end}`, () =>
       readSpendingData(client, settings, range, { today, warn, spanFree }),
     );
   };

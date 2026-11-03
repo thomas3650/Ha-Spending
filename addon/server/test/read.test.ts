@@ -90,6 +90,14 @@ describe("readSpendingData", () => {
     expect(stats.aborted).toBe(stats.hanging);
   });
 
+  it("without spanFree, a failed transactions read aborts the span-free reads", async () => {
+    const { client, stats } = hangingClient(`start=${R1.start}`);
+    const read = readSpendingData(client, { ...settings, timeoutMs: 10_000 }, R1, { today, warn: () => {} });
+    await expect(read).rejects.toMatchObject({ reason: "unreachable" });
+    expect(stats.hanging).toBeGreaterThan(0);
+    expect(stats.aborted).toBe(stats.hanging);
+  });
+
   it("lists the postings newest first", async () => {
     const d = await readSpendingData(clientOf(), settings, R1, { today, warn: () => {} });
     const dates = d.postings.map((p) => p.date);

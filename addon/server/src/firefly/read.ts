@@ -72,10 +72,11 @@ export interface SpanFree {
 }
 
 /** One failed request stops the others under the same signal, so they do not run on until the timeout. */
-function firstFailure(timeoutMs: number) {
+function firstFailure(timeoutMs: number, outer?: AbortSignal) {
   const failed = new AbortController();
+  const signals = [AbortSignal.timeout(timeoutMs), failed.signal, ...(outer ? [outer] : [])];
   return {
-    signal: AbortSignal.any([AbortSignal.timeout(timeoutMs), failed.signal]),
+    signal: AbortSignal.any(signals),
     stopOnFailure: <T>(promise: Promise<T>) =>
       promise.catch((error: unknown) => {
         failed.abort();
@@ -84,9 +85,17 @@ function firstFailure(timeoutMs: number) {
   };
 }
 
-/** The parts of an answer that do not depend on its span; no span's request aborts them (D49). */
-export async function readSpanFree(client: FireflyClient, settings: ReadSettings, today: string): Promise<SpanFree> {
-  const { signal, stopOnFailure } = firstFailure(settings.timeoutMs);
+/**
+ * The parts of an answer that do not depend on its span (D49). Shared between spans, they are read without `outer`, so
+ * no span's request aborts them.
+ */
+export async function readSpanFree(
+  client: FireflyClient,
+  settings: ReadSettings,
+  today: string,
+  outer?: AbortSignal,
+): Promise<SpanFree> {
+  const { signal, stopOnFailure } = firstFailure(settings.timeoutMs, outer);
   const all = <T>(path: string, query: Record<string, string> = {}) =>
     getAllPages<T>(client, path, query, settings.pageSize, signal);
   const [accounts, categories, mainGroups, earliest, subscriptions] = await Promise.all([
@@ -106,7 +115,7 @@ export async function readSpendingData(
   context: { today: string; warn: (message: string) => void; spanFree?: () => Promise<SpanFree> },
 ): Promise<SpendingData> {
   const { signal, stopOnFailure } = firstFailure(settings.timeoutMs);
-  const spanFree = context.spanFree ?? (() => readSpanFree(client, settings, context.today));
+  const spanFree = context.spanFree ?? (() => readSpanFree(client, settings, context.today, signal));
   const [groups, kept] = await Promise.all([
     stopOnFailure(
       getAllPages<WireGroup>(client, "transactions", { start: range.start, end: range.end, type: "all" },
