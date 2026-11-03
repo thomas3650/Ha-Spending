@@ -179,9 +179,10 @@ case. Two names are the same when they are equal after lower-casing.
 
 When the shop passes, the add-on finds its account itself: an active account of the shop's type (expense for a
 withdrawal, revenue for a deposit) with exactly that name, else one with the same name in other case (the first in
-code-point order), else it makes the account and writes that. A refund's new revenue account is spelled as the
-shop's active expense account of the same name, found the same way, so the purchases and the refunds show as one
-shop; with no such expense account it takes the cleaned name. A second posting in the same call with the same name
+code-point order), else it makes the account and writes that. A new account is spelled as the shop's active account
+of the other type of the same name (a refund's revenue account as the purchases' expense account, and the other way
+round), found the same way, so the page sums the purchases and the refunds as one shop; with no such account it takes
+the cleaned name. A second posting in the same call with the same name
 gets the same account. The write always names the account by its id, never the name, so the outcome does not depend
 on Firefly III's collation, and a name can never point a posting at a liability. An account made stays if the write
 that follows fails, and a later run reuses it.

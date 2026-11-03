@@ -861,15 +861,16 @@ describe("set_category with a shop", () => {
     s.logsNoShop("Ny butik", "Billaan", "billaan", "Gammel butik", "KONTO A");
   });
 
-  it("makes the expense account for a name only a revenue account has", async () => {
+  it("makes the expense account for a name only a revenue account has, spelled as the revenue account", async () => {
     const s = setup({ data: shopSeed });
     const revenue = (await s.accounts()).find((a) => a.name === "Butik B")!;
     expect(revenue.type).toBe("revenue");
     const { postings, answer } = await writeShops(s, [{ description: "Kort 1", shop: "butik b" }]);
-    expect(answer.value.results).toEqual([{ posting_id: postings[0], ok: true, shop: "butik b" }]);
-    const made = (await s.accounts()).find((a) => a.name === "butik b")!;
-    expect(made).toMatchObject({ type: "expense", active: true });
-    expect((await s.splits()).get("Kort 1")).toMatchObject({ destination_id: made.id, destination_name: "butik b" });
+    expect(answer.value.results).toEqual([{ posting_id: postings[0], ok: true, shop: "Butik B" }]);
+    expect(s.posts().map((p) => p.body)).toEqual([{ name: "Butik B", type: "expense" }]);
+    const made = (await s.accounts()).find((a) => a.name === "Butik B" && a.type === "expense")!;
+    expect(made).toMatchObject({ active: true });
+    expect((await s.splits()).get("Kort 1")).toMatchObject({ destination_id: made.id, destination_name: "Butik B" });
   });
 
   it("writes the shop's expense account when a revenue account has the same name", async () => {
@@ -903,6 +904,31 @@ describe("set_category with a shop", () => {
     const body = s.puts()[0].body as { transactions: Record<string, unknown>[] };
     expect(body.transactions[0]).not.toHaveProperty("source_id");
     s.logsNoShop("Ny butik", "Billaan", "Konto A", "gammel kunde");
+  });
+
+  it.each([
+    ["a liability", "Loan"],
+    ["an asset account", "Asset account"],
+  ])("writes the category and refuses the shop as has-shop for a deposit from %s named (no name)", async (_, type) => {
+    let retur = "";
+    const s = setup({
+      data: shopSeed,
+      fetch: (fetch) => async (input, init) => {
+        const res = await fetch(input, init);
+        const url = new URL(input instanceof Request ? input.url : input);
+        if ((init?.method ?? "GET") !== "GET" || url.pathname !== `/api/v1/transactions/${retur}`) return res;
+        const text = (await res.text()).replaceAll('"source_type":"Revenue account"', `"source_type":"${type}"`);
+        return new Response(text, { status: res.status, headers: res.headers });
+      },
+    });
+    retur = (await s.splits()).get("Retur")!.groupId;
+    const before = (await s.splits()).get("Retur")!;
+    const { postings, answer } = await writeShops(s, [{ description: "Retur", shop: "Ny butik" }]);
+    expect(answer.value.results).toEqual([{ posting_id: postings[0], ok: true, shop_refused: "has-shop" }]);
+    expect((await s.splits()).get("Retur")).toMatchObject({ category_name: "Dagligvarer", source_id: before.source_id });
+    expect(s.posts()).toEqual([]);
+    const body = s.puts()[0].body as { transactions: Record<string, unknown>[] };
+    expect(body.transactions[0]).not.toHaveProperty("source_id");
   });
 
   it("makes a refund's revenue account and writes it by id as the source, on a deposit from (no name)", async () => {

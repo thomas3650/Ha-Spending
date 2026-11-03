@@ -389,8 +389,8 @@ async function shopAccount(
   if (!same.every(isActive(type))) return "name-taken";
   const found = pick(same, name);
   if (found !== undefined) return found;
-  // A refund's new account takes the spelling of the shop's purchases, so the page shows the two as one shop.
-  if (type === "revenue") name = tidy(pick(sameName(accounts, name).filter(isActive("expense")), name)?.name ?? name);
+  // A new account takes the spelling of the shop's account of the other type, so the page sums the two as one shop.
+  name = tidy(pick(sameName(accounts, name).filter(isActive(other)), name)?.name ?? name);
 
   type Made = { data?: { id?: unknown; attributes?: { type?: unknown; active?: unknown } } };
   const answer = (await client.post("accounts", { name, type }, signal)) as Made;
@@ -576,8 +576,8 @@ export function createSorterTools(
       "given out by start in the last 30 minutes, has another amount, or when the category is not one to choose. " +
       "The shop is written only on a withdrawal or a deposit whose shop is (no name): when the posting has a shop " +
       "already, or the name is not allowed or is an account's that is not a shop, the category is still written and " +
-      "the result has shop_refused. A deposit with a shop is a refund, such as \"VD <shop>\" or \"Retur <shop>\": give " +
-      "it the same shop as the purchases at that shop. A purchase's shop with no account of that name gets a new " +
+      "the result has shop_refused. A refund is a deposit such as \"VD <shop>\" or \"Retur <shop>\": give it the " +
+      "same shop as the purchases at that shop. A purchase's shop with no account of that name gets a new " +
       "expense account, a refund's a new revenue account. The result's shop is the name as written, which may be an " +
       "existing shop's spelling. Only the category, its main group's tag and the shop are written. On " +
       "not-given-out, call start again.",

@@ -489,5 +489,5 @@ to set their status to `superseded by D<n>`, or to name a part a later decision 
 - **Why:** A refund imported from a bank file lands on `(no name)`, so the page counted it under "Uden butik"; the
   page already reads a deposit's shop from its revenue account. A revenue account is never a withdrawal's
   destination, so its name cannot point a purchase at a liability.
-- **Source:** Thomas, 2026-11-03, [issue #96](https://github.com/thomas3650/Ha-Spending/issues/96); the new revenue
-  account's spelling taken from the shop's expense account: Claude
+- **Source:** Thomas, 2026-11-03, [issue #96](https://github.com/thomas3650/Ha-Spending/issues/96); a new account's
+  spelling taken from the shop's account of the other type: Claude
