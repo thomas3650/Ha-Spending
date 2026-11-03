@@ -83,6 +83,26 @@ describe("shopSuggestions", () => {
     expect(found[0]).toEqual({ name: "Shop 11", sum: 111 });
   });
 
+  it("lists the names starting with the text first, each tier by sum", () => {
+    const base = [
+      posting("a", "t", "Havesol", 20000),
+      posting("b", "t", "Solbær Café", 3000),
+      posting("c", "t", "Parasol & Co", 90000),
+      posting("d", "t", "Solo Kiosk", 5000),
+    ];
+    expect(shopSuggestions(base, "sol").map((s) => s.name)).toEqual(["Solo Kiosk", "Solbær Café", "Parasol & Co", "Havesol"]);
+  });
+
+  it("keeps a starting name with the smallest sum although more shops match than the limit", () => {
+    const base = [
+      ...Array.from({ length: 9 }, (_, i) => posting(`p${i}`, "t", `Hus ${i} Sol`, 1000 + i)),
+      posting("z", "t", "Solhat", 1),
+    ];
+    const found = shopSuggestions(base, "sol");
+    expect(found).toHaveLength(8);
+    expect(found[0]).toEqual({ name: "Solhat", sum: 1 });
+  });
+
   it("finds a Danish name through spaces and case", () => {
     expect(shopSuggestions([posting("a", "t", "Føtex", 100)], "  føt ")).toEqual([{ name: "Føtex", sum: 100 }]);
   });

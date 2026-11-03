@@ -149,7 +149,6 @@ describe("the detail on the normal page", () => {
     getByRole(card, "button", { name: da.fullScreen });
     getByRole(card, "button", { name: da.backTo(title) });
     expect(queryByRole(card, "combobox")).toBeNull();
-    expect(queryByRole(card, "button", { name: da.showAll })).toBeNull();
   });
 
   it("a Posteringer row of a linked posting opens the subscription, with the row marked", async () => {

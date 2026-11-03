@@ -417,7 +417,8 @@ describe("sorting the postings by their headers", () => {
     expect(header(root, da.columns.amount).getAttribute("aria-sort")).toBe("ascending");
     expect(amounts(root)[0]).toBe(postingAmount(800000));
 
-    fireEvent.click(getByRole(root, "button", { name: da.showAll }));
+    const first = getByRole(root, "group", { name: da.spendingInPeriod });
+    fireEvent.click(getByRole(first, "link", { name: /→$/ }));
     await settle(app);
     fireEvent.click(getByRole(getByRole(root, "navigation", { name: da.trail }), "link", { name: da.allSpending }));
     await settle(app);

@@ -570,7 +570,8 @@ describe("sorting the subscriptions by their headers", () => {
 
     fireEvent.click(getByRole(views, "button", { name: da.postings }));
     await settle(app);
-    fireEvent.click(getByRole(root, "button", { name: da.showAll }));
+    const first = getByRole(root, "group", { name: da.spendingInPeriod });
+    fireEvent.click(getByRole(first, "link", { name: /→$/ }));
     await settle(app);
     getByRole(root, "heading", { level: 1, name: da.allPostings });
     fireEvent.click(getByRole(getByRole(root, "navigation", { name: da.trail }), "link", { name: da.allSpending }));

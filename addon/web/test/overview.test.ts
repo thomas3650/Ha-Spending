@@ -109,9 +109,20 @@ describe("screen 1, all spending", () => {
     expect(location.hash).toBe("");
   });
 
+  it("shows Vis alle on the right card only in full screen", async () => {
+    const { app, root } = await mount("card=postings");
+    const card = getByRole(root, "region", { name: da.postingsTitle });
+    expect(queryByRole(card, "button", { name: da.showAll })).toBeNull();
+    fireEvent.click(getByRole(card, "button", { name: da.fullScreen }));
+    await settle(app);
+    getByRole(getByRole(root, "region", { name: da.postingsTitle }), "button", { name: da.showAll });
+  });
+
   it("reaches all postings", async () => {
     const { app, root } = await mount("");
     fireEvent.click(getByRole(viewSwitch(root), "button", { name: da.postings }));
+    await settle(app);
+    fireEvent.click(getByRole(root, "button", { name: da.fullScreen }));
     await settle(app);
     fireEvent.click(getByRole(root, "button", { name: da.showAll }));
     await settle(app);
@@ -280,6 +291,8 @@ describe("the search on Posteringer", () => {
 
   it("opens Alle posteringer with the text from its button", async () => {
     const { app, root } = await mount("card=postings");
+    fireEvent.click(getByRole(root, "button", { name: da.fullScreen }));
+    await settle(app);
     await type(app, root, "roma");
     fireEvent.click(getByRole(root, "button", { name: da.showAll }));
     await settle(app);

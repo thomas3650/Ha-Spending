@@ -28,6 +28,7 @@ export const theme = css`
     --hs-expected-soft: #eceff1;
     --hs-paid: #1b5e20;
     --hs-paid-soft: #e8f5e9;
+    --hs-running-opacity: 0.5;
     --hs-font: Roboto, "Segoe UI", system-ui, sans-serif;
     font-size: 14px;
   }

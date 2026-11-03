@@ -34,9 +34,10 @@ export function shopSuggestions(base: Posting[], search: string): ShopSuggestion
   for (const p of base) {
     if (p.shop !== null && fold(p.shop).includes(query)) sums.set(p.shop, (sums.get(p.shop) ?? 0) + p.amount);
   }
+  const rank = (name: string) => (fold(name).startsWith(query) ? 0 : 1);
   return [...sums]
     .map(([name, sum]) => ({ name, sum }))
-    .sort((a, b) => b.sum - a.sum || a.name.localeCompare(b.name, "da"))
+    .sort((a, b) => rank(a.name) - rank(b.name) || b.sum - a.sum || a.name.localeCompare(b.name, "da"))
     .slice(0, SUGGESTIONS);
 }
 

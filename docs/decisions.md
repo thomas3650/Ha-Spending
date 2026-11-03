@@ -522,3 +522,12 @@ to set their status to `superseded by D<n>`, or to name a part a later decision 
   every old link meaning what it meant (D20), and the month's Forskel reachable.
 - **Source:** Thomas, 2026-11-03 ("let's start with all the month's days"); the controller's rulings on the click and
   the sign; [month days spec](superpowers/specs/2026-11-03-month-days.md)
+
+### D52: "Vis alle" only in full screen
+- **Date:** 2026-11-03 · **Status:** active
+- **Decision:** In the normal right card, Posteringer has no "Vis alle"; Alle posteringer is reached from the key
+  numbers' links. In full screen, where the key numbers are not shown, "Vis alle" stays and keeps the search (D31, D35
+  unchanged).
+- **Why:** Thomas found the button unneeded beside the key number's link in the 0.11.0 walkthrough; full screen has no
+  other way in.
+- **Source:** Thomas, 2026-11-03; [walkthrough fixes spec](superpowers/specs/2026-11-03-walkthrough-fixes.md) §1

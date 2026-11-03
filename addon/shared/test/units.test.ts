@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { fetchRange, hasData, isOneUnit, isWhole, unitAt, unitBefore, unitsOf } from "../src/units";
+import { fetchRange, hasData, isOneUnit, isRunning, isWhole, unitAt, unitBefore, unitsOf } from "../src/units";
 
 const thisYear = { start: "2026-01-01", end: "2026-10-30" };
 const today = "2026-10-30";
@@ -106,5 +106,23 @@ describe("units", () => {
     expect(hasData(unitAt("2025-11-15", "month", today), "2025-12-03")).toBe(false);
     expect(hasData(unitAt("2025-12-15", "month", today), "2025-12-03")).toBe(true);
     expect(hasData(unitAt("2025-12-15", "month", today), null)).toBe(false);
+  });
+});
+
+describe("isRunning", () => {
+  it("is true for a partial unit that has started by today", () => {
+    const [u] = unitsOf({ start: "2026-10-01", end: "2026-10-30" }, "month", today);
+    expect(isRunning(u, today)).toBe(true);
+  });
+
+  it("is false for a partial unit after today", () => {
+    const [u] = unitsOf({ start: "2026-11-01", end: "2026-11-30" }, "month", today);
+    expect(u.partial).toBe(true);
+    expect(isRunning(u, today)).toBe(false);
+  });
+
+  it("is false for a whole unit", () => {
+    const [u] = unitsOf({ start: "2026-09-01", end: "2026-09-30" }, "month", today);
+    expect(isRunning(u, today)).toBe(false);
   });
 });

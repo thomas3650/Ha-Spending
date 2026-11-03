@@ -1,10 +1,10 @@
-import { classify, unitsOf, unitTotals } from "@ha-spending/shared";
+import { classify, isRunning, unitsOf, unitTotals } from "@ha-spending/shared";
 import { fireEvent, getAllByRole, getByRole, getByText, queryByText } from "@testing-library/dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import "../src/components/bars";
-import { axisLabelShown, type BarItem, type Bars, isRunning } from "../src/components/bars";
-import { kr, unitAxis, unitName } from "../src/format";
+import { axisLabelShown, type BarItem, type Bars, barTooltip } from "../src/components/bars";
+import { barKr, kr, rangeText, unitAxis, unitName } from "../src/format";
 import { da } from "../src/i18n/da";
 import { charts, forgetCharts } from "./chart-mock";
 import { answerFor } from "./fixture";
@@ -196,5 +196,43 @@ describe("the bars' axis labels", () => {
     expect(shown(44, 43)).toEqual([0, 4, 8, 12, 16, 20, 24, 28, 32, 36, 43]);
     expect(shown(44, -1)).toEqual([0, 4, 8, 12, 16, 20, 24, 28, 32, 36, 40]);
     expect(shown(44, 43, 5)).toEqual([0, 9, 18, 27, 43]);
+  });
+});
+
+describe("barTooltip", () => {
+  function itemOf(period: { start: string; end: string }, grouping: "day" | "month"): BarItem {
+    const unit = unitsOf(period, grouping, TODAY)[0];
+    return {
+      unit,
+      axis: unitAxis(unit, grouping),
+      name: unitName(unit, grouping),
+      amount: 1234,
+      running: false,
+      choose: unit.fullStart,
+    };
+  }
+
+  it("has name, range and amount for a whole month", () => {
+    const item = itemOf({ start: "2026-09-01", end: "2026-09-30" }, "month");
+    const range = rangeText({ start: item.unit.start, end: item.unit.end });
+    expect(barTooltip(item).split("<br>")).toEqual([item.name, range, barKr(item.amount)]);
+  });
+
+  it("keeps the clipped range for a month clipped to one day", () => {
+    const item = itemOf({ start: "2026-09-05", end: "2026-09-05" }, "month");
+    expect(item.unit.fullStart).not.toBe(item.unit.fullEnd);
+    const range = rangeText({ start: item.unit.start, end: item.unit.end });
+    expect(range).toBe(rangeText({ start: "2026-09-05", end: "2026-09-05" }));
+    expect(barTooltip(item).split("<br>")).toEqual([item.name, range, barKr(item.amount)]);
+  });
+
+  it("has only name and amount for a day", () => {
+    const item = itemOf({ start: "2026-09-05", end: "2026-09-05" }, "day");
+    expect(barTooltip(item).split("<br>")).toEqual([item.name, barKr(item.amount)]);
+  });
+
+  it("escapes the name", () => {
+    const item = { ...itemOf({ start: "2026-09-05", end: "2026-09-05" }, "day"), name: "A<b> & C" };
+    expect(barTooltip(item).split("<br>")[0]).toBe("A&#60;b&#62; &#38; C");
   });
 });
