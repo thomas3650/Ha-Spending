@@ -18,11 +18,11 @@ interface Step {
 
 function steps(state: ViewState, unitName: string | null): Step[] {
   const level = state.level;
-  const steps: Step[] = [];
-  if (unitName !== null) steps.push({ name: unitName, remove: "remove-unit" });
-  if (level.kind !== "all") steps.push({ name: partName(level.mainGroup, "mainGroup"), remove: "remove-main-group" });
-  if (level.kind === "category") steps.push({ name: partName(level.category, "category"), remove: "remove-category" });
-  return steps;
+  const chosen: Step[] = [];
+  if (unitName !== null) chosen.push({ name: unitName, remove: "remove-unit" });
+  if (level.kind !== "all") chosen.push({ name: partName(level.mainGroup, "mainGroup"), remove: "remove-main-group" });
+  if (level.kind === "category") chosen.push({ name: partName(level.category, "category"), remove: "remove-category" });
+  return chosen;
 }
 
 const SEP = html` <span class="top-sep" aria-hidden="true">›</span> `;
