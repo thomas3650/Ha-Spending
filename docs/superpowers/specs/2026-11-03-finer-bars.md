@@ -6,7 +6,7 @@
 **Issues:** #100, #101, #103. One branch (`feat/finer-bars`), one PR. #103's second part, the day tooltip's date
 twice, was fixed in #115; this closes the rest.
 
-**Approved:** not yet.
+**Approved:** by Thomas, 2026-11-03.
 
 **Mockup:** [`docs/mockups/v6/finere-enheder.html`](../../mockups/v6/finere-enheder.html). Where it differs from this
 spec, the spec holds.
