@@ -300,7 +300,7 @@ describe("the link on each object group's key number", () => {
     await counts("group=Bil&category=Br%C3%A6ndstof", FIXED, 1);
     await counts("accounts=2", FIXED, 1);
     await counts("unit=2026-07-01", FIXED, 11);
-    await counts("unit=2026-07-01&card=difference", SUBS, 1);
+    await counts("unit=2026-07-01", SUBS, 1);
   });
 
   it("no posting, no link", async () => {
@@ -335,7 +335,7 @@ describe("the link on each object group's key number", () => {
   });
 
   it("following the link shows the chip and a summary count equal to the link's, after a search, a shop and a unit", async () => {
-    const { app, root } = await mount("unit=2026-07-01&card=postings&q=Netto&shop=Q8", { answer: BILLS });
+    const { app, root } = await mount("unit=2026-07-01&q=Netto&shop=Q8", { answer: BILLS });
     const link = getByRole(objectCard(root, FIXED), "link", { name: linkLine(11) });
     await follow(app, link);
     getByRole(root, "heading", { level: 1, name: da.allPostings });
@@ -344,8 +344,8 @@ describe("the link on each object group's key number", () => {
     expect((getByRole(root, "combobox", { name: da.searchLabel }) as HTMLInputElement).value).toBe("");
   });
 
-  it("the link's hash has og and no q, shop, unit or card=difference", async () => {
-    const { root } = await mount("unit=2026-07-01&card=difference&q=Netto&shop=Q8", { answer: BILLS });
+  it("the link's hash has og and no q, shop or unit", async () => {
+    const { root } = await mount("unit=2026-07-01&q=Netto&shop=Q8", { answer: BILLS });
     const p = params(getByRole(objectCard(root, SUBS), "link").getAttribute("href") ?? "");
     expect(p.get("view")).toBe("all-postings");
     expect(p.get("og")).toBe("Abonnementer");

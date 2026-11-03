@@ -22,10 +22,6 @@ describe("da", () => {
     expect(da.amountChip("100", null)).toBe("Beløb: fra 100 kr.");
     expect(da.amountChip(null, "500")).toBe("Beløb: til 500 kr.");
   });
-  it("titles the difference", () => {
-    expect(da.differenceTitle("Juli 2026", "month")).toBe("Juli 2026 mod en gennemsnitlig måned");
-    expect(da.differenceTitle("2025", "year")).toBe("2025 mod et gennemsnitligt år");
-  });
   it("words a subscription's repeat", () => {
     expect(da.repeatText("weekly", 0)).toBe("pr. uge");
     expect(da.repeatText("monthly", 0)).toBe("pr. måned");

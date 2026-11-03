@@ -2,11 +2,9 @@ import { type Period, share, unitAt } from "@ha-spending/shared";
 import { fireEvent, getAllByRole, getByRole, getByText, queryByRole } from "@testing-library/dom";
 import { afterEach, describe, expect, it } from "vitest";
 
-import "../src/components/difference";
-import type { DifferenceItem } from "../src/components/difference";
-import { kr, partLabel, rangeText, signedKr, unitName } from "../src/format";
+import { kr, partLabel, rangeText, unitName } from "../src/format";
 import { da } from "../src/i18n/da";
-import { charts, forgetCharts } from "./chart-mock";
+import { forgetCharts } from "./chart-mock";
 import { answerFor, OBJECT_GROUP } from "./fixture";
 import { json, mount, settle, unmount } from "./mount";
 import { cardNames, hasArrow } from "./text";
@@ -14,7 +12,7 @@ import { cardNames, hasArrow } from "./text";
 const TODAY = "2026-10-30";
 const JUL = unitAt("2026-07-01", "month", TODAY);
 const JULY = 1510000;
-const CHOSEN = "unit=2026-07-01&card=difference";
+const CHOSEN = "unit=2026-07-01";
 
 afterEach(() => {
   unmount();
@@ -27,17 +25,6 @@ function julyName(): string {
 
 function viewSwitch(root: HTMLElement): HTMLElement {
   return getByRole(root, "group", { name: da.view });
-}
-
-function forskel(root: HTMLElement, name: string): HTMLElement {
-  return getByRole(root, "table", { name });
-}
-
-function rows(table: HTMLElement): [string, string][] {
-  return getAllByRole(table, "row").map((row) => [
-    getByRole(row, "rowheader").textContent?.trim() ?? "",
-    getByRole(row, "cell").textContent?.trim() ?? "",
-  ]);
 }
 
 function julyBar(root: HTMLElement): HTMLElement {
@@ -53,10 +40,10 @@ describe("screen 4, a chosen unit", () => {
     expect(location.hash).toBe("#unit=2026-07-01&card=postings");
     expect(getByRole(viewSwitch(root), "button", { name: da.postings }).getAttribute("aria-pressed")).toBe("true");
     getByRole(root, "button", { name: da.remove(julyName()) });
-    fireEvent.click(getByRole(viewSwitch(root), "button", { name: da.difference }));
+    fireEvent.click(getByRole(viewSwitch(root), "button", { name: da.bars }));
     await settle(app);
     expect(location.hash).toBe(`#${CHOSEN}`);
-    expect(getByRole(viewSwitch(root), "button", { name: da.difference }).getAttribute("aria-pressed")).toBe("true");
+    expect(getByRole(viewSwitch(root), "button", { name: da.bars }).getAttribute("aria-pressed")).toBe("true");
     getByRole(root, "button", { name: da.remove(julyName()) });
 
     const first = getByRole(root, "group", { name: da.unitTotal(julyName()) });
@@ -75,25 +62,10 @@ describe("screen 4, a chosen unit", () => {
     expect(cardNames(empty.root, [OBJECT_GROUP])).toEqual([da.unitTotal(julyName())]);
     expect(hasArrow(empty.root)).toBe(false);
     unmount();
-    const first = await mount("unit=2026-01-01&card=difference", { answer: onlyFrom("2026-01-01") });
+    const first = await mount("unit=2026-01-01", { answer: onlyFrom("2026-01-01") });
     const january = unitName(unitAt("2026-01-01", "month", TODAY), "month");
     expect(cardNames(first.root, [OBJECT_GROUP])).toEqual([da.unitTotal(january)]);
     expect(hasArrow(first.root)).toBe(false);
-  });
-
-  it("lists the differences per main group, largest first", async () => {
-    const { root } = await mount(CHOSEN);
-    const title = da.differenceTitle(julyName(), "month");
-    getByRole(root, "region", { name: title });
-    expect(rows(forskel(root, title))).toEqual([
-      ["Mad", signedKr(193750)],
-      [da.noMainGroup, signedKr(118125)],
-      ["Bil", signedKr(82500)],
-      ["Bolig", signedKr(0)],
-    ]);
-    for (const row of getAllByRole(forskel(root, title), "row")) expect(row.getAttribute("aria-current")).toBeNull();
-    getByText(root, da.less);
-    getByText(root, da.more);
   });
 
   it("shows the circle of July with its parts and shares", async () => {
@@ -118,25 +90,9 @@ describe("screen 4, a chosen unit", () => {
     await settle(app);
     getByRole(root, "heading", { level: 1, name: "Mad" });
     getByRole(root, "button", { name: da.remove(julyName()) });
-    const title = da.differenceTitle(julyName(), "month");
-    expect(rows(forskel(root, title))).toEqual([
-      ["Dagligvarer", signedKr(150000)],
-      ["Café", signedKr(43750)],
-    ]);
     const card = getByRole(root, "region", { name: da.inUnit(da.categories, julyName()) });
     getByText(card, da.levelInUnit("Mad", julyName()));
     expect(card.textContent).toContain(kr(500000));
-  });
-
-  it("marks the chosen category in Forskel", async () => {
-    const { root } = await mount(`group=Mad&category=Caf%C3%A9&${CHOSEN}`);
-    const table = forskel(root, da.differenceTitle(julyName(), "month"));
-    expect(rows(table).map(([name]) => name)).toEqual(["Dagligvarer", "Café"]);
-    const [groceries, cafe] = getAllByRole(table, "row");
-    expect(cafe.getAttribute("aria-current")).toBe("true");
-    expect(groceries.getAttribute("aria-current")).toBeNull();
-    getByRole(root, "button", { name: da.remove("Café") });
-    getByRole(root, "button", { name: da.remove(julyName()) });
   });
 
   it("drops the unit with its chip or a second click", async () => {
@@ -145,7 +101,6 @@ describe("screen 4, a chosen unit", () => {
     await settle(app);
     expect(queryByRole(root, "button", { name: da.remove(julyName()) })).toBeNull();
     expect(getByRole(viewSwitch(root), "button", { name: da.bars }).getAttribute("aria-pressed")).toBe("true");
-    expect(queryByRole(viewSwitch(root), "button", { name: da.difference })).toBeNull();
     expect(location.hash).toBe("");
 
     fireEvent.click(julyBar(root));
@@ -161,10 +116,14 @@ describe("screen 4, a chosen unit", () => {
     expect(location.hash).toBe("");
   });
 
-  it("the Forskel button is last", async () => {
-    const { root } = await mount("unit=2026-07-01");
-    const buttons = getAllByRole(viewSwitch(root), "button");
-    expect(buttons.at(-1)).toBe(getByRole(viewSwitch(root), "button", { name: da.difference }));
+  it("has the same view buttons with a chosen unit as without, and no Forskel", async () => {
+    const names = (root: HTMLElement) => getAllByRole(viewSwitch(root), "button").map((b) => b.textContent?.trim());
+    const without = await mount("");
+    expect(names(without.root)).toEqual([da.bars, da.postings, da.shops]);
+    unmount();
+    const chosen = await mount("unit=2026-07-01");
+    expect(names(chosen.root)).toEqual([da.bars, da.postings, da.shops]);
+    expect(queryByRole(viewSwitch(chosen.root), "button", { name: "Forskel" })).toBeNull();
   });
 
   it("shows only the unit in Posteringer", async () => {
@@ -187,42 +146,3 @@ describe("screen 4, a chosen unit", () => {
   });
 });
 
-describe("hs-difference", () => {
-  const items: DifferenceItem[] = [
-    { key: "Mad", name: "Mad", difference: 193750, chosen: false },
-    { key: "Bil", name: "Bil", difference: -82500, chosen: true },
-    { key: null, name: da.noMainGroup, difference: null, chosen: false },
-  ];
-
-  async function element() {
-    const el = document.createElement("hs-difference");
-    el.items = items;
-    el.title = "T";
-    document.body.append(el);
-    await el.updateComplete;
-    return el;
-  }
-
-  it("names every row with its signed amount, or none", async () => {
-    const el = await element();
-    expect(rows(getByRole(el, "table", { name: "T" }))).toEqual([
-      ["Mad", signedKr(193750)],
-      ["Bil", signedKr(-82500)],
-      [da.noMainGroup, da.none],
-    ]);
-    expect(getAllByRole(el, "row")[1].getAttribute("aria-current")).toBe("true");
-  });
-
-  it("draws again only when the rows change", async () => {
-    const el = await element();
-    expect(charts).toHaveLength(1);
-    expect(charts[0].calls.setOption).toBe(1);
-    el.title = "U";
-    await el.updateComplete;
-    getByRole(el, "table", { name: "U" });
-    expect(charts[0].calls.setOption).toBe(1);
-    el.items = items.slice(0, 2);
-    await el.updateComplete;
-    expect(charts[0].calls.setOption).toBe(2);
-  });
-});

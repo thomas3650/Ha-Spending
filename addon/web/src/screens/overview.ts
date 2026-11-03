@@ -1,11 +1,9 @@
-import { chosenUnitNumbers, differences, keyNumbers, total, type Unit, within } from "@ha-spending/shared";
+import { keyNumbers, total, within } from "@ha-spending/shared";
 import { css, html, LitElement, nothing } from "lit";
 import "../components/bars";
 import { detailSplit } from "../components/detail";
 import { chip, fire } from "../components/chip";
 import "../components/circle";
-import "../components/difference";
-import type { DifferenceItem } from "../components/difference";
 import "../components/postings";
 import "../components/search";
 import "../components/shops";
@@ -13,7 +11,7 @@ import { objectGroupSums } from "../components/subscriptions";
 import { count, kr, unitName } from "../format";
 import { da } from "../i18n/da";
 import { barItems, categoryColours, circleItems, circleSpan, circleTotal, partColours } from "../model/circle";
-import { finerUnits, levelName, partName, type ViewContext } from "../model/context";
+import { finerUnits, levelName, type ViewContext } from "../model/context";
 import { detailView } from "../model/detail";
 import { matches, shopSuggestions } from "../model/filter";
 import { postingList } from "../model/postings";
@@ -118,12 +116,6 @@ export class Overview extends LitElement {
     </button>`;
   }
 
-  /** Without a chosen unit, Forskel keeps its place hidden, so the switch is as wide either way and no button moves. */
-  private differenceSlot() {
-    if (this.ctx.chosen !== null) return this.switchButton("difference", da.difference);
-    return html`<button type="button" class="kept" aria-hidden="true" tabindex="-1">${da.difference}</button>`;
-  }
-
   private bars() {
     const ctx = this.ctx;
     // On finer bars the key numbers' average is a whole week's, month's, quarter's or year's, far above any finer bar.
@@ -174,19 +166,10 @@ export class Overview extends LitElement {
     return { above, list: body };
   }
 
-  private differenceTitle(unit: Unit): string {
-    const ctx = this.ctx;
-    const g = ctx.timeline.grouping;
-    const name = unitName(unit, g);
-    const basis = chosenUnitNumbers(ctx.shown, ctx.timeline, unit).average.basis;
-    return basis === "before" ? da.differenceTitleBefore(name) : da.differenceTitle(name, g);
-  }
-
   /** A chosen category is named by its chip and the trail; the title names its main group, so it does not change. */
   private cardTitle(card: Card): string {
     const level = this.ctx.state.level;
     const g = finerUnits(this.ctx)?.grouping ?? this.ctx.timeline.grouping;
-    if (card === "difference" && this.ctx.chosen !== null) return this.differenceTitle(this.ctx.chosen);
     if (level.kind === "all") {
       if (card === "subscriptions") return da.subscriptions;
       if (card === "postings") return da.postingsTitle;
@@ -198,21 +181,6 @@ export class Overview extends LitElement {
     if (card === "postings") return da.postingsOf(name);
     if (card === "shops") return da.shopsIn(name);
     return da.levelPer(name, g);
-  }
-
-  private difference(unit: Unit, title: string) {
-    const ctx = this.ctx;
-    const level = ctx.state.level;
-    const chosen = level.kind === "category" ? level.category : undefined;
-    const of = ctx.circleLevel.kind === "all" ? "mainGroup" : "category";
-    const items: DifferenceItem[] = differences(ctx.circlePostings, ctx.circleLevel, ctx.timeline, unit).map((d) => ({
-      key: d.key,
-      name: partName(d.key, of),
-      difference: d.difference,
-      chosen: d.key === chosen,
-    }));
-    return html`<hs-difference .items=${items} .title=${title}></hs-difference>
-      <p class="half-foot">${da.differenceHint}</p>`;
   }
 
   /** Faste udgifter does not follow the chosen unit, so its chip does not show there; the unit stays chosen. */
@@ -276,7 +244,6 @@ export class Overview extends LitElement {
       body = detailSplit(above, list, view, !this.fullScreen);
     } else if (card === "shops") body = this.shops();
     else if (inPeriod.length === 0) body = this.empty();
-    else if (card === "difference" && ctx.chosen !== null) body = this.difference(ctx.chosen, title);
     else body = this.bars();
     return html`<section class="card half right" role="region" aria-labelledby=${RIGHT_TITLE}>
       <div class="half-head with-tools">
@@ -294,10 +261,10 @@ export class Overview extends LitElement {
           <h2 id=${RIGHT_TITLE} tabindex="-1" title=${title}>${title}</h2>
         </div>
         <div class="card-tools">
-          <div class="card-switch ${ctx.chosen === null ? "" : "with-unit"}" role="group" aria-label=${da.view}>
+          <div class="card-switch" role="group" aria-label=${da.view}>
             ${this.switchButton("bars", da.bars)} ${this.switchButton("postings", da.postings)}
             ${ctx.data.subscriptions.length === 0 ? nothing : this.switchButton("subscriptions", da.subscriptions)}
-            ${shops ? this.switchButton("shops", da.shops) : nothing} ${this.differenceSlot()}
+            ${shops ? this.switchButton("shops", da.shops) : nothing}
           </div>
           <button
             type="button"
@@ -421,6 +388,9 @@ export const overviewStyles = css`
     display: contents;
   }
   .card-tools .full-screen {
+    box-sizing: border-box;
+    height: calc(1lh + 12px + 2px);
+    font: inherit;
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -450,7 +420,7 @@ export const overviewStyles = css`
     flex-wrap: wrap;
     max-width: 100%;
   }
-  /* The buttons draw the border, so it ends after the last shown one and the kept Forskel place stays outside it. */
+  /* The buttons draw the border, so each one's left edge is the previous one's right edge. */
   .card-switch button {
     font: inherit;
     padding: 6px 14px;
@@ -464,12 +434,8 @@ export const overviewStyles = css`
     border-left-width: 1px;
     border-radius: 6px 0 0 6px;
   }
-  .card-switch.with-unit button:last-child,
-  .card-switch:not(.with-unit) button:nth-last-child(2) {
+  .card-switch button:last-child {
     border-radius: 0 6px 6px 0;
-  }
-  .card-switch button.kept {
-    visibility: hidden;
   }
   .card-switch button[aria-pressed="true"] {
     color: #fff;

@@ -36,14 +36,14 @@ import { answerFor, SUBSCRIPTIONS } from "./fixture";
 const mad: Level = { kind: "mainGroup", mainGroup: "Mad" };
 const cafe: Level = { kind: "category", mainGroup: "Mad", category: "Café" };
 const at = (level: Level): ViewState => ({ ...DEFAULT_STATE, level });
-const chosen: ViewState = { ...DEFAULT_STATE, unit: "2026-07-01", card: "difference" };
+const chosen: ViewState = { ...DEFAULT_STATE, unit: "2026-07-01", card: "bars" };
 
 describe("the actions", () => {
   it("drills down keeping the period and the chosen unit", () => {
     const s = openPart({ ...chosen, period: { preset: "lastYear" } }, "Mad");
     expect(s.level).toEqual(mad);
     expect(s.unit).toBe("2026-07-01");
-    expect(s.card).toBe("difference");
+    expect(s.card).toBe("bars");
     expect(s.period).toEqual({ preset: "lastYear" });
   });
 
@@ -136,13 +136,12 @@ describe("the actions", () => {
     expect(s.sort).toEqual(DEFAULT_STATE.sort);
   });
 
-  it("openObjectGroupPostings sets og and clears the search, the shop, the unit and the amount, with the default sort and card=difference back to bars", () => {
+  it("openObjectGroupPostings sets og and clears the search, the shop, the unit and the amount, with the default sort", () => {
     const from: ViewState = {
       ...at(cafe),
       accounts: ["2"],
       period: { preset: "lastYear" },
       unit: "2026-07-01",
-      card: "difference",
       search: "rema",
       shop: "Netto",
       sort: { column: "amount", descending: true },
@@ -154,7 +153,6 @@ describe("the actions", () => {
       screen: "allPostings",
       objectGroup: "Abonnementer",
       unit: null,
-      card: "bars",
       search: "",
       shop: null,
       sort: DEFAULT_STATE.sort,
@@ -194,7 +192,7 @@ describe("the actions", () => {
   });
 
   it("keeps the search through the shared choices", () => {
-    const s: ViewState = { ...DEFAULT_STATE, search: "rema", unit: "2026-07-01", card: "difference" };
+    const s: ViewState = { ...DEFAULT_STATE, search: "rema", unit: "2026-07-01", card: "postings" };
     expect(openPart(s, "Mad").search).toBe("rema");
     expect(setCard(s, "bars").search).toBe("rema");
     expect(setPeriod(s, { preset: "lastMonth" }).search).toBe("rema");
@@ -323,7 +321,7 @@ describe("normalise", () => {
   const norm = (s: Partial<ViewState>) => normalise({ ...DEFAULT_STATE, ...s }, data, today);
 
   it("keeps a state the answer knows", () => {
-    const s: ViewState = { ...DEFAULT_STATE, accounts: ["1"], level: cafe, unit: "2026-07-01", card: "difference" };
+    const s: ViewState = { ...DEFAULT_STATE, accounts: ["1"], level: cafe, unit: "2026-07-01", card: "postings" };
     expect(normalise(s, data, today)).toEqual(s);
   });
 
@@ -365,16 +363,11 @@ describe("normalise", () => {
   });
 
   it("drops a unit that is not in the period's timeline", () => {
-    const s = norm({ unit: "2026-07-02", card: "difference" });
+    const s = norm({ unit: "2026-07-02", card: "postings" });
     expect(s.unit).toBeNull();
-    expect(s.card).toBe("bars");
+    expect(s.card).toBe("postings");
     expect(norm({ unit: "2025-07-01" }).unit).toBeNull();
-    expect(norm({ unit: "2026-07-01", card: "difference" }).unit).toBe("2026-07-01");
-  });
-
-  it("shows the bars instead of Forskel without a unit", () => {
-    expect(norm({ card: "difference" }).card).toBe("bars");
-    expect(norm({ card: "postings" }).card).toBe("postings");
+    expect(norm({ unit: "2026-07-01", card: "postings" }).unit).toBe("2026-07-01");
   });
 
   describe("the subscriptions card", () => {
@@ -441,7 +434,6 @@ describe("the detail", () => {
     ["s: on Posteringer", { card: "postings", detail: bill }],
     ["s: on Alle posteringer", { card: "subscriptions", screen: "allPostings", detail: bill }],
     ["p: on Søjler", { card: "bars", detail: posting("p23") }],
-    ["p: on Forskel", { card: "difference", unit: "2026-07-01", detail: posting("p23") }],
     ["p: on Butikker", { card: "shops", detail: posting("p23") }],
     ["p: of an unlinked posting on Faste udgifter", { card: "subscriptions", detail: posting("p23") }],
     ["p: of a bill not listed on Faste udgifter", { card: "subscriptions", detail: posting("p24") }],

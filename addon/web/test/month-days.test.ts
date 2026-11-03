@@ -146,10 +146,4 @@ describe("a click on a day bar", () => {
     expect(location.hash).toBe("#period=lastMonth");
     expect(pressed(dayButtons(root))).toEqual(Array.from({ length: 30 }, () => "false"));
   });
-
-  it("an old link to the month still shows Forskel", async () => {
-    const { root } = await mount("period=lastMonth&unit=2026-09-01&card=difference");
-    getByRole(root, "button", { name: da.remove(SEPTEMBER) });
-    getByRole(root, "table", { name: da.differenceTitleBefore(SEPTEMBER) });
-  });
 });

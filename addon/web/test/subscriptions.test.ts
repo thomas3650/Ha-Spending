@@ -123,12 +123,6 @@ describe("the subscriptions key number", () => {
     card(root, "Faste udgifter");
   });
 
-  it("orders all five buttons of the switch with a unit chosen", async () => {
-    const { root } = await mountWith("unit=2026-07-01");
-    const buttons = getAllByRole(viewSwitch(root), "button").map((b) => b.textContent?.trim());
-    expect(buttons).toEqual([da.bars, da.postings, "Faste udgifter", da.shops, da.difference]);
-  });
-
   it("counts one subscription in the singular", async () => {
     const { root } = await mountWith("card=subscriptions", [SUBSCRIPTIONS[0]]);
     expect(text(groupRow(card(root, "Faste udgifter"), "Bolig"))).toContain(da.subscriptionCount(1));
@@ -215,7 +209,6 @@ describe("the subscriptions card", () => {
     const region = card(root, "Faste udgifter");
     expect(queryByRole(root, "button", { name: da.remove("Juli 2026") })).toBeNull();
     expect(rowNames(region)).toHaveLength(6);
-    getByRole(viewSwitch(root), "button", { name: da.difference });
 
     fireEvent.click(getByRole(root, "button", { name: new RegExp(`^${da.period}`) }));
     await app.updateComplete;

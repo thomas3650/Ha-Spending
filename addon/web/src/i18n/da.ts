@@ -143,7 +143,6 @@ export const da = {
   bars: "Søjler",
   refundMark: "retur",
   postings: "Posteringer",
-  difference: "Forskel",
   view: "Visning",
   fullScreen: "Fuld skærm",
   circleHintGroup: "Klik på en kategori for kun den.",
@@ -195,12 +194,6 @@ export const da = {
   },
   noRuleGroup: "Firefly III har ingen regelgruppe til hovedgrupperne, så alt forbrug står under Uden hovedgruppe.",
   loading: "Henter tallene …",
-
-  differenceTitle: (name: string, g: Grouping) => `${name} mod ${da.groupings[g].average}`,
-  differenceTitleBefore: (name: string) => `${name} mod gennemsnittet før`,
-  less: "◀ mindre end normalt",
-  more: "mere end normalt ▶",
-  differenceHint: "Orange: mere end gennemsnittet; blå: mindre.",
 
   shops: "Butikker",
   shopsIn: (name: string) => `Butikker i ${name}`,

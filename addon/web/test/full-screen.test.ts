@@ -81,7 +81,6 @@ describe("the right card in full screen", () => {
   it.each([
     ["Søjler", "", da.per("month")],
     ["Posteringer", "card=postings", da.postingsTitle],
-    ["Forskel", "unit=2026-07-01&card=difference", da.differenceTitle(JULY, "month")],
     ["Faste udgifter", "card=subscriptions", da.subscriptions],
   ])("offers the button in the right card on %s", async (_, hash, title) => {
     const { root } = await mountWith(hash);

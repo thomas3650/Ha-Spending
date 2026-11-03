@@ -87,7 +87,6 @@ describe("screen 1, all spending", () => {
     expect(barButtons(card)).toHaveLength(10);
     getByText(card, da.average(kr(1159444)));
     expect(getByRole(viewSwitch(root), "button", { name: da.bars }).getAttribute("aria-pressed")).toBe("true");
-    expect(queryByRole(viewSwitch(root), "button", { name: da.difference })).toBeNull();
   });
 
   it("switches to the postings and back", async () => {
@@ -130,16 +129,10 @@ describe("screen 1, all spending", () => {
     expect(location.hash).toBe("#card=postings&view=all-postings");
   });
 
-  it("orders the switch Søjler, Posteringer, Butikker, with no Forskel button without a chosen unit", async () => {
+  it("orders the switch Søjler, Posteringer, Butikker", async () => {
     const { root } = await mount("");
     const names = getAllByRole(viewSwitch(root), "button").map((b) => b.textContent?.trim());
     expect(names).toEqual([da.bars, da.postings, da.shops]);
-  });
-
-  it("orders the switch Søjler, Posteringer, Butikker, Forskel with a chosen unit", async () => {
-    const { root } = await mount("unit=2026-07-01");
-    const names = getAllByRole(viewSwitch(root), "button").map((b) => b.textContent?.trim());
-    expect(names).toEqual([da.bars, da.postings, da.shops, da.difference]);
   });
 
   it("keeps the grouping on the bars", async () => {

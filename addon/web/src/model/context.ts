@@ -28,7 +28,7 @@ export interface ViewContext {
   /** The key numbers', the bars' and Posteringer's postings. */
   shown: ClassifiedPosting[];
   circleLevel: Level;
-  /** The circle's and Forskel's postings. */
+  /** The circle's postings. */
   circlePostings: ClassifiedPosting[];
   parentLevel: Level | null;
   parentTotal: number | null;

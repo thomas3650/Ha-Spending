@@ -13,7 +13,7 @@ import {
 const ALL: Level = { kind: "all" };
 
 function withoutUnit(s: ViewState): ViewState {
-  return { ...s, unit: null, card: s.card === "difference" ? "bars" : s.card };
+  return { ...s, unit: null };
 }
 
 export function setPeriod(s: ViewState, period: PeriodChoice): ViewState {
@@ -188,7 +188,6 @@ export function normalise(s: ViewState, data: SpendingData, today: string): View
   const units = unitsOf(periodOf(s.period, today, data.earliestPostingDate), s.grouping, today);
   const unit = s.unit !== null && units.some((u) => u.fullStart === s.unit) ? s.unit : null;
   const card =
-    (s.card === "difference" && unit === null) ||
     (s.card === "subscriptions" && data.subscriptions.length === 0) ||
     (s.card === "shops" && !hasShops(data))
       ? "bars"
