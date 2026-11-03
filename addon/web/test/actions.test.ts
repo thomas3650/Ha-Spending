@@ -258,7 +258,10 @@ describe("the subscriptions card", () => {
     expect(setAccounts(subs, ["1"], ["1", "2"]).card).toBe("subscriptions");
     expect(openPart(subs, "Mad").card).toBe("subscriptions");
     expect(trailLevel(at(cafe), 0).card).toBe("bars");
-    expect(trailLevel(subs, 0).card).toBe("subscriptions");
+    expect(trailLevel({ ...subs, level: cafe }, 0).card).toBe("subscriptions");
+    expect(trailLevel({ ...subs, level: cafe }, 1).card).toBe("subscriptions");
+    expect(trailLevel({ ...openAllPostings({ ...subs, level: cafe }) }, 1).card).toBe("subscriptions");
+    expect(removeMainGroup({ ...subs, level: cafe }).card).toBe("subscriptions");
     expect(removeCategory({ ...subs, level: cafe }).card).toBe("subscriptions");
   });
 

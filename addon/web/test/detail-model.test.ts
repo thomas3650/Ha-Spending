@@ -122,6 +122,15 @@ describe("a detail's rows", () => {
     expect(shown(posting("p13"), answerFor(FETCHED)).rows).toHaveLength(10);
   });
 
+  it("a shop's rows are those on the ticked accounts when its rows are on a ticked and an unticked account", () => {
+    const data = answerFor(FETCHED);
+    const split = { ...data, postings: data.postings.map((p) => (p.id === PIZZA_REFUND ? { ...p, account: "1" } : p)) };
+    const v = shown(posting(PIZZA_PAID), split, { accounts: ["2"] });
+    expect(v.rows.map((r) => r.id)).toEqual([PIZZA_PAID]);
+    expect(v.boxes[0].value).toBe("700 kr.");
+    expect(shown(posting(PIZZA_PAID), split).rows.map((r) => r.id)).toEqual([PIZZA_REFUND, PIZZA_PAID]);
+  });
+
   it("a posting with no shop gives the rows with no shop and the same text", () => {
     const v = shown(posting(KIOSK), answerFor(FETCHED));
     expect(v.title).toBe("Kiosken");

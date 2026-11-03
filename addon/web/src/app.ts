@@ -36,6 +36,7 @@ import {
   chooseShop,
   chooseUnit,
   closeDetail,
+  detailResolves,
   keepDetail,
   normalise,
   openAllPostings,
@@ -266,6 +267,7 @@ export class SpendingApp extends LitElement {
 
   private readonly onDetailOpen = (event: Event): void => {
     const next = openDetail(this.state, (event as CustomEvent<DetailKey>).detail);
+    if (this.load.kind !== "ready" || !detailResolves(next, this.load.data, this.today)) return;
     const hash = `#${toHash(next)}`;
     if (this.state.detail === null) history.pushState(DETAIL_ENTRY, "", hash);
     else history.replaceState(detailEntry() ? DETAIL_ENTRY : null, "", hash);

@@ -108,7 +108,7 @@ describe("the bill links on /api/data's postings", () => {
     pageSize: 500,
     timeoutMs: 30_000,
   };
-  async function postings(wrap: (fetch: FetchLike) => FetchLike = (f) => f) {
+  async function answer(wrap: (fetch: FetchLike) => FetchLike = (f) => f) {
     const fake = createFakeFirefly(exampleSeed, { token: "fake-token" });
     const client = createFireflyClient({ baseUrl: "http://firefly.test", token: "fake-token", fetch: wrap(fake.fetch) });
     const app = createApp({
@@ -120,15 +120,17 @@ describe("the bill links on /api/data's postings", () => {
     });
     const res = await app.request(R1, {}, ingress);
     expect(res.status).toBe(200);
-    return ((await res.json()) as SpendingData).postings;
+    return (await res.json()) as SpendingData;
   }
+  const postings = async (wrap?: (fetch: FetchLike) => FetchLike) => (await answer(wrap)).postings;
+  const idOf = (data: SpendingData, name: string) => data.subscriptions.find((b) => b.name === name)!.id;
 
   const named = (list: SpendingData["postings"], text: string) => list.find((p) => p.text === text)!;
 
   it("marks a posting linked to a bill with its name and object group", async () => {
-    const list = await postings();
-    expect(named(list, "Husleje januar").subscription).toEqual({
-      id: expect.any(String),
+    const data = await answer();
+    expect(named(data.postings, "Husleje januar").subscription).toEqual({
+      id: idOf(data, "Husleje"),
       name: "Husleje",
       objectGroup: "Faste udgifter",
     });
