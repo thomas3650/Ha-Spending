@@ -328,6 +328,18 @@ describe("screen 3, all postings", () => {
     expect(hashParam("max")).toBeNull();
   });
 
+  it("a field that read at its blur is not judged while the next text is typed", async () => {
+    const { app, root } = await mount(CAFE);
+    await openFilter(app, root);
+    const part = getByRole(root, "group", { name: da.amountFilter });
+    const to = getByRole(part, "textbox", { name: da.to });
+    fireEvent.input(to, { target: { value: "1" } });
+    fireEvent.blur(to);
+    fireEvent.input(to, { target: { value: "abc" } });
+    await settle(app);
+    expect(to.hasAttribute("aria-invalid")).toBe(false);
+  });
+
   it("judges a field when it loses the focus, and again only at the next blur once it reads", async () => {
     const { app, root } = await mount(CAFE);
     await openFilter(app, root);

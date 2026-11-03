@@ -84,7 +84,7 @@ export class FilterPicker extends Dropdown {
 
   private typed(field: "min" | "max", text: string): void {
     this[field] = text;
-    if (text.trim() === "" || parseDanishAmount(text) !== null) this.checked = { ...this.checked, [field]: false };
+    this.checked = { ...this.checked, [field]: false };
   }
 
   private amountField(field: "min" | "max", label: string) {

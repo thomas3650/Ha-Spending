@@ -121,7 +121,7 @@ export class PeriodPicker extends Dropdown {
   }
 
   private check(field: "from" | "to"): void {
-    this.checked = { ...this.checked, [field]: true };
+    this.checked = { ...this.checked, [field]: this.problem(field) !== null };
   }
 
   /** A field that reads again is judged afresh at its next blur. */
@@ -239,6 +239,7 @@ export class PeriodPicker extends Dropdown {
   private typed(field: "from" | "to", text: string): void {
     if (field === "from") this.fromText = text;
     else this.toText = text;
+    this.checked = { ...this.checked, [field]: false };
     this.clearReadable();
     if (this.calendar === null) return;
     const date = parseTypedDate(text);

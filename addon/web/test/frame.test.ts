@@ -455,6 +455,26 @@ describe("the period's custom interval", () => {
     expect(queryByText(panel, da.dateOrder)).toBeNull();
   });
 
+  it("typing judges a date afresh at the next blur, and Fra's typing does not judge Til", async () => {
+    const { app, root } = await mount("");
+    const { from, to } = await openPeriod(root, app);
+    await type(app, from, "03.01.2026");
+    fireEvent.blur(from);
+    await type(app, from, "31.2.2026");
+    expect(from.hasAttribute("aria-invalid")).toBe(false);
+    fireEvent.blur(from);
+    await settle(app);
+    expect(from.getAttribute("aria-invalid")).toBe("true");
+    await type(app, from, "03.01.2026");
+    await type(app, to, "05.01.2026");
+    fireEvent.blur(to);
+    await type(app, from, "10.01.2026");
+    expect(to.hasAttribute("aria-invalid")).toBe(false);
+    fireEvent.blur(to);
+    await settle(app);
+    expect(to.getAttribute("aria-invalid")).toBe("true");
+  });
+
   it("an empty or valid date field shows no message", async () => {
     const { app, root } = await mount("");
     const { panel, from, to } = await openPeriod(root, app);
