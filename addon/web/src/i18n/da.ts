@@ -248,7 +248,7 @@ export const da = {
   backTo: (title: string) => `Tilbage til ${title}`,
   close: "Luk",
   shopContext: "Butik",
-  detailInPeriod: (range: string) => `I perioden · ${range}`,
+  detailInPeriod: "I perioden",
   detailPer: (g: Grouping) => `Pr. ${da.groupings[g].one} i perioden`,
   noDetailRows: "Ingen posteringer i perioden",
   openInFirefly: "Åbn i Firefly III",

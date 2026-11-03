@@ -1,7 +1,7 @@
 import type { Posting, SpendingData, Subscription } from "@ha-spending/shared";
 import { describe, expect, it } from "vitest";
 
-import { count, detailAmount, detailKr, rangeText, tableDate } from "../src/format";
+import { count, detailAmount, detailKr, tableDate } from "../src/format";
 import { da } from "../src/i18n/da";
 import { viewContext } from "../src/model/context";
 import { detailView, type DetailView } from "../src/model/detail";
@@ -61,7 +61,6 @@ const PIZZA_PAID = "p24";
 const PIZZA_REFUND = "p25";
 const KIOSK = "p31";
 
-const thisYear = () => viewContext(answerFor(FETCHED), DEFAULT_STATE, TODAY).timeline.period;
 
 describe("a detail's rows", () => {
   it("a subscription's rows are its postings in the period on the ticked accounts", () => {
@@ -72,7 +71,7 @@ describe("a detail's rows", () => {
       ["10", "09", "08", "07", "06", "05", "04", "03", "02", "01"].map((m) => tableDate(`2026-${m}-01`)),
     );
     expect(v.rows.every((r) => r.account === "Fælleskonto" && r.amount === "-8.000,00 kr." && !r.marked)).toBe(true);
-    expect(v.boxes[0]).toEqual({ label: da.detailInPeriod(rangeText(thisYear())), value: "80.000 kr.", count: count(10) });
+    expect(v.boxes[0]).toEqual({ label: da.detailInPeriod, value: "80.000 kr.", count: count(10) });
 
     expect(shown(sub("b1"), linkedRent(), { accounts: ["2"] }).rows).toEqual([]);
     expect(shown(sub("b1"), linkedRent(), { accounts: ["2"] }).boxes[0].value).toBe("0 kr.");
@@ -119,7 +118,7 @@ describe("a detail's rows", () => {
       [PIZZA_REFUND, tableDate("2026-09-22"), "Kreditkort", "+200,00 kr.", false],
       [PIZZA_PAID, tableDate("2026-09-20"), "Kreditkort", "-700,00 kr.", true],
     ]);
-    expect(v.boxes[0]).toEqual({ label: da.detailInPeriod(rangeText(thisYear())), value: "500 kr.", count: count(2) });
+    expect(v.boxes[0]).toEqual({ label: da.detailInPeriod, value: "500 kr.", count: count(2) });
     expect(shown(posting("p13"), answerFor(FETCHED)).rows).toHaveLength(10);
   });
 

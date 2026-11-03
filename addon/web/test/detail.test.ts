@@ -3,7 +3,7 @@ import { fireEvent, getAllByRole, getByRole, queryByRole, within } from "@testin
 import { afterEach, describe, expect, it } from "vitest";
 
 import type { SpendingApp } from "../src/app";
-import { count, rangeText, tableDate, unitName } from "../src/format";
+import { count, tableDate, unitName } from "../src/format";
 import { da } from "../src/i18n/da";
 import { viewContext } from "../src/model/context";
 import { subscriptionRows } from "../src/model/subscriptions";
@@ -97,7 +97,7 @@ describe("the detail on the normal page", () => {
     expect(status).not.toBe("");
     expect(text(d)).toContain(status);
     expect(boxes(d)).toEqual([
-      `${da.detailInPeriod(rangeText(THIS_YEAR))} = 80.000 kr. · ${count(10)}`,
+      `${da.detailInPeriod} = 80.000 kr. ${count(10)}`,
       `${da.subscriptionColumns.perYear} = 96.000 kr.`,
       `${da.columns.account} = Fælleskonto`,
     ]);
@@ -168,7 +168,7 @@ describe("the detail on the normal page", () => {
     expect(text(d)).toContain(da.shopContext);
     expect(text(d)).toContain(`${tableDate("2026-09-22")} · MOBILEPAY 1234`);
     expect(boxes(d)).toEqual([
-      `${da.detailInPeriod(rangeText(THIS_YEAR))} = 500 kr. · ${count(2)}`,
+      `${da.detailInPeriod} = 500 kr. ${count(2)}`,
       `${da.columns.account} = Kreditkort`,
       `${da.columns.category} = Café`,
     ]);
@@ -246,7 +246,7 @@ describe("the detail on the normal page", () => {
     const d = detail(root, "Avis");
     expect(text(d)).toContain(da.noDetailRows);
     expect(queryByRole(d, "table")).toBeNull();
-    expect(boxes(d)[0]).toBe(`${da.detailInPeriod(rangeText(THIS_YEAR))} = 0 kr. · ${count(0)}`);
+    expect(boxes(d)[0]).toBe(`${da.detailInPeriod} = 0 kr. ${count(0)}`);
   });
 
   it("Konto reads – with no last payment", async () => {
@@ -353,18 +353,31 @@ describe("the detail on the normal page", () => {
     expect(location.hash).not.toContain("detail");
   });
 
+  it("the first box reads I perioden with no date", async () => {
+    const { root } = await mountLinked("card=subscriptions&detail=s%3Ab1");
+    const first = getAllByRole(detail(root, "Husleje"), "term")[0] as HTMLElement;
+    expect(text(first)).toBe("I perioden");
+  });
+
+  it("the first box's count reads exactly N posteringer, with no leading dot", async () => {
+    const { root } = await mountLinked("card=subscriptions&detail=s%3Ab1");
+    const first = getAllByRole(detail(root, "Husleje"), "term")[0] as HTMLElement;
+    expect(text(first.nextElementSibling as Element)).toBe(`80.000 kr. ${count(10)}`);
+    expect(text(first.nextElementSibling as Element)).not.toContain("·");
+  });
+
   it("the period and the accounts change the sums; the search does not", async () => {
     const { app, root } = await mountLinked("card=subscriptions&detail=s%3Ab1");
-    expect(boxes(detail(root, "Husleje"))[0]).toContain(`80.000 kr. · ${count(10)}`);
+    expect(boxes(detail(root, "Husleje"))[0]).toContain(`80.000 kr. ${count(10)}`);
     fireEvent.click(getByRole(root, "button", { name: new RegExp(`^${da.period}`) }));
     await app.updateComplete;
     fireEvent.click(getByRole(getByRole(root, "group", { name: da.period }), "button", { name: da.presets.lastMonth }));
     await settle(app);
-    expect(boxes(detail(root, "Husleje"))[0]).toContain(`8.000 kr. · ${count(1)}`);
+    expect(boxes(detail(root, "Husleje"))[0]).toContain(`8.000 kr. ${count(1)}`);
     unmount();
 
     const ticked = await mountLinked("accounts=2&card=subscriptions&detail=s%3Ab1");
-    expect(boxes(detail(ticked.root, "Husleje"))[0]).toContain(`0 kr. · ${count(0)}`);
+    expect(boxes(detail(ticked.root, "Husleje"))[0]).toContain(`0 kr. ${count(0)}`);
     unmount();
 
     const plain = await mountLinked("card=postings&detail=p%3Ap25");

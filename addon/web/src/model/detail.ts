@@ -8,7 +8,7 @@ import {
   unitTotals,
   within,
 } from "@ha-spending/shared";
-import { count, detailAmount, detailKr, rangeText, tableDate, unitAxis, unitName } from "../format";
+import { count, detailAmount, detailKr, tableDate, unitAxis, unitName } from "../format";
 import { da } from "../i18n/da";
 import type { DetailKey } from "../state/view";
 import { partName, type ViewContext } from "./context";
@@ -85,7 +85,7 @@ function common(ctx: ViewContext, rows: ClassifiedPosting[], marked: string | nu
       label: `${unitName(unit, g)}: ${detailKr(totals[i])}`,
     })),
     first: {
-      label: da.detailInPeriod(rangeText(ctx.timeline.period)),
+      label: da.detailInPeriod,
       value: detailKr(total(rows)),
       count: count(rows.length),
     },

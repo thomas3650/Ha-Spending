@@ -127,7 +127,7 @@ export class Detail extends LitElement {
             <dd>
               <span class="detail-box-value">${b.value}</span>${b.count === undefined
                 ? nothing
-                : html` <span class="detail-box-count">· ${b.count}</span>`}
+                : html` <span class="detail-box-count">${b.count}</span>`}
             </dd>
           </div>`,
         )}
@@ -167,12 +167,17 @@ export const detailStyles = css`
   }
   .detail-split.open {
     display: grid;
-    grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+    grid-template-columns: minmax(0, 11fr) minmax(0, 9fr);
   }
   .detail-split.open > .split-list {
     padding-right: 16px;
   }
   .detail-split.open > .split-detail {
+    position: sticky;
+    top: 0;
+    align-self: start;
+    max-height: 100vh;
+    overflow-y: auto;
     padding-left: 16px;
     border-left: 1px solid var(--hs-line);
   }
@@ -185,6 +190,9 @@ export const detailStyles = css`
       display: none;
     }
     .detail-split.open > .split-detail {
+      position: static;
+      max-height: none;
+      overflow-y: visible;
       padding-left: 0;
       border-left: 0;
     }
@@ -282,6 +290,14 @@ export const detailStyles = css`
   .detail-boxes dd {
     margin: 2px 0 0;
     font-variant-numeric: tabular-nums;
+  }
+  .detail-box-value,
+  .detail-box-count {
+    display: block;
+  }
+  .detail-box-count {
+    color: var(--hs-muted);
+    font-size: 12px;
   }
   .detail-boxes > div:first-child .detail-box-value {
     font-size: 20px;
