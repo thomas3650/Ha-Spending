@@ -250,6 +250,41 @@ describe("screen 3, all postings", () => {
     summary(root, 1, 15000);
   });
 
+  it("+ Filter lists the categories under their main group", async () => {
+    const { app, root } = await mount("view=all-postings");
+    await openFilter(app, root);
+    const categories = getByRole(root, "group", { name: da.categories });
+    const groups = getAllByRole(categories, "group");
+    expect(groups).toEqual(
+      ["Bil", "Bolig", "Mad", da.noMainGroup].map((name) => getByRole(categories, "group", { name })),
+    );
+    const listed = ["Bil", "Bolig", "Mad", da.noMainGroup].map((name) =>
+      getAllByRole(getByRole(categories, "group", { name }), "button").map((b) => b.textContent?.trim()),
+    );
+    expect(listed).toEqual([["Brændstof"], ["Husleje"], ["Café", "Dagligvarer"], ["Gaver"]]);
+    const noCategory = getByRole(categories, "button", { name: da.noCategory });
+    expect(groups.some((g) => g.contains(noCategory))).toBe(false);
+  });
+
+  it("+ Filter keeps only the main groups with a category that fits the search", async () => {
+    const { app, root } = await mount("view=all-postings");
+    await openFilter(app, root);
+    fireEvent.input(getByRole(root, "textbox", { name: da.filterSearch }), { target: { value: "caf" } });
+    await settle(app);
+    const categories = getByRole(root, "group", { name: da.categories });
+    const groups = getAllByRole(categories, "group");
+    expect(groups).toEqual([getByRole(categories, "group", { name: "Mad" })]);
+    expect(getAllByRole(groups[0], "button").map((b) => b.textContent?.trim())).toEqual(["Café"]);
+  });
+
+  it("+ Filter marks the chosen category pressed in its main group", async () => {
+    const { app, root } = await mount(CAFE);
+    await openFilter(app, root);
+    const mad = getByRole(getByRole(root, "group", { name: da.categories }), "group", { name: "Mad" });
+    expect(getByRole(mad, "button", { name: "Café" }).getAttribute("aria-pressed")).toBe("true");
+    expect(getByRole(mad, "button", { name: "Dagligvarer" }).getAttribute("aria-pressed")).toBe("false");
+  });
+
   it("says when nothing passes", async () => {
     const { root } = await mount(`${CAFE}&q=xyz`);
     getByText(root, da.noMatch);

@@ -194,3 +194,8 @@ The page's list. Every screenshot is at 1440×960 with the console free of error
     today lighter with "i gang", the days after today empty, no average line, the tooltip on a day, and a day below
     zero (if the example data has one) with a "+" in its tooltip. A click on a day chooses the month: its chip shows,
     no bar fades, and a second click removes it.
+45. `59-filter-kategorier`: at 1440, 1728 and 420 px, "+ Filter" open and scrolled to the middle of Kategorier: each
+    category stands under its main group, and a main group's heading can be told from a part heading
+    ([filter categories spec](superpowers/specs/2026-11-03-filter-categories.md)). A search for "caf" keeps only the
+    main groups with a category that fits. "Uden hovedgruppe" is the last main group, and "Uden kategori" follows
+    outside every group. Tab reaches every category in order.
