@@ -118,9 +118,10 @@ The page's list. Every screenshot is at 1440×960 with the console free of error
     numbers stack ([D28](decisions.md)). Hover and Tab on a row bring its piece out; a click on a row chooses it, and
     the other rows fade.
 19. Back: three clicks, then back three times returns to the opening view.
-20. `33-posteringer-soeg`: screen 1 on Posteringer with a search typed. The search row, with "Vis alle" on its line,
-    sits under the title; the count and the sum follow the search; the circle and the key numbers do not. Also at
-    1728 and 420 px. Back after typing returns to the view before the first key.
+20. `33-posteringer-soeg`: screen 1 on Posteringer with a search typed. The search row sits under the title, its field
+    taking the row's whole width, with no "Vis alle" button; the count and the sum follow the search; the circle and
+    the key numbers do not. Also at 1728 and 420 px. Back after typing returns to the view before the first key. In
+    full screen the row keeps "Vis alle", which opens Alle posteringer with the search.
 21. `34-posteringer-ingen-match`: a search nothing matches on the overview: the summary at 0 and `da.noMatch`, with
     the search row still there.
 22. `35-abonnementer`, `36-abonnementer-hovedgruppe`: the key number Faste udgifter i perioden pressed, so the card shows
@@ -128,14 +129,16 @@ The page's list. Every screenshot is at 1440×960 with the console free of error
     Forventes, Betalt, and the names link to the fake. Also at 1728 and 420 px, where the head wraps; compare
     `docs/mockups/v3/`.
 23. `37-butik-forslag`: screen 1 on Posteringer with part of a shop's name typed. The suggestions open under the field,
-    over the list, biggest sum first, each with its sum; rows show the shop, and a mouse-over shows the bank text. Also
-    at 1728 and 420 px, and with touch emulation: a tap chooses, a scroll that starts on the list chooses nothing.
-24. `38-butik-valgt`: a shop chosen from the suggestions. The chip "Butik: …" sits in front of the empty field, which
-    keeps the focus; only that shop's rows show, and the count and the sum are its own. The ✕ and Back undo it. The
-    same on Alle posteringer.
+    over the list. Names that start with the typed text come first, then the rest, each group biggest sum first, and
+    each row shows its sum; a mouse-over shows the bank text. Also at 1728 and 420 px, and with touch emulation: a tap
+    chooses, a scroll that starts on the list chooses nothing.
+24. `38-butik-valgt`: a shop chosen from the suggestions. The chip "Butik: …" sits on its own row under the search
+    field; the field keeps the row's whole width and the focus. Only that shop's rows show, and the count and the sum
+    are its own. The ✕ and Back undo it. The same on Alle posteringer.
 25. `39-fuld-skaerm`: screen 1 on Posteringer with "Fuld skærm" pressed. The right card alone, the full width; the
-    button sits on the switch's line, also at 420 px. Escape and the button bring the circle and the key numbers
-    back. Also on Søjler, Forskel and Faste udgifter, at 1440, 1728 and 420 px.
+    button sits on the title's row at every width, also at 420 px. The view switch moves under the title when the card
+    is under 700 px wide. Escape and the button bring the circle and the key numbers back. Also on Søjler, Forskel and
+    Faste udgifter, at 1440, 1728 and 420 px.
 26. `40-faste-udgifter-grupper`: Faste udgifter at Alt forbrug, grouped by main group with a Kategori column, each
     group's dot the same colour as its part in the circle; then at a main group, grouped by category.
 27. `41-objektgrupper`: Faste udgifter at Alt forbrug and at the main group Abonnementer. Each row carries the pill
@@ -199,3 +202,11 @@ The page's list. Every screenshot is at 1440×960 with the console free of error
     ([filter categories spec](superpowers/specs/2026-11-03-filter-categories.md)). A search for "caf" keeps only the
     main groups with a category that fits. "Uden hovedgruppe" is the last main group, and "Uden kategori" follows
     outside every group. Tab reaches every category in order.
+46. `60-gennemgang-rettelser`: the fixes from the 0.11.0 walkthrough
+    ([walkthrough fixes spec](superpowers/specs/2026-11-03-walkthrough-fixes.md)), at 1440, 1728 and 420 px, on the
+    normal page and in full screen. The full-screen button sits on the title's row on Søjler, Posteringer and Faste
+    udgifter. The title still ends in "…" when long. A key-number card that switches to Faste udgifter has no ring
+    when chosen; its hover border and focus outline stay. "Vis alle" is not on the Posteringer search row in the
+    normal card, and it is in full screen. A chosen shop's chip sits under the search field. With the suggestion list
+    open, Tab chooses the highlighted suggestion, or the first one when none is highlighted; Shift+Tab chooses nothing.
+    A day bar's tooltip names its date once: two lines for a day, three for a whole month.
