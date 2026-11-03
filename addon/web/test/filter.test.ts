@@ -85,12 +85,12 @@ describe("shopSuggestions", () => {
 
   it("lists the names starting with the text first, each tier by sum", () => {
     const base = [
-      posting("a", "t", "Havesol", 90000),
-      posting("b", "t", "Solbær Café", 5000),
-      posting("c", "t", "Parasol & Co", 20000),
-      posting("d", "t", "Solo Kiosk", 3000),
+      posting("a", "t", "Havesol", 20000),
+      posting("b", "t", "Solbær Café", 3000),
+      posting("c", "t", "Parasol & Co", 90000),
+      posting("d", "t", "Solo Kiosk", 5000),
     ];
-    expect(shopSuggestions(base, "sol").map((s) => s.name)).toEqual(["Solbær Café", "Solo Kiosk", "Havesol", "Parasol & Co"]);
+    expect(shopSuggestions(base, "sol").map((s) => s.name)).toEqual(["Solo Kiosk", "Solbær Café", "Parasol & Co", "Havesol"]);
   });
 
   it("keeps a starting name with the smallest sum although more shops match than the limit", () => {

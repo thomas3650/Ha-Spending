@@ -181,8 +181,9 @@ describe("the search field with shop suggestions", () => {
     await focus(el);
     await key(el, "ArrowDown");
     await key(el, "ArrowDown");
-    await key(el, "Tab");
+    expect(fireEvent.keyDown(field(el), { key: "Tab" })).toBe(false);
     expect(fired).toEqual([{ name: "shop-choose", detail: "Nordisk Café" }]);
+    expect(document.activeElement).toBe(field(el));
   });
 
   it("chooses nothing with Shift+Tab and leaves the event alone", async () => {
@@ -264,7 +265,7 @@ describe("the search field with shop suggestions", () => {
   });
 
   describe("with a chosen shop", () => {
-    it("shows the chip in front of the field and offers nothing", async () => {
+    it("shows the chip and offers nothing", async () => {
       const { el } = await render({ search: "n", shop: "Netto" });
       await focus(el);
       getByRole(el, "button", { name: da.remove(da.shopChip("Netto")) });
