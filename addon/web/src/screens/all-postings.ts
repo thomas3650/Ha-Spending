@@ -11,7 +11,7 @@ import { da } from "../i18n/da";
 import { categoryColours } from "../model/circle";
 import { partName, type ViewContext } from "../model/context";
 import { detailView } from "../model/detail";
-import { filteredPostings, objectGroupBase, searchBase, shopSuggestions } from "../model/filter";
+import { filteredPostings, fold, objectGroupBase, searchBase, shopSuggestions } from "../model/filter";
 import { postingList } from "../model/postings";
 import {
   type AmountRange,
@@ -125,8 +125,8 @@ export class FilterPicker extends Dropdown {
   }
 
   private fits(name: string): boolean {
-    const needle = this.search.trim().toLocaleLowerCase("da");
-    return needle === "" || name.toLocaleLowerCase("da").includes(needle);
+    const needle = fold(this.search);
+    return needle === "" || fold(name).includes(needle);
   }
 
   /** The chosen group is listed even when no posting carries it, so it can be seen pressed. */

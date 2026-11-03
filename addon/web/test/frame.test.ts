@@ -689,4 +689,15 @@ describe("the loading placeholder's key-number boxes", () => {
     await choosePreset(root, app, da.presets.lastMonth);
     expect(boxes(root)).toBe(5);
   });
+
+  it("drops back to 3 boxes after an answer with no object groups", async () => {
+    const { app, root } = await mount("", {
+      answer: (range, n) =>
+        n === 1 ? json(withSubscriptions(answerFor(range))) : n === 2 ? json(answerFor(range)) : pending(),
+    });
+    await choosePreset(root, app, da.presets.lastYear);
+    expect(queryByRole(root, "group", { name: da.loading })).toBeNull();
+    await choosePreset(root, app, da.presets.lastMonth);
+    expect(boxes(root)).toBe(3);
+  });
 });

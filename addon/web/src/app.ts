@@ -286,12 +286,22 @@ export class SpendingApp extends LitElement {
     this.closed = this.state.detail;
     const next = closeDetail(this.state);
     if (detailEntry()) {
+      if (this.besideList()) this.keepScrollOnBack();
       this.change(next);
       history.back();
       return;
     }
     history.replaceState(null, "", `#${toHash(next)}`);
     this.change(next);
+  }
+
+  /**
+   * Back restores the scroll of the entry before the open (spec §2.1), which in a split would move the list. Only this
+   * close keeps it: elsewhere Back's restore is wanted. The restore comes after popstate, hence the frame's wait.
+   */
+  private keepScrollOnBack(): void {
+    const y = window.scrollY;
+    window.addEventListener("popstate", () => requestAnimationFrame(() => window.scrollTo(0, y)), { once: true });
   }
 
   override connectedCallback(): void {

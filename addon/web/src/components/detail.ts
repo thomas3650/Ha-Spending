@@ -190,7 +190,8 @@ export const detailStyles = css`
     position: sticky;
     top: 0;
     align-self: start;
-    max-height: 100vh;
+    /* Room for the card's and the page's padding under the split, so at the list's end its top stays in view. */
+    max-height: calc(100vh - 48px);
     overflow-y: auto;
     padding-left: 16px;
     border-left: 1px solid var(--hs-line);

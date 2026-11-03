@@ -1,4 +1,4 @@
-import { type Grouping, type Level, type SpendingData, unitsOf, within } from "@ha-spending/shared";
+import { type Grouping, type Level, type SpendingData, unitsOf } from "@ha-spending/shared";
 import {
   type AmountRange,
   type Card,
@@ -164,7 +164,7 @@ export function detailResolves(s: ViewState, data: SpendingData, today: string):
   const p = data.postings.find((q) => q.id === key.id);
   if (p === undefined) return false;
   const period = periodOf(s.period, today, data.earliestPostingDate);
-  if (within([{ ...p, mainGroup: null }], period).length === 0) return false;
+  if (p.date < period.start || p.date > period.end) return false;
   if (s.accounts !== null && !s.accounts.includes(p.account)) return false;
   if (!overview || s.card === "postings") return true;
   return s.card === "subscriptions" && p.subscription !== null && listed(p.subscription.id);

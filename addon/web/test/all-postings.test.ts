@@ -91,6 +91,13 @@ describe("screen 3, all postings", () => {
     }
   });
 
+  it("shows nothing extra under a posting with no shop whose text the search matched", async () => {
+    const { root } = await mount("view=all-postings&q=kiosk");
+    const buttons = getAllByRole(root, "button", { name: "Kiosken" });
+    expect(buttons.length).toBeGreaterThan(0);
+    for (const button of buttons) expect(button.closest("td")?.textContent?.trim()).toBe("Kiosken");
+  });
+
   it("sorts by size as one flat list", async () => {
     const { root } = await mount(`${CAFE}&sort=largest`);
     expect(columnHeader(root, da.columns.amount).getAttribute("aria-sort")).toBe("ascending");
@@ -542,6 +549,22 @@ describe("the object group on Alle posteringer", () => {
     expect(queryByRole(root, "group", { name: da.categories })).toBeNull();
     expect(queryByRole(root, "group", { name: da.mainGroups })).toBeNull();
     getByRole(root, "group", { name: da.amountFilter });
+  });
+
+  it("the filter search keeps a matching main group, and Uden kategori when its name matches", async () => {
+    const { app, root } = await mount("view=all-postings");
+    await openFilter(app, root);
+    const search = getByRole(root, "textbox", { name: da.filterSearch });
+    const names = (group: string) =>
+      getAllByRole(getByRole(root, "group", { name: group }), "button").map((b) => b.textContent?.trim());
+    fireEvent.input(search, { target: { value: "bol" } });
+    await settle(app);
+    expect(names(da.mainGroups)).toEqual(["Bolig"]);
+    expect(queryByRole(root, "group", { name: da.categories })).toBeNull();
+    fireEvent.input(search, { target: { value: "uden kat" } });
+    await settle(app);
+    expect(names(da.categories)).toEqual([da.noCategory]);
+    expect(queryByRole(root, "group", { name: da.mainGroups })).toBeNull();
   });
 
   it("the filter menu lists Beløb, the object groups, Hovedgrupper, Kategorier in that order", async () => {

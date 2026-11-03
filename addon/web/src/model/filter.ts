@@ -10,7 +10,7 @@ export interface ShopSuggestion {
   sum: number;
 }
 
-function fold(text: string): string {
+export function fold(text: string): string {
   return text.trim().toLocaleLowerCase("da");
 }
 
