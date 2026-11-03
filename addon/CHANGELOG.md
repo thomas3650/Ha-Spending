@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.13.0](https://github.com/thomas3650/Ha-Spending/compare/v0.12.1...v0.13.0) (2026-11-03)
+
+
+### Features
+
+* the key numbers drop the comparisons ([#119](https://github.com/thomas3650/Ha-Spending/issues/119)) ([f1fc436](https://github.com/thomas3650/Ha-Spending/commit/f1fc436da62907ace16d7fbdea5bb5429f100633))
+
 ## [0.12.1](https://github.com/thomas3650/Ha-Spending/compare/v0.12.0...v0.12.1) (2026-11-03)
 
 

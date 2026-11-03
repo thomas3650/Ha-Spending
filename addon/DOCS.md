@@ -1,10 +1,10 @@
 # HA Spending
 
 The HA Spending app shows a household's spending from Firefly III on a page in Home Assistant. The page shows the
-spending of a period as main groups, then categories, then postings, and compares a unit of the chosen grouping with
-the one before it. The page writes nothing to Firefly III. An optional endpoint lets an AI sorter in another app
-set the category, and the shop, of new postings, and a household's chat assistant read postings and spending and move
-a posting to another category, within fixed limits (see *The sorter's endpoint* below).
+spending of a period as main groups, then categories, then postings. The page writes nothing to Firefly III. An optional
+endpoint lets an AI sorter in another app set the category, and the shop, of new postings, and a household's chat
+assistant read postings and spending and move a posting to another category, within fixed limits (see *The sorter's
+endpoint* below).
 
 ## Installation
 

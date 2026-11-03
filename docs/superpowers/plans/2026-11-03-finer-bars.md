@@ -154,14 +154,14 @@ model-level test is simpler there.
 
 Model: sonnet · Review: no
 
-**Files:** modify `docs/decisions.md` (D53; D51's status), `docs/README.md`, `docs/mockups/README.md`,
+**Files:** modify `docs/decisions.md` (D54; D51's status), `docs/README.md`, `docs/mockups/README.md`,
 `docs/testing.md`, `docs/domain-language.md`.
 
-- [ ] **Step 1: Write** the docs as spec §6 lists them. D53 in the decision-log format of `docs/way-of-working.md` §5,
+- [ ] **Step 1: Write** the docs as spec §6 lists them. D54 in the decision-log format of `docs/way-of-working.md` §5,
   date 2026-11-03, source: Thomas, 2026-11-03, and the spec. D51's status line becomes
-  `active; the detail's bars, the one-unit Uge, Kvartal and År periods and the name below zero superseded by D53`. The
+  `active; the detail's bars, the one-unit Uge, Kvartal and År periods and the name below zero superseded by D54`. The
   mockups README gets a "Finer bars" section for `v6/finere-enheder.html` (A chosen, B tried for the refund; section
   6 shows "I år" ending today and running the year out, the second chosen). The Chrome-check item goes in
   `docs/testing.md` as the next numbered step.
 - [ ] **Step 2: Run** `node scripts/check-links.mjs` in the repo root. Expected: no broken link.
-- [ ] **Step 3: Commit** `docs: finer bars (D53)`.
+- [ ] **Step 3: Commit** `docs: finer bars (D54)`.

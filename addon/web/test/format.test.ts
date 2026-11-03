@@ -5,7 +5,6 @@ import {
   axisKr,
   axisTickKr,
   barKr,
-  comparisonLabel,
   count,
   detailAmount,
   detailKr,
@@ -18,7 +17,6 @@ import {
   postingAmount,
   rangeText,
   signedKr,
-  signedPercent,
   shortDate,
   stepAmounts,
   tableDate,
@@ -103,16 +101,6 @@ describe("money", () => {
 describe("percent", () => {
   it("rounds to whole per cents with a no-break space", () => {
     expect(percent(0.6917)).toBe(`69${nbsp}%`);
-    expect(signedPercent(0.04545)).toBe(`+5${nbsp}%`);
-    expect(signedPercent(-0.04)).toBe(`-4${nbsp}%`);
-    expect(signedPercent(0)).toBe(`0${nbsp}%`);
-    expect(signedPercent(-0.003)).toBe(`-0,3${nbsp}%`);
-    expect(signedPercent(0.0042)).toBe(`+0,4${nbsp}%`);
-    expect(signedPercent(-0.0002)).toBe(`-under 0,1${nbsp}%`);
-    expect(signedPercent(0.0005)).toBe(`+0,1${nbsp}%`);
-    expect(signedPercent(-0.0005)).toBe(`-0,1${nbsp}%`);
-    expect(signedPercent(0.00049)).toBe(`+under 0,1${nbsp}%`);
-    expect(signedPercent(-0.00049)).toBe(`-under 0,1${nbsp}%`);
   });
 });
 
@@ -157,19 +145,6 @@ describe("units", () => {
     expect(unitAxis(unit("2026-05-10", "month"), "month")).toBe("maj");
     expect(unitAxis(unit("2026-10-30", "quarter"), "quarter")).toBe("K4");
     expect(unitAxis(unit("2026-10-30", "year"), "year")).toBe("2026");
-  });
-  it("labels a comparison", () => {
-    const pair = (date: string, before: string, g: Parameters<typeof unitAt>[1]) =>
-      comparisonLabel(unit(date, g), unit(before, g), g);
-    expect(pair("2026-09-10", "2026-08-10", "month")).toBe("September mod august");
-    expect(pair("2026-01-10", "2025-12-10", "month")).toBe("Januar 2026 mod december 2025");
-    expect(pair("2026-10-30", "2026-10-23", "week")).toBe("Uge 44 mod uge 43");
-    expect(pair("2026-10-30", "2026-10-29", "day")).toBe("30.10. mod 29.10.");
-    expect(pair("2026-10-30", "2026-07-30", "quarter")).toBe("4. kvartal mod 3. kvartal");
-    expect(pair("2026-10-30", "2025-10-30", "year")).toBe("2026 mod 2025");
-    expect(pair("2026-01-01", "2025-12-25", "week")).toBe("Uge 1 2026 mod uge 52 2025");
-    expect(pair("2026-01-10", "2025-10-10", "quarter")).toBe("1. kvartal 2026 mod 4. kvartal 2025");
-    expect(pair("2026-01-01", "2025-12-31", "day")).toBe("1.1.2026 mod 31.12.2025");
   });
 });
 

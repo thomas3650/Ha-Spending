@@ -118,7 +118,6 @@ export const da = {
       average: "et gennemsnitligt år",
     },
   } satisfies Record<Grouping, GroupingTexts>,
-  against: "mod",
   quarterAxis: (quarter: number) => `K${quarter}`,
 
   spendingInPeriod: "Forbrug i perioden",
@@ -130,14 +129,8 @@ export const da = {
   averageBefore: (n: number, g: Grouping) =>
     n === 12 ? `gns. de 12 ${da.groupings[g].many} før` : `gns. af ${da.unitCount(n, g)} før`,
   noDataBefore: "ingen data før perioden",
-  noData: (name: string) => `ingen data for ${name}`,
   unitTotal: (name: string) => `${name} i alt`,
   levelInUnit: (level: string, name: string) => `${level} i ${name.toLowerCase()}`,
-  tinyChange: "under 0,1\u00a0%",
-  vsAverage: "Mod gennemsnittet",
-  vsAverageSub: (diff: string, avg: string, g: Grouping) => `${diff} mod ${avg} pr. ${da.groupings[g].one}`,
-  up: "▲",
-  down: "▼",
   none: "–",
 
   mainGroups: "Hovedgrupper",

@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
   byUnit,
-  change,
   chosenUnitNumbers,
   classify,
   differences,
@@ -13,7 +12,7 @@ import {
   unitTotals,
   within,
 } from "../src/money";
-import { type Timeline, unitsOf } from "../src/units";
+import { unitsOf } from "../src/units";
 import { categories, postings, T } from "./fixture";
 
 const all = classify(postings, categories);
@@ -74,97 +73,45 @@ describe("money", () => {
     expect(unitTotals(all, unitsOf(T.period, "month", T.today))).toEqual([523000, 504500, 16000]);
   });
 
-  it("averages the whole units and compares the last with the one before", () => {
+  it("gives the total and the average of the whole units", () => {
     expect(keyNumbers(all, T)).toEqual({
       total: 1043500,
       average: { amount: 513750, units: 2, basis: "period" },
-      comparison: {
-        unit: expect.objectContaining({ fullStart: "2026-02-01" }),
-        amount: 504500,
-        before: expect.objectContaining({ fullStart: "2026-01-01" }),
-        beforeAmount: 523000,
-      },
     });
   });
 
   it("averages the 12 units before a one-unit period, counting units with data", () => {
     const march = keyNumbers(all, { ...T, period: { start: "2026-03-01", end: "2026-03-18" } });
     expect(march.average).toEqual({ amount: 512500, units: 3, basis: "before" });
-    expect(march.comparison).toMatchObject({
-      unit: { fullStart: "2026-03-01" },
-      amount: 16000,
-      before: { fullStart: "2026-02-01" },
-      beforeAmount: 504500,
-    });
 
     const febMarch = keyNumbers(all, { ...T, period: { start: "2026-02-01", end: "2026-03-18" } });
     expect(febMarch.average).toEqual({ amount: 516500, units: 2, basis: "before" });
-    expect(febMarch.comparison).toMatchObject({
-      unit: { fullStart: "2026-02-01" },
-      amount: 504500,
-      before: { fullStart: "2026-01-01" },
-      beforeAmount: 523000,
-    });
   });
 
   it("leaves out units before the data", () => {
     const dec = keyNumbers(all, { ...T, period: { start: "2025-12-01", end: "2025-12-31" } });
     expect(dec.total).toBe(510000);
     expect(dec.average).toEqual({ amount: null, units: 0, basis: "before" });
-    expect(dec.comparison?.beforeAmount).toBeNull();
   });
 
   it("copes with no postings and no data", () => {
     const empty = keyNumbers([], { ...T, earliest: null });
     expect(empty.total).toBe(0);
     expect(empty.average.amount).toBeNull();
-    expect(empty.comparison?.beforeAmount).toBeNull();
   });
 
-  it("counts a clipped unit as whole in the average and the comparison", () => {
+  it("counts a clipped unit as whole in the average", () => {
     const t = { ...T, period: { start: "2026-01-15", end: "2026-02-28" } };
     expect(keyNumbers(all, t)).toEqual({
       total: 1002500,
       average: { amount: 501250, units: 2, basis: "period" },
-      comparison: {
-        unit: expect.objectContaining({ fullStart: "2026-02-01" }),
-        amount: 504500,
-        before: expect.objectContaining({ start: "2026-01-15", fullStart: "2026-01-01" }),
-        beforeAmount: 498000,
-      },
     });
   });
 
-  it("compares with the clipped unit before when it lies inside the period", () => {
-    const t: Timeline = {
-      period: { start: "2026-01-01", end: "2026-10-30" },
-      grouping: "week",
-      today: "2026-10-30",
-      earliest: "2025-12-30",
-    };
-    const weekly = classify(
-      [
-        { ...postings[0], id: "w1", date: "2025-12-30", amount: 1000 },
-        { ...postings[0], id: "w2", date: "2026-01-02", amount: 2000 },
-        { ...postings[0], id: "w3", date: "2026-01-06", amount: 4000 },
-      ],
-      categories,
-    );
-    const week2 = unitsOf(t.period, t.grouping, t.today)[1];
-    const numbers = chosenUnitNumbers(weekly, t, week2);
-    expect(numbers.amount).toBe(4000);
-    expect(numbers.before).toMatchObject({ start: "2026-01-01", end: "2026-01-04", clipped: true });
-    expect(numbers.beforeAmount).toBe(2000);
-    const [week1] = unitsOf(t.period, t.grouping, t.today);
-    expect(chosenUnitNumbers(weekly, t, week1).before).toMatchObject({ start: "2025-12-22", end: "2025-12-28" });
-  });
-
-  it("compares a chosen unit with the other whole units and the one before", () => {
+  it("gives a chosen unit's amount and the average of the other whole units", () => {
     expect(chosenUnitNumbers(all, T, jan)).toEqual({
       amount: 523000,
       average: { amount: 504500, units: 1, basis: "period" },
-      before: expect.objectContaining({ fullStart: "2025-12-01" }),
-      beforeAmount: 510000,
     });
   });
 
@@ -183,14 +130,6 @@ describe("money", () => {
       { key: "Bolig", amount: 500000, average: null, difference: null },
       { key: "Mad", amount: 10000, average: null, difference: null },
     ]);
-  });
-
-  it("gives the change against a base", () => {
-    expect(change(1150000, 1100000)).toBeCloseTo(0.04545, 5);
-    expect(change(900, 1000)).toBeCloseTo(-0.1);
-    expect(change(50000, 0)).toBeNull();
-    expect(change(1, -5)).toBeNull();
-    expect(change(1, null)).toBeNull();
   });
 
   it("splits postings per unit, adding up to the bars", () => {

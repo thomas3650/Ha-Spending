@@ -1,4 +1,4 @@
-import { addDays, change, fetchRange, type Period, unitAt } from "@ha-spending/shared";
+import { addDays, fetchRange, type Period, unitAt } from "@ha-spending/shared";
 import {
   findByRole,
   fireEvent,
@@ -12,15 +12,13 @@ import {
 } from "@testing-library/dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { comparisonLabel, kr, longDate, rangeText, signedPercent } from "../src/format";
+import { kr, longDate, rangeText, unitName } from "../src/format";
 import { da } from "../src/i18n/da";
-import { answerFor, withSubscriptions } from "./fixture";
+import { answerFor, OBJECT_GROUP, withSubscriptions } from "./fixture";
 import { json, mount, settle, unmount } from "./mount";
-import { KEEP_NBSP } from "./text";
+import { cardNames, hasArrow } from "./text";
 
 const TODAY = "2026-10-30";
-const sep = unitAt("2026-09-01", "month", TODAY);
-const aug = unitAt("2026-08-01", "month", TODAY);
 /** Keeps Intl's no-break space, which the default normalizer turns into a space. */
 const escaped = (text: string) => new RegExp(text.replace(/[()]/g, "\\$&"));
 
@@ -92,9 +90,9 @@ async function pick(app: Parameters<typeof settle>[0], panel: HTMLElement, date:
 }
 
 describe("the frame", () => {
-  it("opens on I år by month with all accounts, asking for the widened range", async () => {
+  it("opens on I år by month with all accounts, asking for the period's range", async () => {
     const { root, fetch } = await mount("");
-    expect(fetch).toHaveBeenCalledWith("api/data?start=2025-12-01&end=2026-10-30", expect.anything());
+    expect(fetch).toHaveBeenCalledWith("api/data?start=2026-01-01&end=2026-10-30", expect.anything());
     expect(getByRole(root, "heading", { level: 1, name: da.allSpending })).toBeTruthy();
     getByRole(root, "button", { name: new RegExp(`${da.period}.*${da.presets.thisYear}`) });
     expect((getByRole(root, "combobox", { name: da.groupBy }) as HTMLSelectElement).value).toBe("month");
@@ -109,9 +107,8 @@ describe("the frame", () => {
     const second = getByRole(root, "group", { name: da.averagePer("month") });
     getByText(second, kr(1159444));
     getByText(second, da.unitCount(9, "month"));
-    const third = getByRole(root, "group", { name: comparisonLabel(sep, aug, "month") });
-    getByText(third, signedPercent(change(1150000, 1100000)!), KEEP_NBSP);
-    getByText(third, `${da.up} ${kr(50000)}`);
+    expect(cardNames(root, [OBJECT_GROUP])).toEqual([da.spendingInPeriod, da.averagePer("month")]);
+    expect(hasArrow(root)).toBe(false);
   });
 
   it("labels the average of a one-unit period by the months before", async () => {
@@ -212,7 +209,7 @@ describe("the frame", () => {
   it("chooses a period from the dropdown", async () => {
     const { app, root, fetch } = await mount("");
     await choosePreset(root, app, da.presets.lastYear);
-    expect(fetch).toHaveBeenLastCalledWith("api/data?start=2024-12-01&end=2025-12-31", expect.anything());
+    expect(fetch).toHaveBeenLastCalledWith("api/data?start=2025-01-01&end=2025-12-31", expect.anything());
     expect(location.hash).toBe("#period=lastYear");
     expect(queryByRole(root, "group", { name: da.period })).toBeNull();
   });
@@ -295,8 +292,8 @@ describe("the frame", () => {
       answer: (range) => json(answerFor(range, TODAY)),
     });
     expect(fetch).toHaveBeenCalledTimes(2);
-    expect(fetch.mock.calls[0][0]).toBe("api/data?start=2025-12-01&end=2026-10-31");
-    expect(fetch.mock.calls[1][0]).toBe("api/data?start=2025-12-01&end=2026-10-30");
+    expect(fetch.mock.calls[0][0]).toBe("api/data?start=2026-01-01&end=2026-10-31");
+    expect(fetch.mock.calls[1][0]).toBe("api/data?start=2026-01-01&end=2026-10-30");
     getByRole(root, "button", { name: new RegExp(rangeText({ start: "2026-01-01", end: TODAY })) });
   });
 
@@ -306,13 +303,13 @@ describe("the frame", () => {
       answer: (range) => json(answerFor(range, addDays(range.end, -1))),
     });
     expect(fetch).toHaveBeenCalledTimes(2);
-    expect(fetch.mock.calls[0][0]).toBe("api/data?start=2025-12-01&end=2026-10-31");
-    expect(fetch.mock.calls[1][0]).toBe("api/data?start=2025-12-01&end=2026-10-30");
+    expect(fetch.mock.calls[0][0]).toBe("api/data?start=2026-01-01&end=2026-10-31");
+    expect(fetch.mock.calls[1][0]).toBe("api/data?start=2026-01-01&end=2026-10-30");
     getByRole(root, "button", { name: new RegExp(rangeText({ start: "2026-01-01", end: TODAY })) });
     getByText(firstCard(root), kr(11566012));
 
     await choosePreset(root, app, da.presets.lastYear);
-    expect(fetch.mock.calls[2][0]).toBe("api/data?start=2024-12-01&end=2025-12-31");
+    expect(fetch.mock.calls[2][0]).toBe("api/data?start=2025-01-01&end=2025-12-31");
     expect(fetch).toHaveBeenCalledTimes(4);
   });
 
@@ -321,7 +318,7 @@ describe("the frame", () => {
     await choosePreset(root, app, da.presets.all);
     expect(location.hash).toBe("#period=all");
     getByRole(root, "button", { name: new RegExp(rangeText({ start: EARLIEST, end: TODAY })) });
-    expect(fetch.mock.calls[1][0]).toBe(`api/data?start=2022-12-01&end=${TODAY}`);
+    expect(fetch.mock.calls[1][0]).toBe(`api/data?start=2023-01-01&end=${TODAY}`);
   });
 
   it("a hash with Alt asks for I år's range, then once for Alt's", async () => {
@@ -329,7 +326,7 @@ describe("the frame", () => {
     const url = (p: { start: string; end: string }) => `api/data?start=${p.start}&end=${p.end}`;
     expect(fetch).toHaveBeenCalledTimes(2);
     expect(fetch.mock.calls[0][0]).toBe(url(fetchRange({ start: "2026-01-01", end: TODAY }, "month", TODAY)));
-    expect(fetch.mock.calls[1][0]).toBe(`api/data?start=2022-12-01&end=${TODAY}`);
+    expect(fetch.mock.calls[1][0]).toBe(`api/data?start=2023-01-01&end=${TODAY}`);
     await settle(app);
     expect(fetch).toHaveBeenCalledTimes(2);
     getByRole(root, "button", { name: new RegExp(rangeText({ start: EARLIEST, end: TODAY })) });
@@ -347,7 +344,7 @@ describe("the frame", () => {
   it("Alt keeps a unit from an earlier year", async () => {
     const { app, fetch } = await mount("period=all&unit=2024-03-01", { answer: earliestAnswer });
     await settle(app);
-    expect(fetch.mock.calls[1][0]).toBe(`api/data?start=2022-12-01&end=${TODAY}`);
+    expect(fetch.mock.calls[1][0]).toBe(`api/data?start=2023-01-01&end=${TODAY}`);
     expect(location.hash).toContain("unit=2024-03-01");
   });
 
@@ -665,21 +662,50 @@ describe("the loading placeholder's key-number boxes", () => {
     return getAllByRole(busy, "listitem").length;
   }
 
+  async function chooseJuly(root: HTMLElement, app: Parameters<typeof settle>[0]) {
+    const july = unitName(unitAt("2026-07-01", "month", "2026-10-30"), "month");
+    const bars = getByRole(root, "region", { name: da.per("month") });
+    fireEvent.click(getByRole(bars, "button", { name: new RegExp(`^${july},`) }));
+    await settle(app);
+  }
+
   it("after a period change the placeholder has as many boxes as the page showed", async () => {
     const { app, root } = await mount("", {
       answer: (range, n) => (n === 1 ? json(withSubscriptions(answerFor(range))) : pending()),
     });
     getByRole(root, "group", { name: da.inPeriod("Faste udgifter") });
     await choosePreset(root, app, da.presets.lastYear);
-    expect(boxes(root)).toBe(5);
+    expect(boxes(root)).toBe(4);
   });
 
-  it("the first load's placeholder has 3 boxes", async () => {
+  it("the first load's placeholder has 2 boxes", async () => {
     const { root } = await mount("", { answer: pending });
+    expect(boxes(root)).toBe(2);
+  });
+
+  it("after choosing a unit, the placeholder has the unit's row", async () => {
+    const { app, root } = await mount("", {
+      answer: (range, n) => (n === 1 ? json(withSubscriptions(answerFor(range))) : pending()),
+    });
+    await chooseJuly(root, app);
+    await choosePreset(root, app, da.presets.lastYear);
     expect(boxes(root)).toBe(3);
   });
 
-  it("after a failed load and a new change the placeholder keeps the last answer's count", async () => {
+  it("a unit chosen in full screen does not change the row the placeholder keeps", async () => {
+    const { app, root } = await mount("", {
+      answer: (range, n) => (n === 1 ? json(withSubscriptions(answerFor(range))) : pending()),
+    });
+    fireEvent.click(getAllByRole(root, "button", { name: da.fullScreen })[0]);
+    await settle(app);
+    await chooseJuly(root, app);
+    await choosePreset(root, app, da.presets.lastYear);
+    fireEvent.keyDown(window, { key: "Escape" });
+    await settle(app);
+    expect(boxes(root)).toBe(4);
+  });
+
+  it("after a failed load and a new change the placeholder keeps the last row's count", async () => {
     const { app, root } = await mount("", {
       answer: (range, n) =>
         n === 1 ? json(withSubscriptions(answerFor(range))) : n === 2 ? new Response("", { status: 500 }) : pending(),
@@ -687,10 +713,10 @@ describe("the loading placeholder's key-number boxes", () => {
     await choosePreset(root, app, da.presets.lastYear);
     getByRole(root, "alert");
     await choosePreset(root, app, da.presets.lastMonth);
-    expect(boxes(root)).toBe(5);
+    expect(boxes(root)).toBe(4);
   });
 
-  it("drops back to 3 boxes after an answer with no object groups", async () => {
+  it("drops back to 2 boxes after an answer with no object groups", async () => {
     const { app, root } = await mount("", {
       answer: (range, n) =>
         n === 1 ? json(withSubscriptions(answerFor(range))) : n === 2 ? json(answerFor(range)) : pending(),
@@ -698,6 +724,6 @@ describe("the loading placeholder's key-number boxes", () => {
     await choosePreset(root, app, da.presets.lastYear);
     expect(queryByRole(root, "group", { name: da.loading })).toBeNull();
     await choosePreset(root, app, da.presets.lastMonth);
-    expect(boxes(root)).toBe(3);
+    expect(boxes(root)).toBe(2);
   });
 });

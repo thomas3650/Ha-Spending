@@ -43,7 +43,7 @@ This spec changes D51 and the month days spec in these places; everything else t
 - The y-axis tick text is a small exported function, so it has a unit test (§4).
 - "retur" also goes in the bar's hidden button name, so the name and the tooltip still say the same (§4).
 - No average line on finer bars: the key numbers' average is a week's, a quarter's or a year's (§2).
-- This is D53.
+- This is D54.
 
 ## 1. When finer units show
 
@@ -170,13 +170,13 @@ This spec changes D51 and the month days spec in these places; everything else t
 
 ## 6. Docs
 
-- D53: a period with one unit draws finer units on the Søjler card and in the detail, decided by `finerUnits`: days
+- D54: a period with one unit draws finer units on the Søjler card and in the detail, decided by `finerUnits`: days
   for a week or a month, months for a quarter or a year, stepping again while there is still one unit, down to days.
   A preset that ends today ("Denne måned", "I år", "Alt") draws on to the earlier of its own last day and the end
   of its one unit, the units after today as empty slots. The grouping, the hash, the key numbers and the chosen unit
   stay the period's; a click on a finer bar chooses the period's unit. A bar below zero is named "+… kr.
   retur", and the y-axis ticks below zero have no sign. D51's status becomes `active; the detail's bars, the one-unit
-  Uge, Kvartal and År periods and the name below zero superseded by D53`.
+  Uge, Kvartal and År periods and the name below zero superseded by D54`.
 - `docs/README.md`: the new spec and its plan in the map.
 - `docs/mockups/README.md`: a section for `v6/`, with A chosen and B tried for the refund.
 - `docs/testing.md`: a Chrome-check item: a custom one-week period by Uge, a custom one-quarter period by Kvartal,

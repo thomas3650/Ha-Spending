@@ -105,16 +105,18 @@ The page's list. Every screenshot is at 1440×960 with the console free of error
     (largest spending first) and the other columns sorting by a click; the "+ Filter" panel open; a search nothing
     matches (`da.noMatch`). Compare `3-posteringer.png`.
 13. `23-soejle`, `24-soejle-kategori`: a click on a bar opens Posteringer for that month; press Forskel. A chosen month
-    with Forskel at all spending, then in Mad with a category chosen, with both chips. Compare `4-soejle.png`.
+    with Forskel at all spending, then in Mad with a category chosen, with both chips. With the month chosen, the key
+    numbers are the month's sum and the two object groups, with no ▲, ▼ or red. Compare `4-soejle.png`.
 14. `25-loading` (`FAKE_FIREFLY_FAULT=slow`), `26-refused` (`refused`), `27-unreachable` (`error`), `28-empty` (a period
     typed in Fra and Til in a year with no data).
 15. `29-ingen-regelgruppe`: `scripts/develop` with `HA_SPENDING_OPTIONS` pointing at a copy of `addon/dev/options.json`
     in `local/` whose `main_group_rule_group` names a group that does not exist. The page shows `da.noRuleGroup` once.
-16. `30-1024`: the window at 1024×960 (five key numbers in a row). The frame is 1024 px or wider, so the
-    halves sit side by side, equal ([D24](decisions.md)). The circle's names neither overlap nor are cut.
-17. `31-900`: the window at 900×960. The halves stack, and the five key numbers sit two by two.
+16. `30-1024`: the window at 1024×960 (the four key numbers in five columns, the end of the row empty). The frame
+    is 1024 px or wider, so the halves sit side by side, equal ([D24](decisions.md)). The circle's names neither overlap
+    nor are cut.
+17. `31-900`: the window at 900×960. The halves stack, and the four key numbers sit two by two.
 18. `32-420`: the window at 420×900. The circle's chart is narrower than 400 px, so Alt forbrug and Mad show their parts
-    as a list under the ring, with no names beside it and no name broken inside a word, and the five key
+    as a list under the ring, with no names beside it and no name broken inside a word, and the four key
     numbers stack ([D28](decisions.md)). Hover and Tab on a row bring its piece out; a click on a row chooses it, and
     the other rows fade.
 19. Back: three clicks, then back three times returns to the opening view.
@@ -157,8 +159,10 @@ The page's list. Every screenshot is at 1440×960 with the console free of error
     header is bold with its arrow; sorted by the date the groups return. Faste udgifter sorts inside each group, with
     Status ascending at the start. The card's sort survives a switch to Søjler and back, and is gone after a reload.
 31. `45-noegletal`: the first key number with "N posteringer →" at Alt forbrug, a main group, a category and a chosen
-    unit; a click opens Alle posteringer with no search or shop. The object group key numbers show the sum, the sum
-    per month and the count, and a click toggles the Faste udgifter card. Also at 1440, 1728, 1024, 900 and 420 px.
+    unit; a click opens Alle posteringer with no search or shop. The object group key numbers show the sum, the sum per
+    month and the count, and a click toggles the Faste udgifter card. Also at 1440, 1728, 1024, 900 and 420 px, with no
+    comparison card at any of them. At 1440 and 1728 px the cards are a fifth of the row wide and the end of the row is
+    empty, with and without a chosen unit.
 32. `46-objektgruppe-link`: the two object group key numbers with their "N posteringer →" links at Alt forbrug and at a
     main group; a click on each opens Alle posteringer with that object group's chip and only its postings, the count
     equal to the link's. Then the chip's ✕ and the "Faste udgifter" group in "+ Filter". At 1440 and 420 px.
