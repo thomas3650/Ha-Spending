@@ -5,6 +5,7 @@ import { fire } from "./chip";
 import { sortHeader } from "./sort-header";
 import { count, postingAmount, tableDate } from "../format";
 import { da } from "../i18n/da";
+import { textOnlyHit } from "../model/filter";
 import type { PostingGroup, PostingList, PostingRow } from "../model/postings";
 import { DEFAULT_STATE, type DetailKey, type PostingColumn, type Sort } from "../state/view";
 
@@ -107,7 +108,7 @@ export class Postings extends LitElement {
     >
       <td class="posting-date">${tableDate(p.date)}</td>
       <td title=${p.shop === null ? nothing : p.text}>
-        <button type="button" class="row-name" data-detail=${`p:${p.id}`}>${p.shop ?? p.text}</button>${mark}
+        <button type="button" class="row-name" data-detail=${`p:${p.id}`}>${p.shop ?? p.text}</button>${mark}${textOnlyHit(p, this.query) ? html`<span class="posting-bank-text">${p.text}</span>` : nothing}
       </td>
       ${this.showCategory
         ? html`<td>
@@ -243,6 +244,11 @@ export const postingsStyles = css`
   }
   .postings tr.posting:hover {
     background: var(--hs-soft);
+  }
+  .postings .posting-bank-text {
+    display: block;
+    font-size: 0.85em;
+    color: var(--hs-muted);
   }
   .postings .posting-dot {
     display: inline-block;

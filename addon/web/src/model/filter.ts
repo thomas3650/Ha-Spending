@@ -21,6 +21,12 @@ export function matches(p: Posting, search: string, shop: string | null): boolea
   return query === "" || fold(p.text).includes(query) || (p.shop !== null && fold(p.shop).includes(query));
 }
 
+/** A search that matched the bank's text but not the shop, so the row has to show why it is there. */
+export function textOnlyHit(p: Posting, search: string): boolean {
+  const query = fold(search);
+  return query !== "" && p.shop !== null && !fold(p.shop).includes(query) && fold(p.text).includes(query);
+}
+
 export function shopSuggestions(base: Posting[], search: string): ShopSuggestion[] {
   const query = fold(search);
   if (query === "") return [];

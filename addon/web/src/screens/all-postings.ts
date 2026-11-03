@@ -209,6 +209,7 @@ export class AllPostings extends LitElement {
     const list = postingList(postings, ctx.units, ctx, sort, categoryColours(ctx));
     return html`<hs-postings
       .list=${list}
+      .query=${ctx.state.search}
       .shop=${ctx.state.shop}
       .showCategory=${true}
       .grouping=${ctx.timeline.grouping}

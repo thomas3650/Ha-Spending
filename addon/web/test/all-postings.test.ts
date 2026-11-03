@@ -77,6 +77,20 @@ describe("screen 3, all postings", () => {
     expect(push).not.toHaveBeenCalled();
   });
 
+  it("shows the bank's text under a shop that only the text matched", async () => {
+    const { root } = await mount("view=all-postings&q=mobilepay");
+    const buttons = getAllByRole(root, "button", { name: "Pizzeria Roma" });
+    expect(buttons).toHaveLength(2);
+    for (const button of buttons) expect(button.closest("td")?.textContent).toContain("MOBILEPAY 1234");
+  });
+
+  it("shows no bank text under a shop that the search matched", async () => {
+    const { root } = await mount("view=all-postings&q=roma");
+    for (const button of getAllByRole(root, "button", { name: "Pizzeria Roma" })) {
+      expect(button.closest("td")?.textContent).not.toContain("MOBILEPAY");
+    }
+  });
+
   it("sorts by size as one flat list", async () => {
     const { root } = await mount(`${CAFE}&sort=largest`);
     expect(columnHeader(root, da.columns.amount).getAttribute("aria-sort")).toBe("descending");
