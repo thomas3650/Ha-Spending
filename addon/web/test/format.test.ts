@@ -94,7 +94,11 @@ describe("percent", () => {
     expect(signedPercent(0)).toBe(`0${nbsp}%`);
     expect(signedPercent(-0.003)).toBe(`-0,3${nbsp}%`);
     expect(signedPercent(0.0042)).toBe(`+0,4${nbsp}%`);
-    expect(signedPercent(-0.0002)).toBe("-under 0,1 %");
+    expect(signedPercent(-0.0002)).toBe(`-under 0,1${nbsp}%`);
+    expect(signedPercent(0.0005)).toBe(`+0,1${nbsp}%`);
+    expect(signedPercent(-0.0005)).toBe(`-0,1${nbsp}%`);
+    expect(signedPercent(0.00049)).toBe(`+under 0,1${nbsp}%`);
+    expect(signedPercent(-0.00049)).toBe(`-under 0,1${nbsp}%`);
   });
 });
 

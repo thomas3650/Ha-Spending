@@ -133,6 +133,7 @@ export const da = {
   noData: (name: string) => `ingen data for ${name}`,
   unitTotal: (name: string) => `${name} i alt`,
   levelInUnit: (level: string, name: string) => `${level} i ${name.toLowerCase()}`,
+  tinyChange: "under 0,1\u00a0%",
   vsAverage: "Mod gennemsnittet",
   vsAverageSub: (diff: string, avg: string, g: Grouping) => `${diff} mod ${avg} pr. ${da.groupings[g].one}`,
   up: "▲",
@@ -241,7 +242,6 @@ export const da = {
     perYear: "Om året",
     status: "Status",
   },
-  tinyChange: "under 0,1 %",
   nextOn: (date: string) => `næste ${date}`,
   noSubscriptions: (name: string) => `Ingen faste udgifter i ${name}`,
   subscriptionsFoot:

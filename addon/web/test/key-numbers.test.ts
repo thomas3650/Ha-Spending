@@ -7,6 +7,7 @@ import { comparisonLabel, count, kr } from "../src/format";
 import { da } from "../src/i18n/da";
 import { answerFor, SUBSCRIPTIONS, withSubscriptions } from "./fixture";
 import { json, mount, settle, unmount } from "./mount";
+import { KEEP_NBSP } from "./text";
 
 afterEach(unmount);
 
@@ -88,21 +89,21 @@ function septemberMoved(delta: number) {
 }
 
 describe("a small change in the comparison card", () => {
-  async function thirdCard(delta: number): Promise<string> {
+  async function thirdCard(delta: number): Promise<HTMLElement> {
     const { root } = await mount("", { answer: septemberMoved(delta) });
-    return getByRole(root, "group", { name: comparisonLabel(unitAt("2026-09-01", "month", "2026-10-30"), unitAt("2026-08-01", "month", "2026-10-30"), "month") }).textContent ?? "";
+    return getByRole(root, "group", { name: comparisonLabel(unitAt("2026-09-01", "month", "2026-10-30"), unitAt("2026-08-01", "month", "2026-10-30"), "month") });
   }
 
   it("shows one decimal when the change rounds to 0 %", async () => {
-    expect(await thirdCard(-3300)).toContain(`-0,3${nbsp}%`);
+    getByText(await thirdCard(-3300), `-0,3${nbsp}%`, KEEP_NBSP);
   });
 
   it("says under 0,1 % when the change is smaller than that", async () => {
-    expect(await thirdCard(-220)).toContain(`-${da.tinyChange}`);
+    getByText(await thirdCard(-220), `-${da.tinyChange}`, KEEP_NBSP);
   });
 
   it("shows 0 % when nothing changed", async () => {
-    expect(await thirdCard(0)).toContain(`0${nbsp}%`);
+    getByText(await thirdCard(0), `0${nbsp}%`, KEEP_NBSP);
   });
 });
 
