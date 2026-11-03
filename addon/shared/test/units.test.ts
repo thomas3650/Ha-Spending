@@ -89,9 +89,9 @@ describe("units", () => {
     expect(isOneUnit(thisYear, "month", today)).toBe(false);
   });
 
-  it("widens the range for the comparisons", () => {
-    expect(fetchRange(thisYear, "month", today)).toEqual({ start: "2025-12-01", end: "2026-10-30" });
-    expect(fetchRange(thisYear, "week", today)).toEqual({ start: "2025-12-22", end: "2026-10-30" });
+  it("widens a one-unit period by the 12 units before", () => {
+    expect(fetchRange(thisYear, "month", today)).toEqual({ start: "2026-01-01", end: "2026-10-30" });
+    expect(fetchRange(thisYear, "week", today)).toEqual({ start: "2025-12-29", end: "2026-10-30" });
     expect(fetchRange({ start: "2026-10-01", end: "2026-10-30" }, "month", today)).toEqual({
       start: "2025-10-01",
       end: "2026-10-30",

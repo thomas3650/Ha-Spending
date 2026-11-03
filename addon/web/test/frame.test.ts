@@ -92,7 +92,7 @@ async function pick(app: Parameters<typeof settle>[0], panel: HTMLElement, date:
 describe("the frame", () => {
   it("opens on I år by month with all accounts, asking for the widened range", async () => {
     const { root, fetch } = await mount("");
-    expect(fetch).toHaveBeenCalledWith("api/data?start=2025-12-01&end=2026-10-30", expect.anything());
+    expect(fetch).toHaveBeenCalledWith("api/data?start=2026-01-01&end=2026-10-30", expect.anything());
     expect(getByRole(root, "heading", { level: 1, name: da.allSpending })).toBeTruthy();
     getByRole(root, "button", { name: new RegExp(`${da.period}.*${da.presets.thisYear}`) });
     expect((getByRole(root, "combobox", { name: da.groupBy }) as HTMLSelectElement).value).toBe("month");
@@ -209,7 +209,7 @@ describe("the frame", () => {
   it("chooses a period from the dropdown", async () => {
     const { app, root, fetch } = await mount("");
     await choosePreset(root, app, da.presets.lastYear);
-    expect(fetch).toHaveBeenLastCalledWith("api/data?start=2024-12-01&end=2025-12-31", expect.anything());
+    expect(fetch).toHaveBeenLastCalledWith("api/data?start=2025-01-01&end=2025-12-31", expect.anything());
     expect(location.hash).toBe("#period=lastYear");
     expect(queryByRole(root, "group", { name: da.period })).toBeNull();
   });
@@ -292,8 +292,8 @@ describe("the frame", () => {
       answer: (range) => json(answerFor(range, TODAY)),
     });
     expect(fetch).toHaveBeenCalledTimes(2);
-    expect(fetch.mock.calls[0][0]).toBe("api/data?start=2025-12-01&end=2026-10-31");
-    expect(fetch.mock.calls[1][0]).toBe("api/data?start=2025-12-01&end=2026-10-30");
+    expect(fetch.mock.calls[0][0]).toBe("api/data?start=2026-01-01&end=2026-10-31");
+    expect(fetch.mock.calls[1][0]).toBe("api/data?start=2026-01-01&end=2026-10-30");
     getByRole(root, "button", { name: new RegExp(rangeText({ start: "2026-01-01", end: TODAY })) });
   });
 
@@ -303,13 +303,13 @@ describe("the frame", () => {
       answer: (range) => json(answerFor(range, addDays(range.end, -1))),
     });
     expect(fetch).toHaveBeenCalledTimes(2);
-    expect(fetch.mock.calls[0][0]).toBe("api/data?start=2025-12-01&end=2026-10-31");
-    expect(fetch.mock.calls[1][0]).toBe("api/data?start=2025-12-01&end=2026-10-30");
+    expect(fetch.mock.calls[0][0]).toBe("api/data?start=2026-01-01&end=2026-10-31");
+    expect(fetch.mock.calls[1][0]).toBe("api/data?start=2026-01-01&end=2026-10-30");
     getByRole(root, "button", { name: new RegExp(rangeText({ start: "2026-01-01", end: TODAY })) });
     getByText(firstCard(root), kr(11566012));
 
     await choosePreset(root, app, da.presets.lastYear);
-    expect(fetch.mock.calls[2][0]).toBe("api/data?start=2024-12-01&end=2025-12-31");
+    expect(fetch.mock.calls[2][0]).toBe("api/data?start=2025-01-01&end=2025-12-31");
     expect(fetch).toHaveBeenCalledTimes(4);
   });
 
@@ -318,7 +318,7 @@ describe("the frame", () => {
     await choosePreset(root, app, da.presets.all);
     expect(location.hash).toBe("#period=all");
     getByRole(root, "button", { name: new RegExp(rangeText({ start: EARLIEST, end: TODAY })) });
-    expect(fetch.mock.calls[1][0]).toBe(`api/data?start=2022-12-01&end=${TODAY}`);
+    expect(fetch.mock.calls[1][0]).toBe(`api/data?start=2023-01-01&end=${TODAY}`);
   });
 
   it("a hash with Alt asks for I år's range, then once for Alt's", async () => {
@@ -326,7 +326,7 @@ describe("the frame", () => {
     const url = (p: { start: string; end: string }) => `api/data?start=${p.start}&end=${p.end}`;
     expect(fetch).toHaveBeenCalledTimes(2);
     expect(fetch.mock.calls[0][0]).toBe(url(fetchRange({ start: "2026-01-01", end: TODAY }, "month", TODAY)));
-    expect(fetch.mock.calls[1][0]).toBe(`api/data?start=2022-12-01&end=${TODAY}`);
+    expect(fetch.mock.calls[1][0]).toBe(`api/data?start=2023-01-01&end=${TODAY}`);
     await settle(app);
     expect(fetch).toHaveBeenCalledTimes(2);
     getByRole(root, "button", { name: new RegExp(rangeText({ start: EARLIEST, end: TODAY })) });
@@ -344,7 +344,7 @@ describe("the frame", () => {
   it("Alt keeps a unit from an earlier year", async () => {
     const { app, fetch } = await mount("period=all&unit=2024-03-01", { answer: earliestAnswer });
     await settle(app);
-    expect(fetch.mock.calls[1][0]).toBe(`api/data?start=2022-12-01&end=${TODAY}`);
+    expect(fetch.mock.calls[1][0]).toBe(`api/data?start=2023-01-01&end=${TODAY}`);
     expect(location.hash).toContain("unit=2024-03-01");
   });
 
