@@ -140,7 +140,7 @@ describe("the detail on the normal page", () => {
 
   it("keeps the view switch and the full-screen button, and hides the chips, while open", async () => {
     const { app, root } = await mountLinked("group=Bolig&category=Husleje&card=postings");
-    const title = da.postingsOf("Husleje");
+    const title = da.postingsOf("Bolig");
     getByRole(region(root, title), "button", { name: da.remove("Husleje") });
     await click(app, rowButton(region(root, title), "Husleje", "2026-10-01"));
     const card = region(root, title);

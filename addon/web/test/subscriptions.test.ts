@@ -192,7 +192,7 @@ describe("the subscriptions card", () => {
 
   it("shows a category's subscriptions and its chip", async () => {
     const { root } = await mountWith("group=Mad&category=Café&card=subscriptions");
-    const region = card(root, "Faste udgifter i Café");
+    const region = card(root, "Faste udgifter i Mad");
     expect(rowNames(region)).toEqual(["Streaming"]);
     getByRole(region, "button", { name: da.remove("Café") });
   });
@@ -391,7 +391,7 @@ describe("the subscriptions card grouped", () => {
 
   it("has no group rows at a category", async () => {
     const { root } = await mountWith("group=Mad&category=Café&card=subscriptions");
-    const region = card(root, "Faste udgifter i Café");
+    const region = card(root, "Faste udgifter i Mad");
     expect(queryByRole(region, "rowheader")).toBeNull();
     expect(getAllByRole(region, "columnheader").map(text)).not.toContain("Kategori");
     expect(rowNames(region)).toEqual(["Streaming"]);
@@ -517,9 +517,9 @@ describe("sorting the subscriptions by their headers", () => {
 
   it("sorts one list at a category", async () => {
     const { app, root } = await mountWith("group=Bolig&category=Husleje&card=subscriptions");
-    expect(rowNames(card(root, "Faste udgifter i Husleje"))).toEqual(["Indboforsikring", "Husleje"]);
-    await sortBy(app, root, c.name, "Faste udgifter i Husleje");
-    expect(rowNames(card(root, "Faste udgifter i Husleje"))).toEqual(["Husleje", "Indboforsikring"]);
+    expect(rowNames(card(root, "Faste udgifter i Bolig"))).toEqual(["Indboforsikring", "Husleje"]);
+    await sortBy(app, root, c.name, "Faste udgifter i Bolig");
+    expect(rowNames(card(root, "Faste udgifter i Bolig"))).toEqual(["Husleje", "Indboforsikring"]);
   });
 
   it("Uden kategori sorts last both ways", async () => {

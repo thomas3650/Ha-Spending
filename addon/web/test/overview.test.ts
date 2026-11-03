@@ -119,6 +119,18 @@ describe("screen 1, all spending", () => {
     expect(location.hash).toBe("#card=postings&view=all-postings");
   });
 
+  it("orders the switch Søjler, Posteringer, Butikker, with no Forskel button without a chosen unit", async () => {
+    const { root } = await mount("");
+    const names = getAllByRole(viewSwitch(root), "button").map((b) => b.textContent?.trim());
+    expect(names).toEqual([da.bars, da.postings, da.shops]);
+  });
+
+  it("orders the switch Søjler, Posteringer, Butikker, Forskel with a chosen unit", async () => {
+    const { root } = await mount("unit=2026-07-01");
+    const names = getAllByRole(viewSwitch(root), "button").map((b) => b.textContent?.trim());
+    expect(names).toEqual([da.bars, da.postings, da.shops, da.difference]);
+  });
+
   it("keeps the grouping on the bars", async () => {
     const { app, root } = await mount("");
     const select = getByRole(root, "combobox", { name: da.groupBy }) as HTMLSelectElement;
@@ -293,7 +305,7 @@ describe("the search on Posteringer", () => {
 
   it("holds only the category's matching postings in the chosen unit", async () => {
     const { root } = await mount("group=Mad&category=Caf%C3%A9&unit=2026-07-01&card=postings&q=e");
-    const card = getByRole(root, "region", { name: da.postingsOf("Café") });
+    const card = getByRole(root, "region", { name: da.postingsOf("Mad") });
     expect(postingTexts(card)).toEqual(["Café Søde"]);
     summary(root, 1, 50000);
   });
