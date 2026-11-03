@@ -40,7 +40,7 @@ cards and on Alle posteringer ([D44](decisions.md)).
 - **The Firefly III client** (`addon/server/src/firefly/`) has a `get`, a `put` and a `post`. It pages through the
   answers and maps them to postings and subscriptions ([D12](decisions.md), [D15](decisions.md)). Only the sorter's
   `set_category` ([D29](decisions.md)) and the chat's `move_posting` ([D34](decisions.md)) call `put`, and `post` only
-  to make a shop's expense account ([D32](decisions.md)).
+  to make a shop's expense account ([D32](decisions.md)) or a refund's revenue account ([D50](decisions.md)).
 - **The sorter's endpoint** (`addon/server/src/sorter/`) is a second Hono app on port 8100, started only when
   `sorter_key` is set ([D29](decisions.md)): `http.ts` holds the key check and MCP's JSON-RPC, `tools.ts` the tools
   `start` and `set_category` and their limits, and `chat.ts` the chat's tools `find_postings`, `get_posting`,

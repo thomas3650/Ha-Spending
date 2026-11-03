@@ -7,10 +7,14 @@ const cents = new Intl.NumberFormat("da-DK", {
   minimumFractionDigits: 2,
   maximumFractionDigits: 2,
 });
-const oneDecimal = new Intl.NumberFormat("da-DK", { maximumFractionDigits: 1 });
 const percentFormat = new Intl.NumberFormat("da-DK", {
   style: "percent",
   maximumFractionDigits: 0,
+});
+const percentOneDecimal = new Intl.NumberFormat("da-DK", {
+  style: "percent",
+  minimumFractionDigits: 1,
+  maximumFractionDigits: 1,
 });
 const tableDateFormat = new Intl.DateTimeFormat("da-DK", {
   timeZone: "UTC",
@@ -65,10 +69,23 @@ export function signedKr(ore: number): string {
   return `${ore < 0 ? "-" : "+"}${text} ${da.kr}`;
 }
 
-/** The range is in whole kroner, not øre. */
 export function amountChip(range: AmountRange): string {
-  const text = (kroner: number | null) => (kroner === null ? null : whole.format(kroner));
+  const text = (ore: number | null) => {
+    if (ore === null) return null;
+    return ore % 100 === 0 ? whole.format(ore / 100) : cents.format(ore / 100);
+  };
   return da.amountChip(text(range.min), text(range.max));
+}
+
+/**
+ * Øre from "1000", "1.000", "1000,50", "1.000,50" or "0,5": a dot groups thousands, a comma starts one or two
+ * decimals. Read from the digits as text, so no floating point touches the amount.
+ */
+export function parseDanishAmount(text: string): number | null {
+  const match = /^(\d{1,3}(?:\.\d{3})+|\d+)(?:,(\d{1,2}))?$/.exec(text.trim());
+  if (match === null) return null;
+  const ore = Number(match[1].replaceAll(".", "") + (match[2] ?? "").padEnd(2, "0"));
+  return Number.isSafeInteger(ore) ? ore : null;
 }
 
 export function postingAmount(ore: number): string {
@@ -93,14 +110,16 @@ export function percent(fraction: number): string {
 }
 
 export function signedPercent(fraction: number): string {
+  const sign = fraction < 0 ? "-" : "+";
   const text = percentFormat.format(Math.abs(fraction));
-  if (isZero(text)) return text;
-  return `${fraction < 0 ? "-" : "+"}${text}`;
+  if (!isZero(text)) return `${sign}${text}`;
+  if (fraction === 0) return text;
+  if (Math.abs(fraction) < 0.0005) return `${sign}${da.tinyChange}`;
+  return `${sign}${percentOneDecimal.format(Math.abs(fraction))}`;
 }
 
 export function axisKr(ore: number): string {
-  const amount = ore / 100;
-  return Math.abs(amount) >= 1000 ? `${oneDecimal.format(amount / 1000)}k` : whole.format(amount);
+  return whole.format(ore / 100);
 }
 
 export function tableDate(date: string): string {
@@ -213,8 +232,8 @@ export function shortDate(date: string, today: string): string {
   return year === parts(today).year ? text : `${text} ${year}`;
 }
 
-/** Both whole, or both with øre, so a rise of a few øre never reads as two equal amounts. */
+/** Whole kroner like the Beløb column, or both with øre when whole kroner would make the two read the same. */
 export function stepAmounts(max: number, paid: number): [string, string] {
-  const format = max % 100 === 0 && paid % 100 === 0 ? whole : cents;
-  return [format.format(max / 100), format.format(paid / 100)];
+  const wholes: [string, string] = [whole.format(max / 100), whole.format(paid / 100)];
+  return wholes[0] === wholes[1] ? [cents.format(max / 100), cents.format(paid / 100)] : wholes;
 }

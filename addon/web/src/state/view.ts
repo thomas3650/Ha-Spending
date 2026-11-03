@@ -22,7 +22,7 @@ export interface Sorted<C extends string> {
 
 export type Sort = Sorted<PostingColumn>;
 
-/** Whole kroner, both bounds included. */
+/** Whole øre, both bounds included. */
 export interface AmountRange {
   min: number | null;
   max: number | null;
@@ -126,15 +126,23 @@ function parseLevel(p: URLSearchParams): Level {
   return { kind: "category", mainGroup: mainGroup || null, category: category || null };
 }
 
-/** Whole kroner as digits only, so "1e3" or "4.5" is refused. */
-export function parseKroner(value: string | null): number | null {
-  const n = value !== null && /^\d+$/.test(value) ? Number(value) : null;
-  return n !== null && Number.isSafeInteger(n) ? n : null;
+/** The hash's kroner, with a dot and one or two digits for øre (D47), read by string so "1e3" is refused. */
+function readKroner(value: string | null): number | null {
+  const match = value === null ? null : /^(\d+)(?:\.(\d{1,2}))?$/.exec(value);
+  if (match === null) return null;
+  const ore = Number(match[1] + (match[2] ?? "").padEnd(2, "0"));
+  return Number.isSafeInteger(ore) ? ore : null;
+}
+
+function writeKroner(ore: number): string {
+  const cents = ore % 100;
+  const kroner = (ore - cents) / 100;
+  return cents === 0 ? String(kroner) : `${kroner}.${String(cents).padStart(2, "0")}`;
 }
 
 function parseAmount(p: URLSearchParams): AmountRange | null {
-  const min = parseKroner(p.get("min"));
-  const max = parseKroner(p.get("max"));
+  const min = readKroner(p.get("min"));
+  const max = readKroner(p.get("max"));
   if (min === null && max === null) return null;
   if (min !== null && max !== null && min > max) return null;
   return { min, max };
@@ -194,8 +202,8 @@ export function toHash(s: ViewState): string {
   if (s.screen === "allPostings") {
     const sort = sameSort(s.sort, DEFAULT_STATE.sort) ? undefined : sortName(s.sort);
     if (sort !== undefined) p.set("sort", sort);
-    if (s.amount?.min != null) p.set("min", String(s.amount.min));
-    if (s.amount?.max != null) p.set("max", String(s.amount.max));
+    if (s.amount?.min != null) p.set("min", writeKroner(s.amount.min));
+    if (s.amount?.max != null) p.set("max", writeKroner(s.amount.max));
     if (s.objectGroup !== null) p.set("og", s.objectGroup);
   }
   if (s.detail !== null) p.set("detail", `${s.detail.kind === "subscription" ? "s" : "p"}:${s.detail.id}`);

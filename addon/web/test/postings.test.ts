@@ -343,13 +343,13 @@ describe("sorting the postings by their headers", () => {
     expect(queryAllByRole(table(root), "rowheader")).toEqual([]);
     expect(amounts(root)[0]).toBe(postingAmount(800000));
     expect(getAllByRole(rows(root)[0], "cell")[0].textContent?.trim()).toBe(tableDate("2026-10-01"));
-    expect(header(root, da.columns.amount).getAttribute("aria-sort")).toBe("descending");
+    expect(header(root, da.columns.amount).getAttribute("aria-sort")).toBe("ascending");
     expect(header(root, da.columns.unitAndDate("month")).hasAttribute("aria-sort")).toBe(false);
 
     await sortBy(app, root, da.columns.amount);
     expect(amounts(root)[0]).toBe(postingAmount(-20000));
     expect(amounts(root).at(-1)).toBe(postingAmount(800000));
-    expect(header(root, da.columns.amount).getAttribute("aria-sort")).toBe("ascending");
+    expect(header(root, da.columns.amount).getAttribute("aria-sort")).toBe("descending");
   });
 
   it("the date gives the groups back", async () => {
@@ -414,7 +414,7 @@ describe("sorting the postings by their headers", () => {
     expect(queryByRole(root, "table")).toBeNull();
     fireEvent.click(getByRole(views, "button", { name: da.postings }));
     await settle(app);
-    expect(header(root, da.columns.amount).getAttribute("aria-sort")).toBe("descending");
+    expect(header(root, da.columns.amount).getAttribute("aria-sort")).toBe("ascending");
     expect(amounts(root)[0]).toBe(postingAmount(800000));
 
     fireEvent.click(getByRole(root, "button", { name: da.showAll }));
@@ -423,7 +423,7 @@ describe("sorting the postings by their headers", () => {
     await settle(app);
     fireEvent.click(getByRole(getByRole(root, "group", { name: da.view }), "button", { name: da.postings }));
     await settle(app);
-    expect(header(root, da.columns.amount).getAttribute("aria-sort")).toBe("descending");
+    expect(header(root, da.columns.amount).getAttribute("aria-sort")).toBe("ascending");
     expect(amounts(root)[0]).toBe(postingAmount(800000));
   });
 

@@ -1,5 +1,5 @@
 import { type ClassifiedPosting, type Period, type Posting, unitAt } from "@ha-spending/shared";
-import { fireEvent, getAllByRole, getByRole, getByText, queryAllByRole, queryByRole, within } from "@testing-library/dom";
+import { fireEvent, getAllByRole, getByRole, getByText, queryAllByRole, queryByRole, queryByText, within } from "@testing-library/dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { amountChip, count, kr, postingAmount, tableDate, unitName } from "../src/format";
@@ -77,9 +77,23 @@ describe("screen 3, all postings", () => {
     expect(push).not.toHaveBeenCalled();
   });
 
+  it("shows the bank's text under a shop that only the text matched", async () => {
+    const { root } = await mount("view=all-postings&q=mobilepay");
+    const buttons = getAllByRole(root, "button", { name: "Pizzeria Roma" });
+    expect(buttons).toHaveLength(2);
+    for (const button of buttons) expect(button.closest("td")?.textContent).toContain("MOBILEPAY 1234");
+  });
+
+  it("shows no bank text under a shop that the search matched", async () => {
+    const { root } = await mount("view=all-postings&q=roma");
+    for (const button of getAllByRole(root, "button", { name: "Pizzeria Roma" })) {
+      expect(button.closest("td")?.textContent).not.toContain("MOBILEPAY");
+    }
+  });
+
   it("sorts by size as one flat list", async () => {
     const { root } = await mount(`${CAFE}&sort=largest`);
-    expect(columnHeader(root, da.columns.amount).getAttribute("aria-sort")).toBe("descending");
+    expect(columnHeader(root, da.columns.amount).getAttribute("aria-sort")).toBe("ascending");
     const table = getByRole(root, "table");
     expect(groupButtons(root)).toEqual([]);
     const rows = getAllByRole(table, "row").slice(1);
@@ -125,7 +139,7 @@ describe("screen 3, all postings", () => {
 
   it("an old link with sort=smallest sorts by Beløb, smallest first", async () => {
     const { root } = await mount(`${CAFE}&sort=smallest`);
-    expect(columnHeader(root, da.columns.amount).getAttribute("aria-sort")).toBe("ascending");
+    expect(columnHeader(root, da.columns.amount).getAttribute("aria-sort")).toBe("descending");
     expect(groupButtons(root)).toEqual([]);
     const amounts = getAllByRole(getByRole(root, "table"), "row")
       .slice(1)
@@ -190,12 +204,12 @@ describe("screen 3, all postings", () => {
     const { app, root } = await mount(CAFE);
     await openFilter(app, root);
     const part = getByRole(root, "group", { name: da.amountFilter });
-    fireEvent.input(getByRole(part, "spinbutton", { name: da.from }), { target: { value: "400" } });
-    fireEvent.input(getByRole(part, "spinbutton", { name: da.to }), { target: { value: "600" } });
+    fireEvent.input(getByRole(part, "textbox", { name: da.from }), { target: { value: "400" } });
+    fireEvent.input(getByRole(part, "textbox", { name: da.to }), { target: { value: "600" } });
     fireEvent.click(getByRole(part, "button", { name: da.add }));
     await settle(app);
     summary(root, 1, 50000);
-    fireEvent.click(chip(root, amountChip({ min: 400, max: 600 })));
+    fireEvent.click(chip(root, amountChip({ min: 40000, max: 60000 })));
     await settle(app);
     summary(root, 4, 131012);
   });
@@ -285,15 +299,103 @@ describe("screen 3, all postings", () => {
     expect(getByRole(root, "button", { name: da.addFilter }).getAttribute("aria-expanded")).toBe("false");
   });
 
-  it("refuses an amount that is not whole kroner", async () => {
+  it("says how to write an amount it cannot read, adds nothing and stays open", async () => {
+    for (const text of ["1e3", "1,5,0", "1.00", "1,505", "abc"]) {
+      const { app, root } = await mount(CAFE);
+      await openFilter(app, root);
+      const part = getByRole(root, "group", { name: da.amountFilter });
+      fireEvent.input(getByRole(part, "textbox", { name: da.from }), { target: { value: text } });
+      fireEvent.click(getByRole(part, "button", { name: da.add }));
+      await settle(app);
+      const field = getByRole(part, "textbox", { name: da.from, description: da.amountInvalid });
+      expect(field.getAttribute("aria-invalid")).toBe("true");
+      expect(getByRole(part, "textbox", { name: da.to }).hasAttribute("aria-invalid")).toBe(false);
+      expect(getByRole(root, "button", { name: da.addFilter }).getAttribute("aria-expanded")).toBe("true");
+      summary(root, 4, 131012);
+      expect(queryAllByRole(root, "button", { name: (name) => name.startsWith(da.remove(da.amountFilter)) })).toEqual([]);
+      expect(new URLSearchParams(location.hash.slice(1)).has("min")).toBe(false);
+      unmount();
+    }
     const { app, root } = await mount(CAFE);
     await openFilter(app, root);
     const part = getByRole(root, "group", { name: da.amountFilter });
-    fireEvent.input(getByRole(part, "spinbutton", { name: da.from }), { target: { value: "1e3" } });
+    fireEvent.input(getByRole(part, "textbox", { name: da.to }), { target: { value: "1,505" } });
     fireEvent.click(getByRole(part, "button", { name: da.add }));
     await settle(app);
-    summary(root, 4, 131012);
-    expect(new URLSearchParams(location.hash.slice(1)).has("min")).toBe(false);
+    const to = getByRole(part, "textbox", { name: da.to, description: da.amountInvalid });
+    expect(to.getAttribute("aria-invalid")).toBe("true");
+    expect(getByRole(part, "textbox", { name: da.from }).hasAttribute("aria-invalid")).toBe(false);
+    expect(hashParam("max")).toBeNull();
+  });
+
+  it("a field that read at its blur is not judged while the next text is typed", async () => {
+    const { app, root } = await mount(CAFE);
+    await openFilter(app, root);
+    const part = getByRole(root, "group", { name: da.amountFilter });
+    const to = getByRole(part, "textbox", { name: da.to });
+    fireEvent.input(to, { target: { value: "1" } });
+    fireEvent.blur(to);
+    fireEvent.input(to, { target: { value: "abc" } });
+    await settle(app);
+    expect(to.hasAttribute("aria-invalid")).toBe(false);
+  });
+
+  it("judges a field when it loses the focus, and again only at the next blur once it reads", async () => {
+    const { app, root } = await mount(CAFE);
+    await openFilter(app, root);
+    const part = getByRole(root, "group", { name: da.amountFilter });
+    const to = getByRole(part, "textbox", { name: da.to });
+    fireEvent.input(to, { target: { value: "abc" } });
+    await settle(app);
+    expect(to.hasAttribute("aria-invalid")).toBe(false);
+    fireEvent.blur(to);
+    await settle(app);
+    getByRole(part, "textbox", { name: da.to, description: da.amountInvalid });
+    expect(to.getAttribute("aria-invalid")).toBe("true");
+    fireEvent.input(to, { target: { value: "1" } });
+    await settle(app);
+    expect(to.hasAttribute("aria-invalid")).toBe(false);
+    fireEvent.input(to, { target: { value: "1." } });
+    await settle(app);
+    expect(to.hasAttribute("aria-invalid")).toBe(false);
+    fireEvent.blur(to);
+    await settle(app);
+    expect(to.getAttribute("aria-invalid")).toBe("true");
+  });
+
+  it("swaps Fra and Til when Fra is the greater", async () => {
+    const { app, root } = await mount(CAFE);
+    await openFilter(app, root);
+    const part = getByRole(root, "group", { name: da.amountFilter });
+    fireEvent.input(getByRole(part, "textbox", { name: da.from }), { target: { value: "1.000,50" } });
+    fireEvent.input(getByRole(part, "textbox", { name: da.to }), { target: { value: "200" } });
+    fireEvent.click(getByRole(part, "button", { name: da.add }));
+    await settle(app);
+    chip(root, amountChip({ min: 20000, max: 100050 }));
+    expect(hashParam("min")).toBe("200");
+    expect(hashParam("max")).toBe("1000.50");
+  });
+
+  it("takes a Danish amount, drops the message once the field is right, and keeps øre in the hash", async () => {
+    const { app, root } = await mount(CAFE);
+    await openFilter(app, root);
+    const part = getByRole(root, "group", { name: da.amountFilter });
+    const to = getByRole(part, "textbox", { name: da.to });
+    expect(to.getAttribute("inputmode")).toBe("decimal");
+    fireEvent.input(to, { target: { value: "1.00" } });
+    fireEvent.click(getByRole(part, "button", { name: da.add }));
+    await settle(app);
+    expect(to.getAttribute("aria-invalid")).toBe("true");
+    fireEvent.input(to, { target: { value: "1.000,50" } });
+    await settle(app);
+    expect(to.hasAttribute("aria-invalid")).toBe(false);
+    expect(queryByRole(part, "textbox", { name: da.to, description: da.amountInvalid })).toBeNull();
+    fireEvent.input(getByRole(part, "textbox", { name: da.from }), { target: { value: " 0 " } });
+    fireEvent.click(getByRole(part, "button", { name: da.add }));
+    await settle(app);
+    chip(root, amountChip({ min: 0, max: 100050 }));
+    expect(hashParam("min")).toBe("0");
+    expect(hashParam("max")).toBe("1000.50");
   });
 });
 
@@ -408,6 +510,60 @@ describe("the object group on Alle posteringer", () => {
     summary(root, 1, 300000);
   });
 
+  it("the filter menu is searched case-insensitively and Beløb stays", async () => {
+    const { app, root } = await mount("view=all-postings", { answer: twoGroups });
+    await openFilter(app, root);
+    const search = getByRole(root, "textbox", { name: da.filterSearch });
+    expect((app.shadowRoot as ShadowRoot).activeElement).toBe(search);
+    fireEvent.input(search, { target: { value: "HUSLE" } });
+    await settle(app);
+    const categories = getByRole(root, "group", { name: da.categories });
+    expect(getAllByRole(categories, "button").map((b) => b.textContent?.trim())).toEqual(["Husleje"]);
+    expect(queryByRole(root, "group", { name: da.mainGroups })).toBeNull();
+    expect(queryByRole(root, "group", { name: da.subscriptions })).toBeNull();
+    getByRole(root, "group", { name: da.amountFilter });
+    expect(queryByText(root, da.noFilterHits)).toBeNull();
+  });
+
+  it("the filter menu narrows the object groups too", async () => {
+    const { app, root } = await mount("view=all-postings", { answer: twoGroups });
+    await openFilter(app, root);
+    fireEvent.input(getByRole(root, "textbox", { name: da.filterSearch }), { target: { value: "åbne" } });
+    await settle(app);
+    expect(getAllByRole(objectGroupPart(root), "button").map((b) => b.textContent?.trim())).toEqual(["Åbne aftaler"]);
+  });
+
+  it("the filter menu says when no filter fits", async () => {
+    const { app, root } = await mount("view=all-postings");
+    await openFilter(app, root);
+    fireEvent.input(getByRole(root, "textbox", { name: da.filterSearch }), { target: { value: "xyzzy" } });
+    await settle(app);
+    getByText(root, da.noFilterHits);
+    expect(queryByRole(root, "group", { name: da.categories })).toBeNull();
+    expect(queryByRole(root, "group", { name: da.mainGroups })).toBeNull();
+    getByRole(root, "group", { name: da.amountFilter });
+  });
+
+  it("the filter menu lists Beløb, the object groups, Hovedgrupper, Kategorier in that order", async () => {
+    const { app, root } = await mount("view=all-postings", { answer: twoGroups });
+    await openFilter(app, root);
+    const names = getAllByRole(root, "heading", { level: 3 }).map((h) => h.textContent?.trim());
+    expect(names).toEqual([da.amountFilter, da.subscriptions, da.mainGroups, da.categories]);
+  });
+
+  it("the filter search is empty when the menu opens again", async () => {
+    const { app, root } = await mount("view=all-postings");
+    await openFilter(app, root);
+    fireEvent.input(getByRole(root, "textbox", { name: da.filterSearch }), { target: { value: "bil" } });
+    await settle(app);
+    fireEvent.click(getByRole(root, "button", { name: da.addFilter }));
+    await settle(app);
+    await openFilter(app, root);
+    const search = getByRole(root, "textbox", { name: da.filterSearch }) as HTMLInputElement;
+    expect(search.value).toBe("");
+    getByRole(root, "group", { name: da.categories });
+  });
+
   it("an unknown og gives da.noMatch with the chip and its one option", async () => {
     const first = await mount("view=all-postings&period=lastYear");
     await openFilter(first.app, first.root);
@@ -435,11 +591,11 @@ function contextFor(postings: ClassifiedPosting[]) {
 }
 
 describe("the filter rules", () => {
-  it("keeps an amount within the range in whole kroner, both bounds included", () => {
-    expect(inAmount(posting("a", "2026-01-01", 40000), { min: 400, max: 600 })).toBe(true);
-    expect(inAmount(posting("a", "2026-01-01", 60000), { min: 400, max: 600 })).toBe(true);
-    expect(inAmount(posting("a", "2026-01-01", 39999), { min: 400, max: null })).toBe(false);
-    expect(inAmount(posting("a", "2026-01-01", 60001), { min: null, max: 600 })).toBe(false);
+  it("keeps an amount within the range in øre, both bounds included", () => {
+    expect(inAmount(posting("a", "2026-01-01", 40000), { min: 40000, max: 60000 })).toBe(true);
+    expect(inAmount(posting("a", "2026-01-01", 60000), { min: 40000, max: 60000 })).toBe(true);
+    expect(inAmount(posting("a", "2026-01-01", 39999), { min: 40000, max: null })).toBe(false);
+    expect(inAmount(posting("a", "2026-01-01", 60001), { min: null, max: 60000 })).toBe(false);
     expect(inAmount(posting("a", "2026-01-01", -20000), null)).toBe(true);
   });
 

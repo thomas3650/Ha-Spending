@@ -1,8 +1,8 @@
 import { toOre } from "../firefly/amount";
 import { type FireflyClient, FireflyError, getAllPages } from "../firefly/client";
 import { readMainGroups } from "../firefly/read";
+import { EXPENSE, REVENUE, type WireCategory, type WireGroup, type WireSplit } from "../firefly/wire";
 import { logger } from "../log";
-import { EXPENSE, type WireCategory, type WireGroup, type WireSplit } from "../firefly/wire";
 import { byCodePoint, cleanShop, NO_SHOP, sameShop } from "./shop";
 
 export interface SorterSettings {
@@ -140,7 +140,7 @@ export async function readAccounts(
   });
 }
 
-/** The only accounts a shop is written to. Every other account's name is taken. */
+/** The shops `start` lists: the purchases' accounts. */
 const isShop = (account: AccountInfo) => account.type === "expense" && account.active;
 
 /** For comparing an account's name with a shop's, also a name `cleanShop` would refuse. */
@@ -346,6 +346,19 @@ export async function readPosting(
   return split === undefined ? null : { group, split };
 }
 
+/** A purchase's shop is an expense account, a refund's a revenue account. */
+type ShopType = "expense" | "revenue";
+
+const isActive = (type: ShopType) => (account: AccountInfo) => account.type === type && account.active;
+
+const sameName = (accounts: AccountInfo[], name: string) =>
+  accounts.filter((a) => sameShop(tidy(a.name)) === sameShop(name));
+
+/** The exact name, else the same name in other case, the first in code-point order. */
+const pick = (accounts: AccountInfo[], name: string) =>
+  accounts.find((a) => tidy(a.name) === name) ??
+  [...accounts].sort((a, b) => byCodePoint(tidy(a.name), tidy(b.name)))[0];
+
 /**
  * The account to write as the posting's shop, or why not. A new shop's account is made here and joins `accounts`, the
  * call's list, so a later posting in the call with the same name gets the same account.
@@ -357,27 +370,38 @@ async function shopAccount(
   raw: string,
   signal: AbortSignal,
 ): Promise<AccountInfo | ShopRefusal> {
-  if (split.type !== "withdrawal") return "not-withdrawal";
+  let type: ShopType;
   // A shop set by hand is never overwritten.
-  if (split.destination_type !== EXPENSE || split.destination_name !== NO_SHOP) return "has-shop";
-  const name = cleanShop(raw);
+  if (split.type === "withdrawal") {
+    if (split.destination_type !== EXPENSE || split.destination_name !== NO_SHOP) return "has-shop";
+    type = "expense";
+  } else if (split.type === "deposit") {
+    if (split.source_type !== REVENUE || split.source_name !== NO_SHOP) return "has-shop";
+    type = "revenue";
+  } else {
+    return "not-withdrawal";
+  }
+  let name = cleanShop(raw);
   if (name === null) return "bad-shop-name";
-  const same = accounts.filter((a) => sameShop(tidy(a.name)) === sameShop(name));
-  // A withdrawal written to a liability would book a purchase as a debt payment.
-  if (!same.every(isShop)) return "name-taken";
-  const found =
-    same.find((a) => tidy(a.name) === name) ?? same.sort((a, b) => byCodePoint(tidy(a.name), tidy(b.name)))[0];
+  // A purchase's expense account and a refund's revenue account are the same shop, and may share its name.
+  const other: ShopType = type === "expense" ? "revenue" : "expense";
+  const same = sameName(accounts, name).filter((a) => a.type !== other);
+  // A posting written to a liability would book a purchase or a refund as a debt payment.
+  if (!same.every(isActive(type))) return "name-taken";
+  const found = pick(same, name);
   if (found !== undefined) return found;
+  // A new account takes the spelling of the shop's account of the other type, so the page sums the two as one shop.
+  name = tidy(pick(sameName(accounts, name).filter(isActive(other)), name)?.name ?? name);
 
   type Made = { data?: { id?: unknown; attributes?: { type?: unknown; active?: unknown } } };
-  const answer = (await client.post("accounts", { name, type: "expense" }, signal)) as Made;
+  const answer = (await client.post("accounts", { name, type }, signal)) as Made;
   const id = answer.data?.id;
   const made = answer.data?.attributes;
-  // Firefly III takes any account's id as a withdrawal's destination, so only an active expense account is written.
-  if (typeof id !== "string" || id === "" || made?.type !== "expense" || made.active !== true) {
+  // Firefly III takes any account's id as either end of a posting, so only an active account of the type is written.
+  if (typeof id !== "string" || id === "" || made?.type !== type || made.active !== true) {
     throw new FireflyError("unreachable");
   }
-  const account = { id, name, type: "expense", active: true };
+  const account = { id, name, type, active: true };
   accounts.push(account);
   return account;
 }
@@ -418,12 +442,13 @@ async function assign(
   const tags = [...(split.tags ?? []).filter((t) => !catalog.mainGroupTags.has(t)), category.group];
   const shop =
     assignment.shop === undefined ? undefined : await shopAccount(client, accounts, split, assignment.shop, signal);
-  const destination = typeof shop === "object" ? { destination_id: shop.id } : {};
+  const counterparty =
+    typeof shop !== "object" ? {} : split.type === "withdrawal" ? { destination_id: shop.id } : { source_id: shop.id };
   await client.put(
     `transactions/${encodeURIComponent(group.id)}`,
     {
       // Firefly III's rules would otherwise run on the update and could change more than the category, the tags and
-      // the destination.
+      // the shop.
       apply_rules: false,
       // Firefly III refuses a split group's update without its title.
       ...(group.attributes.transactions.length > 1 ? { group_title: group.attributes.group_title } : {}),
@@ -434,7 +459,7 @@ async function assign(
               transaction_journal_id: s.transaction_journal_id,
               category_id: String(assignment.category_id),
               tags,
-              ...destination,
+              ...counterparty,
             }
           : { transaction_journal_id: s.transaction_journal_id },
       ),
@@ -550,11 +575,13 @@ export function createSorterTools(
       "the shop, at most 60 characters, as one of start's shops when it is one of them. Each posting is read again " +
       "before it is written, and refused with a reason when it is no longer in the inbox, is a transfer, was not " +
       "given out by start in the last 30 minutes, has another amount, or when the category is not one to choose. " +
-      "The shop is written only on a withdrawal whose shop is (no name): when the posting is not a withdrawal, has a " +
-      "shop already, or the name is not allowed or is an account's that is not a shop, the category is still " +
-      "written and the result has shop_refused. A shop with no account of that name gets a new expense account. " +
-      "The result's shop is the name as written, which may be an existing shop's spelling. Only the category, its " +
-      "main group's tag and the shop are written. On not-given-out, call start again.",
+      "The shop is written only on a withdrawal or a deposit whose shop is (no name): when the posting has a shop " +
+      "already, or the name is not allowed or is an account's that is not a shop, the category is still written and " +
+      "the result has shop_refused. A refund is a deposit such as \"VD <shop>\" or \"Retur <shop>\": give it the " +
+      "same shop as the purchases at that shop. A purchase's shop with no account of that name gets a new " +
+      "expense account, a refund's a new revenue account. The result's shop is the name as written, which may be an " +
+      "existing shop's spelling. Only the category, its main group's tag and the shop are written. On " +
+      "not-given-out, call start again.",
     inputSchema: {
       type: "object",
       properties: {

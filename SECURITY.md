@@ -12,7 +12,8 @@ Please report it privately through GitHub's security advisories:
 - The add-on keeps a file of shop names, the shops hidden from the Butikker card, in its `/data`. The page writes it
   through `POST /api/hidden-shops`; it holds nothing else.
 - The page never writes to Firefly III. Only the sorter's endpoint writes: a posting's category, its main group's tag
-  and a withdrawal's shop, and it may make expense accounts; for the chat's `move_posting` also the tag `moved_tag` and
-  one more line of the posting's notes ([`addon/DOCS.md`](addon/DOCS.md#the-sorters-endpoint)).
+  and its shop (a withdrawal's or a refund's), and it may make expense and revenue accounts; for the chat's
+  `move_posting` also the tag `moved_tag` and one more line of the posting's notes
+  ([`addon/DOCS.md`](addon/DOCS.md#the-sorters-endpoint)).
 - Port 8099 answers only requests that come through Home Assistant's ingress. Port 8100, on only when `sorter_key` is
   set, answers only requests with that key, compared in constant time. The add-on publishes no port.

@@ -169,6 +169,7 @@ export class Bars extends LitElement {
     const anyChosen = this.chosen !== null;
     const items = this.items;
     const running = items.findIndex((i) => i.running);
+    const hasNegative = items.some((i) => i.amount < 0);
     return {
       textStyle: { fontFamily: token("--hs-font") },
       grid: { left: 8, right: this.average === null ? 8 : AVERAGE_ROOM, top: 16, bottom: 8, containLabel: true },
@@ -202,7 +203,15 @@ export class Bars extends LitElement {
       yAxis: {
         type: "value",
         splitNumber: 4,
-        axisLabel: { color: muted, fontSize: 11, formatter: (value: number) => axisKr(value) },
+        // Below zero the axis stops a margin past the lowest bar, not at the next round step.
+        min: (range: { min: number; max: number }) =>
+          range.min < 0 ? range.min - 0.1 * (Math.max(range.max, 0) - range.min) : 0,
+        axisLabel: {
+          color: muted,
+          fontSize: 11,
+          formatter: (value: number) => axisKr(value),
+          showMinLabel: !hasNegative,
+        },
         splitLine: { lineStyle: { color: token("--hs-grid") } },
       },
       series: [

@@ -9,6 +9,7 @@ import {
   detailKr,
   kr,
   longDate,
+  parseDanishAmount,
   parseTypedDate,
   partLabel,
   percent,
@@ -44,10 +45,27 @@ describe("money", () => {
     expect(postingAmount(-20000)).toBe("+200,00");
     expect(postingAmount(1131012)).toBe("-11.310,12");
   });
-  it("words an amount range in whole kroner", () => {
-    expect(amountChip({ min: 1000, max: 2500 })).toBe("Beløb: 1.000–2.500 kr.");
-    expect(amountChip({ min: 100, max: null })).toBe("Beløb: fra 100 kr.");
-    expect(amountChip({ min: null, max: 500 })).toBe("Beløb: til 500 kr.");
+  it("words an amount range in øre, whole kroner without decimals and øre with two", () => {
+    expect(amountChip({ min: 100000, max: 250000 })).toBe("Beløb: 1.000–2.500 kr.");
+    expect(amountChip({ min: 10000, max: null })).toBe("Beløb: fra 100 kr.");
+    expect(amountChip({ min: null, max: 50000 })).toBe("Beløb: til 500 kr.");
+    expect(amountChip({ min: 20000, max: 100050 })).toBe("Beløb: 200–1.000,50 kr.");
+    expect(amountChip({ min: 0, max: null })).toBe("Beløb: fra 0 kr.");
+  });
+  it("reads a Danish amount as øre", () => {
+    expect(parseDanishAmount("1000")).toBe(100000);
+    expect(parseDanishAmount("1.000")).toBe(100000);
+    expect(parseDanishAmount("1000,50")).toBe(100050);
+    expect(parseDanishAmount("1.000,50")).toBe(100050);
+    expect(parseDanishAmount("0,5")).toBe(50);
+    expect(parseDanishAmount("0")).toBe(0);
+    expect(parseDanishAmount(" 1.234.567,05 ")).toBe(123456705);
+    expect(parseDanishAmount("0,07")).toBe(7);
+  });
+  it("refuses what is not a Danish amount", () => {
+    for (const text of ["1,5,0", "1.00", "1,505", "abc", "", " ", "1e3", "-5", "1.0000", ".5", ",5", "1,", "1 000", "99999999999999999999"]) {
+      expect(parseDanishAmount(text)).toBeNull();
+    }
   });
   it("detailAmount writes øre with Posteringer's sign: spending minus, a refund plus", () => {
     expect(detailAmount(248000)).toBe("-2.480,00 kr.");
@@ -59,9 +77,10 @@ describe("money", () => {
     expect(detailKr(-15000)).toBe("-150 kr.");
     expect(detailKr(-20)).toBe("0 kr.");
   });
-  it("shortens axis values", () => {
-    expect(axisKr(6200000)).toBe("62k");
-    expect(axisKr(150000)).toBe("1,5k");
+  it("writes axis values in whole kroner with thousands dots", () => {
+    expect(axisKr(6200000)).toBe("62.000");
+    expect(axisKr(150000)).toBe("1.500");
+    expect(axisKr(-200000)).toBe("-2.000");
     expect(axisKr(68800)).toBe("688");
     expect(axisKr(0)).toBe("0");
   });
@@ -73,6 +92,13 @@ describe("percent", () => {
     expect(signedPercent(0.04545)).toBe(`+5${nbsp}%`);
     expect(signedPercent(-0.04)).toBe(`-4${nbsp}%`);
     expect(signedPercent(0)).toBe(`0${nbsp}%`);
+    expect(signedPercent(-0.003)).toBe(`-0,3${nbsp}%`);
+    expect(signedPercent(0.0042)).toBe(`+0,4${nbsp}%`);
+    expect(signedPercent(-0.0002)).toBe(`-under 0,1${nbsp}%`);
+    expect(signedPercent(0.0005)).toBe(`+0,1${nbsp}%`);
+    expect(signedPercent(-0.0005)).toBe(`-0,1${nbsp}%`);
+    expect(signedPercent(0.00049)).toBe(`+under 0,1${nbsp}%`);
+    expect(signedPercent(-0.00049)).toBe(`-under 0,1${nbsp}%`);
   });
 });
 
@@ -152,7 +178,9 @@ describe("subscriptions", () => {
   });
   it("writes a rise in whole kroner, or both with øre", () => {
     expect(stepAmounts(14900, 16900)).toEqual(["149", "169"]);
+    expect(stepAmounts(40000, 45050)).toEqual(["400", "451"]);
+    expect(stepAmounts(14970, 15020)).toEqual(["149,70", "150,20"]);
     expect(stepAmounts(14950, 14975)).toEqual(["149,50", "149,75"]);
-    expect(stepAmounts(14900, 14975)).toEqual(["149,00", "149,75"]);
+    expect(stepAmounts(14900, 14975)).toEqual(["149", "150"]);
   });
 });

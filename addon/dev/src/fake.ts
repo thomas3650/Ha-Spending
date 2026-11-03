@@ -256,7 +256,7 @@ const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null && !Array.isArray(value);
 
 const GROUP_KEYS = new Set(["apply_rules", "fire_webhooks", "group_title", "transactions"]);
-const SPLIT_KEYS = new Set(["transaction_journal_id", "category_id", "tags", "destination_id", "notes"]);
+const SPLIT_KEYS = new Set(["transaction_journal_id", "category_id", "tags", "destination_id", "source_id", "notes"]);
 
 /**
  * Firefly III's update of a group, for the fields the sorter's endpoint sends; any other field is refused, so a test
@@ -293,6 +293,11 @@ function updateGroup(
       if (target?.type !== "expense") return "Unknown destination.";
       if (split.type !== "withdrawal") return "Only a withdrawal has an expense account as its destination.";
     }
+    if (entry.source_id !== undefined) {
+      const origin = accounts.find((a) => a.id === entry.source_id);
+      if (origin?.type !== "revenue") return "Unknown source.";
+      if (split.type !== "deposit") return "Only a deposit has a revenue account as its source.";
+    }
     const tags = entry.tags;
     if (tags !== undefined && !(Array.isArray(tags) && tags.every((t) => typeof t === "string"))) {
       return "The tags are not a list of text.";
@@ -311,6 +316,10 @@ function updateGroup(
     if (entry.destination_id !== undefined) {
       split.destination_id = entry.destination_id as string;
       split.destination_name = accounts.find((a) => a.id === entry.destination_id)!.name;
+    }
+    if (entry.source_id !== undefined) {
+      split.source_id = entry.source_id as string;
+      split.source_name = accounts.find((a) => a.id === entry.source_id)!.name;
     }
     if (entry.tags !== undefined) split.tags = [...(entry.tags as string[])];
     if (entry.notes !== undefined) split.notes = entry.notes as string | null;
@@ -457,14 +466,17 @@ export function createFakeFirefly(data: SeedData, options: FakeOptions = {}): Fa
 
   app.post("/api/v1/accounts", async (c) => {
     const body = await c.req.json<unknown>().catch(() => null);
-    if (!isRecord(body) || typeof body.name !== "string" || body.name === "" || body.type !== "expense") {
-      return c.json({ message: "The fake makes expense accounts with a name.", errors: {} }, 422);
+    if (!isRecord(body) || typeof body.name !== "string" || body.name === "" ||
+      (body.type !== "expense" && body.type !== "revenue")) {
+      return c.json({ message: "The fake makes expense and revenue accounts with a name.", errors: {} }, 422);
     }
-    const name = body.name;
-    if (built.accounts.some((a) => a.name === name)) {
+    const { name, type } = body;
+    // Firefly III lets an expense and a revenue account share a name; the fake refuses every other clash.
+    const other = type === "expense" ? "revenue" : "expense";
+    if (built.accounts.some((a) => a.name === name && a.type !== other)) {
       return c.json({ message: "The name is already in use.", errors: {} }, 422);
     }
-    const made: FakeAccount = { id: built.nextId(), name, type: "expense", active: true };
+    const made: FakeAccount = { id: built.nextId(), name, type, active: true };
     built.accounts.push(made);
     return c.json({ data: accountItem(made) });
   });

@@ -167,7 +167,7 @@ export function subscriptionTable(ctx: ViewContext, kept: Sorted<SubscriptionCol
       id: s.id,
       name: s.name,
       objectGroup: s.objectGroup,
-      next: next === null ? null : shortDate(next, today),
+      next: next === null || status.kind === "notSeen" ? null : shortDate(next, today),
       amount: paymentText(s),
       perYear: kr(amountPerYear(s)),
       category: known ? last : da.noCategory,

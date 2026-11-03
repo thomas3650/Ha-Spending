@@ -143,6 +143,7 @@ describe("the subscriptions card", () => {
     expect(rowNames(region)).toEqual(["Indboforsikring", "Husleje", "Bilforsikring", "Streaming", "Avis", "Tennisklub"]);
     expect(cells(region, "Husleje")).toEqual(["Husleje næste 1. nov", "8.000 kr. pr. måned", "96.000 kr.", "Forventes 1. nov"]);
     expect(cells(region, "Streaming").slice(1)).toEqual(["114 kr. pr. måned", "1.368 kr.", "Steget · 129 → 149 kr."]);
+    expect(cells(region, "Indboforsikring")[0]).toBe("Indboforsikring");
     expect(cells(region, "Indboforsikring").slice(1)).toEqual([
       "900 kr. pr. kvartal",
       "3.600 kr.",

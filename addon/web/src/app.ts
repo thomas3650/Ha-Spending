@@ -36,6 +36,7 @@ import {
   chooseShop,
   chooseUnit,
   closeDetail,
+  detailResolves,
   keepDetail,
   normalise,
   openAllPostings,
@@ -266,6 +267,7 @@ export class SpendingApp extends LitElement {
 
   private readonly onDetailOpen = (event: Event): void => {
     const next = openDetail(this.state, (event as CustomEvent<DetailKey>).detail);
+    if (this.load.kind !== "ready" || !detailResolves(next, this.load.data, this.today)) return;
     const hash = `#${toHash(next)}`;
     if (this.state.detail === null) history.pushState(DETAIL_ENTRY, "", hash);
     else history.replaceState(detailEntry() ? DETAIL_ENTRY : null, "", hash);
@@ -358,7 +360,13 @@ export class SpendingApp extends LitElement {
   private async focusDetail(): Promise<void> {
     const root = this.renderRoot;
     await root.querySelector<LitElement>("hs-overview, hs-all-postings")?.updateComplete;
-    root.querySelector<HTMLElement>("hs-detail h3")?.focus();
+    root.querySelector<HTMLElement>("hs-detail h3")?.focus({ preventScroll: this.besideList() });
+  }
+
+  /** In a split of 1024 px or wider the detail stands beside the list, so a focus must not scroll the page. */
+  private besideList(): boolean {
+    const split = this.state.screen === "allPostings" || (this.state.screen === "overview" && this.fullScreen);
+    return split && window.matchMedia("(min-width: 1024px)").matches;
   }
 
   /** The row's button when its list shows it, else the heading of the card or the page (detail spec §1.3). */
@@ -372,7 +380,7 @@ export class SpendingApp extends LitElement {
     const heading = root.querySelector<HTMLElement>(
       this.state.screen === "overview" ? "#hs-right-title" : "hs-top-card h1",
     );
-    (button ?? heading)?.focus();
+    (button ?? heading)?.focus({ preventScroll: this.besideList() });
   }
 
   /** pushState and replaceState fire no event, so the state is set here. A new card or screen closes the detail. */

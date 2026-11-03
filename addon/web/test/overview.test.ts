@@ -187,6 +187,20 @@ describe("the search on Posteringer", () => {
     expect(push).not.toHaveBeenCalled();
   });
 
+  it("shows the bank's text under a shop that only the text matched", async () => {
+    const { root } = await mount("card=postings&q=mobilepay");
+    const buttons = getAllByRole(root, "button", { name: "Pizzeria Roma" });
+    expect(buttons).toHaveLength(2);
+    for (const button of buttons) expect(button.closest("td")?.textContent).toContain("MOBILEPAY 1234");
+  });
+
+  it("shows no bank text under a shop that the search matched", async () => {
+    const { root } = await mount("card=postings&q=roma");
+    for (const button of getAllByRole(root, "button", { name: "Pizzeria Roma" })) {
+      expect(button.closest("td")?.textContent).not.toContain("MOBILEPAY");
+    }
+  });
+
   it("leaves the key numbers, the circle and the bars as they are", async () => {
     const { app, root } = await mount("");
     const barNames = () =>

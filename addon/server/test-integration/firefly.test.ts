@@ -467,6 +467,14 @@ describe("the sorter's shop on a real Firefly III", () => {
           source: "Konto A", destination: "Butik X" }] },
         { splits: [{ type: "withdrawal", date: "2026-12-09", amount: "80.00", description: "Shop kontant navn",
           source: "Konto A" }] },
+        { splits: [{ type: "deposit", date: "2026-12-11", amount: "25.00", description: "Shop retur",
+          source: "(no name)", destination: "Konto A" }] },
+        { splits: [{ type: "deposit", date: "2026-12-12", amount: "26.00", description: "Shop retur 2",
+          source: "(no name)", destination: "Konto A" }] },
+        { splits: [{ type: "deposit", date: "2026-12-13", amount: "27.00", description: "Shop retur kendt",
+          source: "Kunde X", destination: "Konto A" }] },
+        { splits: [{ type: "withdrawal", date: "2026-12-14", amount: "33.00", description: "Shop efter retur",
+          source: "Konto A" }] },
       ],
     });
     const tools = createSorterTools(client, {
@@ -602,6 +610,41 @@ describe("the sorter's shop on a real Firefly III", () => {
     const after = await splits();
     expect(after.get("Shop kontant")!.destination_id).toBe(cash.destination_id);
     expect(after.get("Shop kontant navn")!.destination_id).toBe(before.get("Shop kontant navn")!.destination_id);
+  });
+
+  it("a refund from the importer's (no name) gets a revenue account named as the shop's expense account, a second " +
+    "refund reuses it, a refund with a source keeps it, and a purchase at the shop still gets the shop", async () => {
+    const before = await splits();
+    const refund = before.get("Shop retur")!;
+    expect([refund.source_type, refund.source_name]).toEqual(["Revenue account", "(no name)"]);
+    const shop = (await accounts()).find((a) => a.name === "Butik X" && a.type === "expense")!;
+
+    const { amounts } = await given();
+    const answer = await call("set_category", {
+      assignments: [
+        assignment(before, amounts, "Shop retur", "butik x"),
+        assignment(before, amounts, "Shop retur 2", "Butik X"),
+        assignment(before, amounts, "Shop retur kendt", "Butik X"),
+        assignment(before, amounts, "Shop efter retur", "Butik X"),
+      ],
+    });
+    expect(answer.isError).toBe(false);
+    expect((answer.value.results as { shop?: string; shop_refused?: string }[])
+      .map((r) => r.shop ?? r.shop_refused)).toEqual(["Butik X", "Butik X", "has-shop", "Butik X"]);
+    const revenue = (await accounts()).filter((a) => a.name === "Butik X" && a.type === "revenue");
+    expect(revenue).toHaveLength(1);
+    const after = await splits();
+    for (const d of ["Shop retur", "Shop retur 2"]) {
+      expect(after.get(d)).toMatchObject({ source_id: revenue[0].id, source_name: "Butik X",
+        source_type: "Revenue account", category_name: "Dagligvarer" });
+      expect([after.get(d)!.amount, after.get(d)!.date, after.get(d)!.destination_id]).toEqual(
+        [before.get(d)!.amount, before.get(d)!.date, before.get(d)!.destination_id]);
+    }
+    expect(after.get("Shop retur kendt")).toMatchObject({ source_name: "Kunde X", category_name: "Dagligvarer" });
+    expect(after.get("Shop efter retur")).toMatchObject({ destination_id: shop.id, destination_name: "Butik X" });
+
+    const december = await read({ start: "2026-12-01", end: "2026-12-31" });
+    expect(december.postings.find((p) => p.text === "Shop retur")).toMatchObject({ kind: "refund", shop: "Butik X" });
   });
 
   it("sends no shop for (no name) or a cash account", async () => {
