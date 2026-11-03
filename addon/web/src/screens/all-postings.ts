@@ -6,7 +6,7 @@ import { detailSplit } from "../components/detail";
 import { Dropdown } from "../components/dropdown";
 import "../components/postings";
 import "../components/search";
-import { amountChip, count, kr, unitName } from "../format";
+import { amountChip, count, kr, parseDanishAmount, unitName } from "../format";
 import { da } from "../i18n/da";
 import { categoryColours } from "../model/circle";
 import { partName, type ViewContext } from "../model/context";
@@ -16,7 +16,6 @@ import { postingList } from "../model/postings";
 import {
   type AmountRange,
   nextSort,
-  parseKroner,
   type PostingColumn,
   postingFirstDescending,
   toHash,
@@ -36,16 +35,20 @@ export class FilterPicker extends Dropdown {
     ctx: { attribute: false },
     min: { state: true },
     max: { state: true },
+    checked: { state: true },
   };
 
   declare ctx: ViewContext;
   declare private min: string;
   declare private max: string;
+  /** The fields are judged once "Tilføj" is pressed or they lose the focus, not while the user is typing. */
+  declare private checked: { min: boolean; max: boolean };
 
   constructor() {
     super();
     this.min = "";
     this.max = "";
+    this.checked = { min: false, max: false };
   }
 
   /** A new view, from the trail or the browser's back, leaves the panel's choices behind. */
@@ -59,13 +62,39 @@ export class FilterPicker extends Dropdown {
     void this.close(true);
   }
 
+  private invalid(field: "min" | "max"): boolean {
+    const text = this[field];
+    return this.checked[field] && text.trim() !== "" && parseDanishAmount(text) === null;
+  }
+
   private addAmount(): void {
-    const a = parseKroner(this.min.trim());
-    const b = parseKroner(this.max.trim());
+    this.checked = { min: true, max: true };
+    if (this.invalid("min") || this.invalid("max")) return;
+    const a = this.min.trim() === "" ? null : parseDanishAmount(this.min);
+    const b = this.max.trim() === "" ? null : parseDanishAmount(this.max);
     const range: AmountRange = a !== null && b !== null && a > b ? { min: b, max: a } : { min: a, max: b };
     this.min = "";
     this.max = "";
+    this.checked = { min: false, max: false };
     this.choose("set-amount", range);
+  }
+
+  private amountField(field: "min" | "max", label: string) {
+    const invalid = this.invalid(field);
+    const message = `hs-amount-${field}-invalid`;
+    return html`<label
+        >${label}
+        <input
+          type="text"
+          inputmode="decimal"
+          aria-invalid=${invalid ? "true" : nothing}
+          aria-describedby=${invalid ? message : nothing}
+          .value=${live(this[field])}
+          @input=${(e: Event) => (this[field] = (e.target as HTMLInputElement).value)}
+          @blur=${() => (this.checked = { ...this.checked, [field]: true })}
+        />
+      </label>
+      ${invalid ? html`<p id=${message} class="amount-invalid">${da.amountInvalid}</p>` : nothing}`;
   }
 
   private option(label: string, pressed: boolean, name: string, detail: unknown) {
@@ -121,28 +150,7 @@ export class FilterPicker extends Dropdown {
       </div>
       <div role="group" aria-labelledby="hs-filter-amount" class="amount-part">
         <h3 id="hs-filter-amount">${da.amountFilter}</h3>
-        <label
-          >${da.from}
-          <input
-            type="number"
-            min="0"
-            step="1"
-            inputmode="numeric"
-            .value=${live(this.min)}
-            @input=${(e: Event) => (this.min = (e.target as HTMLInputElement).value)}
-          />
-        </label>
-        <label
-          >${da.to}
-          <input
-            type="number"
-            min="0"
-            step="1"
-            inputmode="numeric"
-            .value=${live(this.max)}
-            @input=${(e: Event) => (this.max = (e.target as HTMLInputElement).value)}
-          />
-        </label>
+        ${this.amountField("min", da.from)} ${this.amountField("max", da.to)}
         <button type="button" class="filter-add" @click=${() => this.addAmount()}>${da.add}</button>
       </div>
       ${this.objectGroups()}
@@ -337,6 +345,11 @@ export const allPostingsStyles = css`
     font: inherit;
     border: 1px solid var(--hs-field);
     border-radius: 6px;
+  }
+  .amount-part .amount-invalid {
+    margin: 0;
+    color: var(--hs-up);
+    font-size: 12px;
   }
   .amount-part .filter-add {
     align-self: flex-end;

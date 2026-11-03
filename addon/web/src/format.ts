@@ -65,10 +65,24 @@ export function signedKr(ore: number): string {
   return `${ore < 0 ? "-" : "+"}${text} ${da.kr}`;
 }
 
-/** The range is in whole kroner, not øre. */
+/** A whole bound without decimals, a bound with øre with two. */
 export function amountChip(range: AmountRange): string {
-  const text = (kroner: number | null) => (kroner === null ? null : whole.format(kroner));
+  const text = (ore: number | null) => {
+    if (ore === null) return null;
+    return ore % 100 === 0 ? whole.format(ore / 100) : cents.format(ore / 100);
+  };
   return da.amountChip(text(range.min), text(range.max));
+}
+
+/**
+ * Øre from "1000", "1.000", "1000,50", "1.000,50" or "0,5": a dot groups thousands, a comma starts one or two
+ * decimals. Read from the digits as text, so no floating point touches the amount.
+ */
+export function parseDanishAmount(text: string): number | null {
+  const match = /^(\d{1,3}(?:\.\d{3})+|\d+)(?:,(\d{1,2}))?$/.exec(text.trim());
+  if (match === null) return null;
+  const ore = Number(match[1].replaceAll(".", "") + (match[2] ?? "").padEnd(2, "0"));
+  return Number.isSafeInteger(ore) ? ore : null;
 }
 
 export function postingAmount(ore: number): string {

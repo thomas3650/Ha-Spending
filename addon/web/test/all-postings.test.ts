@@ -204,12 +204,12 @@ describe("screen 3, all postings", () => {
     const { app, root } = await mount(CAFE);
     await openFilter(app, root);
     const part = getByRole(root, "group", { name: da.amountFilter });
-    fireEvent.input(getByRole(part, "spinbutton", { name: da.from }), { target: { value: "400" } });
-    fireEvent.input(getByRole(part, "spinbutton", { name: da.to }), { target: { value: "600" } });
+    fireEvent.input(getByRole(part, "textbox", { name: da.from }), { target: { value: "400" } });
+    fireEvent.input(getByRole(part, "textbox", { name: da.to }), { target: { value: "600" } });
     fireEvent.click(getByRole(part, "button", { name: da.add }));
     await settle(app);
     summary(root, 1, 50000);
-    fireEvent.click(chip(root, amountChip({ min: 400, max: 600 })));
+    fireEvent.click(chip(root, amountChip({ min: 40000, max: 60000 })));
     await settle(app);
     summary(root, 4, 131012);
   });
@@ -299,15 +299,45 @@ describe("screen 3, all postings", () => {
     expect(getByRole(root, "button", { name: da.addFilter }).getAttribute("aria-expanded")).toBe("false");
   });
 
-  it("refuses an amount that is not whole kroner", async () => {
+  it("says how to write an amount it cannot read, adds nothing and stays open", async () => {
+    for (const text of ["1e3", "1,5,0", "1.00", "1,505", "abc"]) {
+      const { app, root } = await mount(CAFE);
+      await openFilter(app, root);
+      const part = getByRole(root, "group", { name: da.amountFilter });
+      fireEvent.input(getByRole(part, "textbox", { name: da.from }), { target: { value: text } });
+      fireEvent.click(getByRole(part, "button", { name: da.add }));
+      await settle(app);
+      const field = getByRole(part, "textbox", { name: da.from, description: da.amountInvalid });
+      expect(field.getAttribute("aria-invalid")).toBe("true");
+      expect(getByRole(part, "textbox", { name: da.to }).hasAttribute("aria-invalid")).toBe(false);
+      expect(getByRole(root, "button", { name: da.addFilter }).getAttribute("aria-expanded")).toBe("true");
+      summary(root, 4, 131012);
+      expect(queryAllByRole(root, "button", { name: (name) => name.startsWith(da.remove(da.amountFilter)) })).toEqual([]);
+      expect(new URLSearchParams(location.hash.slice(1)).has("min")).toBe(false);
+      unmount();
+    }
+  });
+
+  it("takes a Danish amount, drops the message once the field is right, and keeps øre in the hash", async () => {
     const { app, root } = await mount(CAFE);
     await openFilter(app, root);
     const part = getByRole(root, "group", { name: da.amountFilter });
-    fireEvent.input(getByRole(part, "spinbutton", { name: da.from }), { target: { value: "1e3" } });
+    const to = getByRole(part, "textbox", { name: da.to });
+    expect(to.getAttribute("inputmode")).toBe("decimal");
+    fireEvent.input(to, { target: { value: "1.00" } });
     fireEvent.click(getByRole(part, "button", { name: da.add }));
     await settle(app);
-    summary(root, 4, 131012);
-    expect(new URLSearchParams(location.hash.slice(1)).has("min")).toBe(false);
+    expect(to.getAttribute("aria-invalid")).toBe("true");
+    fireEvent.input(to, { target: { value: "1.000,50" } });
+    await settle(app);
+    expect(to.hasAttribute("aria-invalid")).toBe(false);
+    expect(queryByRole(part, "textbox", { name: da.to, description: da.amountInvalid })).toBeNull();
+    fireEvent.input(getByRole(part, "textbox", { name: da.from }), { target: { value: " 0 " } });
+    fireEvent.click(getByRole(part, "button", { name: da.add }));
+    await settle(app);
+    chip(root, amountChip({ min: 0, max: 100050 }));
+    expect(hashParam("min")).toBe("0");
+    expect(hashParam("max")).toBe("1000.50");
   });
 });
 
@@ -449,11 +479,11 @@ function contextFor(postings: ClassifiedPosting[]) {
 }
 
 describe("the filter rules", () => {
-  it("keeps an amount within the range in whole kroner, both bounds included", () => {
-    expect(inAmount(posting("a", "2026-01-01", 40000), { min: 400, max: 600 })).toBe(true);
-    expect(inAmount(posting("a", "2026-01-01", 60000), { min: 400, max: 600 })).toBe(true);
-    expect(inAmount(posting("a", "2026-01-01", 39999), { min: 400, max: null })).toBe(false);
-    expect(inAmount(posting("a", "2026-01-01", 60001), { min: null, max: 600 })).toBe(false);
+  it("keeps an amount within the range in øre, both bounds included", () => {
+    expect(inAmount(posting("a", "2026-01-01", 40000), { min: 40000, max: 60000 })).toBe(true);
+    expect(inAmount(posting("a", "2026-01-01", 60000), { min: 40000, max: 60000 })).toBe(true);
+    expect(inAmount(posting("a", "2026-01-01", 39999), { min: 40000, max: null })).toBe(false);
+    expect(inAmount(posting("a", "2026-01-01", 60001), { min: null, max: 60000 })).toBe(false);
     expect(inAmount(posting("a", "2026-01-01", -20000), null)).toBe(true);
   });
 

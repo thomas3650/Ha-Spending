@@ -470,6 +470,15 @@ to set their status to `superseded by D<n>`, or to name a part a later decision 
 - **Why:** Beside the list, an opposite sign read as wrong, and a row was expected to open its posting.
 - **Source:** Thomas, 2026-11-02, from the detail in use
 
+### D47: Amount bounds are whole øre, and the hash writes øre after a dot
+- **Date:** 2026-11-03 · **Status:** active
+- **Decision:** The Beløb fields take Danish numbers (a dot groups thousands, a comma starts one or two decimals) and
+  hold each bound as a whole number of øre. The hash keeps `min` and `max` in kroner: digits, optionally a dot and one
+  or two digits; it writes digits only for whole kroner and a dot with two digits otherwise (`max=1000.50`).
+- **Why:** A Danish number such as "1.000,50" was refused, and a bound with øre could not be given. Kroner with a dot
+  in the hash read old links with whole kroner as before.
+- **Source:** Thomas, 2026-11-03 (approved [UI polish spec](superpowers/specs/2026-11-03-ui-polish.md) §3.2)
+
 ### D49: The server keeps the span-free parts per day and reads a list's pages 4 at a time
 - **Date:** 2026-11-03 · **Status:** active
 - **Decision:** The main-group rules, the categories, the asset accounts, the earliest posting date and the

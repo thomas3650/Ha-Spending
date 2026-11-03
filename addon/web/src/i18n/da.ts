@@ -182,6 +182,7 @@ export const da = {
     if (min !== null) return `Beløb: fra ${min} ${da.kr}`;
     return `Beløb: til ${max ?? ""} ${da.kr}`;
   },
+  amountInvalid: "Skriv et beløb som 1.000,50",
   add: "Tilføj",
   summary: (count: string, sum: string) => `${count} · ${sum}`,
 

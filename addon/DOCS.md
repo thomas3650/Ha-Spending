@@ -71,7 +71,8 @@ a click on that count opens the page with all postings.
 The key number for an object group shows the payments of that group in the period, with the sum per month and the
 number of subscriptions paid. A click on it shows the card. Under it, a link such as "58 posteringer →" opens the page
 with all postings, filtered to that object group; the filter shows as a chip that you remove with its cross. The link
-clears any search, shop and chosen unit. "+ Filter" can also choose an object group.
+clears any search, shop and chosen unit. "+ Filter" can also choose an object group. Its Beløb fields take Danish
+numbers such as `1000`, `1.000`, `1000,50`, `1.000,50` and `0,5`.
 
 The right card's choice "Butikker" lists the shops with the most spending, for what is chosen on the left: all
 spending, a main group or a category. It shows the ten biggest, with "Vis alle" for the rest; a click on a shop's name

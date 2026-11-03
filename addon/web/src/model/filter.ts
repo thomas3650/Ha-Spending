@@ -42,8 +42,8 @@ export function shopSuggestions(base: Posting[], search: string): ShopSuggestion
 
 export function inAmount(p: ClassifiedPosting, range: AmountRange | null): boolean {
   if (range === null) return true;
-  if (range.min !== null && p.amount < range.min * 100) return false;
-  return range.max === null || p.amount <= range.max * 100;
+  if (range.min !== null && p.amount < range.min) return false;
+  return range.max === null || p.amount <= range.max;
 }
 
 /** Oldest first, and by id within a day, so the order is stable. */
