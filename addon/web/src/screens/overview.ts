@@ -358,7 +358,7 @@ export const overviewStyles = css`
   .half-head.with-tools .full-screen {
     grid-area: button;
   }
-  @container (max-width: 670px) {
+  @container (max-width: 700px) {
     .half-head.with-tools {
       grid-template-columns: minmax(0, 1fr) auto;
       grid-template-areas: "title button" "switch switch";
@@ -446,7 +446,6 @@ export const overviewStyles = css`
     outline-offset: -2px;
   }
   .card-switch {
-    flex: 0 1 auto;
     display: inline-flex;
     flex-wrap: wrap;
     max-width: 100%;
