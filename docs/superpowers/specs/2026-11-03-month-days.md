@@ -19,7 +19,11 @@ there holds:
 **Thomas's ruling, 2026-11-03:** "finer grouping; let's start with all the month's days". With a one-month period
 ("Sidste måned", "Denne måned") and Gruppér pr. Måned, the Søjler card shows one bar per day of the month.
 
-**The controller's ruling, 2026-11-03:** a click on a day bar chooses the month (§4).
+**The controller's rulings, 2026-11-03:**
+
+- A click on a day bar chooses the month (§4).
+- A bar whose amount is below zero writes it with a leading "+" in whole kroner, in its button's name and its tooltip,
+  and is still drawn below zero. This holds for every bar, month bars too, since the same code names them (§5).
 
 **Claude's calls, for Thomas to see in the PR:**
 
@@ -50,18 +54,18 @@ there holds:
   it runs from the period's start to the month's last day. So "Denne måned" on 30 Oct has 31 days, the 30th running
   and the 31st an empty slot, not "i gang" (D23). A custom 5.–20. okt has 16 days, also when the 20th is today.
 - Today's day is the running unit by `isRunning`, as for any unit: its bar is lighter, its axis label ends with "i
-  gang" on a second line, and its hidden button's name is "30.10.2026 (i gang), 0 kr." with the fixture, as
-  `buttonName` writes it.
+  gang" on a second line, and its hidden button's name is `` `30.10.2026 (${da.inProgress}), ${kr(0)}` `` with the
+  fixture, as `buttonName` writes it.
 - Each day's amount is `unitTotals(ctx.shown, days)`; its labels are `unitAxis` and `unitName` under `"day"` ("5.10.",
   "5.10.2026"). The axis thins its labels by `axisLabelShown`, as today.
 - The fetched range does not change: `fetchRange` already holds the whole period.
 - Every other grouping, and a month grouping over two or more months, draws as today.
 - Tests (the fixture's today 30 Oct 2026; "the bars' list" is the one `list` in the Søjler region; a bar is read by
-  its button's name):
-  - `period=lastMonth`: the bars' list has 30 buttons, the first named "1.9.2026, 8.000 kr." and the last
-    "30.9.2026, 0 kr.".
-  - With an extra posting of 150 kr. on 2026-09-20 added to the answer (as the `answer` option of `mount` allows), the
-    button for 20 Sep is "20.9.2026, 850 kr." (Pizzeria Roma's 700 kr. and the 150 kr.).
+  its button's name; amounts are written with `kr(…)` in øre, not as literal text):
+  - `period=lastMonth`: the bars' list has 30 buttons, the first named `` `1.9.2026, ${kr(800000)}` `` and the last
+    `` `30.9.2026, ${kr(0)}` ``.
+  - With an extra posting of 15000 øre on 2026-09-20 added to the answer (as the `answer` option of `mount` allows),
+    the button for 20 Sep is `` `20.9.2026, ${kr(85000)}` `` (Pizzeria Roma's 70000 and the 15000).
   - `period=thisMonth`: 31 buttons; the 30th's name contains `da.inProgress`; the 31st's does not.
   - `period=custom&from=2026-10-05&to=2026-10-20`: 16 buttons.
   - `period=custom&from=2026-09-15&to=2026-10-14`: 2 buttons, September and October, as today.
@@ -92,7 +96,11 @@ there holds:
 
 - The day bars are buttons, as every bar is (D19), each named for its day. A click on a day bar, or on its button,
   fires `unit-click` with the month's `fullStart` (`ctx.units[0].fullStart`), so `chooseUnit` chooses the month, or
-  removes it when it is already chosen. The chosen month's chip ("September 2026 ✕") shows, and the card goes to
+  removes it when it is already chosen.
+- `hs-bars` learns this from its items: each `BarItem` gets `choose: string`, the `fullStart` of the unit a click on
+  it chooses. `barItems` sets it to the bar's own `fullStart` for a month (or any other) bar and to the month's for a
+  day bar. The click fires `choose`, and `isChosen` compares `choose` with the chosen unit, so `hs-bars` needs no
+  check of its own for "days shown". The chosen month's chip ("September 2026 ✕") shows, and the card goes to
   Posteringer, as for any chosen unit.
 - The chart's hover emphasis, cursor and tooltip are as for any bar; the tooltip gives the day, its date and its
   amount.
@@ -110,22 +118,35 @@ there holds:
   - `period=lastMonth&unit=2026-09-01&card=difference`: the chip and the Forskel table show.
   - The default period: a click on July's bar chooses July, as today.
 
-## 5. Tests that change on purpose
+## 5. A bar below zero says so
+
+- Today `buttonName` and the tooltip write a bar's amount with `kr`, which drops the sign, so a day with only a refund
+  (the fixture's Pizzeria Roma, -200 kr. on 2026-09-22) is drawn below zero but named "200 kr.".
+- A bar whose amount is below zero writes it as `` `+${kr(amount)}` `` in its button's name and its tooltip, as a
+  refund is "+" on Posteringer; whole kroner, as the bars' other texts. A bar of zero or more is written as today. The
+  bar is still drawn below zero.
+- This is in `hs-bars`, so it holds for every bar, month bars too.
+- Tests: `period=lastMonth`, the button for 22 Sep is named `` `22.9.2026, +${kr(20000)}` ``; the button for 1 Sep
+  still `` `1.9.2026, ${kr(800000)}` ``.
+
+## 6. Tests that change on purpose
 
 Any test that looks up the Søjler region by `da.per("month")`, or a bar's button, on a period inside one month. The
 default period is "I år", so the builder checks the tests on `thisMonth`, `lastMonth` and custom one-month periods;
 none was found that does.
 
-## 6. Docs
+Any test that expects a bar below zero to be named without its "+".
+
+## 7. Docs
 
 - D51: a period inside one calendar month by Måned draws its days on the Søjler card, decided by `dayUnits`; "Denne
   måned" draws on to the month's last day, the days after today as empty slots; the grouping, the hash, the key
   numbers and the chosen unit stay the month's; a click on a day bar chooses the month, and the chosen month marks
-  every day bar.
+  every day bar. A bar below zero is named with a leading "+".
 - `docs/README.md`: the new spec and its plan in the map.
 - `docs/testing.md`: a Chrome-check item: "Sidste måned" and "Denne måned" at Alt forbrug and Mad, at 1440 and 1728
   px, normal and full screen. One bar per day, readable axis labels, today lighter with "i gang", the days after today
-  empty, no average line, the tooltip on a day. A click on a day chooses the month: its chip shows, no bar fades, and a
-  second click removes it.
+  empty, no average line, the tooltip on a day, and a day below zero (if the example data has one) with a "+" in its
+  tooltip. A click on a day chooses the month: its chip shows, no bar fades, and a second click removes it.
 - The domain language does not change.
 - Issues to file: finer bars for one-unit Uge, Kvartal and År periods; the detail's single bar on a one-month period.
