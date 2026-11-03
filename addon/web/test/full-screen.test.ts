@@ -77,6 +77,39 @@ async function choosePreset(root: HTMLElement, app: SpendingApp, name: string) {
   await settle(app);
 }
 
+describe("Posteringer in full screen", () => {
+  const card = (root: HTMLElement) => getByRole(root, "region", { name: da.postingsTitle });
+  const firstRow = (root: HTMLElement) => getAllByRole(card(root), "row")[2].textContent ?? "";
+
+  it("shows the Kategori column with each row's category, and the normal card does not", async () => {
+    const { app, root } = await mountWith("card=postings");
+    expect(queryByRole(card(root), "columnheader", { name: da.columns.category })).toBeNull();
+    await press(app, root);
+    getByRole(card(root), "columnheader", { name: da.columns.category });
+    expect(getAllByRole(card(root), "cell", { name: /Café/ }).length).toBeGreaterThan(0);
+  });
+
+  it("has no Vis alle, in full screen or in the normal card", async () => {
+    const { app, root } = await mountWith("card=postings");
+    expect(queryByRole(root, "button", { name: "Vis alle" })).toBeNull();
+    await press(app, root);
+    expect(queryByRole(root, "button", { name: "Vis alle" })).toBeNull();
+  });
+
+  it("falls back to the newest first when Kategori was the sort and full screen ends", async () => {
+    const { app, root } = await mountWith("card=postings");
+    await press(app, root);
+    fireEvent.click(getByRole(card(root), "button", { name: da.columns.category }));
+    await settle(app);
+    expect(getByRole(card(root), "columnheader", { name: da.columns.category }).getAttribute("aria-sort")).not.toBeNull();
+    expect(firstRow(root)).not.toContain("Café Søde");
+    await press(app, root);
+    expect(firstRow(root)).toContain("Café Søde");
+    await press(app, root);
+    expect(getByRole(card(root), "columnheader", { name: da.columns.category }).getAttribute("aria-sort")).not.toBeNull();
+  });
+});
+
 describe("the right card in full screen", () => {
   it.each([
     ["Søjler", "", da.per("month")],
@@ -124,7 +157,7 @@ describe("the right card in full screen", () => {
   it("does nothing on Escape on Alle posteringer, and is still on when coming back", async () => {
     const { app, root } = await mount("card=postings");
     await press(app, root);
-    fireEvent.click(getByRole(root, "button", { name: da.showAll }));
+    location.hash = "#card=postings&view=all-postings";
     await settle(app);
     getByRole(root, "heading", { level: 1, name: da.allPostings });
     await escape(app, document.body);

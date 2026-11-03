@@ -14,7 +14,7 @@ import { barItems, categoryColours, circleItems, circleSpan, circleTotal, partCo
 import { finerUnits, levelName, type ViewContext } from "../model/context";
 import { detailView } from "../model/detail";
 import { matches, shopSuggestions } from "../model/filter";
-import { postingList } from "../model/postings";
+import { postingList, shownPostingSort } from "../model/postings";
 import { type HiddenState, shopList } from "../model/shops";
 import { DEFAULT_SUBSCRIPTION_SORT, subscriptionTable } from "../model/subscriptions";
 import { hasShops } from "../state/actions";
@@ -146,21 +146,19 @@ export class Overview extends LitElement {
       body = html`<p class="empty">${unfiltered ? da.noSpending : da.noMatch}</p>`;
     } else {
       const units = chosen === null ? ctx.units : [chosen];
-      const list = postingList(postings, units, ctx, this.postingsSort, categoryColours(ctx));
+      const list = postingList(postings, units, ctx, shownPostingSort(this.postingsSort, this.fullScreen), categoryColours(ctx));
       body = html`<hs-postings
           .list=${list}
           .query=${search}
           .shop=${shop}
           .grouping=${g}
-          .sort=${this.postingsSort}
+          .sort=${shownPostingSort(this.postingsSort, this.fullScreen)}
+          .showCategory=${this.fullScreen}
           .marked=${ctx.state.detail}
         ></hs-postings>`;
     }
     const above = html`<div class="postings-search-row">
         <hs-search .search=${search} .shop=${shop} .suggestions=${shopSuggestions(base, search)}></hs-search>
-        ${this.fullScreen
-          ? html`<button type="button" class="show-all" @click=${() => fire(this, "open-all-postings")}>${da.showAll}</button>`
-          : nothing}
       </div>
       <p class="postings-summary">${da.summary(count(postings.length), kr(total(postings)))}</p>`;
     return { above, list: body };
@@ -444,24 +442,6 @@ export const overviewStyles = css`
     display: flex;
     gap: 8px;
     align-items: stretch;
-  }
-  .postings-search-row .show-all {
-    flex: none;
-    align-self: flex-start;
-    padding: 10px 14px;
-    font: inherit;
-    color: var(--hs-accent-text);
-    background: var(--hs-card);
-    border: 1px solid var(--hs-field);
-    border-radius: 8px;
-    cursor: pointer;
-  }
-  .postings-search-row .show-all:hover {
-    border-color: var(--hs-accent-text);
-  }
-  .postings-search-row .show-all:focus-visible {
-    outline: 2px solid var(--hs-accent-text);
-    outline-offset: -2px;
   }
   .postings-summary {
     margin: 12px 0;

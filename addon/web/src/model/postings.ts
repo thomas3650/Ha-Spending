@@ -1,8 +1,13 @@
 import { byUnit, type ClassifiedPosting, NO_PIECE, type Posting, type Unit } from "@ha-spending/shared";
 import { unitName } from "../format";
 import { type ViewContext, partName } from "./context";
-import type { PostingColumn, Sort } from "../state/view";
+import { DEFAULT_STATE, type PostingColumn, type Sort } from "../state/view";
 import { byDate } from "./filter";
+
+/** Kategori is a column only in full screen; elsewhere a sort by it falls back to the default. */
+export function shownPostingSort(sort: Sort, category: boolean): Sort {
+  return sort.column === "category" && !category ? DEFAULT_STATE.sort : sort;
+}
 
 export interface PostingRow {
   posting: ClassifiedPosting;

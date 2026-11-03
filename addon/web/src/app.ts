@@ -27,6 +27,7 @@ import { unitName } from "./format";
 import { da } from "./i18n/da";
 import { type ViewContext, viewContext } from "./model/context";
 import { keyCards, objectGroupCards } from "./model/key-numbers";
+import { shownPostingSort } from "./model/postings";
 import type { HiddenState } from "./model/shops";
 import { DEFAULT_SUBSCRIPTION_SORT, shownSubscriptionSort, subscriptionFirstDescending } from "./model/subscriptions";
 import { allPostingsStyles, type CategoryChoice } from "./screens/all-postings";
@@ -39,7 +40,6 @@ import {
   detailResolves,
   keepDetail,
   normalise,
-  openAllPostings,
   openAllPostingsFresh,
   openDetail,
   openObjectGroupPostings,
@@ -525,7 +525,7 @@ export class SpendingApp extends LitElement {
               .shopsAll=${this.shopsAll}
               .shopsHidden=${this.shopsHidden}
               @posting-sort=${(e: CustomEvent<PostingColumn>) =>
-                (this.postingsSort = nextSort(this.postingsSort, e.detail, postingFirstDescending))}
+                (this.postingsSort = nextSort(shownPostingSort(this.postingsSort, this.fullScreen), e.detail, postingFirstDescending))}
               @subscription-sort=${(e: CustomEvent<SubscriptionColumn>) =>
                 (this.subscriptionsSort = nextSort(
                   shownSubscriptionSort(this.subscriptionsSort, this.state.level.kind),
@@ -540,7 +540,6 @@ export class SpendingApp extends LitElement {
               @part-click=${(e: CustomEvent<CircleSelection>) => this.push(openPart(this.state, e.detail.key))}
               @unit-click=${(e: CustomEvent<UnitSelection>) => this.push(chooseUnit(this.state, e.detail.fullStart))}
               @card-change=${(e: CustomEvent<Card>) => this.push(setCard(this.state, e.detail))}
-              @open-all-postings=${() => this.push(openAllPostings(this.state))}
               @search-input=${this.onSearch}
               @shop-choose=${this.onShopChoose}
               @shop-remove=${this.onShopRemove}

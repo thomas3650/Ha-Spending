@@ -162,7 +162,6 @@ export const da = {
   showOlder: "Vis ældre",
   showNewer: "Vis nyere",
   showMore: "Vis flere",
-  showAll: "Vis alle",
   postingOne: "postering",
   postingMany: "posteringer",
   search: 'Søg i butik og tekst, fx "Netto"',
