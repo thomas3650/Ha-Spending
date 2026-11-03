@@ -166,7 +166,9 @@ export class Overview extends LitElement {
     }
     const above = html`<div class="postings-search-row">
         <hs-search .search=${search} .shop=${shop} .suggestions=${shopSuggestions(base, search)}></hs-search>
-        <button type="button" class="show-all" @click=${() => fire(this, "open-all-postings")}>${da.showAll}</button>
+        ${this.fullScreen
+          ? html`<button type="button" class="show-all" @click=${() => fire(this, "open-all-postings")}>${da.showAll}</button>`
+          : nothing}
       </div>
       <p class="postings-summary">${da.summary(count(postings.length), kr(total(postings)))}</p>`;
     return { above, list: body };

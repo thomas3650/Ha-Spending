@@ -104,7 +104,7 @@ describe("the detail in the history", () => {
     ["the card", bars, ""],
   ])("a choice that changes the screen or the card closes the detail: %s", async (_, button, hash) => {
     const { app, root } = await mount("card=postings");
-    // Full screen keeps the list's rows above the detail; the normal page hides them while it is open.
+    // Full screen shows Vis alle and keeps the list's rows above the detail; the normal page hides them while it is open.
     fireEvent.click(fullScreen(root));
     await settle(app);
     await open(app, CAFE);
