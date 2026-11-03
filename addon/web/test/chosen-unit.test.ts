@@ -149,7 +149,6 @@ describe("screen 4, a chosen unit", () => {
   });
 });
 
-
 describe("the object group cards in a chosen unit", () => {
   const answer = (range: Period) => json(withSubscriptions(answerFor(range)));
 
@@ -164,7 +163,7 @@ describe("the object group cards in a chosen unit", () => {
     getByText(fixed, da.noPayments);
   });
 
-  it("link to Alle posteringer with the unit kept, counting the link's N", async () => {
+  it("link to Alle posteringer with the unit and the main group kept, counting the link's N", async () => {
     const { app, root } = await mount("unit=2026-09-01&group=Mad", { answer });
     const link = getByRole(
       getByRole(root, "group", { name: da.levelInUnit("Abonnementer", SEPTEMBER) }),
@@ -177,6 +176,7 @@ describe("the object group cards in a chosen unit", () => {
     getByRole(root, "heading", { level: 1, name: da.allPostings });
     getByRole(root, "button", { name: da.remove(SEPTEMBER) });
     getByRole(root, "button", { name: da.remove("Abonnementer") });
+    getByRole(root, "button", { name: da.remove(da.mainGroupChip("Mad")) });
     getByText(root, da.summary(count(1), kr(70000)));
   });
 });
