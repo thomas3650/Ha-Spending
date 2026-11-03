@@ -75,6 +75,8 @@ Claude in Chrome, on the fast loop's made-up data ([D45](decisions.md)).
 - **The real Home Assistant:** this project makes no changes there. A release reaches the house through the house
   session ([`releasing.md`](releasing.md#after-a-release)).
 - **Backlog:** GitHub issues. Anything found that won't be fixed now becomes an issue.
+- **Reading an issue:** always the whole issue, the body and every comment (`gh issue view <n> --comments`). The
+  comments often hold the cause or the fix chosen since the issue was filed.
 
 ## 5. Docs
 
