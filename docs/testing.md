@@ -101,9 +101,9 @@ The page's list. Every screenshot is at 1440×960 with the console free of error
     postings. Compare `2-hovedgruppe*.png`.
 11. `18-uden-hovedgruppe`: Uden hovedgruppe as a screen, with its categories and Uden kategori.
 12. `19-alle-posteringer`, `20-stoerste-foerst` (a click on the Beløb header), `21-filter`, `22-ingen-match`: screen 3
-    with chips; sorted by size as a flat list, the Beløb header with ▲ and aria-sort ascending after the first click (largest spending
-    first) and the other columns sorting by a click; the
-    "+ Filter" panel open; a search nothing matches (`da.noMatch`). Compare `3-posteringer.png`.
+    with chips; sorted by size as a flat list, the Beløb header with ▲ and aria-sort ascending after the first click
+    (largest spending first) and the other columns sorting by a click; the "+ Filter" panel open; a search nothing
+    matches (`da.noMatch`). Compare `3-posteringer.png`.
 13. `23-soejle`, `24-soejle-kategori`: a click on a bar opens Posteringer for that month; press Forskel. A chosen month
     with Forskel at all spending, then in Mad with a category chosen, with both chips. Compare `4-soejle.png`.
 14. `25-loading` (`FAKE_FIREFLY_FAULT=slow`), `26-refused` (`refused`), `27-unreachable` (`error`), `28-empty` (a period
@@ -180,8 +180,8 @@ The page's list. Every screenshot is at 1440×960 with the console free of error
     screen, in all four states: no chip, a category, a unit, and both. No button moves when Forskel comes and goes
     (spec §1.2).
 38. `52-detalje-staar`: in full screen and on Alle posteringer at 1440 px the detail stays in view while the list
-    scrolls, and a click on a row does not scroll the page. Below 1024 px the focus still lands on the detail's
-    heading (spec §2.1).
+    scrolls, a click on a row does not scroll the page, and closing the detail (Escape or "Luk") does not scroll the
+    page. Below 1024 px the focus still lands on the detail's heading (spec §2.1).
 39. `53-detalje-bokse`: the detail's three boxes each fit on one line at 1440 and 1728 px (spec §2.2).
 40. `54-banktekst`: a search that hits the bank's text shows that text in grey under the shop (spec §3.1).
 41. `55-beloeb-dato-beskeder`: the Beløb and date messages appear on blur or Enter, not while typing; the period
