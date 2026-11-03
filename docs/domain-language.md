@@ -10,7 +10,7 @@ its name in code, so the same thing has one name everywhere. The Danish word is 
 | Category | kategori | `category` |
 | Posting | postering | `posting` (type `Posting`) |
 | Spending | forbrug | `spending` (`Posting.kind`) |
-| Refund | — | `refund` (`Posting.kind`) |
+| Refund | retur (in a bar's name below zero) | `refund` (`Posting.kind`) |
 | Uden hovedgruppe | Uden hovedgruppe | `mainGroup: null` on a category ([D15](decisions.md)) |
 | Uden kategori | Uden kategori | `category: null` on a posting ([D15](decisions.md)) |
 | Period | periode | `period` (type `Period`) |

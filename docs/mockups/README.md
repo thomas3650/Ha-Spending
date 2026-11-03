@@ -58,6 +58,19 @@ mockup differs from the [detail view spec](../superpowers/specs/2026-11-02-detai
 | [3](v5/detalje-3-butik.png) | Alle posteringer: a click on a posting shows its shop's detail, with the clicked posting marked |
 | [4](v5/detalje-4-abonnement.png) | Alle posteringer: a posting that belongs to a subscription shows that subscription's detail |
 
+## Finer bars
+
+A period with one unit of its grouping drawn as finer bars, and a bar below zero. Under
+[`v6/`](v6/finere-enheder.html). Where it differs from the [finer bars spec](../superpowers/specs/2026-11-03-finer-bars.md),
+the spec holds.
+
+| Section | Chosen | Shows |
+| --- | --- | --- |
+| 1 to 3 | the finer bars | A week by Uge draws its days; a quarter by Kvartal and a year by År draw their months |
+| 4 | the finer bars | The detail of a fixed expense draws the same units as the card |
+| 5 | A | A day below zero: A has the tooltip "+… kr. retur" and an unsigned axis below zero. Tried: B |
+| 6 | the second | "I år" by År on 3 November and on 5 January: one version ends today, the second runs the year out with empty slots |
+
 ## Budget
 
 Five ideas for a page of its own with Firefly III's budgets, none chosen yet. Under [`v4/`](v4/budget.html); open it

@@ -510,7 +510,7 @@ to set their status to `superseded by D<n>`, or to name a part a later decision 
   spelling taken from the shop's account of the other type: Claude
 
 ### D51: A one-month period draws its days
-- **Date:** 2026-11-03 · **Status:** active
+- **Date:** 2026-11-03 · **Status:** active; the detail's bars, the one-unit Uge, Kvartal and År periods and the name below zero superseded by D53
 - **Decision:**
   - By Måned, a period inside one calendar month draws one bar per day on the Søjler card, decided by `dayUnits` in
     `model/context.ts`; its title is "Pr. dag", with no average line. "Denne måned" draws on to the month's last day,
@@ -531,3 +531,19 @@ to set their status to `superseded by D<n>`, or to name a part a later decision 
 - **Why:** Thomas found the button unneeded beside the key number's link in the 0.11.0 walkthrough; full screen has no
   other way in.
 - **Source:** Thomas, 2026-11-03; [walkthrough fixes spec](superpowers/specs/2026-11-03-walkthrough-fixes.md) §1
+
+### D53: A one-unit period draws finer bars
+- **Date:** 2026-11-03 · **Status:** active
+- **Decision:**
+  - A period with one unit draws finer units on the Søjler card and in the detail, decided by `finerUnits` in
+    `model/context.ts`: days for a week or a month, months for a quarter or a year, stepping on while there is still
+    one unit, down to days. A preset that ends today ("Denne måned", "I år", "Alt") draws on to the earlier of its own
+    last day and the end of its one unit, the units after today as empty slots.
+  - The grouping, the hash, the key numbers and the chosen unit stay the period's. A click on a finer bar chooses the
+    period's unit.
+  - A bar below zero is named "+… kr. retur", and the y-axis ticks below zero have no sign.
+- **Why:** One bar that fills the card says nothing the key numbers do not. Keeping the state the period's keeps every
+  old link meaning what it meant (D20). The name "+200 kr." read as an addition beside an axis that wrote the same
+  value with a minus.
+- **Source:** Thomas, 2026-11-03, issues #100, #101 and #103;
+  [finer bars spec](superpowers/specs/2026-11-03-finer-bars.md)

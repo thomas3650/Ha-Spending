@@ -90,9 +90,10 @@ const FINER: Record<Exclude<Grouping, "day">, Grouping> = {
 };
 
 /**
- * The Søjler card's finer units when the period holds one unit of its grouping, else null (D51, finer bars spec §1).
- * It steps finer until there are two or more units or it reaches days. "Denne måned", "I år" and "Alt" end today, so
- * they run on to their own last day within the one unit, the units after today as empty slots.
+ * The finer units of the Søjler card and the detail when the period holds one unit of its grouping, else null (D53).
+ * It steps finer until there are two or more units or it reaches days. "Denne måned" and "I år" end today, so they run
+ * on to their own last day within the one unit; "Alt" has no last day of its own and runs to the one unit's end. The
+ * units after today are empty slots.
  */
 export function finerUnits(ctx: ViewContext): Finer | null {
   const grouping = ctx.timeline.grouping;
