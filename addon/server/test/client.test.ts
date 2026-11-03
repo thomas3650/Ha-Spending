@@ -216,4 +216,12 @@ describe("reading a list's pages", () => {
     const { client } = pagedList({ failPage: 3 });
     expect((await failure(getAllPages(client, "things", {}, SIZE))).reason).toBe("unreachable");
   });
+
+  it("asks for no page after a failing page beyond those already asked for", async () => {
+    const { client, stats } = pagedList({ failPage: 2, delay: (page) => (page === 2 ? 1 : 30) });
+    expect((await failure(getAllPages(client, "things", {}, SIZE))).reason).toBe("unreachable");
+    await new Promise((resolve) => setTimeout(resolve, 150));
+    expect(stats.inFlight).toBe(0);
+    expect(stats.requests).toBe(5);
+  });
 });

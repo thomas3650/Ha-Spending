@@ -73,10 +73,16 @@ const PAGES_AT_ONCE = 4;
 export async function eachLimited<T, R>(items: T[], limit: number, read: (item: T) => Promise<R>): Promise<R[]> {
   const results: R[] = [];
   let next = 0;
+  let failed = false;
   const worker = async () => {
-    while (next < items.length) {
+    while (!failed && next < items.length) {
       const i = next++;
-      results[i] = await read(items[i]);
+      try {
+        results[i] = await read(items[i]);
+      } catch (error) {
+        failed = true;
+        throw error;
+      }
     }
   };
   await Promise.all(Array.from({ length: Math.min(limit, items.length) }, worker));
