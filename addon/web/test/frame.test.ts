@@ -423,6 +423,51 @@ describe("the period's custom interval", () => {
     expect(show.disabled).toBe(false);
   });
 
+  it("a wrong typed date says what is wrong once the field loses the focus or Enter is pressed", async () => {
+    const { app, root } = await mount("");
+    const { panel, from, to } = await openPeriod(root, app);
+    const named = (name: string, description: string) => getByRole(panel, "textbox", { name, description });
+    await type(app, from, "31.2.2026");
+    expect(from.hasAttribute("aria-invalid")).toBe(false);
+    fireEvent.blur(from);
+    await settle(app);
+    named(da.from, da.dateInvalid);
+    expect(from.getAttribute("aria-invalid")).toBe("true");
+    expect(to.hasAttribute("aria-invalid")).toBe(false);
+
+    await type(app, from, "03.01.2026");
+    expect(from.hasAttribute("aria-invalid")).toBe(false);
+    expect(queryByText(panel, da.dateInvalid)).toBeNull();
+
+    await type(app, to, "31.10.2026");
+    expect(to.hasAttribute("aria-invalid")).toBe(false);
+    fireEvent.keyDown(to, { key: "Enter" });
+    await settle(app);
+    named(da.to, da.dateFuture);
+
+    await type(app, to, "02.01.2026");
+    fireEvent.blur(to);
+    await settle(app);
+    named(da.to, da.dateOrder);
+
+    await type(app, from, "01.01.2026");
+    expect(to.hasAttribute("aria-invalid")).toBe(false);
+    expect(queryByText(panel, da.dateOrder)).toBeNull();
+  });
+
+  it("an empty or valid date field shows no message", async () => {
+    const { app, root } = await mount("");
+    const { panel, from, to } = await openPeriod(root, app);
+    await type(app, from, "");
+    fireEvent.blur(from);
+    await type(app, to, "30.10.2026");
+    fireEvent.blur(to);
+    await settle(app);
+    for (const text of [da.dateInvalid, da.dateFuture, da.dateOrder]) expect(queryByText(panel, text)).toBeNull();
+    expect(from.hasAttribute("aria-invalid")).toBe(false);
+    expect(to.hasAttribute("aria-invalid")).toBe(false);
+  });
+
   it("a date before the year list is accepted", async () => {
     const { app, root } = await mount("");
     const { panel, from, to, show } = await openPeriod(root, app);

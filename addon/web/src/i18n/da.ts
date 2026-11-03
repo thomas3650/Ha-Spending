@@ -34,6 +34,9 @@ export const da = {
   to: "Til",
   show: "Vis",
   datePlaceholder: "dd.mm.åååå",
+  dateInvalid: "Skriv en dato som 31.12.2026",
+  dateFuture: "Datoen er efter i dag",
+  dateOrder: "Til er før Fra",
   picked: (from: string, to: string | null) => (to === null ? `Startdag ${from}, vælg en slutdag` : `Fra ${from} til ${to}`),
   /** Vanilla Calendar Pro's locale; the weekdays start on Sunday, as the library wants. */
   calendarLocale: {
