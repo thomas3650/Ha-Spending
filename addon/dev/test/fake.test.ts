@@ -377,6 +377,10 @@ describe("the fake Firefly III", () => {
       }
       expect((await post(get, { name: "bager", type: "expense" })).status).toBe(200);
       expect((await post(get, { name: "Firma", type: "expense" })).status).toBe(200);
+      for (const name of ["Firma", "Konto A", "Boliglån"]) {
+        expect((await post(get, { name, type: "revenue" })).status).toBe(422);
+      }
+      expect((await post(get, { name: "Bager", type: "revenue" })).status).toBe(200);
       expect((await post(get, { name: "Anden", type: "asset" })).status).toBe(422);
     });
 
@@ -418,6 +422,19 @@ describe("the fake Firefly III", () => {
         expect((await put(fake, milk.id, { source_id: "1" })).status).toBe(422);
         const after = (await json<{ data: Group }>(`transactions/${milk.id}`)).data.attributes.transactions[0];
         expect(after).toEqual(split);
+      });
+
+      it("moves a deposit's source to a revenue account, and is 422 for any other source", async () => {
+        const { fake, json, milk, idOf } = await setup();
+        const groups = (await json<Page<Group>>("transactions?start=2026-01-01&end=2026-01-31&type=all")).data;
+        const pay = byDescription(groups, "Løn");
+        const revenue = await json<Accounts>("accounts?type=revenue");
+        const customer = revenue.data.find((a) => a.attributes.name === "Gammel kunde")!.id;
+        expect((await put(fake, pay.id, { source_id: idOf("Bager") })).status).toBe(422);
+        expect((await put(fake, milk.id, { source_id: customer })).status).toBe(422);
+        expect((await put(fake, pay.id, { source_id: customer })).status).toBe(200);
+        const after = (await json<{ data: Group }>(`transactions/${pay.id}`)).data.attributes.transactions[0];
+        expect(after).toMatchObject({ source_id: customer, source_name: "Gammel kunde", source_type: "Revenue account" });
       });
     });
 

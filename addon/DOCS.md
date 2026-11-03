@@ -90,7 +90,7 @@ sorter's tools are `start` and `set_category`; [the chat's tools](#the-chats-too
 add-on decides which agent may call which: the endpoint does not tell the sorter from the chat, so that separation
 lives only in the calling add-on's gate. The Firefly III token stays in this add-on. The limits are in the add-on's
 code, not in the agent's instructions. Behind a gate that gives the sorter only its two tools, a strange posting text
-can at worst give a wrong category or a wrong shop, which may be a new expense account; an agent given
+can at worst give a wrong category or a wrong shop, which may be a new expense or revenue account; an agent given
 `move_posting` can also move a posting to a wrong category, with the tag and the note that show it.
 
 - **Address:** `POST http://<this add-on's hostname>:8100/mcp`, with the header `Authorization: Bearer <sorter_key>`.
@@ -147,9 +147,10 @@ An assignment refused for its category or its posting writes nothing, the shop i
 
 - **Written:** the category, and the posting's tags with every main-group tag (any tag an active rule of
   `main_group_rule_group` adds) replaced by the category's main group.
-  When the assignment has a `shop` that passes the checks below, also the split's destination: the shop's expense
-  account, named by its id. Every other tag, the amount, the date, the source account, the type, the description, the
-  notes and every other split stay as they are. Firefly III's rules do not run on the write.
+  When the assignment has a `shop` that passes the checks below, also the shop's account, named by its id: on a
+  withdrawal, a purchase, the destination becomes the shop's expense account; on a deposit, a refund, the source
+  becomes the shop's revenue account. Every other tag, the amount, the date, the other account, the type, the
+  description, the notes and every other split stay as they are. Firefly III's rules do not run on the write.
 - **The shop's result:** written with the shop, `{"posting_id": 345, "ok": true, "shop": "Butik A"}`, the name as
   written, which may be an existing account's spelling; written with the shop refused,
   `{"posting_id": 346, "ok": true, "shop_refused": "has-shop"}`, the category written all the same; written with no
@@ -160,11 +161,14 @@ An assignment refused for its category or its posting writes nothing, the shop i
   `not-withdrawal-or-deposit`, `not-in-inbox`, `amount-mismatch` (the amount, or whether it is a withdrawal or a
   deposit, is not the one `start` gave).
 - **`shop_refused`**, checked in this order after the category and the posting pass; the first that fails is the reason:
-  `not-withdrawal`; `has-shop` (the destination is not the expense account named `(no name)`, the Data Importer's name
-  for a line with no counterparty, so a shop set by hand is never overwritten; a withdrawal made through Firefly III's
-  API with no destination lands on its cash account instead, and is `has-shop` too); `bad-shop-name`; `name-taken`
-  (an account that is not an active expense account has the same name: an asset, a liability, the cash account, or
-  an inactive expense account; a revenue account of the same name is the shop's refunds and does not count).
+  `not-withdrawal` (neither a withdrawal nor a deposit, which the posting's own checks refuse first); `has-shop` (a
+  withdrawal's destination is not the expense account named `(no name)`, or a deposit's source is not the revenue
+  account named `(no name)`, the Data Importer's name for a line with no counterparty, so a shop set by hand is never
+  overwritten; a withdrawal made through Firefly III's API with no destination lands on its cash account instead, and
+  is `has-shop` too); `bad-shop-name`; `name-taken` (an account that is not an active account of the shop's type has
+  the same name: an asset, a liability, the cash account, or an inactive account of the shop's type. The shop's type
+  is expense for a withdrawal and revenue for a deposit; an account of the other of the two types with the same name
+  is the same shop's, and does not count).
 
 ### The shop's name
 
@@ -173,11 +177,14 @@ and written. It is refused when it is empty, has more than 60 characters, holds 
 a bidi override or a zero-width space), a line or paragraph separator or a lone surrogate, or is `(no name)` in any
 case. Two names are the same when they are equal after lower-casing.
 
-When the shop passes, the add-on finds its account itself: an active expense account with exactly that name, else one
-with the same name in other case (the first in code-point order), else it makes the expense account and writes that.
-A second posting in the same call with the same name gets the same account. The write always names the account by
-its id, never the name, so the outcome does not depend on Firefly III's collation, and a name can never point a
-withdrawal at a liability. An account made stays if the write that follows fails, and a later run reuses it.
+When the shop passes, the add-on finds its account itself: an active account of the shop's type (expense for a
+withdrawal, revenue for a deposit) with exactly that name, else one with the same name in other case (the first in
+code-point order), else it makes the account and writes that. A refund's new revenue account is spelled as the
+shop's active expense account of the same name, found the same way, so the purchases and the refunds show as one
+shop; with no such expense account it takes the cleaned name. A second posting in the same call with the same name
+gets the same account. The write always names the account by its id, never the name, so the outcome does not depend
+on Firefly III's collation, and a name can never point a posting at a liability. An account made stays if the write
+that follows fails, and a later run reuses it.
 
 ### The chat's tools
 
