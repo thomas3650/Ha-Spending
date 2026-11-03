@@ -2,6 +2,7 @@ import { createHash, timingSafeEqual } from "node:crypto";
 import { Hono } from "hono";
 import { bodyLimit } from "hono/body-limit";
 import { FireflyError } from "../firefly/client";
+import { logger } from "../log";
 import { VERSION } from "../version";
 import { type Tool, ToolFailure } from "./tools";
 
@@ -34,7 +35,7 @@ const toolResult = (value: unknown, isError: boolean) => ({
  */
 export function createSorterApp(options: { key: string; tools: Tool[]; log?: (message: string) => void }): Hono {
   const app = new Hono();
-  const log = options.log ?? ((message: string) => console.error(message));
+  const log = options.log ?? ((message: string) => logger.error(message));
   const expected = digest(options.key);
 
   app.use(async (c, next) => {

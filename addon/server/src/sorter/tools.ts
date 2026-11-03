@@ -1,6 +1,7 @@
 import { toOre } from "../firefly/amount";
 import { type FireflyClient, FireflyError, getAllPages } from "../firefly/client";
 import { readMainGroups } from "../firefly/read";
+import { logger } from "../log";
 import { EXPENSE, type WireCategory, type WireGroup, type WireSplit } from "../firefly/wire";
 import { byCodePoint, cleanShop, NO_SHOP, sameShop } from "./shop";
 
@@ -475,7 +476,7 @@ function summary(results: AssignmentResult[]): string {
 export function createSorterTools(
   client: FireflyClient,
   settings: SorterSettings,
-  log: (message: string) => void = console.log,
+  log: (message: string) => void = logger.info,
   now: () => number = Date.now,
 ): Tool[] {
   // The postings `start` gave out, with when that ends: `set_category` writes no other posting.

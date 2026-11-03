@@ -18,6 +18,7 @@ import {
 import { FireflyError } from "./firefly/client";
 import { HiddenShopsFull, type HiddenShopsStore, MAX_SHOP_NAME } from "./hidden-shops";
 import { isIngress } from "./ingress";
+import { logger } from "./log";
 import { VERSION } from "./version";
 
 function peerAddress(c: Context): string | undefined {
@@ -74,7 +75,7 @@ export function createApp(options: {
   log?: (message: string) => void;
 }): Hono {
   const app = new Hono();
-  const log = options.log ?? ((message: string) => console.error(message));
+  const log = options.log ?? ((message: string) => logger.error(message));
 
   app.use(async (c, next) => {
     if (!options.dev && !isIngress(peerAddress(c))) return c.text("Forbidden", 403);

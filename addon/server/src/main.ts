@@ -5,6 +5,7 @@ import { createFireflyClient, FireflyError } from "./firefly/client";
 import { createHiddenShopsStore } from "./hidden-shops";
 import { READ_TIMEOUT_MS, type ReadSettings, readVersion } from "./firefly/read";
 import { createDataLoader } from "./loader";
+import { logger } from "./log";
 import { type Options, OptionsError, readOptions } from "./options";
 import { createChatTools } from "./sorter/chat";
 import { createSorterApp, SORTER_PORT } from "./sorter/http";
@@ -20,7 +21,7 @@ try {
   options = readOptions(env.optionsPath);
 } catch (error) {
   if (!(error instanceof OptionsError)) throw error;
-  console.error(error.message);
+  logger.error(error.message);
   process.exit(1);
 }
 
@@ -32,20 +33,20 @@ const settings: ReadSettings = {
   pageSize: 500,
   timeoutMs: READ_TIMEOUT_MS,
 };
-const loadData = createDataLoader(client, settings, () => new Date(), console.warn);
+const loadData = createDataLoader(client, settings, () => new Date(), logger.warn);
 
-const hiddenShops = createHiddenShopsStore(env.hiddenShopsPath, console.error);
+const hiddenShops = createHiddenShopsStore(env.hiddenShopsPath, logger.error);
 const app = createApp({ webDir: env.webDir, dev: env.dev, loadData, hiddenShops });
 
 serve({ fetch: app.fetch, port: PORT, hostname: env.hostname }, () => {
-  console.log(
-    `Ha-Spending ${VERSION} listening on ${env.hostname ?? "all addresses"}, port ${PORT}, ` +
+  logger.info(
+    `HA Spending ${VERSION} listening on ${env.hostname ?? "all addresses"}, port ${PORT}, ` +
       `ingress check ${env.dev ? "off (HA_SPENDING_DEV=1)" : "on"}`,
   );
   readVersion(client).then(
-    (version) => console.log(`Firefly III ${version}`),
+    (version) => logger.info(`Firefly III ${version}`),
     (error: unknown) =>
-      console.error(`Firefly III's version not read: ${error instanceof FireflyError ? error.reason : "internal"}`),
+      logger.error(`Firefly III's version not read: ${error instanceof FireflyError ? error.reason : "internal"}`),
   );
 });
 
@@ -62,6 +63,6 @@ if (options.sorterKey !== null) {
   const tools = [...createSorterTools(client, sorterSettings), ...createChatTools(client, sorterSettings)];
   const sorter = createSorterApp({ key: options.sorterKey, tools });
   serve({ fetch: sorter.fetch, port: SORTER_PORT, hostname: env.hostname }, () => {
-    console.log(`The sorter's endpoint listening on ${env.hostname ?? "all addresses"}, port ${SORTER_PORT}`);
+    logger.info(`The sorter's endpoint listening on ${env.hostname ?? "all addresses"}, port ${SORTER_PORT}`);
   });
 }
