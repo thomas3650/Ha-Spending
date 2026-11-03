@@ -27,8 +27,8 @@ export interface CategoryChoice {
 }
 
 /**
- * "+ Filter": a main group, a category, an amount range or an object group. Fires `set-main-group`, `set-category`,
- * `set-amount` and `set-object-group`.
+ * "+ Filter": a unit of the period, a main group, a category, an amount range or an object group. Fires `set-unit`,
+ * `set-main-group`, `set-category`, `set-amount` and `set-object-group`.
  */
 export class FilterPicker extends Dropdown {
   static override properties: PropertyDeclarations = {
@@ -137,10 +137,23 @@ export class FilterPicker extends Dropdown {
     const shown = [...titles].filter((title) => this.fits(title));
     if (shown.length === 0) return nothing;
     return html`<div role="group" aria-labelledby="hs-filter-object-groups">
-      <h3 id="hs-filter-object-groups">${da.subscriptions}</h3>
+      <h3 id="hs-filter-object-groups">${da.fixedPayments}</h3>
       ${shown
         .sort((a, b) => a.localeCompare(b, "da"))
         .map((title) => this.option(title, title === chosen, "set-object-group", title))}
+    </div>`;
+  }
+
+  /** Two to 62 units: one unit is the whole period, and a longer list is no choice to scroll. */
+  private units() {
+    const { units, timeline, chosen } = this.ctx;
+    if (units.length < 2 || units.length > 62) return nothing;
+    const grouping = timeline.grouping;
+    const shown = units.map((u) => ({ u, name: unitName(u, grouping) })).filter(({ name }) => this.fits(name));
+    if (shown.length === 0) return nothing;
+    return html`<div role="group" aria-labelledby="hs-filter-units">
+      <h3 id="hs-filter-units">${da.unitsHeading[grouping]}</h3>
+      ${shown.map(({ u, name }) => this.option(name, chosen?.fullStart === u.fullStart, "set-unit", u.fullStart))}
     </div>`;
   }
 
@@ -154,7 +167,9 @@ export class FilterPicker extends Dropdown {
     const shownCategories = categories.filter((c) => this.fits(c.name));
     const withoutCategory = this.fits(da.noCategory);
     const objectGroups = this.objectGroups();
+    const units = this.units();
     const none =
+      units === nothing &&
       groups.length === 0 && shownCategories.length === 0 && !withoutCategory && objectGroups === nothing;
     return html`<div class="dd-menu filter-menu" tabindex="-1">
       <input
@@ -164,6 +179,7 @@ export class FilterPicker extends Dropdown {
         .value=${live(this.search)}
         @input=${(e: Event) => (this.search = (e.target as HTMLInputElement).value)}
       />
+      ${units}
       <div role="group" aria-labelledby="hs-filter-amount" class="amount-part">
         <h3 id="hs-filter-amount">${da.amountFilter}</h3>
         ${this.amountField("min", da.from)} ${this.amountField("max", da.to)}

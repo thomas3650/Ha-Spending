@@ -59,6 +59,7 @@ import {
   setPeriod,
   setSearch,
   setSort,
+  setUnit,
 } from "./state/actions";
 import {
   type AmountRange,
@@ -555,6 +556,7 @@ export class SpendingApp extends LitElement {
             @remove-unit=${() => this.push(removeUnit(this.state))}
             @set-amount=${(e: CustomEvent<AmountRange | null>) => this.push(setAmount(this.state, e.detail))}
             @set-object-group=${(e: CustomEvent<string | null>) => this.push(setObjectGroup(this.state, e.detail))}
+            @set-unit=${(e: CustomEvent<string>) => this.push(setUnit(this.state, e.detail))}
             @set-main-group=${(e: CustomEvent<string | null>) => this.push(setMainGroup(this.state, e.detail))}
             @set-category=${(e: CustomEvent<CategoryChoice>) =>
               this.push(setCategory(this.state, e.detail.mainGroup, e.detail.category))}

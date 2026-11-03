@@ -28,6 +28,7 @@ import {
   setObjectGroup,
   setPeriod,
   setSearch,
+  setUnit,
   setSort,
 } from "../src/state/actions";
 import { DEFAULT_STATE, type DetailKey, type ViewState } from "../src/state/view";
@@ -71,6 +72,14 @@ describe("the actions", () => {
     expect(off.card).toBe("bars");
     expect(chooseUnit(s, "2026-08-01").unit).toBe("2026-08-01");
     expect(chooseUnit(s, "2026-08-01").card).toBe("postings");
+  });
+
+  it("sets a unit without touching the card, toggles it and replaces it", () => {
+    const s = setUnit({ ...DEFAULT_STATE, card: "bars" }, "2026-07-01");
+    expect(s.unit).toBe("2026-07-01");
+    expect(s.card).toBe("bars");
+    expect(setUnit(s, "2026-07-01").unit).toBeNull();
+    expect(setUnit(s, "2026-08-01")).toMatchObject({ unit: "2026-08-01", card: "bars" });
   });
 
   it("keeps the postings card when a unit is toggled off", () => {

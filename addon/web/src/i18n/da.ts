@@ -220,6 +220,14 @@ export const da = {
   postingsLink: (counted: string) => `${counted} →`,
   subscriptionCount: (n: number) => `${n} ${n === 1 ? "fast udgift" : "faste udgifter"}`,
   subscriptions: "Faste udgifter",
+  fixedPayments: "Faste betalinger",
+  unitsHeading: {
+    day: "Dage",
+    week: "Uger",
+    month: "Måneder",
+    quarter: "Kvartaler",
+    year: "År",
+  } satisfies Record<Grouping, string>,
   subscriptionsIn: (name: string) => `Faste udgifter i ${name}`,
   perYear: (value: string) => `${value} om året`,
   subscriptionColumns: {

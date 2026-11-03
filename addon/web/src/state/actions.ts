@@ -52,6 +52,10 @@ export function chooseUnit(s: ViewState, fullStart: string): ViewState {
   return s.unit === fullStart ? withoutUnit(s) : { ...s, unit: fullStart, card: "postings" };
 }
 
+export function setUnit(s: ViewState, fullStart: string): ViewState {
+  return s.unit === fullStart ? withoutUnit(s) : { ...s, unit: fullStart };
+}
+
 export function setCard(s: ViewState, card: Card): ViewState {
   return { ...s, card };
 }
