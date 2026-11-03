@@ -7,6 +7,17 @@ import { fire } from "./chip";
 const ROWS_SHOWN = 10;
 const TITLE = "hs-detail-title";
 
+/**
+ * The newest `size` rows, newest first, when the marked row is among them; else the marked row with 4 newer and 5
+ * older, shifted to newer when fewer than 5 are older.
+ */
+export function rowWindow<T extends { marked: boolean }>(rows: T[], size: number): T[] {
+  const at = rows.findIndex((r) => r.marked);
+  if (at < size) return rows.slice(0, size);
+  const start = Math.max(0, Math.min(at - 4, rows.length - size));
+  return rows.slice(start, start + size);
+}
+
 function keyOf(view: DetailView | undefined): string | null {
   return view === undefined ? null : `${view.key.kind}:${view.key.id}`;
 }
@@ -60,10 +71,13 @@ export class Detail extends LitElement {
     const top = Math.max(0, ...bars.map((b) => b.amount));
     return html`<ul class="detail-bars" role="list" aria-label=${this.view.per}>
       ${bars.map(
-        (b) => html`<li>
+        (b) => html`<li title=${b.label}>
           <span class="detail-bar-space" aria-hidden="true">
             ${b.amount > 0 && top > 0
-              ? html`<span class="detail-bar" style=${styleMap({ height: `${(b.amount / top) * 100}%` })}></span>`
+              ? html`<span
+                  class="detail-bar ${b.running ? "running" : ""}"
+                  style=${styleMap({ height: `${(b.amount / top) * 100}%` })}
+                ></span>`
               : nothing}
           </span>
           <span class="detail-bar-name" aria-hidden="true">${b.name}</span>
@@ -76,7 +90,7 @@ export class Detail extends LitElement {
   private rows() {
     const all = this.view.rows;
     if (all.length === 0) return html`<p class="empty">${da.noDetailRows}</p>`;
-    const rows = this.all ? all : all.slice(0, ROWS_SHOWN);
+    const rows = this.all ? all : rowWindow(all, ROWS_SHOWN);
     return html`<table class="detail-rows">
         <tbody>
           ${rows.map(
@@ -332,6 +346,9 @@ export const detailStyles = css`
     width: 100%;
     background: var(--hs-accent);
     border-radius: 2px 2px 0 0;
+  }
+  .detail-bar.running {
+    opacity: 0.5;
   }
   .detail-bar-name {
     margin-top: 4px;

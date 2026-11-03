@@ -160,13 +160,24 @@ describe("what a key opens", () => {
   });
 });
 
+describe("a subscription's context line", () => {
+  it("a subscription whose object group shares its main group's name shows the name once", () => {
+    const data = withSubscriptions(linkedPizza(), [...SUBSCRIPTIONS, { ...PIZZA, objectGroup: "Mad" }]);
+    const postings = data.postings.map((p) =>
+      p.shop === "Pizzeria Roma" ? { ...p, subscription: { id: "b7", name: "Pizzaabonnement", objectGroup: "Mad" } } : p,
+    );
+    expect(shown(sub("b7"), { ...data, postings }).context).toBe("Mad");
+  });
+});
+
 describe("a detail's bars", () => {
   it("one bar per unit of the period, none drawn at zero or below", () => {
     const months = shown(posting(PIZZA_PAID), answerFor(FETCHED));
     expect(months.per).toBe(da.detailPer("month"));
     expect(months.bars).toHaveLength(10);
     expect(months.bars.filter((b) => b.amount > 0).map((b) => b.label)).toEqual(["September 2026: 500 kr."]);
-    expect(months.bars[0]).toMatchObject({ amount: 0, label: "Januar 2026: 0 kr." });
+    expect(months.bars[0]).toMatchObject({ amount: 0, label: "Januar 2026: 0 kr.", running: false });
+    expect(months.bars[9]).toMatchObject({ running: true, label: `Oktober 2026: 0 kr. (${da.inProgress})` });
 
     const weeks = shown(posting(PIZZA_PAID), answerFor(FETCHED), { grouping: "week" });
     expect(weeks.per).toBe(da.detailPer("week"));

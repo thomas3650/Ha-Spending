@@ -11,6 +11,7 @@ import {
 import { count, detailAmount, detailKr, tableDate, unitAxis, unitName } from "../format";
 import { da } from "../i18n/da";
 import type { DetailKey } from "../state/view";
+import { isRunning } from "../components/bars";
 import { partName, type ViewContext } from "./context";
 import { byDate } from "./filter";
 import { linkBase, postingHref } from "./postings";
@@ -27,6 +28,8 @@ export interface DetailBar {
   /** Øre, net; a unit at zero or below keeps its place but draws no bar. */
   amount: number;
   label: string;
+  /** Runs on today; drawn lighter and labelled "i gang". */
+  running: boolean;
 }
 
 export interface DetailRow {
@@ -79,11 +82,11 @@ function common(ctx: ViewContext, rows: ClassifiedPosting[], marked: string | nu
         marked: p.id === marked,
         href: postingHref(base, p),
       })),
-    bars: ctx.units.map((unit, i) => ({
-      name: unitAxis(unit, g),
-      amount: totals[i],
-      label: `${unitName(unit, g)}: ${detailKr(totals[i])}`,
-    })),
+    bars: ctx.units.map((unit, i) => {
+      const running = isRunning(unit, ctx.today);
+      const label = `${unitName(unit, g)}: ${detailKr(totals[i])}`;
+      return { name: unitAxis(unit, g), amount: totals[i], label: running ? `${label} (${da.inProgress})` : label, running };
+    }),
     first: {
       label: da.detailInPeriod,
       value: detailKr(total(rows)),
@@ -112,10 +115,11 @@ function subscriptionView(
   const last = s.lastPayment;
   const category = last?.category ?? null;
   const mainGroup = category === null ? null : (ctx.data.categories.find((x) => x.name === category)?.mainGroup ?? null);
+  const group = partName(mainGroup, "mainGroup");
   return {
     kind: "subscription",
     key,
-    context: last === null ? s.objectGroup : `${partName(mainGroup, "mainGroup")} · ${s.objectGroup}`,
+    context: last === null || group === s.objectGroup ? s.objectGroup : `${group} · ${s.objectGroup}`,
     title: s.name,
     amount: paymentText(s),
     status: statusCell(subscriptionStatus(s, ctx.data.today), ctx.data.today),
