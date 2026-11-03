@@ -139,7 +139,7 @@ to set their status to `superseded by D<n>`, or to name a part a later decision 
 - **Source:** Claude, [data plan](superpowers/plans/2026-10-31-data.md)
 
 ### D16: The unit rules where the UI spec leaves a choice
-- **Date:** 2026-10-31 · **Status:** active
+- **Date:** 2026-10-31 · **Status:** active; the comparison superseded by D53
 - **Decision:**
   - Only the running unit is partial. A unit clipped at the period's start or end is shown clipped, but counts as a
     whole unit in averages and comparisons.
@@ -269,7 +269,7 @@ to set their status to `superseded by D<n>`, or to name a part a later decision 
 - **Source:** Thomas, 2026-10-31 ("the circel to the left can be bigger", "and bigger fonts on the cirkel")
 
 ### D28: A narrow circle lists its parts under the ring
-- **Date:** 2026-10-31 · **Status:** active
+- **Date:** 2026-10-31 · **Status:** active; the count superseded by D53
 - **Decision:** On a chart narrower than 400 px the ring is 240 px high and has no labels beside it. Its parts are listed
   under it instead, with a colour dot, the name and the amount and share; a part is chosen from the list. Below 600 px
   the three key numbers stack. Pie labels keep 8 px between them.
@@ -531,3 +531,21 @@ to set their status to `superseded by D<n>`, or to name a part a later decision 
 - **Why:** Thomas found the button unneeded beside the key number's link in the 0.11.0 walkthrough; full screen has no
   other way in.
 - **Source:** Thomas, 2026-11-03; [walkthrough fixes spec](superpowers/specs/2026-11-03-walkthrough-fixes.md) §1
+
+### D53: The key numbers have no comparisons
+- **Date:** 2026-11-03 · **Status:** active
+- **Decision:**
+  - No key number compares. Without a chosen unit the row is the period's sum and the average per unit; with one, the
+    unit's sum. No key number shows ▲, ▼, a signed percentage or red.
+  - At 1024 px and wider the row has five columns, each card a fifth of the row, starting at the left, with the rest of
+    the row empty. From 600 to 1023 px it has two columns, and below 600 px one column, whatever the number of cards.
+  - A period with more than one unit is fetched without the unit before it. A one-unit period still gets the 12 units
+    before it for its average.
+  - This replaces UI spec §3 (the third key number and its rule) and §4.4 (the comparisons), and technical spec §4 (the
+    comparison rules, the widened fetch and the "–" for a comparison with no data). Of D16, its third bullet and the
+    comparison halves of its first and fourth bullets go; its other rules hold. D28's count of the stacked key numbers
+    is superseded.
+- **Why:** Thomas did not use the comparisons in the 0.11.0 walkthrough, and #118 showed "–" with a red ▲ when the
+  earlier amount was 0 or less.
+- **Source:** Thomas, 2026-11-03: "i dont need i, if it is needed it needs a new design" and "B but remove the eamplty
+  cards"; [remove comparison spec](superpowers/specs/2026-11-03-remove-comparison.md) §1 and §2
