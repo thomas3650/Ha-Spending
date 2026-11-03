@@ -1,6 +1,7 @@
 import {
   amountPerYear,
   type ClassifiedPosting,
+  isRunning,
   type Subscription,
   type SubscriptionStatus,
   subscriptionStatus,
@@ -11,7 +12,6 @@ import {
 import { count, detailAmount, detailKr, tableDate, unitAxis, unitName } from "../format";
 import { da } from "../i18n/da";
 import type { DetailKey } from "../state/view";
-import { isRunning } from "../components/bars";
 import { partName, type ViewContext } from "./context";
 import { byDate } from "./filter";
 import { linkBase, postingHref } from "./postings";

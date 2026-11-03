@@ -17,8 +17,12 @@ export interface BarItem {
   choose: string;
 }
 
-export function isRunning(unit: Unit, today: string): boolean {
-  return unit.partial && unit.fullStart <= today;
+/** A day's name already is its date, so only the other units add their range. */
+export function barTooltip(item: BarItem): string {
+  const lines = [item.name];
+  if (item.unit.fullStart !== item.unit.fullEnd) lines.push(rangeText({ start: item.unit.start, end: item.unit.end }));
+  lines.push(barKr(item.amount));
+  return lines.map(escapeHtml).join("<br>");
 }
 
 export interface BarsAverage {
@@ -30,7 +34,6 @@ export interface UnitSelection {
   fullStart: string;
 }
 
-const RUNNING = 0.5;
 const FADED = 0.3;
 /** About the width of one character of an 11 px axis label, and the gap between two labels. */
 const LABEL_CHAR = 6;
@@ -168,6 +171,7 @@ export class Bars extends LitElement {
     const token = (name: string) => style.getPropertyValue(name).trim();
     const muted = token("--hs-muted");
     const colour = this.colour || token("--hs-accent");
+    const runningOpacity = Number(token("--hs-running-opacity"));
     const anyChosen = this.chosen !== null;
     const items = this.items;
     const running = items.findIndex((i) => i.running);
@@ -179,9 +183,7 @@ export class Bars extends LitElement {
         trigger: "item",
         formatter: (p: { dataIndex: number }) => {
           const item = items[p.dataIndex];
-          if (!item) return "";
-          const range = rangeText({ start: item.unit.start, end: item.unit.end });
-          return `${escapeHtml(item.name)}<br>${escapeHtml(range)}<br>${escapeHtml(barKr(item.amount))}`;
+          return item ? barTooltip(item) : "";
         },
       },
       xAxis: {
@@ -227,7 +229,7 @@ export class Bars extends LitElement {
           },
           data: items.map((item) => {
             const faded = anyChosen && !this.isChosen(item);
-            const opacity = faded ? FADED : item.running ? RUNNING : 1;
+            const opacity = faded ? FADED : item.running ? runningOpacity : 1;
             return { value: item.amount, itemStyle: { color: colour, opacity } };
           }),
           markLine:

@@ -2,6 +2,7 @@ import {
   circle,
   type CirclePart,
   type ClassifiedPosting,
+  isRunning,
   NO_PIECE,
   parts,
   share,
@@ -9,7 +10,7 @@ import {
   unitTotals,
   within,
 } from "@ha-spending/shared";
-import { type BarItem, isRunning } from "../components/bars";
+import type { BarItem } from "../components/bars";
 import type { CircleItem } from "../components/circle";
 import { unitAxis, unitName } from "../format";
 import { dayUnits, partName, type ViewContext } from "./context";

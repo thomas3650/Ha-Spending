@@ -54,6 +54,10 @@ function makeUnit(fullStart: string, fullEnd: string, start: string, end: string
   };
 }
 
+export function isRunning(unit: Unit, today: string): boolean {
+  return unit.partial && unit.fullStart <= today;
+}
+
 export function unitAt(date: string, grouping: Grouping, today: string): Unit {
   const [fullStart, fullEnd] = fullBounds(date, grouping);
   return makeUnit(fullStart, fullEnd, fullStart, fullEnd, today);

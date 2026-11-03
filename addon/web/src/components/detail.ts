@@ -349,7 +349,7 @@ export const detailStyles = css`
     border-radius: 2px 2px 0 0;
   }
   .detail-bar.running {
-    opacity: 0.5;
+    opacity: var(--hs-running-opacity);
   }
   .detail-bar-name {
     margin-top: 4px;
