@@ -2,10 +2,11 @@ import { type Posting, unitAt, unitsOf } from "@ha-spending/shared";
 import { fireEvent, getAllByRole, getByRole, queryByRole, queryByText } from "@testing-library/dom";
 import { afterEach, describe, expect, it } from "vitest";
 
-import { comparisonLabel, kr, unitName } from "../src/format";
+import { kr, unitName } from "../src/format";
 import { da } from "../src/i18n/da";
 import { answerFor } from "./fixture";
 import { json, mount, settle, unmount } from "./mount";
+import { cardNames } from "./text";
 
 afterEach(unmount);
 
@@ -118,8 +119,7 @@ describe("a one-month period draws its days", () => {
     const { root } = await mount("period=lastMonth");
     expect(location.hash).toBe("#period=lastMonth");
     expect((getByRole(root, "combobox", { name: da.groupBy }) as HTMLSelectElement).value).toBe("month");
-    const label = comparisonLabel(unitAt("2026-09-01", "month", TODAY), unitAt("2026-08-01", "month", TODAY), "month");
-    getByRole(root, "group", { name: label });
+    expect(cardNames(root)).toEqual([da.spendingInPeriod, da.averagePer("month")]);
     unmount();
     const postings = await mount("period=lastMonth&card=postings");
     const card = getByRole(postings.root, "region", { name: da.postingsTitle });

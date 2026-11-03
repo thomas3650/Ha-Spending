@@ -1,4 +1,4 @@
-import { addDays, change, fetchRange, type Period, unitAt } from "@ha-spending/shared";
+import { addDays, fetchRange, type Period } from "@ha-spending/shared";
 import {
   findByRole,
   fireEvent,
@@ -12,15 +12,13 @@ import {
 } from "@testing-library/dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { comparisonLabel, kr, longDate, rangeText, signedPercent } from "../src/format";
+import { kr, longDate, rangeText } from "../src/format";
 import { da } from "../src/i18n/da";
 import { answerFor, withSubscriptions } from "./fixture";
 import { json, mount, settle, unmount } from "./mount";
-import { KEEP_NBSP } from "./text";
+import { cardNames, hasArrow } from "./text";
 
 const TODAY = "2026-10-30";
-const sep = unitAt("2026-09-01", "month", TODAY);
-const aug = unitAt("2026-08-01", "month", TODAY);
 /** Keeps Intl's no-break space, which the default normalizer turns into a space. */
 const escaped = (text: string) => new RegExp(text.replace(/[()]/g, "\\$&"));
 
@@ -109,9 +107,8 @@ describe("the frame", () => {
     const second = getByRole(root, "group", { name: da.averagePer("month") });
     getByText(second, kr(1159444));
     getByText(second, da.unitCount(9, "month"));
-    const third = getByRole(root, "group", { name: comparisonLabel(sep, aug, "month") });
-    getByText(third, signedPercent(change(1150000, 1100000)!), KEEP_NBSP);
-    getByText(third, `${da.up} ${kr(50000)}`);
+    expect(cardNames(root)).toEqual([da.spendingInPeriod, da.averagePer("month")]);
+    expect(hasArrow(root)).toBe(false);
   });
 
   it("labels the average of a one-unit period by the months before", async () => {
@@ -671,7 +668,7 @@ describe("the loading placeholder's key-number boxes", () => {
     });
     getByRole(root, "group", { name: da.inPeriod("Faste udgifter") });
     await choosePreset(root, app, da.presets.lastYear);
-    expect(boxes(root)).toBe(5);
+    expect(boxes(root)).toBe(4);
   });
 
   it("the first load's placeholder has 3 boxes", async () => {
@@ -687,10 +684,10 @@ describe("the loading placeholder's key-number boxes", () => {
     await choosePreset(root, app, da.presets.lastYear);
     getByRole(root, "alert");
     await choosePreset(root, app, da.presets.lastMonth);
-    expect(boxes(root)).toBe(5);
+    expect(boxes(root)).toBe(4);
   });
 
-  it("drops back to 3 boxes after an answer with no object groups", async () => {
+  it("drops back to 2 boxes after an answer with no object groups", async () => {
     const { app, root } = await mount("", {
       answer: (range, n) =>
         n === 1 ? json(withSubscriptions(answerFor(range))) : n === 2 ? json(answerFor(range)) : pending(),
@@ -698,6 +695,6 @@ describe("the loading placeholder's key-number boxes", () => {
     await choosePreset(root, app, da.presets.lastYear);
     expect(queryByRole(root, "group", { name: da.loading })).toBeNull();
     await choosePreset(root, app, da.presets.lastMonth);
-    expect(boxes(root)).toBe(3);
+    expect(boxes(root)).toBe(2);
   });
 });

@@ -11,11 +11,6 @@ const percentFormat = new Intl.NumberFormat("da-DK", {
   style: "percent",
   maximumFractionDigits: 0,
 });
-const percentOneDecimal = new Intl.NumberFormat("da-DK", {
-  style: "percent",
-  minimumFractionDigits: 1,
-  maximumFractionDigits: 1,
-});
 const tableDateFormat = new Intl.DateTimeFormat("da-DK", {
   timeZone: "UTC",
   day: "numeric",
@@ -115,15 +110,6 @@ export function percent(fraction: number): string {
   return percentFormat.format(Math.abs(fraction));
 }
 
-export function signedPercent(fraction: number): string {
-  const sign = fraction < 0 ? "-" : "+";
-  const text = percentFormat.format(Math.abs(fraction));
-  if (!isZero(text)) return `${sign}${text}`;
-  if (fraction === 0) return text;
-  if (Math.abs(fraction) < 0.0005) return `${sign}${da.tinyChange}`;
-  return `${sign}${percentOneDecimal.format(Math.abs(fraction))}`;
-}
-
 export function axisKr(ore: number): string {
   return whole.format(ore / 100);
 }
@@ -193,32 +179,6 @@ export function unitAxis(unit: Unit, g: Grouping): string {
       return da.quarterAxis(quarterOf(date));
     case "year":
       return String(year);
-  }
-}
-
-export function comparisonLabel(unit: Unit, before: Unit, g: Grouping): string {
-  const a = unit.fullStart;
-  const b = before.fullStart;
-  const sameYear = parts(a).year === parts(b).year;
-  switch (g) {
-    case "day":
-      return sameYear
-        ? `${unitAxis(unit, g)} ${da.against} ${unitAxis(before, g)}`
-        : `${tableDate(a)} ${da.against} ${tableDate(b)}`;
-    case "week": {
-      const ia = isoWeek(a);
-      const ib = isoWeek(b);
-      const years = ia.year !== ib.year;
-      return `${da.groupings.week.label} ${ia.week}${years ? ` ${ia.year}` : ""} ${da.against} ${da.groupings.week.one} ${ib.week}${years ? ` ${ib.year}` : ""}`;
-    }
-    case "month":
-      return `${upperFirst(monthName(a))}${sameYear ? "" : ` ${parts(a).year}`} ${da.against} ${monthName(b)}${sameYear ? "" : ` ${parts(b).year}`}`;
-    case "quarter": {
-      const one = da.groupings.quarter.one;
-      return `${quarterOf(a)}. ${one}${sameYear ? "" : ` ${parts(a).year}`} ${da.against} ${quarterOf(b)}. ${one}${sameYear ? "" : ` ${parts(b).year}`}`;
-    }
-    case "year":
-      return `${parts(a).year} ${da.against} ${parts(b).year}`;
   }
 }
 

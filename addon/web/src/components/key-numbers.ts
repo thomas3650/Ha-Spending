@@ -65,7 +65,7 @@ export class KeyNumbers extends LitElement {
       <div class="kpi-label">${c.label}</div>
       <div class="kpi-value">${c.value}</div>
       ${this.postingsLine(c)}
-      <div class="kpi-sub ${c.trend === "up" ? "kpi-up" : ""}">${c.sub}</div>
+      <div class="kpi-sub">${c.sub}</div>
     </div>`;
   }
 
@@ -181,9 +181,6 @@ export const keyNumbersStyles = css`
     color: var(--hs-muted);
     font-size: 12px;
     margin-top: 2px;
-  }
-  .kpi-sub.kpi-up {
-    color: var(--hs-up);
   }
   .kpi-bone {
     height: 12px;

@@ -9,11 +9,11 @@ import {
 } from "@testing-library/dom";
 import { afterEach, describe, expect, it } from "vitest";
 
-import { comparisonLabel, kr, partLabel, percent, unitName } from "../src/format";
+import { kr, partLabel, percent, unitName } from "../src/format";
 import { da } from "../src/i18n/da";
 import { partName } from "../src/model/context";
 import { mount, settle, unmount } from "./mount";
-import { KEEP_NBSP } from "./text";
+import { cardNames, hasArrow, KEEP_NBSP } from "./text";
 
 const TODAY = "2026-10-30";
 const TOTAL = 11566012;
@@ -104,13 +104,10 @@ describe("screen 2, a main group", () => {
     getByRole(right, "button", { name: da.remove("Café") });
   });
 
-  it("shows a category without a comparison base", async () => {
-    const { root } = await mount("group=Mad&category=Café");
-    const sep = unitAt("2026-09-01", "month", TODAY);
-    const aug = unitAt("2026-08-01", "month", TODAY);
-    const third = getByRole(root, "group", { name: comparisonLabel(sep, aug, "month") });
-    getByText(third, da.none);
-    getByText(third, `${da.up} ${kr(50000)}`);
+  it("shows the key numbers of the main group", async () => {
+    const { root } = await mount("group=Mad");
+    expect(cardNames(root)).toEqual([da.inPeriod("Mad"), da.averagePer("month")]);
+    expect(hasArrow(root)).toBe(false);
   });
 
   it("goes back up through the trail", async () => {

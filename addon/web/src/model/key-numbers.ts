@@ -1,14 +1,5 @@
-import {
-  change,
-  chosenUnitNumbers,
-  type Grouping,
-  keyNumbers,
-  type Period,
-  share,
-  type Unit,
-  within,
-} from "@ha-spending/shared";
-import { comparisonLabel, kr, percent, rangeText, signedPercent, unitName } from "../format";
+import { chosenUnitNumbers, keyNumbers, type Period, share, type Unit, within } from "@ha-spending/shared";
+import { kr, percent, rangeText, unitName } from "../format";
 import { da } from "../i18n/da";
 import { levelName, type ViewContext } from "./context";
 
@@ -16,7 +7,6 @@ export interface KeyCard {
   label: string;
   value: string;
   sub: string;
-  trend: "up" | "down" | null;
   /** The card's way to Alle posteringer; `href` is the hash it opens. */
   postings?: { count: number; href: string };
 }
@@ -31,28 +21,7 @@ function shareSub(ctx: ViewContext, amount: number, range: Period): string {
     : da.shareOf(percent(fraction), levelName(ctx.parentLevel));
 }
 
-function comparisonCard(unit: Unit, amount: number, before: Unit, beforeAmount: number | null, g: Grouping): KeyCard {
-  const label = comparisonLabel(unit, before, g);
-  if (beforeAmount === null) return { label, value: da.none, sub: da.noData(unitName(before, g)), trend: null };
-  const diff = amount - beforeAmount;
-  const ratio = change(amount, beforeAmount);
-  return {
-    label,
-    value: ratio === null ? da.none : signedPercent(ratio),
-    sub: arrowed(diff),
-    trend: trendOf(diff),
-  };
-}
-
-function arrowed(diff: number): string {
-  return diff > 0 ? `${da.up} ${kr(diff)}` : diff < 0 ? `${da.down} ${kr(diff)}` : kr(0);
-}
-
-function trendOf(diff: number): KeyCard["trend"] {
-  return diff > 0 ? "up" : diff < 0 ? "down" : null;
-}
-
-function periodCards(ctx: ViewContext): [KeyCard, KeyCard, KeyCard] {
+function periodCards(ctx: ViewContext): [KeyCard, KeyCard] {
   const g = ctx.timeline.grouping;
   const numbers = keyNumbers(ctx.shown, ctx.timeline);
   const level = ctx.state.level;
@@ -61,7 +30,6 @@ function periodCards(ctx: ViewContext): [KeyCard, KeyCard, KeyCard] {
     label: level.kind === "all" ? da.spendingInPeriod : da.inPeriod(levelName(level)),
     value: kr(numbers.total),
     sub: shareSub(ctx, numbers.total, ctx.timeline.period),
-    trend: null,
   };
 
   const avg = numbers.average;
@@ -74,17 +42,12 @@ function periodCards(ctx: ViewContext): [KeyCard, KeyCard, KeyCard] {
         : avg.units === 0
           ? da.noDataBefore
           : da.averageBefore(avg.units, g),
-    trend: null,
   };
 
-  const c = numbers.comparison;
-  const third: KeyCard = c
-    ? comparisonCard(c.unit, c.amount, c.before, c.beforeAmount, g)
-    : { label: `${da.none} ${da.against} ${da.none}`, value: da.none, sub: "", trend: null };
-  return [first, second, third];
+  return [first, second];
 }
 
-function unitCards(ctx: ViewContext, unit: Unit): [KeyCard, KeyCard, KeyCard] {
+function unitCards(ctx: ViewContext, unit: Unit): [KeyCard] {
   const g = ctx.timeline.grouping;
   const numbers = chosenUnitNumbers(ctx.shown, ctx.timeline, unit);
   const level = ctx.state.level;
@@ -94,28 +57,15 @@ function unitCards(ctx: ViewContext, unit: Unit): [KeyCard, KeyCard, KeyCard] {
     label: level.kind === "all" ? da.unitTotal(name) : da.levelInUnit(levelName(level), name),
     value: kr(numbers.amount),
     sub: shareSub(ctx, numbers.amount, { start: unit.start, end: unit.end }),
-    trend: null,
   };
 
-  const avg = numbers.average.amount;
-  const ratio = change(numbers.amount, avg);
-  const second: KeyCard =
-    avg === null
-      ? { label: da.vsAverage, value: da.none, sub: da.noDataBefore, trend: null }
-      : {
-          label: da.vsAverage,
-          value: ratio === null ? da.none : signedPercent(ratio),
-          sub: da.vsAverageSub(arrowed(numbers.amount - avg), kr(avg), g),
-          trend: trendOf(numbers.amount - avg),
-        };
-
-  return [first, second, comparisonCard(unit, numbers.amount, numbers.before, numbers.beforeAmount, g)];
+  return [first];
 }
 
-export function keyCards(ctx: ViewContext, href: string): [KeyCard, KeyCard, KeyCard] {
-  const [first, second, third] = ctx.chosen === null ? periodCards(ctx) : unitCards(ctx, ctx.chosen);
+export function keyCards(ctx: ViewContext, href: string): KeyCard[] {
+  const [first, ...rest] = ctx.chosen === null ? periodCards(ctx) : unitCards(ctx, ctx.chosen);
   const postings = { count: within(ctx.shown, ctx.chosen ?? ctx.timeline.period).length, href };
-  return [{ ...first, postings }, second, third];
+  return [{ ...first, postings }, ...rest];
 }
 
 const DAY = 24 * 60 * 60 * 1000;
@@ -152,8 +102,7 @@ export function objectGroupCards(ctx: ViewContext, hrefOf: (title: string) => st
         label: da.inPeriod(name),
         value: kr(sum),
         sub,
-        trend: null,
-        postings: { count: payments.length, href: hrefOf(name) },
+            postings: { count: payments.length, href: hrefOf(name) },
       };
     });
 }
