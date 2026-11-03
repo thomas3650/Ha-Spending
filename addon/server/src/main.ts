@@ -1,11 +1,10 @@
 import { serve } from "@hono/node-server";
-import { localToday, type SpendingData } from "@ha-spending/shared";
-import { createApp, type DataLoader } from "./app";
-import { createCache } from "./cache";
+import { createApp } from "./app";
 import { serverEnv } from "./env";
 import { createFireflyClient, FireflyError } from "./firefly/client";
 import { createHiddenShopsStore } from "./hidden-shops";
-import { READ_TIMEOUT_MS, type ReadSettings, readSpendingData, readVersion } from "./firefly/read";
+import { READ_TIMEOUT_MS, type ReadSettings, readVersion } from "./firefly/read";
+import { createDataLoader } from "./loader";
 import { type Options, OptionsError, readOptions } from "./options";
 import { createChatTools } from "./sorter/chat";
 import { createSorterApp, SORTER_PORT } from "./sorter/http";
@@ -33,11 +32,7 @@ const settings: ReadSettings = {
   pageSize: 500,
   timeoutMs: READ_TIMEOUT_MS,
 };
-const cache = createCache<SpendingData>({ ttlMs: 300_000, max: 20 });
-const loadData: DataLoader = (range) =>
-  cache.get(`${range.start}|${range.end}`, () =>
-    readSpendingData(client, settings, range, { today: localToday(new Date()), warn: console.warn }),
-  );
+const loadData = createDataLoader(client, settings, () => new Date(), console.warn);
 
 const hiddenShops = createHiddenShopsStore(env.hiddenShopsPath, console.error);
 const app = createApp({ webDir: env.webDir, dev: env.dev, loadData, hiddenShops });

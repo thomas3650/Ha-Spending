@@ -50,7 +50,9 @@ cards and on Alle posteringer ([D44](decisions.md)).
   address and token the server logs what is missing and exits 1.
 - **The hidden shops** are a file, `/data/hidden-shops.json` or `HA_SPENDING_HIDDEN_SHOPS`, read on every request and
   replaced whole on a write (`addon/server/src/hidden-shops.ts`, [D43](decisions.md)).
-- **The cache** keeps an answer per period for a few minutes (`addon/server/src/cache.ts`).
+- **The cache** keeps an answer per period for a few minutes, and the parts that do not depend on the period per day:
+  the main-group rules, the categories, the asset accounts, the earliest posting date and the subscriptions
+  (`addon/server/src/loader.ts`, `addon/server/src/cache.ts`, [D49](decisions.md)).
 - **The version** comes from `addon/server/src/version.ts`, which release-please bumps
   ([`releasing.md`](releasing.md#versions)).
 

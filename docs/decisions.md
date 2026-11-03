@@ -469,3 +469,13 @@ to set their status to `superseded by D<n>`, or to name a part a later decision 
   [detail view spec](superpowers/specs/2026-11-02-detail-view.md) §2.6's one sign.
 - **Why:** Beside the list, an opposite sign read as wrong, and a row was expected to open its posting.
 - **Source:** Thomas, 2026-11-02, from the detail in use
+
+### D49: The server keeps the span-free parts per day and reads a list's pages 4 at a time
+- **Date:** 2026-11-03 · **Status:** active
+- **Decision:** The main-group rules, the categories, the asset accounts, the earliest posting date and the
+  subscriptions are read once per day and kept 5 minutes, under their own signal, so a new span reads only its
+  postings. A list's pages after the first are read at most 4 at a time. This replaces the pages "one after another" of
+  the [technical spec](superpowers/specs/2026-10-30-technical-design.md) §3.3.
+- **Why:** About 1.4 s of every uncached load went to the parts that do not depend on the span, and about 0.7 s to
+  each page of postings read in turn.
+- **Source:** Thomas, 2026-11-03; [UI polish spec](superpowers/specs/2026-11-03-ui-polish.md) §1.1

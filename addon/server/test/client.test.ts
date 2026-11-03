@@ -141,14 +141,26 @@ describe("the Firefly III client", () => {
 
   it("lets the first error win", async () => {
     const fake = createFakeFirefly(exampleSeed);
+    let hanging = 0;
+    let aborted = 0;
     const fetch: FetchLike = (input, init) => {
       if (String(input).includes("/categories")) return fake.fetch(input, { ...init, headers: {} });
       // The others hang until the first failure aborts them, and then fail as unreachable.
-      return new Promise((_, reject) => init?.signal?.addEventListener("abort", () => reject(init.signal!.reason)));
+      hanging++;
+      return new Promise((_, reject) => {
+        const abort = () => {
+          aborted++;
+          reject(init!.signal!.reason);
+        };
+        if (init?.signal?.aborted) abort();
+        else init?.signal?.addEventListener("abort", abort);
+      });
     };
     const client = createFireflyClient({ baseUrl: "http://f", token: "fake-token", fetch });
-    const error = await failure(readSpendingData(client, settings, R1, context));
+    const error = await failure(readSpendingData(client, { ...settings, timeoutMs: 10_000 }, R1, context));
     expect(error.reason).toBe("refused");
+    expect(hanging).toBeGreaterThan(0);
+    expect(aborted).toBe(hanging);
   });
 
   it("follows no redirect", async () => {

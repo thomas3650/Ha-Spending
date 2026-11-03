@@ -63,31 +63,58 @@ function assetNames(groups: WireGroup[]): Map<string, string> {
   return names;
 }
 
+export interface SpanFree {
+  accounts: WireAccount[];
+  categories: WireCategory[];
+  mainGroups: Awaited<ReturnType<typeof readMainGroups>>;
+  earliest: string | null;
+  subscriptions: Awaited<ReturnType<typeof readSubscriptions>>;
+}
+
+/** One failed request stops the others under the same signal, so they do not run on until the timeout. */
+function firstFailure(timeoutMs: number) {
+  const failed = new AbortController();
+  return {
+    signal: AbortSignal.any([AbortSignal.timeout(timeoutMs), failed.signal]),
+    stopOnFailure: <T>(promise: Promise<T>) =>
+      promise.catch((error: unknown) => {
+        failed.abort();
+        throw error;
+      }),
+  };
+}
+
+/** The parts of an answer that do not depend on its span; no span's request aborts them (D49). */
+export async function readSpanFree(client: FireflyClient, settings: ReadSettings, today: string): Promise<SpanFree> {
+  const { signal, stopOnFailure } = firstFailure(settings.timeoutMs);
+  const all = <T>(path: string, query: Record<string, string> = {}) =>
+    getAllPages<T>(client, path, query, settings.pageSize, signal);
+  const [accounts, categories, mainGroups, earliest, subscriptions] = await Promise.all([
+    stopOnFailure(all<WireAccount>("accounts", { type: "asset" })),
+    stopOnFailure(all<WireCategory>("categories")),
+    stopOnFailure(readMainGroups(client, settings, signal)),
+    stopOnFailure(earliestPostingDate(client, today, signal)),
+    stopOnFailure(readSubscriptions(client, settings, today, signal)),
+  ]);
+  return { accounts, categories, mainGroups, earliest, subscriptions };
+}
+
 export async function readSpendingData(
   client: FireflyClient,
   settings: ReadSettings,
   range: Period,
-  context: { today: string; warn: (message: string) => void },
+  context: { today: string; warn: (message: string) => void; spanFree?: () => Promise<SpanFree> },
 ): Promise<SpendingData> {
-  // One failed request stops the others, so they do not run on until the timeout.
-  const failed = new AbortController();
-  const signal = AbortSignal.any([AbortSignal.timeout(settings.timeoutMs), failed.signal]);
-  const all = <T>(path: string, query: Record<string, string> = {}) =>
-    getAllPages<T>(client, path, query, settings.pageSize, signal);
-  const stopOnFailure = <T>(promise: Promise<T>) =>
-    promise.catch((error: unknown) => {
-      failed.abort();
-      throw error;
-    });
-
-  const [groups, listed, wireCategories, mainGroups, earliest, rawSubscriptions] = await Promise.all([
-    stopOnFailure(all<WireGroup>("transactions", { start: range.start, end: range.end, type: "all" })),
-    stopOnFailure(all<WireAccount>("accounts", { type: "asset" })),
-    stopOnFailure(all<WireCategory>("categories")),
-    stopOnFailure(readMainGroups(client, settings, signal)),
-    stopOnFailure(earliestPostingDate(client, context.today, signal)),
-    stopOnFailure(readSubscriptions(client, settings, context.today, signal)),
+  const { signal, stopOnFailure } = firstFailure(settings.timeoutMs);
+  const spanFree = context.spanFree ?? (() => readSpanFree(client, settings, context.today));
+  const [groups, kept] = await Promise.all([
+    stopOnFailure(
+      getAllPages<WireGroup>(client, "transactions", { start: range.start, end: range.end, type: "all" },
+        settings.pageSize, signal),
+    ),
+    stopOnFailure(spanFree()),
   ]);
+  const { accounts: listed, categories: wireCategories, mainGroups, earliest, subscriptions: rawSubscriptions } = kept;
 
   for (const category of mainGroups.conflicts) {
     context.warn(`The main group rules map the category "${category}" to more than one main group; the last rule wins`);
