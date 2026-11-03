@@ -90,7 +90,7 @@ async function pick(app: Parameters<typeof settle>[0], panel: HTMLElement, date:
 }
 
 describe("the frame", () => {
-  it("opens on I år by month with all accounts, asking for the widened range", async () => {
+  it("opens on I år by month with all accounts, asking for the period's range", async () => {
     const { root, fetch } = await mount("");
     expect(fetch).toHaveBeenCalledWith("api/data?start=2026-01-01&end=2026-10-30", expect.anything());
     expect(getByRole(root, "heading", { level: 1, name: da.allSpending })).toBeTruthy();

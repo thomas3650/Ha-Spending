@@ -89,7 +89,7 @@ describe("units", () => {
     expect(isOneUnit(thisYear, "month", today)).toBe(false);
   });
 
-  it("widens a one-unit period by the 12 units before", () => {
+  it("widens a one-unit period by the 12 units before, and fetches a longer one from its first unit", () => {
     expect(fetchRange(thisYear, "month", today)).toEqual({ start: "2026-01-01", end: "2026-10-30" });
     expect(fetchRange(thisYear, "week", today)).toEqual({ start: "2025-12-29", end: "2026-10-30" });
     expect(fetchRange({ start: "2026-10-01", end: "2026-10-30" }, "month", today)).toEqual({
