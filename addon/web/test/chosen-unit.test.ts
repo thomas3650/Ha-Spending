@@ -153,6 +153,12 @@ describe("screen 4, a chosen unit", () => {
     expect(location.hash).toBe("");
   });
 
+  it("the Forskel button is last", async () => {
+    const { root } = await mount("unit=2026-07-01");
+    const buttons = getAllByRole(viewSwitch(root), "button");
+    expect(buttons.at(-1)).toBe(getByRole(viewSwitch(root), "button", { name: da.difference }));
+  });
+
   it("shows only the unit in Posteringer", async () => {
     const { root } = await mount("unit=2026-07-01&card=postings");
     const card = getByRole(root, "region", { name: da.postingsTitle });

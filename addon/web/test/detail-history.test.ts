@@ -48,6 +48,14 @@ describe("the detail in the history", () => {
     getByRole(root, "region", { name: da.postingsTitle });
   });
 
+  it("a detail-open for a key that does not resolve adds no history entry", async () => {
+    const { app } = await mount("card=postings");
+    const length = history.length;
+    await open(app, { kind: "posting", id: "nope" });
+    expect(history.length).toBe(length);
+    expect(location.hash).toBe("#card=postings");
+  });
+
   it("two rows then Back shows the list", async () => {
     const { app } = await mount("card=postings");
     const length = history.length;

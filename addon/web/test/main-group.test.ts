@@ -70,7 +70,7 @@ describe("screen 2, a main group", () => {
     getByText(first, da.shareOf(percent(share(CAFE, MAD) ?? 0), "Mad"), KEEP_NBSP);
     expect(location.hash).toBe("#group=Mad&category=Caf%C3%A9");
     getByText(circleCard(root), da.chosenHint("Mad"));
-    getByRole(root, "region", { name: da.levelPer("Café", "month") });
+    getByRole(root, "region", { name: da.levelPer("Mad", "month") });
 
     fireEvent.click(cafeButton(root));
     await settle(app);
@@ -80,7 +80,7 @@ describe("screen 2, a main group", () => {
 
   it("removes the category with its chip", async () => {
     const { app, root } = await mount("group=Mad&category=Café");
-    const right = getByRole(root, "region", { name: da.levelPer("Café", "month") });
+    const right = getByRole(root, "region", { name: da.levelPer("Mad", "month") });
     fireEvent.click(getByRole(right, "button", { name: da.remove("Café") }));
     await settle(app);
     getByRole(root, "heading", { level: 1, name: "Mad" });
@@ -88,9 +88,19 @@ describe("screen 2, a main group", () => {
     expect(queryByRole(root, "button", { name: da.remove("Café") })).toBeNull();
   });
 
-  it("titles the postings with the chosen category and keeps the chip", async () => {
+  it("titles the right card by the main group with a category chosen, and keeps the category's chip", async () => {
+    const { app, root } = await mount("group=Mad&category=Café");
+    const right = getByRole(root, "region", { name: da.levelPer("Mad", "month") });
+    const heading = getByRole(right, "heading", { name: da.levelPer("Mad", "month") });
+    expect(heading.textContent).not.toContain("Café");
+    fireEvent.click(getByRole(right, "button", { name: da.remove("Café") }));
+    await settle(app);
+    expect(location.hash).toBe("#group=Mad");
+  });
+
+  it("titles the postings by the main group and keeps the category's chip", async () => {
     const { root } = await mount("group=Mad&category=Café&card=postings");
-    const right = getByRole(root, "region", { name: da.postingsOf("Café") });
+    const right = getByRole(root, "region", { name: da.postingsOf("Mad") });
     getByRole(right, "button", { name: da.remove("Café") });
   });
 
@@ -134,7 +144,7 @@ describe("screen 2, a main group", () => {
     getByRole(root, "heading", { level: 1, name: da.noCategory });
     expect(button().getAttribute("aria-pressed")).toBe("true");
     expect(location.hash).toBe("#group=&category=");
-    const right = getByRole(root, "region", { name: da.levelPer(da.noCategory, "month") });
+    const right = getByRole(root, "region", { name: da.levelPer(da.noMainGroup, "month") });
     getByRole(right, "button", { name: da.remove(da.noCategory) });
   });
 

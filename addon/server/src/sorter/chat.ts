@@ -12,6 +12,7 @@ import {
 import { type FireflyClient, getAllPages } from "../firefly/client";
 import { readMainGroups, readSpendingData } from "../firefly/read";
 import type { WireGroup, WireSplit } from "../firefly/wire";
+import { logger } from "../log";
 import { NO_SHOP, REFUSED } from "./shop";
 import {
   AMOUNT,
@@ -120,7 +121,7 @@ const DATA_NOTE =
 export function createChatTools(
   client: FireflyClient,
   settings: ChatSettings,
-  log: (message: string) => void = console.log,
+  log: (message: string) => void = logger.info,
   now: () => Date = () => new Date(),
 ): Tool[] {
   const findPostings: Tool = {

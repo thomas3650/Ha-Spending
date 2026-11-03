@@ -7,6 +7,17 @@ import { fire } from "./chip";
 const ROWS_SHOWN = 10;
 const TITLE = "hs-detail-title";
 
+/**
+ * The newest `size` rows, newest first, when the marked row is among them; else the marked row with 4 newer and 5
+ * older, shifted to newer when fewer than 5 are older.
+ */
+export function rowWindow<T extends { marked: boolean }>(rows: T[], size: number): T[] {
+  const at = rows.findIndex((r) => r.marked);
+  if (at < size) return rows.slice(0, size);
+  const start = Math.max(0, Math.min(at - 4, rows.length - size));
+  return rows.slice(start, start + size);
+}
+
 function keyOf(view: DetailView | undefined): string | null {
   return view === undefined ? null : `${view.key.kind}:${view.key.id}`;
 }
@@ -60,10 +71,13 @@ export class Detail extends LitElement {
     const top = Math.max(0, ...bars.map((b) => b.amount));
     return html`<ul class="detail-bars" role="list" aria-label=${this.view.per}>
       ${bars.map(
-        (b) => html`<li>
+        (b) => html`<li title=${b.label}>
           <span class="detail-bar-space" aria-hidden="true">
             ${b.amount > 0 && top > 0
-              ? html`<span class="detail-bar" style=${styleMap({ height: `${(b.amount / top) * 100}%` })}></span>`
+              ? html`<span
+                  class="detail-bar ${b.running ? "running" : ""}"
+                  style=${styleMap({ height: `${(b.amount / top) * 100}%` })}
+                ></span>`
               : nothing}
           </span>
           <span class="detail-bar-name" aria-hidden="true">${b.name}</span>
@@ -76,7 +90,7 @@ export class Detail extends LitElement {
   private rows() {
     const all = this.view.rows;
     if (all.length === 0) return html`<p class="empty">${da.noDetailRows}</p>`;
-    const rows = this.all ? all : all.slice(0, ROWS_SHOWN);
+    const rows = this.all ? all : rowWindow(all, ROWS_SHOWN);
     return html`<table class="detail-rows">
         <tbody>
           ${rows.map(
@@ -127,7 +141,7 @@ export class Detail extends LitElement {
             <dd>
               <span class="detail-box-value">${b.value}</span>${b.count === undefined
                 ? nothing
-                : html` <span class="detail-box-count">· ${b.count}</span>`}
+                : html` <span class="detail-box-count">${b.count}</span>`}
             </dd>
           </div>`,
         )}
@@ -167,12 +181,18 @@ export const detailStyles = css`
   }
   .detail-split.open {
     display: grid;
-    grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+    grid-template-columns: minmax(0, 11fr) minmax(0, 9fr);
   }
   .detail-split.open > .split-list {
     padding-right: 16px;
   }
   .detail-split.open > .split-detail {
+    position: sticky;
+    top: 0;
+    align-self: start;
+    /* Room for the card's and the page's padding under the split, so at the list's end its top stays in view. */
+    max-height: calc(100vh - 48px);
+    overflow-y: auto;
     padding-left: 16px;
     border-left: 1px solid var(--hs-line);
   }
@@ -185,6 +205,9 @@ export const detailStyles = css`
       display: none;
     }
     .detail-split.open > .split-detail {
+      position: static;
+      max-height: none;
+      overflow-y: visible;
       padding-left: 0;
       border-left: 0;
     }
@@ -283,6 +306,14 @@ export const detailStyles = css`
     margin: 2px 0 0;
     font-variant-numeric: tabular-nums;
   }
+  .detail-box-value,
+  .detail-box-count {
+    display: block;
+  }
+  .detail-box-count {
+    color: var(--hs-muted);
+    font-size: 12px;
+  }
   .detail-boxes > div:first-child .detail-box-value {
     font-size: 20px;
     font-weight: bold;
@@ -316,6 +347,9 @@ export const detailStyles = css`
     width: 100%;
     background: var(--hs-accent);
     border-radius: 2px 2px 0 0;
+  }
+  .detail-bar.running {
+    opacity: 0.5;
   }
   .detail-bar-name {
     margin-top: 4px;

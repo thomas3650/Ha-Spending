@@ -1,7 +1,7 @@
 import type { Posting, SpendingData, Subscription } from "@ha-spending/shared";
 import { describe, expect, it } from "vitest";
 
-import { count, detailAmount, detailKr, rangeText, tableDate } from "../src/format";
+import { count, detailAmount, detailKr, tableDate } from "../src/format";
 import { da } from "../src/i18n/da";
 import { viewContext } from "../src/model/context";
 import { detailView, type DetailView } from "../src/model/detail";
@@ -61,7 +61,6 @@ const PIZZA_PAID = "p24";
 const PIZZA_REFUND = "p25";
 const KIOSK = "p31";
 
-const thisYear = () => viewContext(answerFor(FETCHED), DEFAULT_STATE, TODAY).timeline.period;
 
 describe("a detail's rows", () => {
   it("a subscription's rows are its postings in the period on the ticked accounts", () => {
@@ -72,7 +71,7 @@ describe("a detail's rows", () => {
       ["10", "09", "08", "07", "06", "05", "04", "03", "02", "01"].map((m) => tableDate(`2026-${m}-01`)),
     );
     expect(v.rows.every((r) => r.account === "Fælleskonto" && r.amount === "-8.000,00 kr." && !r.marked)).toBe(true);
-    expect(v.boxes[0]).toEqual({ label: da.detailInPeriod(rangeText(thisYear())), value: "80.000 kr.", count: count(10) });
+    expect(v.boxes[0]).toEqual({ label: da.detailInPeriod, value: "80.000 kr.", count: count(10) });
 
     expect(shown(sub("b1"), linkedRent(), { accounts: ["2"] }).rows).toEqual([]);
     expect(shown(sub("b1"), linkedRent(), { accounts: ["2"] }).boxes[0].value).toBe("0 kr.");
@@ -119,8 +118,17 @@ describe("a detail's rows", () => {
       [PIZZA_REFUND, tableDate("2026-09-22"), "Kreditkort", "+200,00 kr.", false],
       [PIZZA_PAID, tableDate("2026-09-20"), "Kreditkort", "-700,00 kr.", true],
     ]);
-    expect(v.boxes[0]).toEqual({ label: da.detailInPeriod(rangeText(thisYear())), value: "500 kr.", count: count(2) });
+    expect(v.boxes[0]).toEqual({ label: da.detailInPeriod, value: "500 kr.", count: count(2) });
     expect(shown(posting("p13"), answerFor(FETCHED)).rows).toHaveLength(10);
+  });
+
+  it("a shop's rows are those on the ticked accounts when its rows are on a ticked and an unticked account", () => {
+    const data = answerFor(FETCHED);
+    const split = { ...data, postings: data.postings.map((p) => (p.id === PIZZA_REFUND ? { ...p, account: "1" } : p)) };
+    const v = shown(posting(PIZZA_PAID), split, { accounts: ["2"] });
+    expect(v.rows.map((r) => r.id)).toEqual([PIZZA_PAID]);
+    expect(v.boxes[0].value).toBe("700 kr.");
+    expect(shown(posting(PIZZA_PAID), split).rows.map((r) => r.id)).toEqual([PIZZA_REFUND, PIZZA_PAID]);
   });
 
   it("a posting with no shop gives the rows with no shop and the same text", () => {
@@ -161,13 +169,24 @@ describe("what a key opens", () => {
   });
 });
 
+describe("a subscription's context line", () => {
+  it("a subscription whose object group shares its main group's name shows the name once", () => {
+    const data = withSubscriptions(linkedPizza(), [...SUBSCRIPTIONS, { ...PIZZA, objectGroup: "Mad" }]);
+    const postings = data.postings.map((p) =>
+      p.shop === "Pizzeria Roma" ? { ...p, subscription: { id: "b7", name: "Pizzaabonnement", objectGroup: "Mad" } } : p,
+    );
+    expect(shown(sub("b7"), { ...data, postings }).context).toBe("Mad");
+  });
+});
+
 describe("a detail's bars", () => {
   it("one bar per unit of the period, none drawn at zero or below", () => {
     const months = shown(posting(PIZZA_PAID), answerFor(FETCHED));
     expect(months.per).toBe(da.detailPer("month"));
     expect(months.bars).toHaveLength(10);
     expect(months.bars.filter((b) => b.amount > 0).map((b) => b.label)).toEqual(["September 2026: 500 kr."]);
-    expect(months.bars[0]).toMatchObject({ amount: 0, label: "Januar 2026: 0 kr." });
+    expect(months.bars[0]).toMatchObject({ amount: 0, label: "Januar 2026: 0 kr.", running: false });
+    expect(months.bars[9]).toMatchObject({ running: true, label: `Oktober 2026: 0 kr. (${da.inProgress})` });
 
     const weeks = shown(posting(PIZZA_PAID), answerFor(FETCHED), { grouping: "week" });
     expect(weeks.per).toBe(da.detailPer("week"));

@@ -55,8 +55,9 @@ would, on the Mac.
 For a change to the Firefly III client, the mapping or the options. `scripts/integration` starts a real Firefly III
 from `addon/dev/firefly/compose.yaml`, makes a user and a token in it, seeds it with the example data, runs the
 server's integration tests against it and removes it, also on failure. They also run the sorter's two tools and the
-chat's tools against it, so their search and their writes, a shop's expense account and a move's notes included, are
-checked on a real Firefly III ([D30](decisions.md), [D32](decisions.md), [D34](decisions.md)). Docker must run. It
+chat's tools against it, so their search and their writes, a shop's expense account, a refund's revenue account and a
+move's notes included, are checked on a real Firefly III ([D30](decisions.md), [D32](decisions.md),
+[D34](decisions.md), [D50](decisions.md)). Docker must run. It
 listens on port 8090; `FIREFLY_PORT` changes that. The token lives only in the run's environment and is never written or
 printed. CI runs the script as the `integration` job ([`releasing.md`](releasing.md#the-workflows)). The design is
 technical spec §7.2 ([technical spec](superpowers/specs/2026-10-30-technical-design.md)); the token script is
@@ -100,8 +101,9 @@ The page's list. Every screenshot is at 1440×960 with the console free of error
     postings. Compare `2-hovedgruppe*.png`.
 11. `18-uden-hovedgruppe`: Uden hovedgruppe as a screen, with its categories and Uden kategori.
 12. `19-alle-posteringer`, `20-stoerste-foerst` (a click on the Beløb header), `21-filter`, `22-ingen-match`: screen 3
-    with chips; sorted by size as a flat list, the Beløb header with ▼ and the other columns sorting by a click; the
-    "+ Filter" panel open; a search nothing matches (`da.noMatch`). Compare `3-posteringer.png`.
+    with chips; sorted by size as a flat list, the Beløb header with ▲ and aria-sort ascending after the first click
+    (largest spending first) and the other columns sorting by a click; the "+ Filter" panel open; a search nothing
+    matches (`da.noMatch`). Compare `3-posteringer.png`.
 13. `23-soejle`, `24-soejle-kategori`: a click on a bar opens Posteringer for that month; press Forskel. A chosen month
     with Forskel at all spending, then in Mad with a category chosen, with both chips. Compare `4-soejle.png`.
 14. `25-loading` (`FAKE_FIREFLY_FAULT=slow`), `26-refused` (`refused`), `27-unreachable` (`error`), `28-empty` (a period
@@ -172,3 +174,23 @@ The page's list. Every screenshot is at 1440×960 with the console free of error
     minus, a refund plus). A click on a row, or on its date, opens that posting in Firefly III in one new tab, also on a
     double click. "Vis alle N"/"Vis færre" and "Åbn i Firefly III" stand on lines of their own. Compare
     `docs/mockups/v5/`.
+36. `50-indlaeser`: with `FAKE_FIREFLY_FAULT=slow`, the loading placeholder has as many key-number boxes as the
+    loaded page (UI polish spec §1.1).
+37. `51-hoved-raekke`: the right card's head row stays on one line at 1440 and 1728 px, on the normal page and in full
+    screen, in all four states: no chip, a category, a unit, and both. No button moves when Forskel comes and goes
+    (spec §1.2).
+38. `52-detalje-staar`: in full screen and on Alle posteringer at 1440 px the detail stays in view while the list
+    scrolls, a click on a row does not scroll the page, and closing the detail (Escape or "Luk") does not scroll the
+    page. Below 1024 px the focus still lands on the detail's heading (spec §2.1).
+39. `53-detalje-bokse`: the detail's three boxes each fit on one line at 1440 and 1728 px (spec §2.2).
+40. `54-banktekst`: a search that hits the bank's text shows that text in grey under the shop (spec §3.1).
+41. `55-beloeb-dato-beskeder`: the Beløb and date messages appear on blur or Enter, not while typing; the period
+    picker's dash stays aligned when a message shows (spec §3.2, §3.3).
+42. `56-filter-soeg`: the "+ Filter" menu has a search, and its sections are in the order of spec §3.4.
+43. `57-soejle-under-nul`: a bar below zero: the axis goes only a little below it, with no odd bottom label (spec
+    §5.7).
+44. `58-maanedens-dage`: "Sidste måned" and "Denne måned" at Alt forbrug and Mad, at 1440 and 1728 px, normal and full
+    screen ([month days spec](superpowers/specs/2026-11-03-month-days.md)). One bar per day, readable axis labels,
+    today lighter with "i gang", the days after today empty, no average line, the tooltip on a day, and a day below
+    zero (if the example data has one) with a "+" in its tooltip. A click on a day chooses the month: its chip shows,
+    no bar fades, and a second click removes it.

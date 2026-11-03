@@ -34,6 +34,9 @@ export const da = {
   to: "Til",
   show: "Vis",
   datePlaceholder: "dd.mm.åååå",
+  dateInvalid: "Skriv en dato som 31.12.2026",
+  dateFuture: "Datoen er efter i dag",
+  dateOrder: "Til er før Fra",
   picked: (from: string, to: string | null) => (to === null ? `Startdag ${from}, vælg en slutdag` : `Fra ${from} til ${to}`),
   /** Vanilla Calendar Pro's locale; the weekdays start on Sunday, as the library wants. */
   calendarLocale: {
@@ -130,6 +133,7 @@ export const da = {
   noData: (name: string) => `ingen data for ${name}`,
   unitTotal: (name: string) => `${name} i alt`,
   levelInUnit: (level: string, name: string) => `${level} i ${name.toLowerCase()}`,
+  tinyChange: "under 0,1\u00a0%",
   vsAverage: "Mod gennemsnittet",
   vsAverageSub: (diff: string, avg: string, g: Grouping) => `${diff} mod ${avg} pr. ${da.groupings[g].one}`,
   up: "▲",
@@ -174,6 +178,8 @@ export const da = {
   shopOption: (name: string, sum: string) => `${name}, ${sum}`,
   suggestions: "Butikker",
   addFilter: "+ Filter",
+  filterSearch: "Søg i filtre",
+  noFilterHits: "Ingen filtre passer",
   mainGroupChip: (name: string) => `Hovedgruppe: ${name}`,
   categoryChip: (name: string) => `Kategori: ${name}`,
   amountFilter: "Beløb",
@@ -182,6 +188,7 @@ export const da = {
     if (min !== null) return `Beløb: fra ${min} ${da.kr}`;
     return `Beløb: til ${max ?? ""} ${da.kr}`;
   },
+  amountInvalid: "Skriv et beløb som 1.000,50",
   add: "Tilføj",
   summary: (count: string, sum: string) => `${count} · ${sum}`,
 
@@ -248,7 +255,7 @@ export const da = {
   backTo: (title: string) => `Tilbage til ${title}`,
   close: "Luk",
   shopContext: "Butik",
-  detailInPeriod: (range: string) => `I perioden · ${range}`,
+  detailInPeriod: "I perioden",
   detailPer: (g: Grouping) => `Pr. ${da.groupings[g].one} i perioden`,
   noDetailRows: "Ingen posteringer i perioden",
   openInFirefly: "Åbn i Firefly III",

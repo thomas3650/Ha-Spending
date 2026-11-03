@@ -36,6 +36,7 @@ import {
   chooseShop,
   chooseUnit,
   closeDetail,
+  detailResolves,
   keepDetail,
   normalise,
   openAllPostings,
@@ -221,6 +222,8 @@ export class SpendingApp extends LitElement {
   declare private hiddenWriteFailed: boolean;
 
   private asked: Period | null = null;
+  /** The key-number boxes of the last answer, so the placeholder keeps the row's shape. */
+  private boxes = 3;
   private request = 0;
   private controller: AbortController | null = null;
   private hiddenAsked = false;
@@ -264,6 +267,7 @@ export class SpendingApp extends LitElement {
 
   private readonly onDetailOpen = (event: Event): void => {
     const next = openDetail(this.state, (event as CustomEvent<DetailKey>).detail);
+    if (this.load.kind !== "ready" || !detailResolves(next, this.load.data, this.today)) return;
     const hash = `#${toHash(next)}`;
     if (this.state.detail === null) history.pushState(DETAIL_ENTRY, "", hash);
     else history.replaceState(detailEntry() ? DETAIL_ENTRY : null, "", hash);
@@ -282,12 +286,22 @@ export class SpendingApp extends LitElement {
     this.closed = this.state.detail;
     const next = closeDetail(this.state);
     if (detailEntry()) {
+      if (this.besideList()) this.keepScrollOnBack();
       this.change(next);
       history.back();
       return;
     }
     history.replaceState(null, "", `#${toHash(next)}`);
     this.change(next);
+  }
+
+  /**
+   * Back restores the scroll of the entry before the open (spec §2.1), which in a split would move the list. Only this
+   * close keeps it: elsewhere Back's restore is wanted. The restore comes after popstate, hence the frame's wait.
+   */
+  private keepScrollOnBack(): void {
+    const y = window.scrollY;
+    window.addEventListener("popstate", () => requestAnimationFrame(() => window.scrollTo(0, y)), { once: true });
   }
 
   override connectedCallback(): void {
@@ -356,7 +370,13 @@ export class SpendingApp extends LitElement {
   private async focusDetail(): Promise<void> {
     const root = this.renderRoot;
     await root.querySelector<LitElement>("hs-overview, hs-all-postings")?.updateComplete;
-    root.querySelector<HTMLElement>("hs-detail h3")?.focus();
+    root.querySelector<HTMLElement>("hs-detail h3")?.focus({ preventScroll: this.besideList() });
+  }
+
+  /** In a split of 1024 px or wider the detail stands beside the list, so a focus must not scroll the page. */
+  private besideList(): boolean {
+    const split = this.state.screen === "allPostings" || (this.state.screen === "overview" && this.fullScreen);
+    return split && window.matchMedia("(min-width: 1024px)").matches;
   }
 
   /** The row's button when its list shows it, else the heading of the card or the page (detail spec §1.3). */
@@ -370,7 +390,7 @@ export class SpendingApp extends LitElement {
     const heading = root.querySelector<HTMLElement>(
       this.state.screen === "overview" ? "#hs-right-title" : "hs-top-card h1",
     );
-    (button ?? heading)?.focus();
+    (button ?? heading)?.focus({ preventScroll: this.besideList() });
   }
 
   /** pushState and replaceState fire no event, so the state is set here. A new card or screen closes the detail. */
@@ -431,6 +451,8 @@ export class SpendingApp extends LitElement {
         return;
       }
     }
+    const ctx = viewContext(data, this.state, this.today);
+    this.boxes = keyCards(ctx, "").length + objectGroupCards(ctx, () => "").length;
     this.load = { kind: "ready", data };
     this.normaliseState();
   }
@@ -559,7 +581,7 @@ export class SpendingApp extends LitElement {
         return this.ready(viewContext(this.load.data, this.state, this.today));
       default:
         return this.state.screen === "overview"
-          ? html`${this.fullScreen ? nothing : html`<hs-key-numbers .cards=${null}></hs-key-numbers>`}
+          ? html`${this.fullScreen ? nothing : html`<hs-key-numbers .cards=${null} .boxes=${this.boxes}></hs-key-numbers>`}
               ${this.loadingHalves()}`
           : html`<section class="card half" role="region" aria-busy="true" aria-label=${da.loading}></section>`;
     }

@@ -48,7 +48,7 @@ describe("the view state's hash", () => {
       screen: "allPostings",
       search: "rema",
       sort: LARGEST,
-      amount: { min: 5, max: null },
+      amount: { min: 500, max: null },
       objectGroup: "Abonnementer",
       detail: { kind: "posting", id: "p 7" },
     };
@@ -116,9 +116,35 @@ describe("the view state's hash", () => {
     expect(parseHash("view=all-postings&sort=random").sort).toEqual(DEFAULT_STATE.sort);
     expect(parseHash("view=all-postings&min=500&max=100").amount).toBeNull();
     expect(parseHash("view=all-postings&min=-5").amount).toBeNull();
-    expect(parseHash("view=all-postings&min=1.5&max=10").amount).toEqual({ min: null, max: 10 });
+    expect(parseHash("view=all-postings&min=1.5&max=10").amount).toEqual({ min: 150, max: 1000 });
     expect(parseHash("view=all-postings&min=99999999999999999999").amount).toBeNull();
     expect(parseHash("view=elsewhere").screen).toBe("overview");
+  });
+
+  it("reads the amount bounds in kroner with a dot for øre, and writes them back (D47)", () => {
+    const amount = (hash: string) => parseHash(`view=all-postings&${hash}`).amount;
+    expect(amount("max=1000.50")).toEqual({ min: null, max: 100050 });
+    expect(amount("max=1000.5")).toEqual({ min: null, max: 100050 });
+    expect(amount("max=1000")).toEqual({ min: null, max: 100000 });
+    expect(amount("min=0")).toEqual({ min: 0, max: null });
+    expect(amount("max=1000.505")).toBeNull();
+    expect(amount("max=1,50")).toBeNull();
+    expect(amount("max=.50")).toBeNull();
+    expect(amount("max=1000.")).toBeNull();
+    expect(amount("min=10.50&max=10.25")).toBeNull();
+    for (const range of [
+      { min: null, max: 100050 },
+      { min: 5, max: 100000 },
+      { min: 0, max: 7 },
+    ]) {
+      const s: ViewState = { ...DEFAULT_STATE, screen: "allPostings", amount: range };
+      expect(parseHash(toHash(s))).toEqual(s);
+    }
+    const hash = (min: number | null, max: number | null) =>
+      toHash({ ...DEFAULT_STATE, screen: "allPostings", amount: { min, max } });
+    expect(hash(null, 100050)).toBe("view=all-postings&max=1000.50");
+    expect(hash(5, 100000)).toBe("view=all-postings&min=0.05&max=1000");
+    expect(hash(0, null)).toBe("view=all-postings&min=0");
   });
 
   it("reads and writes the search on every screen", () => {
@@ -157,7 +183,7 @@ describe("the view state's hash", () => {
     const s: ViewState = {
       ...DEFAULT_STATE,
       screen: "allPostings",
-      amount: { min: 1, max: 500 },
+      amount: { min: 100, max: 50000 },
       objectGroup: "Åbne aftaler & abonnementer",
     };
     expect(toHash(s)).toBe("view=all-postings&min=1&max=500&og=%C3%85bne+aftaler+%26+abonnementer");

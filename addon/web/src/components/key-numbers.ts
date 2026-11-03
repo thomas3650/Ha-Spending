@@ -18,15 +18,19 @@ export class KeyNumbers extends LitElement {
   static override properties = {
     cards: { attribute: false },
     objectGroups: { attribute: false },
+    boxes: { attribute: false },
   };
 
   declare cards: KeyCard[] | null;
   declare objectGroups: ObjectGroupKeys | null;
+  /** How many boxes the placeholder draws. */
+  declare boxes: number;
 
   constructor() {
     super();
     this.cards = null;
     this.objectGroups = null;
+    this.boxes = 3;
   }
 
   private postingsLine(c: KeyCard) {
@@ -71,14 +75,17 @@ export class KeyNumbers extends LitElement {
 
   override render() {
     if (this.cards === null) {
-      return html`<div class="kpis" role="group" aria-busy="true" aria-label=${da.loading}>
-        ${[0, 1, 2].map(
-          () => html`<div class="card kpi">
-            <div class="kpi-bone short"></div>
-            <div class="kpi-bone tall"></div>
-            <div class="kpi-bone"></div>
-          </div>`,
-        )}
+      return html`<div class="kpis-busy" role="group" aria-busy="true" aria-label=${da.loading}>
+        <div role="list" class="kpis ${this.boxes > 3 ? "many" : ""}" style=${styleMap({ "--kpi-columns": String(Math.min(this.boxes, 5)) })}>
+          ${Array.from(
+            { length: this.boxes },
+            () => html`<div class="card kpi" role="listitem">
+              <div class="kpi-bone short"></div>
+              <div class="kpi-bone tall"></div>
+              <div class="kpi-bone"></div>
+            </div>`,
+          )}
+        </div>
       </div>`;
     }
     const groups = this.objectGroups;

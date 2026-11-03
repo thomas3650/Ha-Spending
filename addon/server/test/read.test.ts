@@ -1,8 +1,8 @@
 import { createFakeFirefly, exampleSeed, generateSeed, type SeedSplit } from "@ha-spending/dev";
 import { classify, fetchRange, parts, subscriptionStatus, within } from "@ha-spending/shared";
 import { describe, expect, it, vi } from "vitest";
-import { createFireflyClient } from "../src/firefly/client";
-import { earliestPostingDate, type ReadSettings, readSpendingData, readVersion } from "../src/firefly/read";
+import { createFireflyClient, type FetchLike, FireflyError } from "../src/firefly/client";
+import { earliestPostingDate, type ReadSettings, readSpanFree, readSpendingData, readVersion } from "../src/firefly/read";
 
 const settings: ReadSettings = {
   mainGroupRuleGroup: "Hovedgrupper",
@@ -23,10 +23,30 @@ async function everyThirdYearId(): Promise<string> {
   return bills.data.find((b) => b.attributes.name === "Hver tredje år")!.id;
 }
 
+/** Every request hangs until its signal aborts, except those to `failing`, which fail at once. */
+function hangingClient(failing?: string) {
+  const stats = { hanging: 0, aborted: 0 };
+  const fetch: FetchLike = (input, init) => {
+    if (failing !== undefined && String(input).includes(failing)) {
+      return Promise.resolve(new Response("{}", { status: 500 }));
+    }
+    stats.hanging++;
+    return new Promise((_, reject) => {
+      const abort = () => {
+        stats.aborted++;
+        reject(init!.signal!.reason);
+      };
+      if (init?.signal?.aborted) abort();
+      else init?.signal?.addEventListener("abort", abort);
+    });
+  };
+  return { client: createFireflyClient({ baseUrl: "http://f", token: "fake-token", fetch }), stats };
+}
+
 const sum = (amounts: { amount: number }[]) => amounts.reduce((s, p) => s + p.amount, 0);
 
 describe("readSpendingData", () => {
-  it("reads the example dataset", async () => {
+  it("without spanFree the answer is as before", async () => {
     const warn = vi.fn();
     const d = await readSpendingData(clientOf(), settings, R1, { today, warn });
     expect(d.range).toEqual(R1);
@@ -49,6 +69,33 @@ describe("readSpendingData", () => {
     expect(d.mainGroupsFound).toBe(true);
     expect(warn).toHaveBeenCalledTimes(2);
     expect(warn.mock.calls[0][0]).toContain("Streaming");
+  });
+
+  it("with spanFree it reads only the span's transactions and answers the same", async () => {
+    const fake = createFakeFirefly(exampleSeed);
+    const client = clientOf(fake);
+    const spanFree = await readSpanFree(client, settings, today);
+    fake.requests.length = 0;
+    const d = await readSpendingData(client, settings, R1, { today, warn: () => {}, spanFree: async () => spanFree });
+    expect(new Set(fake.requests.map((r) => r.path))).toEqual(new Set(["/api/v1/transactions"]));
+    expect(d).toEqual(await readSpendingData(clientOf(), settings, R1, { today, warn: () => {} }));
+  });
+
+  it("a rejected spanFree aborts the span's transactions read", async () => {
+    const { client, stats } = hangingClient();
+    const spanFree = () => new Promise<never>((_, reject) => setTimeout(() => reject(new FireflyError("refused")), 10));
+    const read = readSpendingData(client, { ...settings, timeoutMs: 10_000 }, R1, { today, warn: () => {}, spanFree });
+    await expect(read).rejects.toMatchObject({ reason: "refused" });
+    expect(stats.hanging).toBeGreaterThan(0);
+    expect(stats.aborted).toBe(stats.hanging);
+  });
+
+  it("without spanFree, a failed transactions read aborts the span-free reads", async () => {
+    const { client, stats } = hangingClient(`start=${R1.start}`);
+    const read = readSpendingData(client, { ...settings, timeoutMs: 10_000 }, R1, { today, warn: () => {} });
+    await expect(read).rejects.toMatchObject({ reason: "unreachable" });
+    expect(stats.hanging).toBeGreaterThan(0);
+    expect(stats.aborted).toBe(stats.hanging);
   });
 
   it("lists the postings newest first", async () => {
@@ -160,6 +207,16 @@ describe("readSpendingData", () => {
     expect(shown.filter((p) => p.amount > 0).length).toBeGreaterThan(8);
     const kinds = new Set(d.subscriptions.map((x) => subscriptionStatus(x, d.today).kind));
     expect([...kinds].sort()).toEqual(["expected", "notSeen", "paid", "risen"]);
+  });
+});
+
+describe("readSpanFree", () => {
+  it("a failed span-free part aborts the other span-free reads", async () => {
+    const { client, stats } = hangingClient("/categories");
+    const read = readSpanFree(client, { ...settings, timeoutMs: 10_000 }, today);
+    await expect(read).rejects.toMatchObject({ reason: "unreachable" });
+    expect(stats.hanging).toBeGreaterThan(0);
+    expect(stats.aborted).toBe(stats.hanging);
   });
 });
 

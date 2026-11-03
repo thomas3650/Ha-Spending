@@ -3,7 +3,7 @@ import { fireEvent, getAllByRole, getByRole, queryByRole, within } from "@testin
 import { afterEach, describe, expect, it } from "vitest";
 
 import type { SpendingApp } from "../src/app";
-import { count, rangeText, tableDate, unitName } from "../src/format";
+import { count, tableDate, unitName } from "../src/format";
 import { da } from "../src/i18n/da";
 import { viewContext } from "../src/model/context";
 import { subscriptionRows } from "../src/model/subscriptions";
@@ -97,7 +97,7 @@ describe("the detail on the normal page", () => {
     expect(status).not.toBe("");
     expect(text(d)).toContain(status);
     expect(boxes(d)).toEqual([
-      `${da.detailInPeriod(rangeText(THIS_YEAR))} = 80.000 kr. · ${count(10)}`,
+      `${da.detailInPeriod} = 80.000 kr. ${count(10)}`,
       `${da.subscriptionColumns.perYear} = 96.000 kr.`,
       `${da.columns.account} = Fælleskonto`,
     ]);
@@ -140,7 +140,7 @@ describe("the detail on the normal page", () => {
 
   it("keeps the view switch and the full-screen button, and hides the chips, while open", async () => {
     const { app, root } = await mountLinked("group=Bolig&category=Husleje&card=postings");
-    const title = da.postingsOf("Husleje");
+    const title = da.postingsOf("Bolig");
     getByRole(region(root, title), "button", { name: da.remove("Husleje") });
     await click(app, rowButton(region(root, title), "Husleje", "2026-10-01"));
     const card = region(root, title);
@@ -168,7 +168,7 @@ describe("the detail on the normal page", () => {
     expect(text(d)).toContain(da.shopContext);
     expect(text(d)).toContain(`${tableDate("2026-09-22")} · MOBILEPAY 1234`);
     expect(boxes(d)).toEqual([
-      `${da.detailInPeriod(rangeText(THIS_YEAR))} = 500 kr. · ${count(2)}`,
+      `${da.detailInPeriod} = 500 kr. ${count(2)}`,
       `${da.columns.account} = Kreditkort`,
       `${da.columns.category} = Café`,
     ]);
@@ -208,7 +208,20 @@ describe("the detail on the normal page", () => {
     expect(units).toHaveLength(10);
     const items = getAllByRole(bars, "listitem");
     expect(items).toHaveLength(units.length);
-    units.forEach((u, i) => within(items[i]).getByText(`${unitName(u, "month")}: 8.000 kr.`));
+    units.forEach((u, i) => {
+      const label = `${unitName(u, "month")}: 8.000 kr.`;
+      within(items[i]).getByText(i === units.length - 1 ? `${label} (${da.inProgress})` : label);
+    });
+  });
+
+  it("the running unit's item says i gang, a finished unit's does not, and each title is its label", async () => {
+    const { root } = await mountLinked("card=subscriptions&detail=s%3Ab1");
+    const items = getAllByRole(getByRole(detail(root, "Husleje"), "list", { name: da.detailPer("month") }), "listitem");
+    expect(text(items[items.length - 1])).toContain(da.inProgress);
+    expect(text(items[0])).not.toContain(da.inProgress);
+    for (const item of items) {
+      expect(item.getAttribute("title")).toBe(text(within(item).getByText(/: [\d.]+ kr\./)));
+    }
   });
 
   it("10 rows and Vis alle N, then Vis færre", async () => {
@@ -240,13 +253,86 @@ describe("the detail on the normal page", () => {
     getByRole(d, "button", { name: da.showAllShops(12) });
   });
 
+  describe("the rows around the clicked posting", () => {
+    const bakery = (i: number): Posting => ({
+      id: `x${i}`,
+      groupId: `gx${i}`,
+      date: `2026-10-${String(i + 1).padStart(2, "0")}`,
+      text: "BAGERIET",
+      account: "1",
+      category: "Dagligvarer",
+      shop: "Bageriet",
+      kind: "spending",
+      amount: 2500,
+      subscription: null,
+    });
+
+    /** `n` bakery postings, one per day in October; the nth newest is x(n-th). */
+    async function openNth(n: number, nth: number) {
+      const hash = `card=postings&detail=${encodeURIComponent(`p:x${n - nth}`)}`;
+      return mount(hash, {
+        answer: (range) => {
+          const a = answerFor(range);
+          return json({ ...a, postings: [...Array.from({ length: n }, (_, i) => bakery(i)), ...a.postings] });
+        },
+      });
+    }
+
+    const dayOf = (n: number, k: number) => tableDate(`2026-10-${String(n - k + 1).padStart(2, "0")}`);
+    /** The shown rows' dates, as the numbers k of "kth newest" among n. */
+    function nth(shown: HTMLElement[], n: number): number[] {
+      return shown.map((r) => range(1, n).find((k) => text(r).startsWith(dayOf(n, k))) ?? 0);
+    }
+    const range = (from: number, to: number) => Array.from({ length: to - from + 1 }, (_, i) => from + i);
+
+    it("12th newest of 20 shows the 8th to the 17th newest", async () => {
+      const { root } = await openNth(20, 12);
+      expect(nth(detailRows(detail(root, "Bageriet")), 20)).toEqual(range(8, 17));
+    });
+
+    it("13th newest of 15 shows the 6th to the 15th newest", async () => {
+      const { root } = await openNth(15, 13);
+      expect(nth(detailRows(detail(root, "Bageriet")), 15)).toEqual(range(6, 15));
+    });
+
+    it("3rd newest of 20 shows the newest 10", async () => {
+      const { root } = await openNth(20, 3);
+      expect(nth(detailRows(detail(root, "Bageriet")), 20)).toEqual(range(1, 10));
+    });
+
+    it("a detail with no marked row and 15 rows shows the newest 10", async () => {
+      const { root } = await mount("card=subscriptions&detail=s%3Ab1", {
+        answer: (r) => {
+          const a = answerFor(r);
+          const linkedBakery = (i: number): Posting => ({
+            ...bakery(i),
+            subscription: { id: "b1", name: "Husleje", objectGroup: "Faste udgifter" },
+          });
+          return json(
+            withSubscriptions({ ...a, postings: [...Array.from({ length: 15 }, (_, i) => linkedBakery(i)), ...a.postings] }),
+          );
+        },
+      });
+      expect(nth(detailRows(detail(root, "Husleje")), 15)).toEqual(range(1, 10));
+    });
+
+    it("Vis færre returns to the window", async () => {
+      const { app, root } = await openNth(20, 12);
+      const d = detail(root, "Bageriet");
+      await click(app, getByRole(d, "button", { name: da.showAllShops(20) }));
+      expect(detailRows(d)).toHaveLength(20);
+      await click(app, getByRole(d, "button", { name: da.showFewer }));
+      expect(nth(detailRows(d), 20)).toEqual(range(8, 17));
+    });
+  });
+
   it("Ingen posteringer i perioden for a subscription not paid in the period, and 0 kr. in the first box", async () => {
     const { app, root } = await mountLinked("card=subscriptions");
     await click(app, rowButton(region(root, da.subscriptions), "Avis"));
     const d = detail(root, "Avis");
     expect(text(d)).toContain(da.noDetailRows);
     expect(queryByRole(d, "table")).toBeNull();
-    expect(boxes(d)[0]).toBe(`${da.detailInPeriod(rangeText(THIS_YEAR))} = 0 kr. · ${count(0)}`);
+    expect(boxes(d)[0]).toBe(`${da.detailInPeriod} = 0 kr. ${count(0)}`);
   });
 
   it("Konto reads – with no last payment", async () => {
@@ -353,18 +439,31 @@ describe("the detail on the normal page", () => {
     expect(location.hash).not.toContain("detail");
   });
 
+  it("the first box reads I perioden with no date", async () => {
+    const { root } = await mountLinked("card=subscriptions&detail=s%3Ab1");
+    const first = getAllByRole(detail(root, "Husleje"), "term")[0] as HTMLElement;
+    expect(text(first)).toBe("I perioden");
+  });
+
+  it("the first box's count reads exactly N posteringer, with no leading dot", async () => {
+    const { root } = await mountLinked("card=subscriptions&detail=s%3Ab1");
+    const first = getAllByRole(detail(root, "Husleje"), "term")[0] as HTMLElement;
+    expect(text(first.nextElementSibling as Element)).toBe(`80.000 kr. ${count(10)}`);
+    expect(text(first.nextElementSibling as Element)).not.toContain("·");
+  });
+
   it("the period and the accounts change the sums; the search does not", async () => {
     const { app, root } = await mountLinked("card=subscriptions&detail=s%3Ab1");
-    expect(boxes(detail(root, "Husleje"))[0]).toContain(`80.000 kr. · ${count(10)}`);
+    expect(boxes(detail(root, "Husleje"))[0]).toContain(`80.000 kr. ${count(10)}`);
     fireEvent.click(getByRole(root, "button", { name: new RegExp(`^${da.period}`) }));
     await app.updateComplete;
     fireEvent.click(getByRole(getByRole(root, "group", { name: da.period }), "button", { name: da.presets.lastMonth }));
     await settle(app);
-    expect(boxes(detail(root, "Husleje"))[0]).toContain(`8.000 kr. · ${count(1)}`);
+    expect(boxes(detail(root, "Husleje"))[0]).toContain(`8.000 kr. ${count(1)}`);
     unmount();
 
     const ticked = await mountLinked("accounts=2&card=subscriptions&detail=s%3Ab1");
-    expect(boxes(detail(ticked.root, "Husleje"))[0]).toContain(`0 kr. · ${count(0)}`);
+    expect(boxes(detail(ticked.root, "Husleje"))[0]).toContain(`0 kr. ${count(0)}`);
     unmount();
 
     const plain = await mountLinked("card=postings&detail=p%3Ap25");

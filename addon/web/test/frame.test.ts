@@ -14,7 +14,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { comparisonLabel, kr, longDate, rangeText, signedPercent } from "../src/format";
 import { da } from "../src/i18n/da";
-import { answerFor } from "./fixture";
+import { answerFor, withSubscriptions } from "./fixture";
 import { json, mount, settle, unmount } from "./mount";
 import { KEEP_NBSP } from "./text";
 
@@ -423,6 +423,71 @@ describe("the period's custom interval", () => {
     expect(show.disabled).toBe(false);
   });
 
+  it("a wrong typed date says what is wrong once the field loses the focus or Enter is pressed", async () => {
+    const { app, root } = await mount("");
+    const { panel, from, to } = await openPeriod(root, app);
+    const named = (name: string, description: string) => getByRole(panel, "textbox", { name, description });
+    await type(app, from, "31.2.2026");
+    expect(from.hasAttribute("aria-invalid")).toBe(false);
+    fireEvent.blur(from);
+    await settle(app);
+    named(da.from, da.dateInvalid);
+    expect(from.getAttribute("aria-invalid")).toBe("true");
+    expect(to.hasAttribute("aria-invalid")).toBe(false);
+
+    await type(app, from, "03.01.2026");
+    expect(from.hasAttribute("aria-invalid")).toBe(false);
+    expect(queryByText(panel, da.dateInvalid)).toBeNull();
+
+    await type(app, to, "31.10.2026");
+    expect(to.hasAttribute("aria-invalid")).toBe(false);
+    fireEvent.keyDown(to, { key: "Enter" });
+    await settle(app);
+    named(da.to, da.dateFuture);
+
+    await type(app, to, "02.01.2026");
+    fireEvent.blur(to);
+    await settle(app);
+    named(da.to, da.dateOrder);
+
+    await type(app, from, "01.01.2026");
+    expect(to.hasAttribute("aria-invalid")).toBe(false);
+    expect(queryByText(panel, da.dateOrder)).toBeNull();
+  });
+
+  it("typing judges a date afresh at the next blur, and Fra's typing does not judge Til", async () => {
+    const { app, root } = await mount("");
+    const { from, to } = await openPeriod(root, app);
+    await type(app, from, "03.01.2026");
+    fireEvent.blur(from);
+    await type(app, from, "31.2.2026");
+    expect(from.hasAttribute("aria-invalid")).toBe(false);
+    fireEvent.blur(from);
+    await settle(app);
+    expect(from.getAttribute("aria-invalid")).toBe("true");
+    await type(app, from, "03.01.2026");
+    await type(app, to, "05.01.2026");
+    fireEvent.blur(to);
+    await type(app, from, "10.01.2026");
+    expect(to.hasAttribute("aria-invalid")).toBe(false);
+    fireEvent.blur(to);
+    await settle(app);
+    expect(to.getAttribute("aria-invalid")).toBe("true");
+  });
+
+  it("an empty or valid date field shows no message", async () => {
+    const { app, root } = await mount("");
+    const { panel, from, to } = await openPeriod(root, app);
+    await type(app, from, "");
+    fireEvent.blur(from);
+    await type(app, to, "30.10.2026");
+    fireEvent.blur(to);
+    await settle(app);
+    for (const text of [da.dateInvalid, da.dateFuture, da.dateOrder]) expect(queryByText(panel, text)).toBeNull();
+    expect(from.hasAttribute("aria-invalid")).toBe(false);
+    expect(to.hasAttribute("aria-invalid")).toBe(false);
+  });
+
   it("a date before the year list is accepted", async () => {
     const { app, root } = await mount("");
     const { panel, from, to, show } = await openPeriod(root, app);
@@ -589,5 +654,50 @@ describe("the period's custom interval", () => {
     } finally {
       setViewport(1024);
     }
+  });
+});
+
+describe("the loading placeholder's key-number boxes", () => {
+  const pending = () => new Promise<Response>(() => {});
+
+  function boxes(root: HTMLElement): number {
+    const busy = getByRole(root, "group", { name: da.loading });
+    return getAllByRole(busy, "listitem").length;
+  }
+
+  it("after a period change the placeholder has as many boxes as the page showed", async () => {
+    const { app, root } = await mount("", {
+      answer: (range, n) => (n === 1 ? json(withSubscriptions(answerFor(range))) : pending()),
+    });
+    getByRole(root, "group", { name: da.inPeriod("Faste udgifter") });
+    await choosePreset(root, app, da.presets.lastYear);
+    expect(boxes(root)).toBe(5);
+  });
+
+  it("the first load's placeholder has 3 boxes", async () => {
+    const { root } = await mount("", { answer: pending });
+    expect(boxes(root)).toBe(3);
+  });
+
+  it("after a failed load and a new change the placeholder keeps the last answer's count", async () => {
+    const { app, root } = await mount("", {
+      answer: (range, n) =>
+        n === 1 ? json(withSubscriptions(answerFor(range))) : n === 2 ? new Response("", { status: 500 }) : pending(),
+    });
+    await choosePreset(root, app, da.presets.lastYear);
+    getByRole(root, "alert");
+    await choosePreset(root, app, da.presets.lastMonth);
+    expect(boxes(root)).toBe(5);
+  });
+
+  it("drops back to 3 boxes after an answer with no object groups", async () => {
+    const { app, root } = await mount("", {
+      answer: (range, n) =>
+        n === 1 ? json(withSubscriptions(answerFor(range))) : n === 2 ? json(answerFor(range)) : pending(),
+    });
+    await choosePreset(root, app, da.presets.lastYear);
+    expect(queryByRole(root, "group", { name: da.loading })).toBeNull();
+    await choosePreset(root, app, da.presets.lastMonth);
+    expect(boxes(root)).toBe(3);
   });
 });

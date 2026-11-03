@@ -10,7 +10,7 @@ export interface ShopSuggestion {
   sum: number;
 }
 
-function fold(text: string): string {
+export function fold(text: string): string {
   return text.trim().toLocaleLowerCase("da");
 }
 
@@ -19,6 +19,12 @@ export function matches(p: Posting, search: string, shop: string | null): boolea
   if (shop !== null && p.shop !== shop) return false;
   const query = fold(search);
   return query === "" || fold(p.text).includes(query) || (p.shop !== null && fold(p.shop).includes(query));
+}
+
+/** A search that matched the bank's text but not the shop, so the row has to show why it is there. */
+export function textOnlyHit(p: Posting, search: string): boolean {
+  const query = fold(search);
+  return query !== "" && p.shop !== null && !fold(p.shop).includes(query) && fold(p.text).includes(query);
 }
 
 export function shopSuggestions(base: Posting[], search: string): ShopSuggestion[] {
@@ -36,8 +42,8 @@ export function shopSuggestions(base: Posting[], search: string): ShopSuggestion
 
 export function inAmount(p: ClassifiedPosting, range: AmountRange | null): boolean {
   if (range === null) return true;
-  if (range.min !== null && p.amount < range.min * 100) return false;
-  return range.max === null || p.amount <= range.max * 100;
+  if (range.min !== null && p.amount < range.min) return false;
+  return range.max === null || p.amount <= range.max;
 }
 
 /** Oldest first, and by id within a day, so the order is stable. */

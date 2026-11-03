@@ -315,7 +315,7 @@ to set their status to `superseded by D<n>`, or to name a part a later decision 
 - **Source:** Thomas, 2026-10-31, [the postings search spec](superpowers/specs/2026-10-31-postings-search.md).
 
 ### D32: The sorter writes a posting's shop
-- **Date:** 2026-10-31 · **Status:** active
+- **Date:** 2026-10-31 · **Status:** active; only a withdrawal, and only expense accounts, superseded by D50
 - **Decision:** `set_category` may also write a withdrawal's shop, by the account's id, in the same PUT as D30's, and
   only on a withdrawal whose destination is the expense account `(no name)`; it replaces D30's list of what is written.
   For that the endpoint may make expense accounts, through the client's `post`, used for nothing else; the name check,
@@ -469,3 +469,56 @@ to set their status to `superseded by D<n>`, or to name a part a later decision 
   [detail view spec](superpowers/specs/2026-11-02-detail-view.md) §2.6's one sign.
 - **Why:** Beside the list, an opposite sign read as wrong, and a row was expected to open its posting.
 - **Source:** Thomas, 2026-11-02, from the detail in use
+
+### D47: Amount bounds are whole øre, and the hash writes øre after a dot
+- **Date:** 2026-11-03 · **Status:** active
+- **Decision:** The Beløb fields take Danish numbers (a dot groups thousands, a comma starts one or two decimals) and
+  hold each bound as a whole number of øre. The hash keeps `min` and `max` in kroner: digits, optionally a dot and one
+  or two digits; it writes digits only for whole kroner and a dot with two digits otherwise (`max=1000.50`).
+- **Why:** A Danish number such as "1.000,50" was refused, and a bound with øre could not be given. Kroner with a dot
+  in the hash read old links with whole kroner as before.
+- **Source:** Thomas, 2026-11-03 (approved [UI polish spec](superpowers/specs/2026-11-03-ui-polish.md) §3.2)
+
+### D48: The add-on's user docs say app, the repo's docs add-on
+- **Date:** 2026-11-03 · **Status:** active
+- **Decision:** `addon/DOCS.md` and `addon/README.md` say "app" where they mean what Home Assistant now calls an app
+  (*Settings → Apps*). The product name "HA Spending" stays. The repo's own docs and the code keep "add-on".
+- **Why:** The users of the docs see "app" in Home Assistant; the repo's names (`addon/`, the add-on repository) are
+  the established ones.
+- **Source:** Thomas, 2026-11-03 ([UI polish spec](superpowers/specs/2026-11-03-ui-polish.md) §5.9)
+
+### D49: The server keeps the span-free parts per day and reads a list's pages 4 at a time
+- **Date:** 2026-11-03 · **Status:** active
+- **Decision:** The main-group rules, the categories, the asset accounts, the earliest posting date and the
+  subscriptions are read under their own signal and kept 5 minutes per day (`today`), so a new span reads only its
+  postings and a new day reads them again. A list's pages after the first are read at most 4 at a time. This replaces
+  the pages "one after another" of the [technical spec](superpowers/specs/2026-10-30-technical-design.md) §3.3.
+- **Why:** About 1.4 s of every uncached load went to the parts that do not depend on the span, and about 0.7 s to
+  each page of postings read in turn.
+- **Source:** Thomas, 2026-11-03; [UI polish spec](superpowers/specs/2026-11-03-ui-polish.md) §1.1
+
+### D50: The sorter writes a refund's shop
+- **Date:** 2026-11-03 · **Status:** active
+- **Decision:** `set_category` may also write a deposit's shop, by setting its source to a revenue account named like
+  the shop, only when the source is the revenue account `(no name)`, and may make that revenue account. A revenue
+  account of a shop's name does not make a purchase's shop `name-taken`. The name rules and the lookup are D32's, in
+  [`addon/DOCS.md`](../addon/DOCS.md#the-shops-name).
+- **Why:** A refund imported from a bank file lands on `(no name)`, so the page counted it under "Uden butik"; the
+  page already reads a deposit's shop from its revenue account. A revenue account is never a withdrawal's
+  destination, so its name cannot point a purchase at a liability.
+- **Source:** Thomas, 2026-11-03, [issue #96](https://github.com/thomas3650/Ha-Spending/issues/96); a new account's
+  spelling taken from the shop's account of the other type: Claude
+
+### D51: A one-month period draws its days
+- **Date:** 2026-11-03 · **Status:** active
+- **Decision:**
+  - By Måned, a period inside one calendar month draws one bar per day on the Søjler card, decided by `dayUnits` in
+    `model/context.ts`; its title is "Pr. dag", with no average line. "Denne måned" draws on to the month's last day,
+    the days after today as empty slots; other periods, "I år" among them, still end where they end.
+  - The grouping, the hash, the key numbers, Posteringer, the detail and the chosen unit stay the month's. A click on a
+    day bar chooses the month (`BarItem.choose`), and the chosen month marks every day bar.
+  - A bar below zero is named with a leading "+" in its button and tooltip, unless it rounds to 0.
+- **Why:** A one-month period's single bar said nothing the key numbers do not. Keeping the state the month's keeps
+  every old link meaning what it meant (D20), and the month's Forskel reachable.
+- **Source:** Thomas, 2026-11-03 ("let's start with all the month's days"); the controller's rulings on the click and
+  the sign; [month days spec](superpowers/specs/2026-11-03-month-days.md)

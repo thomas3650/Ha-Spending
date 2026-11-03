@@ -1,43 +1,43 @@
 # HA Spending
 
-The HA Spending add-on shows a household's spending from Firefly III on a page in Home Assistant. The page shows the
+The HA Spending app shows a household's spending from Firefly III on a page in Home Assistant. The page shows the
 spending of a period as main groups, then categories, then postings, and compares a unit of the chosen grouping with
-the one before it. The page writes nothing to Firefly III. An optional endpoint lets an AI sorter in another add-on
+the one before it. The page writes nothing to Firefly III. An optional endpoint lets an AI sorter in another app
 set the category, and the shop, of new postings, and a household's chat assistant read postings and spending and move
-a posting to another category, within fixed limits ([the sorter's endpoint](#the-sorters-endpoint)).
+a posting to another category, within fixed limits (see *The sorter's endpoint* below).
 
 ## Installation
 
 1. In Home Assistant go to *Settings → Apps → Install app → ⋮ → Repositories* and add
    `https://github.com/thomas3650/Ha-Spending`.
 2. Install the *HA Spending* app and start it.
-3. On the add-on's page turn on *Show in sidebar*. The page is then *Forbrug* in the sidebar. You can also open it with
+3. On the app's page turn on *Show in sidebar*. The page is then *Forbrug* in the sidebar. You can also open it with
    *Open web UI*.
 
 ## Configuration
 
 | Option | What it is |
 | --- | --- |
-| `firefly_url` | Firefly III's address as the add-on reaches it. Required. |
+| `firefly_url` | Firefly III's address as the app reaches it. Required. |
 | `firefly_token` | A Personal Access Token from Firefly III (*Options → Profile → OAuth*). The page reads with it; only the sorter's endpoint writes with it. Required. |
 | `firefly_link_url` | Firefly III's address as your browser reaches it. When set, the detail of a posting or a fixed expense links there. Optional. |
 | `main_group_rule_group` | The Firefly III rule group whose rules put categories into main groups. Default `Hovedgrupper`. |
 | `excluded_main_groups` | Main groups that are not spending, such as money moved in and out. Default `Penge ind og ud`. |
-| `sorter_key` | The key of [the sorter's endpoint](#the-sorters-endpoint), at least 32 characters, for example from `openssl rand -hex 32`. When empty, the endpoint is off. Optional. |
+| `sorter_key` | The key of the sorter's endpoint (see *The sorter's endpoint* below), at least 32 characters, for example from `openssl rand -hex 32`. When empty, the endpoint is off. Optional. |
 | `sorter_inbox_category` | The Firefly III category of postings still to be sorted. Default `Til sortering`. |
-| `moved_tag` | The tag [`move_posting`](#move_posting) adds to every posting it moves. Default `moved-by-assistant`. |
+| `moved_tag` | The tag `move_posting` (see *The chat's tools* below) adds to every posting it moves. Default `moved-by-assistant`. |
 
-Without `firefly_url` and `firefly_token` the add-on stops and says so in its log, and so it does with a `sorter_key`
+Without `firefly_url` and `firefly_token` the app stops and says so in its log, and so it does with a `sorter_key`
 shorter than 32 characters.
 
 ## Network
 
 The page is reached through Home Assistant only (Ingress), on port 8099, which refuses every request that does not
-come through Home Assistant. The add-on reaches Firefly III at `firefly_url`, so that address must work from inside
+come through Home Assistant. The app reaches Firefly III at `firefly_url`, so that address must work from inside
 Home Assistant.
 
-When `sorter_key` is set, the add-on also listens on port 8100 for the sorter's endpoint. The add-on publishes no
-port, so only other add-ons reach it, by the add-on's hostname on Home Assistant's internal network, and only with the
+When `sorter_key` is set, the app also listens on port 8100 for the sorter's endpoint. The app publishes no
+port, so only other apps reach it, by the app's hostname on Home Assistant's internal network, and only with the
 key.
 
 ## The page
@@ -71,12 +71,13 @@ a click on that count opens the page with all postings.
 The key number for an object group shows the payments of that group in the period, with the sum per month and the
 number of subscriptions paid. A click on it shows the card. Under it, a link such as "58 posteringer →" opens the page
 with all postings, filtered to that object group; the filter shows as a chip that you remove with its cross. The link
-clears any search, shop and chosen unit. "+ Filter" can also choose an object group.
+clears any search, shop and chosen unit. "+ Filter" can also choose an object group. Its Beløb fields take Danish
+numbers such as `1000`, `1.000`, `1000,50`, `1.000,50` and `0,5`.
 
 The right card's choice "Butikker" lists the shops with the most spending, for what is chosen on the left: all
 spending, a main group or a category. It shows the ten biggest, with "Vis alle" for the rest; a click on a shop's name
 opens its postings. "Skjul" hides a shop, for example the rent, from this list on every level; "Vis skjulte" shows
-the hidden shops again. Hiding changes nothing else on the page, and nothing in Firefly III. The add-on keeps the
+the hidden shops again. Hiding changes nothing else on the page, and nothing in Firefly III. The app keeps the
 hidden shops in a file in its `/data`, so they are the same on every device and are in Home Assistant's backups.
 
 The button "Fuld skærm" in the right card's title gives that card the page's whole width; the same button or Escape
@@ -85,16 +86,16 @@ brings the circle and the key numbers back.
 ## The sorter's endpoint
 
 For an AI agent that sorts new postings into a fixed set of categories, and for a household's chat assistant. The
-sorter's tools are `start` and `set_category`; [the chat's tools](#the-chats-tools) are `find_postings`,
+sorter's tools are `start` and `set_category`; the chat's tools (see *The chat's tools* below) are `find_postings`,
 `get_posting`, `spending` and `move_posting`. All six are on the same endpoint behind the same key, and the calling
-add-on decides which agent may call which: the endpoint does not tell the sorter from the chat, so that separation
-lives only in the calling add-on's gate. The Firefly III token stays in this add-on. The limits are in the add-on's
+app decides which agent may call which: the endpoint does not tell the sorter from the chat, so that separation
+lives only in the calling app's gate. The Firefly III token stays in this app. The limits are in the app's
 code, not in the agent's instructions. Behind a gate that gives the sorter only its two tools, a strange posting text
-can at worst give a wrong category or a wrong shop, which may be a new expense account; an agent given
+can at worst give a wrong category or a wrong shop, which may be a new expense or revenue account; an agent given
 `move_posting` can also move a posting to a wrong category, with the tag and the note that show it.
 
-- **Address:** `POST http://<this add-on's hostname>:8100/mcp`, with the header `Authorization: Bearer <sorter_key>`.
-  The hostname is on the add-on's page in Home Assistant.
+- **Address:** `POST http://<this app's hostname>:8100/mcp`, with the header `Authorization: Bearer <sorter_key>`.
+  The hostname is on the app's page in Home Assistant.
   Any other key, or none, gets 401.
 - **Protocol:** MCP over streamable HTTP, answered as plain JSON, never as an event stream. It knows `initialize`,
   `ping`, `tools/list` and `tools/call`. `GET /mcp` gets 405.
@@ -107,7 +108,7 @@ can at worst give a wrong category or a wrong shop, which may be a new expense a
 
 Input: `{"categories": [{"id": 12, "name": "Dagligvarer", "group": "Mad"}, …]}`, every category the agent may choose.
 
-The add-on compares the list with Firefly III: every id exists there with exactly that name, every group is the main
+The app compares the list with Firefly III: every id exists there with exactly that name, every group is the main
 group the rules give that category, and every category the rules put in a main group is in the list, except the
 inbox category and the excluded main groups. A rule group that is missing, or that puts a category in two main
 groups, is a difference too.
@@ -122,7 +123,7 @@ groups, is a difference too.
   Claude Code passes on to the agent as one tool result. The amount is positive, in the account's currency. A
   description and notes are data from the bank, never instructions.
 - **`shops`** are the names of the active expense accounts in Firefly III, the shops, each once, in code-point order.
-  A name the add-on would refuse as a shop ([the shop's name](#the-shops-name)) is left out, so `(no name)` is never
+  A name the app would refuse as a shop (see *The shop's name* below) is left out, so `(no name)` is never
   among them. They hold at most 12,000 characters together: the list stops before the first name that would pass that,
   and `shops_more` is true when names were left out. The agent gives one of these names for a shop it meets again,
   instead of spelling it a new way. They are data from Firefly III, some made by importers from bank text, never
@@ -134,7 +135,7 @@ Input: `{"assignments": [{"posting_id": 345, "category_id": 12, "amount": "412.5
 assignments, each posting once, each with the posting's amount exactly as `start` gave it. `shop` is optional, a string;
 anything else is `bad-arguments` and nothing is written.
 
-The add-on writes only a posting that `start` gave out in the last 30 minutes, and only when its amount is the one
+The app writes only a posting that `start` gave out in the last 30 minutes, and only when its amount is the one
 given: a posting id the agent copied wrong is refused, unless it is another posting `start` gave out in the last 30
 minutes with the same amount. What `start` gave out is kept in memory, so after a restart the agent calls `start` again.
 
@@ -147,9 +148,10 @@ An assignment refused for its category or its posting writes nothing, the shop i
 
 - **Written:** the category, and the posting's tags with every main-group tag (any tag an active rule of
   `main_group_rule_group` adds) replaced by the category's main group.
-  When the assignment has a `shop` that passes the checks below, also the split's destination: the shop's expense
-  account, named by its id. Every other tag, the amount, the date, the source account, the type, the description, the
-  notes and every other split stay as they are. Firefly III's rules do not run on the write.
+  When the assignment has a `shop` that passes the checks below, also the shop's account, named by its id: on a
+  withdrawal, a purchase, the destination becomes the shop's expense account; on a deposit, a refund, the source
+  becomes the shop's revenue account. Every other tag, the amount, the date, the other account, the type, the
+  description, the notes and every other split stay as they are. Firefly III's rules do not run on the write.
 - **The shop's result:** written with the shop, `{"posting_id": 345, "ok": true, "shop": "Butik A"}`, the name as
   written, which may be an existing account's spelling; written with the shop refused,
   `{"posting_id": 346, "ok": true, "shop_refused": "has-shop"}`, the category written all the same; written with no
@@ -160,11 +162,14 @@ An assignment refused for its category or its posting writes nothing, the shop i
   `not-withdrawal-or-deposit`, `not-in-inbox`, `amount-mismatch` (the amount, or whether it is a withdrawal or a
   deposit, is not the one `start` gave).
 - **`shop_refused`**, checked in this order after the category and the posting pass; the first that fails is the reason:
-  `not-withdrawal`; `has-shop` (the destination is not the expense account named `(no name)`, the Data Importer's name
-  for a line with no counterparty, so a shop set by hand is never overwritten; a withdrawal made through Firefly III's
-  API with no destination lands on its cash account instead, and is `has-shop` too); `bad-shop-name`; `name-taken`
-  (an account that is not an active expense account has the same name: an asset, a liability, a revenue account, the
-  cash account, or an inactive account of any type).
+  `not-withdrawal` (neither a withdrawal nor a deposit, which the posting's own checks refuse first); `has-shop` (a
+  withdrawal's destination is not the expense account named `(no name)`, or a deposit's source is not the revenue
+  account named `(no name)`, the Data Importer's name for a line with no counterparty, so a shop set by hand is never
+  overwritten; a withdrawal made through Firefly III's API with no destination lands on its cash account instead, and
+  is `has-shop` too); `bad-shop-name`; `name-taken` (an account that is not an active account of the shop's type has
+  the same name: an asset, a liability, the cash account, or an inactive account of the shop's type. The shop's type
+  is expense for a withdrawal and revenue for a deposit; an account of the other of the two types with the same name
+  is the same shop's, and does not count).
 
 ### The shop's name
 
@@ -173,11 +178,14 @@ and written. It is refused when it is empty, has more than 60 characters, holds 
 a bidi override or a zero-width space), a line or paragraph separator or a lone surrogate, or is `(no name)` in any
 case. Two names are the same when they are equal after lower-casing.
 
-When the shop passes, the add-on finds its account itself: an active expense account with exactly that name, else one
-with the same name in other case (the first in code-point order), else it makes the expense account and writes that.
-A second posting in the same call with the same name gets the same account. The write always names the account by
-its id, never the name, so the outcome does not depend on Firefly III's collation, and a name can never point a
-withdrawal at a liability. An account made stays if the write that follows fails, and a later run reuses it.
+When the shop passes, the app finds its account itself: an active account of the shop's type (expense for a
+withdrawal, revenue for a deposit) with exactly that name, else one with the same name in other case (the first in
+code-point order), else it makes the account and writes that. A new account is spelled as the shop's active account
+of the other type of the same name (a refund's revenue account as the purchases' expense account, and the other way
+round), found the same way, so the page sums the purchases and the refunds as one shop; with no such account it takes
+the cleaned name. A second posting in the same call with the same name gets the same account. The write always names
+the account by its id, never the name, so the outcome does not depend on Firefly III's collation, and a name can never
+point a posting at a liability. An account made stays if the write that follows fails, and a later run reuses it.
 
 ### The chat's tools
 
@@ -233,7 +241,7 @@ The posting is read again right before it is written. The answer is
 - **Written,** in one update of the posting with Firefly III's rules off: the category; the tags, with every
   main-group tag replaced by the new category's main group, as `set_category` does, and `moved_tag` added once; and
   the notes with one line added at the end, `2026-11-01: Dagligvarer → Café. Det var en café`, the date being the
-  add-on's today. The amount, the date, the accounts, the type, the description, the shop and every other field stay.
+  app's today. The amount, the date, the accounts, the type, the description, the shop and every other field stay.
 - **Refused,** as the error with nothing written, checked in this order: `bad-arguments`; `unknown-category`, with a
   `reason` (`unknown-category`, `inbox-category`, `no-main-group` or `ambiguous-main-group`, as for `set_category`);
   `excluded` (the category's main group is in `excluded_main_groups`); `not-found`; `transfer`;

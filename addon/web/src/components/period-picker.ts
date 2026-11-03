@@ -43,6 +43,7 @@ export class PeriodPicker extends Dropdown {
     earliest: { attribute: false },
     fromText: { state: true },
     toText: { state: true },
+    checked: { state: true },
   };
 
   declare choice: PeriodChoice;
@@ -50,6 +51,7 @@ export class PeriodPicker extends Dropdown {
   declare earliest: string | null | undefined;
   declare fromText: string;
   declare toText: string;
+  declare private checked: { from: boolean; to: boolean };
 
   private calendar: Calendar | null = null;
   private monthsShown = 1;
@@ -60,6 +62,7 @@ export class PeriodPicker extends Dropdown {
     this.today = "";
     this.fromText = "";
     this.toText = "";
+    this.checked = { from: false, to: false };
   }
 
   /** A redraw of the calendar removes the focused day and leaves focus nowhere; that is not leaving the menu. While
@@ -71,6 +74,7 @@ export class PeriodPicker extends Dropdown {
       const period = periodOf(this.choice, this.today, this.earliest ?? null);
       this.fromText = typedDate(period.start);
       this.toText = typedDate(period.end);
+      this.checked = { from: false, to: false };
     }
     super.toggle();
   }
@@ -102,6 +106,53 @@ export class PeriodPicker extends Dropdown {
   private get customValid(): boolean {
     const { from, to } = this;
     return from !== null && to !== null && from <= to && to <= this.today;
+  }
+
+  /** What is wrong with a non-empty field, in the order the messages are checked. */
+  private problem(field: "from" | "to"): string | null {
+    const text = field === "from" ? this.fromText : this.toText;
+    if (text.trim() === "") return null;
+    const date = field === "from" ? this.from : this.to;
+    if (date === null) return da.dateInvalid;
+    if (date > this.today) return da.dateFuture;
+    const { from } = this;
+    if (field === "to" && from !== null && date < from) return da.dateOrder;
+    return null;
+  }
+
+  private check(field: "from" | "to"): void {
+    this.checked = { ...this.checked, [field]: this.problem(field) !== null };
+  }
+
+  /** A field that reads again is judged afresh at its next blur. */
+  private clearReadable(): void {
+    this.checked = {
+      from: this.checked.from && this.problem("from") !== null,
+      to: this.checked.to && this.problem("to") !== null,
+    };
+  }
+
+  private dateField(field: "from" | "to", label: string) {
+    const problem = this.checked[field] ? this.problem(field) : null;
+    const message = `hs-date-${field}-problem`;
+    return html`<div class="period-field">
+      <label class="period-date"
+        ><small>${label}</small
+        ><input
+          type="text"
+          autocomplete="off"
+          placeholder=${da.datePlaceholder}
+          aria-invalid=${problem === null ? nothing : "true"}
+          aria-describedby=${problem === null ? nothing : message}
+          .value=${live(field === "from" ? this.fromText : this.toText)}
+          @input=${(e: Event) => this.typed(field, (e.target as HTMLInputElement).value)}
+          @blur=${() => this.check(field)}
+          @keydown=${(e: KeyboardEvent) => {
+            if (e.key === "Enter") this.check(field);
+          }}
+      /></label>
+      ${problem === null ? nothing : html`<p id=${message} class="period-problem">${problem}</p>`}
+    </div>`;
   }
 
   private choose(choice: PeriodChoice): void {
@@ -180,6 +231,7 @@ export class PeriodPicker extends Dropdown {
     const days = dates.filter((date): date is string => typeof date === "string" && date !== "").sort();
     this.fromText = days.length > 0 ? typedDate(days[0]) : "";
     this.toText = days.length > 1 ? typedDate(days[days.length - 1]) : "";
+    this.clearReadable();
   }
 
   /** Keeps the calendar's days in step with the fields, and moves it to a typed date: the start in the first month
@@ -187,6 +239,8 @@ export class PeriodPicker extends Dropdown {
   private typed(field: "from" | "to", text: string): void {
     if (field === "from") this.fromText = text;
     else this.toText = text;
+    this.checked = { ...this.checked, [field]: false };
+    this.clearReadable();
     if (this.calendar === null) return;
     const date = parseTypedDate(text);
     const move = date !== null && date <= this.today ? monthFrom(date, field === "from" ? 0 : 1 - this.monthsShown) : null;
@@ -246,25 +300,9 @@ export class PeriodPicker extends Dropdown {
             </div>
             <div class="period-custom">
               <div class="period-dates">
-                <label class="period-date"
-                  ><small>${da.from}</small
-                  ><input
-                    type="text"
-                    autocomplete="off"
-                    placeholder=${da.datePlaceholder}
-                    .value=${live(this.fromText)}
-                    @input=${(e: Event) => this.typed("from", (e.target as HTMLInputElement).value)}
-                /></label>
+                ${this.dateField("from", da.from)}
                 <span class="period-dash" aria-hidden="true">–</span>
-                <label class="period-date"
-                  ><small>${da.to}</small
-                  ><input
-                    type="text"
-                    autocomplete="off"
-                    placeholder=${da.datePlaceholder}
-                    .value=${live(this.toText)}
-                    @input=${(e: Event) => this.typed("to", (e.target as HTMLInputElement).value)}
-                /></label>
+                ${this.dateField("to", da.to)}
               </div>
               <div class="period-calendar"><div></div></div>
               <div class="visually-hidden" role="status">${this.statusText()}</div>
@@ -379,11 +417,23 @@ export const periodPickerStyles = css`
   }
   .period-dates {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     gap: 8px;
   }
   .period-dash {
+    padding-top: 16px;
     color: var(--hs-muted);
+  }
+  .period-field {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .period-problem {
+    margin: 0;
+    color: var(--hs-up);
+    font-size: 12px;
+    max-width: 160px;
   }
   .period-date {
     border: 1px solid var(--hs-field);

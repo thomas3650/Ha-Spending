@@ -13,7 +13,7 @@ import { objectGroupSums } from "../components/subscriptions";
 import { count, kr, unitName } from "../format";
 import { da } from "../i18n/da";
 import { barItems, categoryColours, circleItems, circleSpan, circleTotal, partColours } from "../model/circle";
-import { levelName, partName, type ViewContext } from "../model/context";
+import { dayUnits, levelName, partName, type ViewContext } from "../model/context";
 import { detailView } from "../model/detail";
 import { matches, shopSuggestions } from "../model/filter";
 import { postingList } from "../model/postings";
@@ -118,9 +118,16 @@ export class Overview extends LitElement {
     </button>`;
   }
 
+  /** Without a chosen unit, Forskel keeps its place hidden, so the switch is as wide either way and no button moves. */
+  private differenceSlot() {
+    if (this.ctx.chosen !== null) return this.switchButton("difference", da.difference);
+    return html`<button type="button" class="kept" aria-hidden="true" tabindex="-1">${da.difference}</button>`;
+  }
+
   private bars() {
     const ctx = this.ctx;
-    const avg = keyNumbers(ctx.shown, ctx.timeline).average.amount;
+    // On day bars the key numbers' average is a month's, far above any day.
+    const avg = dayUnits(ctx) === null ? keyNumbers(ctx.shown, ctx.timeline).average.amount : null;
     const average = avg === null ? null : { amount: avg, label: da.average(kr(avg)) };
     const level = ctx.state.level;
     const colour = level.kind === "category" ? (partColours(ctx).get(level.category) ?? "") : "";
@@ -173,15 +180,22 @@ export class Overview extends LitElement {
     return basis === "before" ? da.differenceTitleBefore(name) : da.differenceTitle(name, g);
   }
 
+  /** A chosen category is named by its chip and the trail; the title names its main group, so it does not change. */
   private cardTitle(card: Card): string {
     const level = this.ctx.state.level;
-    const g = this.ctx.timeline.grouping;
-    const all = level.kind === "all";
-    if (card === "subscriptions") return all ? da.subscriptions : da.subscriptionsIn(levelName(level));
+    const g = dayUnits(this.ctx) === null ? this.ctx.timeline.grouping : "day";
     if (card === "difference" && this.ctx.chosen !== null) return this.differenceTitle(this.ctx.chosen);
-    if (card === "postings") return all ? da.postingsTitle : da.postingsOf(levelName(level));
-    if (card === "shops") return all ? da.shops : da.shopsIn(levelName(level));
-    return all ? da.per(g) : da.levelPer(levelName(level), g);
+    if (level.kind === "all") {
+      if (card === "subscriptions") return da.subscriptions;
+      if (card === "postings") return da.postingsTitle;
+      if (card === "shops") return da.shops;
+      return da.per(g);
+    }
+    const name = levelName({ kind: "mainGroup", mainGroup: level.mainGroup });
+    if (card === "subscriptions") return da.subscriptionsIn(name);
+    if (card === "postings") return da.postingsOf(name);
+    if (card === "shops") return da.shopsIn(name);
+    return da.levelPer(name, g);
   }
 
   private difference(unit: Unit, title: string) {
@@ -205,8 +219,11 @@ export class Overview extends LitElement {
     const level = ctx.state.level;
     const unit =
       ctx.chosen === null || ctx.state.card === "subscriptions" ? null : unitName(ctx.chosen, ctx.timeline.grouping);
-    return html`${level.kind === "category" ? chip(levelName(level), () => fire(this, "remove-category")) : nothing}
-    ${unit === null ? nothing : chip(unit, () => fire(this, "remove-unit"))}`;
+    if (level.kind !== "category" && unit === null) return nothing;
+    return html`<div class="card-chips">
+      ${level.kind === "category" ? chip(levelName(level), () => fire(this, "remove-category")) : nothing}
+      ${unit === null ? nothing : chip(unit, () => fire(this, "remove-unit"))}
+    </div>`;
   }
 
   private subscriptions(title: string) {
@@ -272,15 +289,13 @@ export class Overview extends LitElement {
                 <span aria-hidden="true">←</span>
               </button>`
             : nothing}
-          <h2 id=${RIGHT_TITLE} tabindex="-1">${title}</h2>
-          ${inPlace ? nothing : this.chips()}
+          <h2 id=${RIGHT_TITLE} tabindex="-1" title=${title}>${title}</h2>
         </div>
         <div class="card-tools">
-          <div class="card-switch" role="group" aria-label=${da.view}>
+          <div class="card-switch ${ctx.chosen === null ? "" : "with-unit"}" role="group" aria-label=${da.view}>
             ${this.switchButton("bars", da.bars)} ${this.switchButton("postings", da.postings)}
-            ${ctx.chosen === null ? nothing : this.switchButton("difference", da.difference)}
             ${ctx.data.subscriptions.length === 0 ? nothing : this.switchButton("subscriptions", da.subscriptions)}
-            ${shops ? this.switchButton("shops", da.shops) : nothing}
+            ${shops ? this.switchButton("shops", da.shops) : nothing} ${this.differenceSlot()}
           </div>
           <button
             type="button"
@@ -295,6 +310,7 @@ export class Overview extends LitElement {
           </button>
         </div>
       </div>
+      ${inPlace ? nothing : this.chips()}
       ${card === "shops" && this.hiddenWriteFailed
         ? html`<p class="line alert" role="alert">${da.saveFailed}</p>`
         : nothing}
@@ -322,6 +338,11 @@ export const overviewStyles = css`
   }
   .half-head.wraps {
     flex-wrap: wrap;
+  }
+  /* A zero basis lets a long title end in "…" rather than push the tools to a second line; they wrap only on a phone. */
+  .half-head.wraps > .half-title {
+    flex: 1 1 0;
+    min-width: 10em;
   }
   .half-head h2 {
     margin: 0;
@@ -351,10 +372,21 @@ export const overviewStyles = css`
   }
   .half-title {
     display: flex;
-    flex-wrap: wrap;
     align-items: center;
     gap: 10px;
     min-width: 0;
+  }
+  .half-title h2 {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .card-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 8px;
   }
   .half-sum {
     flex: none;
@@ -398,20 +430,27 @@ export const overviewStyles = css`
     display: inline-flex;
     flex-wrap: wrap;
     max-width: 100%;
-    border: 1px solid var(--hs-field);
-    border-radius: 6px;
-    overflow: hidden;
   }
+  /* The buttons draw the border, so it ends after the last shown one and the kept Forskel place stays outside it. */
   .card-switch button {
     font: inherit;
     padding: 6px 14px;
     color: var(--hs-text);
     background: var(--hs-card);
-    border: 0;
+    border: 1px solid var(--hs-field);
+    border-left-width: 0;
     cursor: pointer;
   }
-  .card-switch button + button {
-    border-left: 1px solid var(--hs-field);
+  .card-switch button:first-child {
+    border-left-width: 1px;
+    border-radius: 6px 0 0 6px;
+  }
+  .card-switch.with-unit button:last-child,
+  .card-switch:not(.with-unit) button:nth-last-child(2) {
+    border-radius: 0 6px 6px 0;
+  }
+  .card-switch button.kept {
+    visibility: hidden;
   }
   .card-switch button[aria-pressed="true"] {
     color: #fff;

@@ -40,7 +40,7 @@ cards and on Alle posteringer ([D44](decisions.md)).
 - **The Firefly III client** (`addon/server/src/firefly/`) has a `get`, a `put` and a `post`. It pages through the
   answers and maps them to postings and subscriptions ([D12](decisions.md), [D15](decisions.md)). Only the sorter's
   `set_category` ([D29](decisions.md)) and the chat's `move_posting` ([D34](decisions.md)) call `put`, and `post` only
-  to make a shop's expense account ([D32](decisions.md)).
+  to make a shop's expense account ([D32](decisions.md)) or a refund's revenue account ([D50](decisions.md)).
 - **The sorter's endpoint** (`addon/server/src/sorter/`) is a second Hono app on port 8100, started only when
   `sorter_key` is set ([D29](decisions.md)): `http.ts` holds the key check and MCP's JSON-RPC, `tools.ts` the tools
   `start` and `set_category` and their limits, and `chat.ts` the chat's tools `find_postings`, `get_posting`,
@@ -50,7 +50,10 @@ cards and on Alle posteringer ([D44](decisions.md)).
   address and token the server logs what is missing and exits 1.
 - **The hidden shops** are a file, `/data/hidden-shops.json` or `HA_SPENDING_HIDDEN_SHOPS`, read on every request and
   replaced whole on a write (`addon/server/src/hidden-shops.ts`, [D43](decisions.md)).
-- **The cache** keeps an answer per period for a few minutes (`addon/server/src/cache.ts`).
+- **The cache** keeps an answer per day and period for 5 minutes. It keeps the parts that do not depend on the
+  period for 5 minutes per day, so a new day reads them again: the main-group rules, the categories, the asset
+  accounts, the earliest posting date and the subscriptions (`addon/server/src/loader.ts`,
+  `addon/server/src/cache.ts`, [D49](decisions.md)).
 - **The version** comes from `addon/server/src/version.ts`, which release-please bumps
   ([`releasing.md`](releasing.md#versions)).
 

@@ -141,14 +141,26 @@ describe("the Firefly III client", () => {
 
   it("lets the first error win", async () => {
     const fake = createFakeFirefly(exampleSeed);
+    let hanging = 0;
+    let aborted = 0;
     const fetch: FetchLike = (input, init) => {
       if (String(input).includes("/categories")) return fake.fetch(input, { ...init, headers: {} });
       // The others hang until the first failure aborts them, and then fail as unreachable.
-      return new Promise((_, reject) => init?.signal?.addEventListener("abort", () => reject(init.signal!.reason)));
+      hanging++;
+      return new Promise((_, reject) => {
+        const abort = () => {
+          aborted++;
+          reject(init!.signal!.reason);
+        };
+        if (init?.signal?.aborted) abort();
+        else init?.signal?.addEventListener("abort", abort);
+      });
     };
     const client = createFireflyClient({ baseUrl: "http://f", token: "fake-token", fetch });
-    const error = await failure(readSpendingData(client, settings, R1, context));
+    const error = await failure(readSpendingData(client, { ...settings, timeoutMs: 10_000 }, R1, context));
     expect(error.reason).toBe("refused");
+    expect(hanging).toBeGreaterThan(0);
+    expect(aborted).toBe(hanging);
   });
 
   it("follows no redirect", async () => {
@@ -160,5 +172,56 @@ describe("the Firefly III client", () => {
     const client = createFireflyClient({ baseUrl: "http://f", token: "fake-token", fetch });
     expect((await failure(client.get("about", {}))).reason).toBe("unreachable");
     expect(seen[0].redirect).toBe("error");
+  });
+});
+
+describe("reading a list's pages", () => {
+  const PAGES = 10;
+  const SIZE = 2;
+
+  function pagedList(options: { failPage?: number; delay?: (page: number) => number } = {}) {
+    const stats = { inFlight: 0, highest: 0, requests: 0 };
+    const fetch: FetchLike = async (input) => {
+      const url = new URL(typeof input === "string" ? input : input instanceof URL ? input.href : input.url);
+      const page = Number(url.searchParams.get("page"));
+      stats.requests++;
+      stats.inFlight++;
+      stats.highest = Math.max(stats.highest, stats.inFlight);
+      try {
+        await new Promise((resolve) => setTimeout(resolve, options.delay?.(page) ?? 10));
+        if (page === options.failPage) return new Response("{}", { status: 500 });
+        const data = Array.from({ length: SIZE }, (_, i) => ({ id: String((page - 1) * SIZE + i + 1) }));
+        return Response.json({ data, meta: { pagination: { total_pages: PAGES } } });
+      } finally {
+        stats.inFlight--;
+      }
+    };
+    return { client: createFireflyClient({ baseUrl: "http://f", token: "fake-token", fetch }), stats };
+  }
+
+  it("reads the pages after the first at most 4 at a time", async () => {
+    const { client, stats } = pagedList();
+    await getAllPages(client, "things", {}, SIZE);
+    expect(stats.requests).toBe(PAGES);
+    expect(stats.highest).toBe(4);
+  });
+
+  it("returns the items of every page in the pages' order", async () => {
+    const { client } = pagedList({ delay: (page) => (PAGES - page) * 5 + 1 });
+    const items = await getAllPages<{ id: string }>(client, "things", {}, SIZE);
+    expect(items.map((g) => g.id)).toEqual(Array.from({ length: PAGES * SIZE }, (_, i) => String(i + 1)));
+  });
+
+  it("a failing page fails the read", async () => {
+    const { client } = pagedList({ failPage: 3 });
+    expect((await failure(getAllPages(client, "things", {}, SIZE))).reason).toBe("unreachable");
+  });
+
+  it("asks for no page after a failing page beyond those already asked for", async () => {
+    const { client, stats } = pagedList({ failPage: 2, delay: (page) => (page === 2 ? 1 : 30) });
+    expect((await failure(getAllPages(client, "things", {}, SIZE))).reason).toBe("unreachable");
+    await new Promise((resolve) => setTimeout(resolve, 150));
+    expect(stats.inFlight).toBe(0);
+    expect(stats.requests).toBe(5);
   });
 });
