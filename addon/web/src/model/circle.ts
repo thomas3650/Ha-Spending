@@ -12,7 +12,7 @@ import {
 import { type BarItem, isRunning } from "../components/bars";
 import type { CircleItem } from "../components/circle";
 import { unitAxis, unitName } from "../format";
-import { partName, type ViewContext } from "./context";
+import { dayUnits, partName, type ViewContext } from "./context";
 
 function periodCircle(ctx: ViewContext): CirclePart[] {
   return circle(parts(within(ctx.circlePostings, ctx.timeline.period), ctx.circleLevel));
@@ -69,14 +69,16 @@ export function categoryColours(ctx: ViewContext): Map<string | null, string> {
 }
 
 export function barItems(ctx: ViewContext): BarItem[] {
-  const g = ctx.timeline.grouping;
-  const totals = unitTotals(ctx.shown, ctx.units);
-  return ctx.units.map((unit, i) => ({
+  const days = dayUnits(ctx);
+  const g = days === null ? ctx.timeline.grouping : "day";
+  const units = days ?? ctx.units;
+  const totals = unitTotals(ctx.shown, units);
+  return units.map((unit, i) => ({
     unit,
     axis: unitAxis(unit, g),
     name: unitName(unit, g),
     amount: totals[i],
     running: isRunning(unit, ctx.today),
-    choose: unit.fullStart,
+    choose: days === null ? unit.fullStart : ctx.units[0].fullStart,
   }));
 }

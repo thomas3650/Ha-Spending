@@ -13,7 +13,7 @@ import { objectGroupSums } from "../components/subscriptions";
 import { count, kr, unitName } from "../format";
 import { da } from "../i18n/da";
 import { barItems, categoryColours, circleItems, circleSpan, circleTotal, partColours } from "../model/circle";
-import { levelName, partName, type ViewContext } from "../model/context";
+import { dayUnits, levelName, partName, type ViewContext } from "../model/context";
 import { detailView } from "../model/detail";
 import { matches, shopSuggestions } from "../model/filter";
 import { postingList } from "../model/postings";
@@ -126,7 +126,8 @@ export class Overview extends LitElement {
 
   private bars() {
     const ctx = this.ctx;
-    const avg = keyNumbers(ctx.shown, ctx.timeline).average.amount;
+    // On day bars the key numbers' average is a month's, far above any day.
+    const avg = dayUnits(ctx) === null ? keyNumbers(ctx.shown, ctx.timeline).average.amount : null;
     const average = avg === null ? null : { amount: avg, label: da.average(kr(avg)) };
     const level = ctx.state.level;
     const colour = level.kind === "category" ? (partColours(ctx).get(level.category) ?? "") : "";
@@ -182,7 +183,7 @@ export class Overview extends LitElement {
   /** A chosen category is named by its chip and the trail; the title names its main group, so it does not change. */
   private cardTitle(card: Card): string {
     const level = this.ctx.state.level;
-    const g = this.ctx.timeline.grouping;
+    const g = dayUnits(this.ctx) === null ? this.ctx.timeline.grouping : "day";
     if (card === "difference" && this.ctx.chosen !== null) return this.differenceTitle(this.ctx.chosen);
     if (level.kind === "all") {
       if (card === "subscriptions") return da.subscriptions;
