@@ -5,6 +5,8 @@
 
 **Issue:** #84. One branch, one PR.
 
+**Approved:** by Thomas, 2026-11-03.
+
 Today a period inside one calendar month, by Måned, has one unit, so the Søjler card draws one bar that fills the
 card. It says nothing the key numbers do not already say.
 
@@ -123,8 +125,9 @@ there holds:
 - Today `buttonName` and the tooltip write a bar's amount with `kr`, which drops the sign, so a day with only a refund
   (the fixture's Pizzeria Roma, -200 kr. on 2026-09-22) is drawn below zero but named "200 kr.".
 - A bar whose amount is below zero writes it as `` `+${kr(amount)}` `` in its button's name and its tooltip, as a
-  refund is "+" on Posteringer; whole kroner, as the bars' other texts. A bar of zero or more is written as today. The
-  bar is still drawn below zero.
+  refund is "+" on Posteringer; whole kroner, as the bars' other texts. When the rounded text is 0 (a few øre below
+  zero), it has no "+", as `signedKr` does. A bar of zero or more is written as today. The bar is still drawn below
+  zero.
 - This is in `hs-bars`, so it holds for every bar, month bars too.
 - Tests: `period=lastMonth`, the button for 22 Sep is named `` `22.9.2026, +${kr(20000)}` ``; the button for 1 Sep
   still `` `1.9.2026, ${kr(800000)}` ``.
