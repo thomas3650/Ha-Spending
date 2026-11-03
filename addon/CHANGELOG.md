@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.11.0](https://github.com/thomas3650/Ha-Spending/compare/v0.10.1...v0.11.0) (2026-11-03)
+
+
+### Features
+
+* the fixes from the 0.10.0 user test, refunds with their shop, and a month's days ([#104](https://github.com/thomas3650/Ha-Spending/issues/104)) ([4bbde4b](https://github.com/thomas3650/Ha-Spending/commit/4bbde4b2afe50ca02051f15798e530668fa2c83a))
+
 ## [0.10.1](https://github.com/thomas3650/Ha-Spending/compare/v0.10.0...v0.10.1) (2026-11-03)
 
 
