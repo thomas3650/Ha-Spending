@@ -11,7 +11,6 @@ import { cardNames, hasArrow } from "./text";
 
 afterEach(unmount);
 
-
 type Link = Posting["subscription"];
 
 const FIXED = da.inPeriod("Faste udgifter");

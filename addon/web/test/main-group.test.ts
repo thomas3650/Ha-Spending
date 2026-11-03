@@ -12,6 +12,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import { kr, partLabel, percent, unitName } from "../src/format";
 import { da } from "../src/i18n/da";
 import { partName } from "../src/model/context";
+import { OBJECT_GROUP } from "./fixture";
 import { mount, settle, unmount } from "./mount";
 import { cardNames, hasArrow, KEEP_NBSP } from "./text";
 
@@ -106,7 +107,7 @@ describe("screen 2, a main group", () => {
 
   it("shows the key numbers of the main group", async () => {
     const { root } = await mount("group=Mad");
-    expect(cardNames(root)).toEqual([da.inPeriod("Mad"), da.averagePer("month")]);
+    expect(cardNames(root, [OBJECT_GROUP])).toEqual([da.inPeriod("Mad"), da.averagePer("month")]);
     expect(hasArrow(root)).toBe(false);
   });
 

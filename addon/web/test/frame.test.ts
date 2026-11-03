@@ -14,7 +14,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { kr, longDate, rangeText } from "../src/format";
 import { da } from "../src/i18n/da";
-import { answerFor, withSubscriptions } from "./fixture";
+import { answerFor, OBJECT_GROUP, withSubscriptions } from "./fixture";
 import { json, mount, settle, unmount } from "./mount";
 import { cardNames, hasArrow } from "./text";
 
@@ -107,7 +107,7 @@ describe("the frame", () => {
     const second = getByRole(root, "group", { name: da.averagePer("month") });
     getByText(second, kr(1159444));
     getByText(second, da.unitCount(9, "month"));
-    expect(cardNames(root)).toEqual([da.spendingInPeriod, da.averagePer("month")]);
+    expect(cardNames(root, [OBJECT_GROUP])).toEqual([da.spendingInPeriod, da.averagePer("month")]);
     expect(hasArrow(root)).toBe(false);
   });
 

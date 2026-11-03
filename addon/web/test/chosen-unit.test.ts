@@ -7,7 +7,7 @@ import type { DifferenceItem } from "../src/components/difference";
 import { kr, partLabel, rangeText, signedKr, unitName } from "../src/format";
 import { da } from "../src/i18n/da";
 import { charts, forgetCharts } from "./chart-mock";
-import { answerFor } from "./fixture";
+import { answerFor, OBJECT_GROUP } from "./fixture";
 import { json, mount, settle, unmount } from "./mount";
 import { cardNames, hasArrow } from "./text";
 
@@ -62,7 +62,7 @@ describe("screen 4, a chosen unit", () => {
     const first = getByRole(root, "group", { name: da.unitTotal(julyName()) });
     getByText(first, kr(JULY));
     getByText(first, rangeText({ start: "2026-07-01", end: "2026-07-31" }));
-    expect(cardNames(root)).toEqual([da.unitTotal(julyName())]);
+    expect(cardNames(root, [OBJECT_GROUP])).toEqual([da.unitTotal(julyName())]);
     expect(hasArrow(root)).toBe(false);
   });
 
@@ -72,12 +72,12 @@ describe("screen 4, a chosen unit", () => {
       return json({ ...answer, postings: answer.postings.filter((p) => p.date >= from) });
     };
     const empty = await mount(CHOSEN, { answer: onlyFrom("2026-07-01") });
-    expect(cardNames(empty.root)).toEqual([da.unitTotal(julyName())]);
+    expect(cardNames(empty.root, [OBJECT_GROUP])).toEqual([da.unitTotal(julyName())]);
     expect(hasArrow(empty.root)).toBe(false);
     unmount();
     const first = await mount("unit=2026-01-01&card=difference", { answer: onlyFrom("2026-01-01") });
     const january = unitName(unitAt("2026-01-01", "month", TODAY), "month");
-    expect(cardNames(first.root)).toEqual([da.unitTotal(january)]);
+    expect(cardNames(first.root, [OBJECT_GROUP])).toEqual([da.unitTotal(january)]);
     expect(hasArrow(first.root)).toBe(false);
   });
 

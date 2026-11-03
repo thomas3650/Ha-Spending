@@ -76,8 +76,8 @@ function days(period: Period): number {
 }
 
 /**
- * One card per object group that a kept bill has or a shown posting in the period is linked to; empty gives three key
- * numbers (spec §4). The fetched range does not count, and neither does a chosen unit.
+ * One card per object group that a kept bill has or a shown posting in the period is linked to; empty gives the period's key
+ * numbers only (spec §4). The fetched range does not count, and neither does a chosen unit.
  */
 export function objectGroupCards(ctx: ViewContext, hrefOf: (title: string) => string): KeyCard[] {
   const period = ctx.timeline.period;
@@ -102,7 +102,7 @@ export function objectGroupCards(ctx: ViewContext, hrefOf: (title: string) => st
         label: da.inPeriod(name),
         value: kr(sum),
         sub,
-            postings: { count: payments.length, href: hrefOf(name) },
+        postings: { count: payments.length, href: hrefOf(name) },
       };
     });
 }

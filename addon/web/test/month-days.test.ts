@@ -4,7 +4,7 @@ import { afterEach, describe, expect, it } from "vitest";
 
 import { kr, unitName } from "../src/format";
 import { da } from "../src/i18n/da";
-import { answerFor } from "./fixture";
+import { answerFor, OBJECT_GROUP } from "./fixture";
 import { json, mount, settle, unmount } from "./mount";
 import { cardNames } from "./text";
 
@@ -119,7 +119,7 @@ describe("a one-month period draws its days", () => {
     const { root } = await mount("period=lastMonth");
     expect(location.hash).toBe("#period=lastMonth");
     expect((getByRole(root, "combobox", { name: da.groupBy }) as HTMLSelectElement).value).toBe("month");
-    expect(cardNames(root)).toEqual([da.spendingInPeriod, da.averagePer("month")]);
+    expect(cardNames(root, [OBJECT_GROUP])).toEqual([da.spendingInPeriod, da.averagePer("month")]);
     unmount();
     const postings = await mount("period=lastMonth&card=postings");
     const card = getByRole(postings.root, "region", { name: da.postingsTitle });
