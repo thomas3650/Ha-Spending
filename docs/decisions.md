@@ -479,6 +479,14 @@ to set their status to `superseded by D<n>`, or to name a part a later decision 
   in the hash read old links with whole kroner as before.
 - **Source:** Thomas, 2026-11-03 (approved [UI polish spec](superpowers/specs/2026-11-03-ui-polish.md) §3.2)
 
+### D48: The add-on's user docs say app, the repo's docs add-on
+- **Date:** 2026-11-03 · **Status:** active
+- **Decision:** `addon/DOCS.md` and `addon/README.md` say "app" where they mean what Home Assistant now calls an app
+  (*Settings → Apps*). The product name "HA Spending" stays. The repo's own docs and the code keep "add-on".
+- **Why:** The users of the docs see "app" in Home Assistant; the repo's names (`addon/`, the add-on repository) are
+  the established ones.
+- **Source:** Thomas, 2026-11-03 ([UI polish spec](superpowers/specs/2026-11-03-ui-polish.md) §5.9)
+
 ### D49: The server keeps the span-free parts per day and reads a list's pages 4 at a time
 - **Date:** 2026-11-03 · **Status:** active
 - **Decision:** The main-group rules, the categories, the asset accounts, the earliest posting date and the
