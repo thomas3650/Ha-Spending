@@ -12,7 +12,7 @@ import {
 import { count, detailAmount, detailKr, tableDate, unitAxis, unitName } from "../format";
 import { da } from "../i18n/da";
 import type { DetailKey } from "../state/view";
-import { partName, type ViewContext } from "./context";
+import { finerUnits, partName, type ViewContext } from "./context";
 import { byDate } from "./filter";
 import { linkBase, postingHref } from "./postings";
 import { billHref, paymentText, statusCell } from "./subscriptions";
@@ -24,6 +24,7 @@ export interface DetailBox {
 }
 
 export interface DetailBar {
+  /** Empty on a bar whose name is thinned out; it keeps its place and label. */
   name: string;
   /** Øre, net; a unit at zero or below keeps its place but draws no bar. */
   amount: number;
@@ -67,10 +68,16 @@ interface Common {
   per: string;
 }
 
+const MAX_NAMED = 12;
+const NAMED_WHEN_THINNED = 8;
+
 function common(ctx: ViewContext, rows: ClassifiedPosting[], marked: string | null): Common {
-  const g = ctx.timeline.grouping;
+  const finer = finerUnits(ctx);
+  const g = finer?.grouping ?? ctx.timeline.grouping;
+  const units = finer?.units ?? ctx.units;
   const base = linkBase(ctx.data.fireflyLinkUrl);
-  const totals = unitTotals(rows, ctx.units);
+  const totals = unitTotals(rows, units);
+  const step = units.length > MAX_NAMED ? Math.ceil(units.length / NAMED_WHEN_THINNED) : 1;
   return {
     rows: [...rows]
       .sort((a, b) => byDate(b, a))
@@ -82,10 +89,10 @@ function common(ctx: ViewContext, rows: ClassifiedPosting[], marked: string | nu
         marked: p.id === marked,
         href: postingHref(base, p),
       })),
-    bars: ctx.units.map((unit, i) => {
+    bars: units.map((unit, i) => {
       const running = isRunning(unit, ctx.today);
       const label = `${unitName(unit, g)}: ${detailKr(totals[i])}`;
-      return { name: unitAxis(unit, g), amount: totals[i], label: running ? `${label} (${da.inProgress})` : label, running };
+      return { name: i % step === 0 ? unitAxis(unit, g) : "", amount: totals[i], label: running ? `${label} (${da.inProgress})` : label, running };
     }),
     first: {
       label: da.detailInPeriod,
