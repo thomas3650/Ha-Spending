@@ -41,7 +41,10 @@ export class FilterPicker extends Dropdown {
   declare ctx: ViewContext;
   declare private min: string;
   declare private max: string;
-  /** The fields are judged once "Tilføj" is pressed or they lose the focus, not while the user is typing. */
+  /**
+   * A field is judged when "Tilføj" is pressed or it loses the focus, not while the user is typing; once it reads
+   * again it waits for the next of those.
+   */
   declare private checked: { min: boolean; max: boolean };
 
   constructor() {
@@ -79,6 +82,11 @@ export class FilterPicker extends Dropdown {
     this.choose("set-amount", range);
   }
 
+  private typed(field: "min" | "max", text: string): void {
+    this[field] = text;
+    if (text.trim() === "" || parseDanishAmount(text) !== null) this.checked = { ...this.checked, [field]: false };
+  }
+
   private amountField(field: "min" | "max", label: string) {
     const invalid = this.invalid(field);
     const message = `hs-amount-${field}-invalid`;
@@ -90,7 +98,7 @@ export class FilterPicker extends Dropdown {
           aria-invalid=${invalid ? "true" : nothing}
           aria-describedby=${invalid ? message : nothing}
           .value=${live(this[field])}
-          @input=${(e: Event) => (this[field] = (e.target as HTMLInputElement).value)}
+          @input=${(e: Event) => this.typed(field, (e.target as HTMLInputElement).value)}
           @blur=${() => (this.checked = { ...this.checked, [field]: true })}
         />
       </label>

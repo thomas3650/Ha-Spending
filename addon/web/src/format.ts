@@ -65,7 +65,6 @@ export function signedKr(ore: number): string {
   return `${ore < 0 ? "-" : "+"}${text} ${da.kr}`;
 }
 
-/** A whole bound without decimals, a bound with øre with two. */
 export function amountChip(range: AmountRange): string {
   const text = (ore: number | null) => {
     if (ore === null) return null;

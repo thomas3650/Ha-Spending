@@ -316,6 +316,52 @@ describe("screen 3, all postings", () => {
       expect(new URLSearchParams(location.hash.slice(1)).has("min")).toBe(false);
       unmount();
     }
+    const { app, root } = await mount(CAFE);
+    await openFilter(app, root);
+    const part = getByRole(root, "group", { name: da.amountFilter });
+    fireEvent.input(getByRole(part, "textbox", { name: da.to }), { target: { value: "1,505" } });
+    fireEvent.click(getByRole(part, "button", { name: da.add }));
+    await settle(app);
+    const to = getByRole(part, "textbox", { name: da.to, description: da.amountInvalid });
+    expect(to.getAttribute("aria-invalid")).toBe("true");
+    expect(getByRole(part, "textbox", { name: da.from }).hasAttribute("aria-invalid")).toBe(false);
+    expect(hashParam("max")).toBeNull();
+  });
+
+  it("judges a field when it loses the focus, and again only at the next blur once it reads", async () => {
+    const { app, root } = await mount(CAFE);
+    await openFilter(app, root);
+    const part = getByRole(root, "group", { name: da.amountFilter });
+    const to = getByRole(part, "textbox", { name: da.to });
+    fireEvent.input(to, { target: { value: "abc" } });
+    await settle(app);
+    expect(to.hasAttribute("aria-invalid")).toBe(false);
+    fireEvent.blur(to);
+    await settle(app);
+    getByRole(part, "textbox", { name: da.to, description: da.amountInvalid });
+    expect(to.getAttribute("aria-invalid")).toBe("true");
+    fireEvent.input(to, { target: { value: "1" } });
+    await settle(app);
+    expect(to.hasAttribute("aria-invalid")).toBe(false);
+    fireEvent.input(to, { target: { value: "1." } });
+    await settle(app);
+    expect(to.hasAttribute("aria-invalid")).toBe(false);
+    fireEvent.blur(to);
+    await settle(app);
+    expect(to.getAttribute("aria-invalid")).toBe("true");
+  });
+
+  it("swaps Fra and Til when Fra is the greater", async () => {
+    const { app, root } = await mount(CAFE);
+    await openFilter(app, root);
+    const part = getByRole(root, "group", { name: da.amountFilter });
+    fireEvent.input(getByRole(part, "textbox", { name: da.from }), { target: { value: "1.000,50" } });
+    fireEvent.input(getByRole(part, "textbox", { name: da.to }), { target: { value: "200" } });
+    fireEvent.click(getByRole(part, "button", { name: da.add }));
+    await settle(app);
+    chip(root, amountChip({ min: 20000, max: 100050 }));
+    expect(hashParam("min")).toBe("200");
+    expect(hashParam("max")).toBe("1000.50");
   });
 
   it("takes a Danish amount, drops the message once the field is right, and keeps øre in the hash", async () => {
