@@ -46,7 +46,7 @@ sections there, tests included; the plan does not repeat them.
 Model: sonnet · Review: yes
 
 **Files:** modify `addon/web/src/i18n/da.ts`, `addon/web/src/format.ts`, `addon/web/src/components/bars.ts` (the
-y-axis `formatter`); tests in `addon/web/test/format.test.ts`, `addon/web/test/bars.test.ts`,
+y-axis `formatter`; the `BarItem.choose` comment becomes "a finer bar chooses the period's one unit"); tests in `addon/web/test/format.test.ts`, `addon/web/test/bars.test.ts`,
 `addon/web/test/month-days.test.ts`.
 
 **Produces:**
@@ -73,12 +73,13 @@ y-axis `formatter`); tests in `addon/web/test/format.test.ts`, `addon/web/test/b
 Model: opus · Review: yes
 
 **Files:** modify `addon/web/src/model/context.ts` (`dayUnits` becomes `finerUnits`), `addon/web/src/model/circle.ts`
-(`barItems`), `addon/web/src/screens/overview.ts` (`bars()` average, `cardTitle`); create
+(`barItems`), `addon/web/src/screens/overview.ts` (`bars()` average and its comment, which says the average "is a month's", `cardTitle`); create
 `addon/web/test/finer-units.test.ts`. `month-days.test.ts` stays and must keep passing.
 
 **Interfaces:**
 - Produces: `export interface Finer { grouping: Grouping; units: Unit[] }` and
-  `export function finerUnits(ctx: ViewContext): Finer | null` in `model/context.ts`. `dayUnits` is removed.
+  `export function finerUnits(ctx: ViewContext): Finer | null` in `model/context.ts`, with a doc comment written for
+  it (not `dayUnits`'s). `dayUnits` is removed.
 - Consumed by Task 3.
 
 **The rule** (spec §1; the only algorithm the tests do not pin down by themselves):
@@ -88,7 +89,8 @@ FINER = { week: day, month: day, quarter: month, year: month }
 if ctx.units.length !== 1 or grouping is day: return null
 end = period.end
 if preset is thisMonth, thisYear or all:
-  own = thisMonth: month's last day of period.start; thisYear: 31 Dec of period.start's year; all: none
+  own = thisMonth: unitAt(period.start, "month", today).fullEnd; thisYear: unitAt(period.start, "year", today).fullEnd;
+        all: none
   end = own === none ? ctx.units[0].fullEnd : min(own, ctx.units[0].fullEnd)
 g = FINER[grouping]; units = unitsOf({ start: period.start, end }, g, today)
 while units.length === 1 and g !== day: g = FINER[g]; units = unitsOf(same span, g, today)
@@ -102,7 +104,14 @@ return { grouping: g, units }
 - [ ] **Step 1: Write the failing tests** in `finer-units.test.ts`, one `it` per bullet of spec §1's and §2's test
   lists, read through the bars' region and its buttons as `month-days.test.ts` does (its `barsList`, `dayButtons`,
   `names`, `pressed` helpers copied or moved to a shared test helper). The `now` cases use
-  `mount(hash, { now, answer: (range) => json(answerFor(range, today)) })`.
+  `mount(hash, { now, answer: (range) => json(answerFor(range, day)) })`, `day` being the `now` date, as
+  `month-days.test.ts` does. Two more tests, beyond the spec's lists:
+  - `"Alt by År with one year of data draws its months"`: `period=all&by=year` with
+    `answer: (r) => json({ ...answerFor(r), earliestPostingDate: "2026-02-10" })`: 11 buttons, February to December;
+    the first's tooltip (`barTooltip`) range starts 10 Feb; October's name contains `da.inProgress`, November's and
+    December's do not.
+  - `"I år by Måned on 5 January draws January's days"`: `period=thisYear` with `now` 2026-01-05: 31 day buttons; the
+    5th's name contains `da.inProgress`, the 31st's does not.
 - [ ] **Step 2: Run** `npm test --workspace web` in `addon/`. Expected: the new tests fail; `month-days.test.ts` passes.
 - [ ] **Step 3: Implement** as above.
 - [ ] **Step 4: Run** `npm run lint && npm test && npm run build` in `addon/`. Expected: all pass, `month-days.test.ts`
@@ -115,8 +124,8 @@ return { grouping: g, units }
 
 Model: sonnet · Review: yes
 
-**Files:** modify `addon/web/src/model/detail.ts` (`common`), `addon/web/src/components/detail.ts` (draws an empty
-name); tests in `addon/web/test/detail.test.ts` (with `mountLinked`), `addon/web/test/detail-model.test.ts` if a
+**Files:** modify `addon/web/src/model/detail.ts` (`common`); `components/detail.ts` needs no change, since it already
+renders `${b.name}`; tests in `addon/web/test/detail.test.ts` (with `mountLinked`), `addon/web/test/detail-model.test.ts` if a
 model-level test is simpler there.
 
 **Interfaces:**
@@ -126,7 +135,8 @@ model-level test is simpler there.
 **Thinning** (spec §3): with `n` bars, `n > 12`: bar `i` keeps its name only when `i % Math.ceil(n / 8) === 0`.
 
 - [ ] **Step 1: Write the failing tests**, spec §3's list: 30 day items on `period=lastMonth&card=subscriptions&
-  detail=s%3Ab1`, every hidden label, exactly 8 shown names "1.9." … "29.9."; 12 month items on
+  detail=s%3Ab1`, every hidden label, exactly 8 shown names "1.9." … "29.9." (read per item with
+  `queryByText(item, /^\d{1,2}\.\d{1,2}\.$/)`, which also sees `aria-hidden` text; never a CSS selector); 12 month items on
   `period=thisYear&by=year&…`, first label "Januar 2026: …", every name shown; the default period as today. Plus a
   test for Review focus 5: on `period=custom&from=2026-10-19&to=2026-10-25&by=week&card=subscriptions&detail=s%3Ab1`
   (Husleje is paid on the 1st, so no posting that week), the list `da.detailPer("day")` has 7 items, each hidden
