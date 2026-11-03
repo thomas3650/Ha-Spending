@@ -4,7 +4,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import "../src/components/bars";
 import { axisLabelShown, type BarItem, type Bars, barTooltip } from "../src/components/bars";
-import { barKr, kr, unitAxis, unitName } from "../src/format";
+import { barKr, kr, rangeText, unitAxis, unitName } from "../src/format";
 import { da } from "../src/i18n/da";
 import { charts, forgetCharts } from "./chart-mock";
 import { answerFor } from "./fixture";
@@ -214,17 +214,25 @@ describe("barTooltip", () => {
 
   it("has name, range and amount for a whole month", () => {
     const item = itemOf({ start: "2026-09-01", end: "2026-09-30" }, "month");
-    expect(barTooltip(item).split("<br>")).toHaveLength(3);
+    const range = rangeText({ start: item.unit.start, end: item.unit.end });
+    expect(barTooltip(item).split("<br>")).toEqual([item.name, range, barKr(item.amount)]);
   });
 
-  it("keeps the range for a month clipped to one day", () => {
+  it("keeps the clipped range for a month clipped to one day", () => {
     const item = itemOf({ start: "2026-09-05", end: "2026-09-05" }, "month");
     expect(item.unit.fullStart).not.toBe(item.unit.fullEnd);
-    expect(barTooltip(item).split("<br>")).toHaveLength(3);
+    const range = rangeText({ start: item.unit.start, end: item.unit.end });
+    expect(range).toBe(rangeText({ start: "2026-09-05", end: "2026-09-05" }));
+    expect(barTooltip(item).split("<br>")).toEqual([item.name, range, barKr(item.amount)]);
   });
 
   it("has only name and amount for a day", () => {
     const item = itemOf({ start: "2026-09-05", end: "2026-09-05" }, "day");
-    expect(barTooltip(item).split("<br>")).toEqual([item.name, barKr(item.amount)].map((t) => t.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`)));
+    expect(barTooltip(item).split("<br>")).toEqual([item.name, barKr(item.amount)]);
+  });
+
+  it("escapes the name", () => {
+    const item = { ...itemOf({ start: "2026-09-05", end: "2026-09-05" }, "day"), name: "A<b> & C" };
+    expect(barTooltip(item).split("<br>")[0]).toBe("A&#60;b&#62; &#38; C");
   });
 });
