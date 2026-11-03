@@ -68,6 +68,21 @@ export function createFireflyClient(options: { baseUrl: string; token: string; f
   };
 }
 
+const PAGES_AT_ONCE = 4;
+
+export async function eachLimited<T, R>(items: T[], limit: number, read: (item: T) => Promise<R>): Promise<R[]> {
+  const results: R[] = [];
+  let next = 0;
+  const worker = async () => {
+    while (next < items.length) {
+      const i = next++;
+      results[i] = await read(items[i]);
+    }
+  };
+  await Promise.all(Array.from({ length: Math.min(limit, items.length) }, worker));
+  return results;
+}
+
 export async function getAllPages<T>(
   client: FireflyClient,
   path: string,
@@ -75,12 +90,18 @@ export async function getAllPages<T>(
   pageSize: number,
   signal?: AbortSignal,
 ): Promise<T[]> {
-  const items: T[] = [];
-  for (let page = 1; ; page++) {
+  const readPage = async (page: number) => {
     const answer = (await client.get(path, { ...query, limit: String(pageSize), page: String(page) }, signal)) as
       WirePage<T>;
     if (!Array.isArray(answer.data)) throw new FireflyError("unreachable");
-    items.push(...answer.data);
-    if (page >= (answer.meta?.pagination?.total_pages ?? 1)) return items;
-  }
+    return answer;
+  };
+  const first = await readPage(1);
+  const totalPages = first.meta?.pagination?.total_pages ?? 1;
+  const rest = await eachLimited(
+    Array.from({ length: Math.max(0, totalPages - 1) }, (_, i) => i + 2),
+    PAGES_AT_ONCE,
+    async (page) => (await readPage(page)).data,
+  );
+  return [first.data, ...rest].flat();
 }

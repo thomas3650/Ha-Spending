@@ -1,7 +1,7 @@
 import { addDays, compareKeys, gapMonths, MAX_GAP_MONTHS, type Posting, PAYMENTS_PER_YEAR, type Repeat,
   type Subscription } from "@ha-spending/shared";
 import { toOre } from "./amount";
-import { type FireflyClient, FireflyError, getAllPages } from "./client";
+import { eachLimited, type FireflyClient, FireflyError, getAllPages } from "./client";
 import { ASSET, type WireBill, type WireGroup, type WirePaidDate, type WireSplit } from "./wire";
 
 export interface RawSubscription {
@@ -37,19 +37,6 @@ function latestPaid(bill: WireBill, today: string): WirePaidDate | null {
     if (day(paid.date) <= today && (latest === null || day(paid.date) > day(latest.date))) latest = paid;
   }
   return latest;
-}
-
-async function eachLimited<T, R>(items: T[], limit: number, read: (item: T) => Promise<R>): Promise<R[]> {
-  const results: R[] = [];
-  let next = 0;
-  const worker = async () => {
-    while (next < items.length) {
-      const i = next++;
-      results[i] = await read(items[i]);
-    }
-  };
-  await Promise.all(Array.from({ length: Math.min(limit, items.length) }, worker));
-  return results;
 }
 
 export async function readSubscriptions(

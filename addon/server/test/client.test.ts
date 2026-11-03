@@ -162,3 +162,52 @@ describe("the Firefly III client", () => {
     expect(seen[0].redirect).toBe("error");
   });
 });
+
+describe("reading a list's pages", () => {
+  function slowFake(failPage?: string) {
+    const fake = createFakeFirefly(exampleSeed);
+    let inFlight = 0;
+    let highest = 0;
+    const fetch: FetchLike = async (input, init) => {
+      const url = new URL(typeof input === "string" ? input : input instanceof URL ? input.href : input.url);
+      inFlight++;
+      highest = Math.max(highest, inFlight);
+      try {
+        await new Promise((resolve) => setTimeout(resolve, 10));
+        if (url.searchParams.get("page") === failPage) return new Response("{}", { status: 500 });
+        return await fake.fetch(input, init);
+      } finally {
+        inFlight--;
+      }
+    };
+    return { client: createFireflyClient({ baseUrl: "http://f", token: "fake-token", fetch }), highest: () => highest };
+  }
+  const query = { type: "withdrawal", start: "2025-01-01", end: "2026-12-31" };
+
+  async function sevenPages(client: ReturnType<typeof slowFake>["client"]) {
+    const all = (await client.get("transactions", { ...query, limit: "1000" })) as { data: unknown[] };
+    const size = Math.ceil(all.data.length / 7);
+    return size;
+  }
+
+  it("reads the pages after the first at most 4 at a time", async () => {
+    const { client, highest } = slowFake();
+    await getAllPages(client, "transactions", query, await sevenPages(client));
+    expect(highest()).toBeGreaterThan(1);
+    expect(highest()).toBeLessThanOrEqual(4);
+  });
+
+  it("returns the items of every page in the pages' order", async () => {
+    const { client } = slowFake();
+    const size = await sevenPages(client);
+    const all = (await client.get("transactions", { ...query, limit: "1000" })) as { data: { id: string }[] };
+    const paged = await getAllPages<{ id: string }>(client, "transactions", query, size);
+    expect(paged.map((g) => g.id)).toEqual(all.data.map((g) => g.id));
+  });
+
+  it("a failing page fails the read", async () => {
+    const { client } = slowFake("3");
+    const size = await sevenPages(client);
+    await failure(getAllPages(client, "transactions", query, size));
+  });
+});
