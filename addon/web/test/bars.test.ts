@@ -92,7 +92,7 @@ describe("the bars", () => {
     const items = itemsOfThisYear();
     items[3] = { ...items[3], amount: -20000 };
     const el = await render({ items });
-    getByRole(el, "button", { name: `${items[3].name}, +${kr(20000)}` });
+    getByRole(el, "button", { name: `${items[3].name}, +${kr(20000)} ${da.refundMark}` });
     getByRole(el, "button", { name: `${items[6].name}, ${kr(items[6].amount)}` });
   });
 

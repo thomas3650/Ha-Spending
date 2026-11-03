@@ -13,7 +13,7 @@ import { objectGroupSums } from "../components/subscriptions";
 import { count, kr, unitName } from "../format";
 import { da } from "../i18n/da";
 import { barItems, categoryColours, circleItems, circleSpan, circleTotal, partColours } from "../model/circle";
-import { dayUnits, levelName, partName, type ViewContext } from "../model/context";
+import { finerUnits, levelName, partName, type ViewContext } from "../model/context";
 import { detailView } from "../model/detail";
 import { matches, shopSuggestions } from "../model/filter";
 import { postingList } from "../model/postings";
@@ -126,8 +126,8 @@ export class Overview extends LitElement {
 
   private bars() {
     const ctx = this.ctx;
-    // On day bars the key numbers' average is a month's, far above any day.
-    const avg = dayUnits(ctx) === null ? keyNumbers(ctx.shown, ctx.timeline).average.amount : null;
+    // On finer bars the key numbers' average is a whole week's, month's, quarter's or year's, far above any finer bar.
+    const avg = finerUnits(ctx) === null ? keyNumbers(ctx.shown, ctx.timeline).average.amount : null;
     const average = avg === null ? null : { amount: avg, label: da.average(kr(avg)) };
     const level = ctx.state.level;
     const colour = level.kind === "category" ? (partColours(ctx).get(level.category) ?? "") : "";
@@ -185,7 +185,7 @@ export class Overview extends LitElement {
   /** A chosen category is named by its chip and the trail; the title names its main group, so it does not change. */
   private cardTitle(card: Card): string {
     const level = this.ctx.state.level;
-    const g = dayUnits(this.ctx) === null ? this.ctx.timeline.grouping : "day";
+    const g = finerUnits(this.ctx)?.grouping ?? this.ctx.timeline.grouping;
     if (card === "difference" && this.ctx.chosen !== null) return this.differenceTitle(this.ctx.chosen);
     if (level.kind === "all") {
       if (card === "subscriptions") return da.subscriptions;

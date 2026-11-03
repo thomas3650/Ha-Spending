@@ -216,3 +216,9 @@ The page's list. Every screenshot is at 1440×960 with the console free of error
     A day bar's tooltip names its date once: two lines for a day, three for a whole month.
     In full screen with a shop chosen, "Vis alle" keeps the field's height. The running bar is drawn faded on the bars
     and in the detail.
+47. `61-finere-soejler`: at 420, 1440 and 1728 px, normal and full screen
+    ([finer bars spec](superpowers/specs/2026-11-03-finer-bars.md)): a custom one-week period by Uge, a custom
+    one-quarter period by Kvartal, "I år" and "Sidste år" by År, "Sidste måned" by Kvartal (days), "Denne måned" by Uge
+    and by Kvartal, and the detail of a fixed expense on "Sidste måned". The finer bars, their titles, no average line,
+    the running unit lighter, the detail's names thinned and readable, and a click choosing the whole period. A day
+    below zero (if the example data has one): its tooltip says "+… kr. retur", and the axis under zero has no minus.

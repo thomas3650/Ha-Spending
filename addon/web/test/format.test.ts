@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   amountChip,
   axisKr,
+  axisTickKr,
   barKr,
   count,
   detailAmount,
@@ -23,6 +24,7 @@ import {
   unitAxis,
   unitName,
 } from "../src/format";
+import { da } from "../src/i18n/da";
 
 const today = "2026-10-30";
 const unit = (date: string, g: Parameters<typeof unitAt>[1]) => unitAt(date, g, today);
@@ -33,8 +35,13 @@ describe("money", () => {
     expect(kr(11566012)).toBe("115.660 kr.");
     expect(kr(-2500)).toBe("25 kr.");
   });
-  it("barKr writes a bar below zero with a plus", () => {
-    expect(barKr(-20000)).toBe(`+${kr(20000)}`);
+  it("axisTickKr writes a tick below zero without its sign", () => {
+    expect(axisTickKr(-20000)).toBe(axisKr(20000));
+    expect(axisTickKr(20000)).toBe(axisKr(20000));
+  });
+
+  it("barKr writes a bar below zero as a refund", () => {
+    expect(barKr(-20000)).toBe(`+${kr(20000)} ${da.refundMark}`);
     expect(barKr(800000)).toBe(kr(800000));
     expect(barKr(0)).toBe(kr(0));
     expect(barKr(-40)).toBe(kr(0));

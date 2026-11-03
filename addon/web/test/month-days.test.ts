@@ -63,7 +63,7 @@ describe("a one-month period draws its days", () => {
 
   it("a refund-only day is named with a plus", async () => {
     const { root } = await mount("period=lastMonth");
-    getByRole(barsList(root, da.per("day")), "button", { name: `22.9.2026, +${kr(20000)}` });
+    getByRole(barsList(root, da.per("day")), "button", { name: `22.9.2026, +${kr(20000)} ${da.refundMark}` });
   });
 
   it("Denne måned draws the whole month", async () => {

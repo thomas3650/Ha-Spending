@@ -1,12 +1,14 @@
 import {
   type ClassifiedPosting,
   classify,
+  type Grouping,
   type Level,
   select,
   type SpendingData,
   type Timeline,
   total,
   type Unit,
+  unitAt,
   unitsOf,
   within,
 } from "@ha-spending/shared";
@@ -75,15 +77,45 @@ export function viewContext(data: SpendingData, state: ViewState, today: string)
   };
 }
 
+export interface Finer {
+  grouping: Grouping;
+  units: Unit[];
+}
+
+const FINER: Record<Exclude<Grouping, "day">, Grouping> = {
+  week: "day",
+  month: "day",
+  quarter: "month",
+  year: "month",
+};
+
 /**
- * The Søjler card's days when the period lies in one calendar month by Måned, else null (D51). "Denne måned" runs on
- * to the month's last day, so its first days do not fill the card.
+ * The finer units of the Søjler card and the detail when the period holds one unit of its grouping, else null (D54).
+ * It steps finer until there are two or more units or it reaches days. "Denne måned" and "I år" end today, so they run
+ * on to their own last day within the one unit; "Alt" has no last day of its own and runs to the one unit's end. The
+ * units after today are empty slots.
  */
-export function dayUnits(ctx: ViewContext): Unit[] | null {
-  if (ctx.timeline.grouping !== "month" || ctx.units.length !== 1) return null;
+export function finerUnits(ctx: ViewContext): Finer | null {
+  const grouping = ctx.timeline.grouping;
+  if (ctx.units.length !== 1 || grouping === "day") return null;
   const period = ctx.timeline.period;
-  const end = ctx.state.period.preset === "thisMonth" ? ctx.units[0].fullEnd : period.end;
-  return unitsOf({ start: period.start, end }, "day", ctx.today);
+  const unitEnd = ctx.units[0].fullEnd;
+  const preset = ctx.state.period.preset;
+  let end = period.end;
+  if (preset === "thisMonth" || preset === "thisYear") {
+    const own = unitAt(period.start, preset === "thisMonth" ? "month" : "year", ctx.today).fullEnd;
+    end = own < unitEnd ? own : unitEnd;
+  } else if (preset === "all") {
+    end = unitEnd;
+  }
+  const span = { start: period.start, end };
+  let g = FINER[grouping];
+  let units = unitsOf(span, g, ctx.today);
+  while (units.length === 1 && g !== "day") {
+    g = FINER[g];
+    units = unitsOf(span, g, ctx.today);
+  }
+  return { grouping: g, units };
 }
 
 export function partName(key: string | null, of: "mainGroup" | "category"): string {

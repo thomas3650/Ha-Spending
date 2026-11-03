@@ -1,0 +1,172 @@
+<!doctype html><html lang="da"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Finere søjler</title>
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.5.1/dist/echarts.min.js" integrity="sha384-Mx5lkUEQPM1pOJCwFtUICyX45KNojXbkWdYhkKUKsbv391mavbfoAmONbzkgYPzR" crossorigin="anonymous"></script>
+<body>
+<style>
+  body { margin: 16px; font-family: Roboto, "Segoe UI", system-ui, sans-serif; color: #1f1f1f; background: #fff; }
+  h1 { font-size: 18px; margin: 0 0 4px; }
+  .subtitle { color: #6b6b6b; margin: 0 0 8px; font-size: 13px; }
+  .lbl { font-size: 12px; text-transform: uppercase; letter-spacing: .05em; color: #6b6b6b; margin: 28px 0 4px; }
+  .why { font-size: 13px; margin: 0 0 8px; max-width: 900px; }
+  .row { display: grid; grid-template-columns: repeat(auto-fit, minmax(420px, 1fr)); gap: 12px; background: #f5f5f5; padding: 12px; border-radius: 10px; }
+  .card { background: #fff; border: 1px solid #e3e3e3; border-radius: 12px; padding: 14px; min-width: 0; }
+  .tag { display: inline-block; font-size: 10px; font-weight: 600; padding: 1px 7px; border-radius: 4px; margin-bottom: 6px; }
+  .now { background: #eceff1; color: #37474f; } .new { background: #e1f3fd; color: #0277bd; }
+  .head { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+  .head h2 { font-size: 13px; margin: 0; flex: 1; }
+  .ctx { font-size: 11px; color: #6b6b6b; margin-bottom: 4px; }
+  .seg { display: inline-flex; border: 1px solid #c9c9c9; border-radius: 6px; overflow: hidden; font-size: 12px; }
+  .seg span { padding: 3px 9px; border-left: 1px solid #c9c9c9; } .seg span:first-child { border-left: 0; }
+  .seg .on { background: #03a9f4; color: #fff; font-weight: 600; }
+  .chart { height: 260px; }
+  .note { font-size: 11px; color: #6b6b6b; margin-top: 4px; }
+  .dt-title { font-size: 16px; font-weight: 600; margin: 0 0 2px; }
+  .muted { color: #6b6b6b; font-size: 11px; }
+</style>
+
+<h1>Én periode, finere søjler</h1>
+<p class="subtitle">Forslag til #100, #101 og #103. Opdigtede data. "I dag" er 3. november 2026.</p>
+
+<div class="lbl">1 · Én uge, Gruppér pr. Uge (#100)</div>
+<p class="why">Periode 26. okt – 1. nov 2026. I dag én søjle for ugen. Forslag: ugens syv dage, titlen bliver "Pr. dag".</p>
+<div class="row">
+  <div class="card"><span class="tag now">Nu</span><div class="head"><h2>Pr. uge</h2><span class="seg"><span class="on">Søjler</span><span>Posteringer</span></span></div><div class="chart" id="w0"></div></div>
+  <div class="card"><span class="tag new">Forslag</span><div class="head"><h2>Pr. dag</h2><span class="seg"><span class="on">Søjler</span><span>Posteringer</span></span></div><div class="chart" id="w1"></div></div>
+</div>
+
+<div class="lbl">2 · Ét kvartal, Gruppér pr. Kvartal (#100)</div>
+<p class="why">Periode 3. kvartal 2026. Forslag: kvartalets tre måneder, titlen bliver "Pr. måned".</p>
+<div class="row">
+  <div class="card"><span class="tag now">Nu</span><div class="head"><h2>Pr. kvartal</h2></div><div class="chart" id="q0"></div></div>
+  <div class="card"><span class="tag new">Forslag</span><div class="head"><h2>Pr. måned</h2></div><div class="chart" id="q1"></div></div>
+</div>
+
+<div class="lbl">3 · Ét år, "I år" Gruppér pr. År (#100)</div>
+<p class="why">Forslag: årets måneder til i dag. November er i gang og er lysere. December vises ikke, fordi "I år" slutter i dag (som i dag).</p>
+<div class="row">
+  <div class="card"><span class="tag now">Nu</span><div class="head"><h2>Pr. år</h2></div><div class="chart" id="y0"></div></div>
+  <div class="card"><span class="tag new">Forslag</span><div class="head"><h2>Pr. måned</h2></div><div class="chart" id="y1"></div></div>
+</div>
+
+<div class="lbl">4 · Detaljen på én måned, Gruppér pr. Måned (#101)</div>
+<p class="why">Fast udgift "El", periode oktober 2026. Detaljen tegner de samme enheder som Søjler: månedens dage, med tomme pladser. Titlen bliver "Pr. dag i perioden". Det samme gælder for en uge, et kvartal og et år.</p>
+<div class="row">
+  <div class="card"><span class="tag now">Nu</span><div class="dt-title">El</div><div class="muted">Fast udgift · Bolig › El og varme</div><div class="head" style="margin-top:10px"><h2>Pr. måned i perioden</h2></div><div class="chart" id="d0" style="height:200px"></div></div>
+  <div class="card"><span class="tag new">Forslag</span><div class="dt-title">El</div><div class="muted">Fast udgift · Bolig › El og varme</div><div class="head" style="margin-top:10px"><h2>Pr. dag i perioden</h2></div><div class="chart" id="d1" style="height:200px"></div></div>
+</div>
+
+<div class="lbl">5 · Retur under nul (#103)</div>
+<p class="why">Periode 5.–18. okt, Gruppér pr. Dag. Den 13. okt holder kun en retur. I dag har aksen "-200" under nul, mens søjlens tekst siger "+260 kr.". Forslag A: tal under nul uden fortegn, og "retur" i teksten. Forslag B: som A, og ordet "retur" én gang ved aksen under nul.</p>
+<div class="row">
+  <div class="card"><span class="tag now">Nu</span><div class="head"><h2>Pr. dag</h2></div><div class="chart" id="r0"></div></div>
+  <div class="card"><span class="tag new">Forslag A</span><div class="head"><h2>Pr. dag</h2></div><div class="chart" id="r1"></div></div>
+  <div class="card"><span class="tag new">Forslag B</span><div class="head"><h2>Pr. dag</h2></div><div class="chart" id="r2"></div></div>
+</div>
+
+<div class="lbl">6 · "I år" Gruppér pr. År: slutte i dag, eller køre året ud?</div>
+<p class="why">Øverst i dag, 3. november. Nederst den 5. januar: slutter året i dag, er januar den eneste måned, så kortet går et trin finere og viser dagene 1.–5. januar. "Køre året ud" gør som "Denne måned" gør i dag: månederne efter i dag er tomme pladser.</p>
+<div class="row">
+  <div class="card"><span class="tag now">Slutter i dag · 3. nov</span><div class="head"><h2>Pr. måned</h2></div><div class="chart" id="e0"></div></div>
+  <div class="card"><span class="tag new">Kører året ud · 3. nov</span><div class="head"><h2>Pr. måned</h2></div><div class="chart" id="e1"></div></div>
+  <div class="card"><span class="tag now">Slutter i dag · 5. jan</span><div class="head"><h2>Pr. dag</h2></div><div class="chart" id="e2"></div></div>
+  <div class="card"><span class="tag new">Kører året ud · 5. jan</span><div class="head"><h2>Pr. måned</h2></div><div class="chart" id="e3"></div></div>
+</div>
+
+<script>
+  const ACCENT = "#03a9f4", MUTED = "#6b6b6b", LINE = "#e3e3e3", GRID = "#ececec";
+  const nf = new Intl.NumberFormat("da-DK", { maximumFractionDigits: 0 });
+  const kr = (v) => `${nf.format(Math.abs(v))} kr.`;
+  const barKr = (v) => (v < 0 ? `+${kr(v)}` : kr(v));
+
+  // bars: [{axis, name, amount, running?, empty?}]
+  function draw(id, bars, opts = {}) {
+    const el = document.getElementById(id);
+    const chart = echarts.init(el);
+    const neg = bars.some((b) => b.amount < 0);
+    const tick = opts.unsignedBelow ? (v) => nf.format(Math.abs(v)) : (v) => nf.format(v);
+    chart.setOption({
+      textStyle: { fontFamily: getComputedStyle(document.body).fontFamily },
+      grid: { left: 8, right: opts.average ? 72 : 8, top: 16, bottom: 8, containLabel: true },
+      tooltip: {
+        trigger: "item",
+        alwaysShowContent: opts.tip !== undefined,
+        formatter: (p) => {
+          const b = bars[p.dataIndex];
+          const lines = [b.name];
+          if (b.range) lines.push(b.range);
+          lines.push(b.amount < 0 && opts.returWord ? `${barKr(b.amount)} retur` : barKr(b.amount));
+          return lines.join("<br>");
+        },
+      },
+      xAxis: {
+        type: "category",
+        data: bars.map((b, i) => String(i)),
+        axisTick: { show: false },
+        axisLine: { lineStyle: { color: LINE } },
+        axisLabel: {
+          color: MUTED, fontSize: 11,
+          interval: opts.every ? (i) => i % opts.every === 0 || bars[i].running : 0,
+          formatter: (_v, i) => (bars[i].running ? `${bars[i].axis}\ni gang` : bars[i].axis),
+        },
+      },
+      yAxis: {
+        type: "value", splitNumber: 4,
+        min: (r) => (r.min < 0 ? r.min - 0.1 * (Math.max(r.max, 0) - r.min) : 0),
+        axisLabel: { color: MUTED, fontSize: 11, formatter: tick, showMinLabel: !neg },
+        splitLine: { lineStyle: { color: GRID } },
+      },
+      series: [{
+        type: "bar", barCategoryGap: "35%",
+        data: bars.map((b) => ({ value: b.empty ? 0 : b.amount, itemStyle: { color: ACCENT, opacity: b.running ? 0.5 : 1 } })),
+        markLine: opts.returLabel ? {
+          silent: true, symbol: "none", lineStyle: { color: "transparent" },
+          label: { position: "insideStartBottom", formatter: "retur", color: MUTED, fontSize: 11, fontStyle: "italic" },
+          data: [{ yAxis: 0 }],
+        } : opts.average ? {
+          silent: true, symbol: "none", lineStyle: { type: "dashed", color: MUTED, width: 1 },
+          label: { position: "end", formatter: opts.average.label, color: MUTED, fontSize: 11, width: 64, overflow: "break" },
+          data: [{ yAxis: opts.average.amount }],
+        } : undefined,
+      }],
+    });
+    if (opts.tip !== undefined) setTimeout(() => chart.dispatchAction({ type: "showTip", seriesIndex: 0, dataIndex: opts.tip }), 300);
+    addEventListener("resize", () => chart.resize());
+  }
+
+  // 1 · week
+  draw("w0", [{ axis: "Uge 44", name: "Uge 44, 2026", range: "26. okt – 1. nov 2026", amount: 6840 }]);
+  const week = [["26.10.", "mandag 26.10.2026", 1180], ["27.10.", "tirsdag 27.10.2026", 420], ["28.10.", "onsdag 28.10.2026", 2390],
+    ["29.10.", "torsdag 29.10.2026", 310], ["30.10.", "fredag 30.10.2026", 1460], ["31.10.", "lørdag 31.10.2026", 890], ["1.11.", "søndag 1.11.2026", 190]];
+  draw("w1", week.map(([axis, name, amount]) => ({ axis, name, amount })), { tip: 2 });
+
+  // 2 · quarter
+  draw("q0", [{ axis: "3. kvt.", name: "3. kvartal 2026", range: "1. jul – 30. sep 2026", amount: 96420 }]);
+  draw("q1", [["jul", 34110], ["aug", 29870], ["sep", 32440]].map(([axis, amount]) =>
+    ({ axis, name: { jul: "Juli 2026", aug: "August 2026", sep: "September 2026" }[axis], range: { jul: "1.–31. jul 2026", aug: "1.–31. aug 2026", sep: "1.–30. sep 2026" }[axis], amount })));
+
+  // 3 · year to date
+  draw("y0", [{ axis: "2026", name: "2026", range: "1. jan – 3. nov 2026", amount: 315020, running: true }]);
+  const months = ["jan", "feb", "mar", "apr", "maj", "jun", "jul", "aug", "sep", "okt", "nov"];
+  const ytd = [33210, 28940, 31880, 30120, 29770, 35640, 34110, 29870, 32440, 31480, 2560];
+  draw("y1", months.map((axis, i) => ({ axis, name: `${axis} 2026`, amount: ytd[i], running: i === 10 })));
+
+  // 4 · detail, one month
+  draw("d0", [{ axis: "okt", name: "Oktober 2026", range: "1.–31. okt 2026", amount: 1240 }]);
+  draw("d1", Array.from({ length: 31 }, (_, i) => ({ axis: `${i + 1}.10.`, name: `${i + 1}.10.2026`, amount: i === 2 ? 1240 : 0 })), { every: 5, tip: 2 });
+
+  // 5 · refund below zero
+  const days = [5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18];
+  const amounts = [340, 180, 0, 410, 260, 520, 90, 310, -260, 280, 150, 0, 470, 230];
+  const refund = days.map((d, i) => ({ axis: `${d}.10.`, name: `${d}.10.2026`, amount: amounts[i] }));
+  draw("r0", refund, { every: 2, tip: 8 });
+  draw("r1", refund, { every: 2, tip: 8, unsignedBelow: true, returWord: true });
+  draw("r2", refund, { every: 2, tip: 8, unsignedBelow: true, returWord: true, returLabel: true });
+
+  // 6 · "I år": end today or run the year out
+  const all12 = [...months, "dec"];
+  draw("e0", months.map((axis, i) => ({ axis, name: `${axis} 2026`, amount: ytd[i], running: i === 10 })));
+  draw("e1", all12.map((axis, i) => ({ axis, name: `${axis} 2026`, amount: i < 11 ? ytd[i] : 0, running: i === 10 })));
+  draw("e2", [[1, 420], [2, 610], [3, 0], [4, 530], [5, 280]].map(([d, amount]) =>
+    ({ axis: `${d}.1.`, name: `${d}.1.2027`, amount, running: d === 5 })));
+  draw("e3", all12.map((axis, i) => ({ axis, name: `${axis} 2027`, amount: i === 0 ? 1840 : 0, running: i === 0 })));
+</script>
+</body></html>

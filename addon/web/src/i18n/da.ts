@@ -141,6 +141,7 @@ export const da = {
   postingsOf: (name: string) => `${name}: posteringer`,
   postingsTitle: "Posteringer",
   bars: "Søjler",
+  refundMark: "retur",
   postings: "Posteringer",
   difference: "Forskel",
   view: "Visning",

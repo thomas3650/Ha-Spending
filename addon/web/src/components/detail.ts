@@ -69,7 +69,8 @@ export class Detail extends LitElement {
 
   private bars(bars: DetailBar[]) {
     const top = Math.max(0, ...bars.map((b) => b.amount));
-    return html`<ul class="detail-bars" role="list" aria-label=${this.view.per}>
+    const thinned = bars.some((b) => b.name === "");
+    return html`<ul class="detail-bars ${thinned ? "thinned" : ""}" role="list" aria-label=${this.view.per}>
       ${bars.map(
         (b) => html`<li title=${b.label}>
           <span class="detail-bar-space" aria-hidden="true">
@@ -359,6 +360,17 @@ export const detailStyles = css`
     text-align: center;
     white-space: nowrap;
     text-overflow: ellipsis;
+  }
+  .detail-bars.thinned li {
+    padding-bottom: 20px;
+  }
+  .detail-bars.thinned .detail-bar-name {
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    overflow: visible;
+    text-overflow: clip;
+    transform: translateX(-50%);
   }
   .detail-rows {
     width: 100%;

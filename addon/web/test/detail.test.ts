@@ -1,9 +1,9 @@
 import type { Period, Posting, SpendingData, Subscription } from "@ha-spending/shared";
-import { fireEvent, getAllByRole, getByRole, queryByRole, within } from "@testing-library/dom";
+import { fireEvent, getAllByRole, getByRole, queryByRole, queryByText, within } from "@testing-library/dom";
 import { afterEach, describe, expect, it } from "vitest";
 
 import type { SpendingApp } from "../src/app";
-import { count, tableDate, unitName } from "../src/format";
+import { count, kr, tableDate, unitName } from "../src/format";
 import { da } from "../src/i18n/da";
 import { viewContext } from "../src/model/context";
 import { subscriptionRows } from "../src/model/subscriptions";
@@ -210,6 +210,39 @@ describe("the detail on the normal page", () => {
     units.forEach((u, i) => {
       const label = `${unitName(u, "month")}: 8.000 kr.`;
       within(items[i]).getByText(i === units.length - 1 ? `${label} (${da.inProgress})` : label);
+    });
+  });
+
+  describe("a one-unit period draws finer units", () => {
+    const NAME = /^\d{1,2}\.\d{1,2}\.$/;
+
+    it("a month draws its days, thinned to 8 names", async () => {
+      const { root } = await mountLinked("period=lastMonth&card=subscriptions&detail=s%3Ab1");
+      const items = getAllByRole(getByRole(detail(root, "Husleje"), "list", { name: da.detailPer("day") }), "listitem");
+      expect(items).toHaveLength(30);
+      items.forEach((item, i) => within(item).getByText(new RegExp(`^${i + 1}\\.9\\.2026: `)));
+      const names = items.map((item) => queryByText(item, NAME)?.textContent ?? null).filter((n) => n !== null);
+      expect(names).toEqual(["1.9.", "5.9.", "9.9.", "13.9.", "17.9.", "21.9.", "25.9.", "29.9."]);
+    });
+
+    it("a year draws its 12 months, every name shown", async () => {
+      const { root } = await mountLinked("period=thisYear&by=year&card=subscriptions&detail=s%3Ab1");
+      const items = getAllByRole(getByRole(detail(root, "Husleje"), "list", { name: da.detailPer("month") }), "listitem");
+      expect(items).toHaveLength(12);
+      within(items[0]).getByText(/^Januar 2026: /);
+      items.forEach((item, i) => within(item).getByText(da.months[i]));
+    });
+
+    it("a week with no posting keeps its 7 days at 0 kr., every name shown", async () => {
+      const { root } = await mountLinked(
+        "period=custom&from=2026-10-19&to=2026-10-25&by=week&card=subscriptions&detail=s%3Ab1",
+      );
+      const items = getAllByRole(getByRole(detail(root, "Husleje"), "list", { name: da.detailPer("day") }), "listitem");
+      expect(items).toHaveLength(7);
+      for (const item of items) {
+        expect(text(within(item).getByText(/: /)).endsWith(`: ${kr(0)}`)).toBe(true);
+        expect(queryByText(item, NAME)).not.toBeNull();
+      }
     });
   });
 
