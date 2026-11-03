@@ -1,5 +1,5 @@
 import { type ClassifiedPosting, type Period, type Posting, unitAt } from "@ha-spending/shared";
-import { fireEvent, getAllByRole, getByRole, getByText, queryAllByRole, queryByRole, within } from "@testing-library/dom";
+import { fireEvent, getAllByRole, getByRole, getByText, queryAllByRole, queryByRole, queryByText, within } from "@testing-library/dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { amountChip, count, kr, postingAmount, tableDate, unitName } from "../src/format";
@@ -508,6 +508,60 @@ describe("the object group on Alle posteringer", () => {
     await settle(app);
     expect(location.hash).toBe(before);
     summary(root, 1, 300000);
+  });
+
+  it("the filter menu is searched case-insensitively and Beløb stays", async () => {
+    const { app, root } = await mount("view=all-postings", { answer: twoGroups });
+    await openFilter(app, root);
+    const search = getByRole(root, "textbox", { name: da.filterSearch });
+    expect((app.shadowRoot as ShadowRoot).activeElement).toBe(search);
+    fireEvent.input(search, { target: { value: "HUSLE" } });
+    await settle(app);
+    const categories = getByRole(root, "group", { name: da.categories });
+    expect(getAllByRole(categories, "button").map((b) => b.textContent?.trim())).toEqual(["Husleje"]);
+    expect(queryByRole(root, "group", { name: da.mainGroups })).toBeNull();
+    expect(queryByRole(root, "group", { name: da.subscriptions })).toBeNull();
+    getByRole(root, "group", { name: da.amountFilter });
+    expect(queryByText(root, da.noFilterHits)).toBeNull();
+  });
+
+  it("the filter menu narrows the object groups too", async () => {
+    const { app, root } = await mount("view=all-postings", { answer: twoGroups });
+    await openFilter(app, root);
+    fireEvent.input(getByRole(root, "textbox", { name: da.filterSearch }), { target: { value: "åbne" } });
+    await settle(app);
+    expect(getAllByRole(objectGroupPart(root), "button").map((b) => b.textContent?.trim())).toEqual(["Åbne aftaler"]);
+  });
+
+  it("the filter menu says when no filter fits", async () => {
+    const { app, root } = await mount("view=all-postings");
+    await openFilter(app, root);
+    fireEvent.input(getByRole(root, "textbox", { name: da.filterSearch }), { target: { value: "xyzzy" } });
+    await settle(app);
+    getByText(root, da.noFilterHits);
+    expect(queryByRole(root, "group", { name: da.categories })).toBeNull();
+    expect(queryByRole(root, "group", { name: da.mainGroups })).toBeNull();
+    getByRole(root, "group", { name: da.amountFilter });
+  });
+
+  it("the filter menu lists Beløb, the object groups, Hovedgrupper, Kategorier in that order", async () => {
+    const { app, root } = await mount("view=all-postings", { answer: twoGroups });
+    await openFilter(app, root);
+    const names = getAllByRole(root, "heading", { level: 3 }).map((h) => h.textContent?.trim());
+    expect(names).toEqual([da.amountFilter, da.subscriptions, da.mainGroups, da.categories]);
+  });
+
+  it("the filter search is empty when the menu opens again", async () => {
+    const { app, root } = await mount("view=all-postings");
+    await openFilter(app, root);
+    fireEvent.input(getByRole(root, "textbox", { name: da.filterSearch }), { target: { value: "bil" } });
+    await settle(app);
+    fireEvent.click(getByRole(root, "button", { name: da.addFilter }));
+    await settle(app);
+    await openFilter(app, root);
+    const search = getByRole(root, "textbox", { name: da.filterSearch }) as HTMLInputElement;
+    expect(search.value).toBe("");
+    getByRole(root, "group", { name: da.categories });
   });
 
   it("an unknown og gives da.noMatch with the chip and its one option", async () => {

@@ -36,9 +36,11 @@ export class FilterPicker extends Dropdown {
     min: { state: true },
     max: { state: true },
     checked: { state: true },
+    search: { state: true },
   };
 
   declare ctx: ViewContext;
+  declare private search: string;
   declare private min: string;
   declare private max: string;
   /**
@@ -52,12 +54,18 @@ export class FilterPicker extends Dropdown {
     this.min = "";
     this.max = "";
     this.checked = { min: false, max: false };
+    this.search = "";
   }
 
   /** A new view, from the trail or the browser's back, leaves the panel's choices behind. */
   protected override willUpdate(changed: PropertyValues<this>): void {
     const before = changed.get("ctx") as ViewContext | undefined;
     if (before !== undefined && toHash(before.state) !== toHash(this.ctx.state)) this.open = false;
+    if (changed.has("open") && !this.open) this.search = "";
+  }
+
+  protected override updated(changed: PropertyValues<this>): void {
+    if (changed.has("open") && this.open) this.querySelector<HTMLInputElement>(".filter-search")?.focus();
   }
 
   private choose(name: string, detail: unknown): void {
@@ -116,15 +124,21 @@ export class FilterPicker extends Dropdown {
     </button>`;
   }
 
+  private fits(name: string): boolean {
+    const needle = this.search.trim().toLocaleLowerCase("da");
+    return needle === "" || name.toLocaleLowerCase("da").includes(needle);
+  }
+
   /** The chosen group is listed even when no posting carries it, so it can be seen pressed. */
   private objectGroups() {
     const chosen = this.ctx.state.objectGroup;
     const titles = new Set(objectGroupBase(this.ctx).flatMap((p) => (p.subscription ? [p.subscription.objectGroup] : [])));
     if (chosen !== null) titles.add(chosen);
-    if (titles.size === 0) return nothing;
+    const shown = [...titles].filter((title) => this.fits(title));
+    if (shown.length === 0) return nothing;
     return html`<div role="group" aria-labelledby="hs-filter-object-groups">
       <h3 id="hs-filter-object-groups">${da.subscriptions}</h3>
-      ${[...titles]
+      ${shown
         .sort((a, b) => a.localeCompare(b, "da"))
         .map((title) => this.option(title, title === chosen, "set-object-group", title))}
     </div>`;
@@ -136,32 +150,52 @@ export class FilterPicker extends Dropdown {
     const mainGroup = level.kind === "all" ? undefined : level.mainGroup;
     const category = level.kind === "category" ? level.category : undefined;
     const categories = [...data.categories].sort((a, b) => compareKeys(a.name, b.name));
+    const groups = [...data.mainGroups, null].filter((key) => this.fits(partName(key, "mainGroup")));
+    const shownCategories = categories.filter((c) => this.fits(c.name));
+    const withoutCategory = this.fits(da.noCategory);
+    const objectGroups = this.objectGroups();
+    const none =
+      groups.length === 0 && shownCategories.length === 0 && !withoutCategory && objectGroups === nothing;
     return html`<div class="dd-menu filter-menu" tabindex="-1">
-      <div role="group" aria-labelledby="hs-filter-main-groups">
-        <h3 id="hs-filter-main-groups">${da.mainGroups}</h3>
-        ${[...data.mainGroups, null].map((key) =>
-          this.option(partName(key, "mainGroup"), key === mainGroup && category === undefined, "set-main-group", key),
-        )}
-      </div>
-      <div role="group" aria-labelledby="hs-filter-categories">
-        <h3 id="hs-filter-categories">${da.categories}</h3>
-        ${categories.map((c) =>
-          this.option(c.name, c.name === category && c.mainGroup === mainGroup, "set-category", {
-            mainGroup: c.mainGroup,
-            category: c.name,
-          } satisfies CategoryChoice),
-        )}
-        ${this.option(da.noCategory, category === null && mainGroup === null, "set-category", {
-          mainGroup: null,
-          category: null,
-        } satisfies CategoryChoice)}
-      </div>
+      <input
+        type="text"
+        class="filter-search"
+        aria-label=${da.filterSearch}
+        .value=${live(this.search)}
+        @input=${(e: Event) => (this.search = (e.target as HTMLInputElement).value)}
+      />
       <div role="group" aria-labelledby="hs-filter-amount" class="amount-part">
         <h3 id="hs-filter-amount">${da.amountFilter}</h3>
         ${this.amountField("min", da.from)} ${this.amountField("max", da.to)}
         <button type="button" class="filter-add" @click=${() => this.addAmount()}>${da.add}</button>
       </div>
-      ${this.objectGroups()}
+      ${objectGroups}
+      ${groups.length === 0
+        ? nothing
+        : html`<div role="group" aria-labelledby="hs-filter-main-groups">
+            <h3 id="hs-filter-main-groups">${da.mainGroups}</h3>
+            ${groups.map((key) =>
+              this.option(partName(key, "mainGroup"), key === mainGroup && category === undefined, "set-main-group", key),
+            )}
+          </div>`}
+      ${shownCategories.length === 0 && !withoutCategory
+        ? nothing
+        : html`<div role="group" aria-labelledby="hs-filter-categories">
+            <h3 id="hs-filter-categories">${da.categories}</h3>
+            ${shownCategories.map((c) =>
+              this.option(c.name, c.name === category && c.mainGroup === mainGroup, "set-category", {
+                mainGroup: c.mainGroup,
+                category: c.name,
+              } satisfies CategoryChoice),
+            )}
+            ${withoutCategory
+              ? this.option(da.noCategory, category === null && mainGroup === null, "set-category", {
+                  mainGroup: null,
+                  category: null,
+                } satisfies CategoryChoice)
+              : nothing}
+          </div>`}
+      ${none ? html`<p class="filter-none">${da.noFilterHits}</p>` : nothing}
     </div>`;
   }
 
@@ -327,6 +361,17 @@ export const allPostingsStyles = css`
     border-top: 1px solid var(--hs-line);
     margin-top: 6px;
     padding-top: 6px;
+  }
+  .filter-search {
+    margin: 2px 12px 8px;
+    padding: 6px 8px;
+    font: inherit;
+    border: 1px solid var(--hs-field);
+    border-radius: 6px;
+  }
+  .filter-none {
+    margin: 8px 16px;
+    color: var(--hs-muted);
   }
   .filter-menu h3 {
     margin: 4px 16px;

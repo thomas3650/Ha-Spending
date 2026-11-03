@@ -177,6 +177,8 @@ export const da = {
   shopOption: (name: string, sum: string) => `${name}, ${sum}`,
   suggestions: "Butikker",
   addFilter: "+ Filter",
+  filterSearch: "Søg i filtre",
+  noFilterHits: "Ingen filtre passer",
   mainGroupChip: (name: string) => `Hovedgruppe: ${name}`,
   categoryChip: (name: string) => `Kategori: ${name}`,
   amountFilter: "Beløb",
