@@ -530,7 +530,7 @@ describe("the fake Firefly III", () => {
 
     it("pages the bills", async () => {
       const first = await bills("start=2025-01-01&end=2026-10-30&limit=4&page=1");
-      expect(first.meta.pagination).toEqual({ total: 11, count: 4, per_page: 4, current_page: 1, total_pages: 3 });
+      expect(first.meta.pagination).toEqual({ total: 12, count: 4, per_page: 4, current_page: 1, total_pages: 3 });
       expect(first.data[0].attributes).toMatchObject({
         name: "Husleje",
         amount_min: "8000.000000000000",
