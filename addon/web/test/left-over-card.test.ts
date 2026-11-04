@@ -2,6 +2,7 @@ import { type Grouping, type Period, unitAt } from "@ha-spending/shared";
 import { fireEvent, getByRole, queryByRole } from "@testing-library/dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
+import type { SpendingApp } from "../src/app";
 import { kr, unitName } from "../src/format";
 import { da } from "../src/i18n/da";
 import { answerFor, leftOverFor, withLeftOver, withSubscriptions } from "./fixture";
@@ -29,6 +30,13 @@ function flat(el: HTMLElement): string {
 
 function card(root: HTMLElement, label = CARD): HTMLElement {
   return getByRole(root, "group", { name: label });
+}
+
+/** A choice made from outside, as Back or an edited address would make it. */
+async function goTo(app: SpendingApp, hash: string): Promise<void> {
+  location.hash = hash;
+  window.dispatchEvent(new HashChangeEvent("hashchange"));
+  await settle(app);
 }
 
 function monthsLink(root: HTMLElement, label = CARD): HTMLElement {
@@ -93,11 +101,13 @@ describe("the Til overs card", () => {
 
   it("is left out when its answer fails, and the rest of the overview shows", async () => {
     const error = vi.spyOn(console, "error");
-    const { root } = await mount("", { answer: withCard, leftOver: () => json({ error: "failed" }, 502) });
+    const { root, leftOver } = await mount("", { answer: withCard, leftOver: () => json({ error: "failed" }, 502) });
+    expect(leftOver).toHaveBeenCalledTimes(1);
     expect(queryByRole(root, "group", { name: CARD })).toBeNull();
     expect(cardNames(root)).toEqual([da.spendingInPeriod, da.averagePer("month"), SUBS]);
     expect(queryByRole(root, "alert")).toBeNull();
     expect(error).not.toHaveBeenCalled();
+    error.mockRestore();
   });
 
   it("stays out after a failure while the period stays, so the other cards do not move", async () => {
@@ -110,6 +120,54 @@ describe("the Til overs card", () => {
     expect(new URLSearchParams(location.hash.slice(1)).get("q")).toBe("ne");
     expect(leftOver).toHaveBeenCalledTimes(1);
     expect(queryByRole(root, "group", { name: CARD })).toBeNull();
+  });
+
+  it("asks again for a new period, and an answer for the old one that comes late is dropped", async () => {
+    let release: (response: Response) => void = () => {};
+    const held = new Promise<Response>((resolve) => (release = resolve));
+    const { app, root, leftOver } = await mount("", {
+      answer: withCard,
+      leftOver: (range, n) => (n === 1 ? held : json(leftOverFor(range))),
+    });
+    expect(card(root).getAttribute("aria-busy")).toBe("true");
+
+    await goTo(app, "period=lastMonth");
+    release(json({ ...leftOverFor({ start: "2026-01-01", end: "2026-10-30" }), months: [] }));
+    await settle(app);
+
+    expect(leftOver).toHaveBeenCalledTimes(2);
+    expect(leftOver.mock.calls[1][0]).toBe("api/left-over?start=2026-09-01&end=2026-09-30");
+    const text = flat(card(root));
+    expect(text).toContain(`−${kr(880_100)}`);
+    expect(text).toContain(da.leftOver.paidInSub(kr(2_500_000)));
+  });
+
+  it("comes back for a new period after a failure", async () => {
+    const { app, root, leftOver } = await mount("", {
+      answer: withCard,
+      leftOver: (range, n) => (n === 1 ? json({ error: "failed" }, 502) : json(leftOverFor(range))),
+    });
+    expect(queryByRole(root, "group", { name: CARD })).toBeNull();
+
+    await goTo(app, "period=lastMonth");
+
+    expect(leftOver).toHaveBeenCalledTimes(2);
+    const text = flat(card(root));
+    expect(text).toContain(`−${kr(880_100)}`);
+    expect(text).toContain(da.leftOver.paidInSub(kr(2_500_000)));
+  });
+
+  it("is not asked for in full screen or in the fixed-expenses view, and is once full screen closes", async () => {
+    const fixed = await mount("view=fixed", { answer: (range) => json(withSubscriptions(withLeftOver(answerFor(range)))) });
+    expect(fixed.leftOver).not.toHaveBeenCalled();
+    unmount();
+
+    const { app, root, leftOver } = await mount("view=full", { answer: withCard });
+    expect(leftOver).not.toHaveBeenCalled();
+    fireEvent.click(getByRole(root, "button", { name: da.fullScreen }));
+    await settle(app);
+    expect(leftOver).toHaveBeenCalledTimes(1);
+    expect(flat(card(root))).toContain(kr(2_553_400));
   });
 
   it("Vis måneder → opens the view and pushes an entry", async () => {

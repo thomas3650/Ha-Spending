@@ -110,8 +110,11 @@ type Load =
   | { kind: "ready"; data: SpendingData }
   | { kind: "error"; code: LoadErrorCode };
 
-/** The Til overs answer; its error is never shown, as the card is left out (spec §2.1). */
-type LeftOverLoad = { kind: "loading" } | { kind: "ready"; data: LeftOverData } | { kind: "error" };
+/** The Til overs answer. On the overview an error only leaves the card out (spec §2.1). */
+type LeftOverLoad =
+  | { kind: "loading" }
+  | { kind: "ready"; data: LeftOverData }
+  | { kind: "error"; code: LoadErrorCode };
 
 /** Marks the history entry that opening a detail pushed, so closing knows it may go back (spec §5). */
 const DETAIL_ENTRY = { detail: true };
@@ -740,9 +743,9 @@ export class SpendingApp extends LitElement {
       (data) => {
         if (id === this.leftOverRequest) this.leftOverLoad = { kind: "ready", data };
       },
-      () => {
+      (error: unknown) => {
         if (id !== this.leftOverRequest || controller.signal.aborted) return;
-        this.leftOverLoad = { kind: "error" };
+        this.leftOverLoad = { kind: "error", code: error instanceof LoadError ? error.code : "failed" };
       },
     );
   }
