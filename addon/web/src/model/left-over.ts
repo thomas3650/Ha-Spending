@@ -149,9 +149,12 @@ function cellsOf(p: Parts): Record<Column, Cell> {
   };
 }
 
+/** "maj" is the whole name, so it takes no full stop. */
 function monthName(month: string, withYear: boolean): string {
   const [year, number] = month.split("-");
-  const name = `${da.months[Number(number) - 1]}.`;
+  const i = Number(number) - 1;
+  const short = da.months[i];
+  const name = short === da.calendarLocale.months.long[i] ? short : `${short}.`;
   return withYear ? `${name} ${year}` : name;
 }
 

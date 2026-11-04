@@ -113,7 +113,7 @@ describe("the Til overs view (spec §2.2, §4)", () => {
       "aug.",
       "jul.",
       "jun.",
-      "maj.",
+      "maj",
       "apr.",
       "mar.",
       "feb.",
@@ -211,9 +211,11 @@ describe("the trail (spec §4.1)", () => {
 
   it("a new period asks for its months and stays in the view", async () => {
     const { app, root, leftOver } = await open("view=leftover");
+    const length = history.length;
     await click(app, getByRole(root, "button", { name: new RegExp(`^${da.period}`) }));
     await click(app, getByRole(getByRole(root, "group", { name: da.period }), "button", { name: da.presets.lastMonth }));
     expect(location.hash).toBe("#period=lastMonth&view=leftover");
+    expect(history.length).toBe(length + 1);
     expect(leftOver).toHaveBeenCalledTimes(2);
     expect(leftOver.mock.calls[1][0]).toBe("api/left-over?start=2026-09-01&end=2026-09-30");
     expect(monthNames(root)).toEqual(["sep.", `[${da.leftOver.total}]`]);
@@ -271,6 +273,16 @@ describe("the way in and out (spec §2.2)", () => {
     expect(queryByRole(root, "table", { name: da.leftOver.table })).toBeNull();
   });
 
+  it("after a month's button, the focus is on the overview's heading once its answer is in", async () => {
+    const { app, root } = await open("");
+    await click(app, monthsLink(root));
+    const button = getByRole(table(root), "button", { name: "sep." });
+    button.focus();
+    await click(app, button);
+    expect(location.hash).toBe("#period=custom&from=2026-09-01&to=2026-09-30");
+    expect(app.shadowRoot?.activeElement).toBe(getByRole(root, "heading", { level: 2, name: da.per("day") }));
+  });
+
   it("today's month's button opens Denne måned", async () => {
     const { app, root } = await open("view=leftover");
     await click(app, getByRole(table(root), "button", { name: `okt. ${da.leftOver.running}` }));
@@ -289,8 +301,10 @@ describe("the way in and out (spec §2.2)", () => {
   });
 
   it("a stale link with no Til overs shows the overview and replaces the entry without the view", async () => {
+    const length = history.length;
     const { root, leftOver } = await mount("card=postings&view=leftover");
     expect(location.hash).toBe("#card=postings");
+    expect(history.length).toBe(length);
     expect(history.state).toBeNull();
     getByRole(root, "region", { name: da.postingsTitle });
     expect(queryByRole(root, "table", { name: da.leftOver.table })).toBeNull();
@@ -299,6 +313,28 @@ describe("the way in and out (spec §2.2)", () => {
 });
 
 describe("loading and errors (spec §4.3)", () => {
+  it("says once that the rule group is missing, as the overview does", async () => {
+    const { root } = await open("view=leftover", {
+      answer: (range) => json({ ...withLeftOver(answerFor(range)), mainGroupsFound: false }),
+    });
+    table(root);
+    const status = getAllByRole(root, "status");
+    expect(status).toHaveLength(1);
+    expect(flat(status[0])).toBe(da.noRuleGroup);
+  });
+
+  it("when the view is entered and its months fail, the focus goes to the trail's heading", async () => {
+    const { app, root } = await open("", {
+      leftOver: (range, n) => (n === 1 ? json(leftOverFor(range)) : json({ error: "unreachable" }, 502)),
+    });
+    location.hash = "period=lastYear&view=leftover";
+    window.dispatchEvent(new HashChangeEvent("hashchange"));
+    await settle(app);
+    getByRole(root, "alert");
+    const nav = getByRole(root, "navigation", { name: da.trail });
+    expect(app.shadowRoot?.activeElement).toBe(getByRole(nav, "heading", { level: 1 }));
+  });
+
   it("while the months load, the table has one placeholder row per month of the period", async () => {
     const { root } = await open("view=leftover", { leftOver: () => new Promise<Response>(() => {}) });
     const busy = table(root);

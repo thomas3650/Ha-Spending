@@ -625,7 +625,8 @@ export class SpendingApp extends LitElement {
   }
 
   protected override updated(): void {
-    if (this.leftScreen) {
+    // The overview's heading is drawn only with its answer; a way out that asks for a new period waits for it.
+    if (this.leftScreen && this.load.kind === "ready") {
       this.leftScreen = false;
       void this.focusHeadingIfLost();
     }
@@ -634,8 +635,9 @@ export class SpendingApp extends LitElement {
       void this.focusFixedIfLost();
     }
     if (this.enteredLeftOver) {
-      this.enteredLeftOver = false;
-      void this.focusCaptionIfLost();
+      // The placeholder's caption may give way to an error card, so the focus is looked after until the view settles.
+      if (!this.state.leftOver || this.leftOverShown().kind !== "loading") this.enteredLeftOver = false;
+      if (this.state.leftOver) void this.focusLeftOverIfLost();
     }
     if (this.openedByRow) {
       this.openedByRow = false;
@@ -662,12 +664,13 @@ export class SpendingApp extends LitElement {
     root.querySelector<HTMLElement>("#hs-fixed-bars-title")?.focus();
   }
 
-  /** The caption is drawn while the months load too, so the focus need not wait for them. */
-  private async focusCaptionIfLost(): Promise<void> {
+  /** The table's caption, drawn while the months load too; on an error card, the trail's heading. */
+  private async focusLeftOverIfLost(): Promise<void> {
     const root = this.renderRoot;
     await root.querySelector<LitElement>("hs-left-over")?.updateComplete;
+    await root.querySelector<LitElement>("hs-top-card")?.updateComplete;
     if (this.shadowRoot?.activeElement) return;
-    root.querySelector<HTMLElement>("hs-left-over caption")?.focus();
+    (root.querySelector<HTMLElement>("hs-left-over caption") ?? root.querySelector<HTMLElement>("hs-top-card h1"))?.focus();
   }
 
   private async focusDetail(): Promise<void> {
@@ -943,22 +946,35 @@ export class SpendingApp extends LitElement {
     return html`<p class="card line alert" role="alert">${da.errors[code]}</p>`;
   }
 
+  /** The page's error, else the months once their answer is for the trail's period, else loading. */
+  private leftOverShown(): LeftOverLoad {
+    if (this.load.kind === "error") return { kind: "error", code: this.load.code };
+    const asked = this.leftOverAsked;
+    const current = this.load.kind === "ready" && asked !== null && sameRange(asked, this.trailPeriod());
+    return current ? this.leftOverLoad : { kind: "loading" };
+  }
+
+  private trailPeriod(): Period {
+    return periodOf(this.state.period, this.today, this.earliest ?? null);
+  }
+
   /**
-   * The view stands where the key numbers and the halves do (spec §4). Its months show only once their answer is for
-   * the trail's period; until then the table holds a placeholder row per month.
+   * The view stands where the key numbers and the halves do (spec §4); until its months are in, the table holds a
+   * placeholder row per month. Without the rule group nothing is excluded, so the view says so as the overview does.
    */
   private leftOverScreen() {
-    if (this.load.kind === "error") return this.errorCard(this.load.code);
-    const period = periodOf(this.state.period, this.today, this.earliest ?? null);
-    const asked = this.leftOverAsked;
-    const answer =
-      this.load.kind === "ready" && asked !== null && sameRange(asked, period) ? this.leftOverLoad : null;
-    if (answer?.kind === "error") return this.errorCard(answer.code);
-    return html`<hs-left-over
-      .table=${answer?.kind === "ready" ? leftOverTable(answer.data, this.today) : null}
-      .placeholders=${monthsIn(period)}
-      @month-open=${(e: CustomEvent<string>) => this.push(openMonth(this.state, e.detail, this.today))}
-    ></hs-left-over>`;
+    const shown = this.leftOverShown();
+    const noRuleGroup = this.load.kind === "ready" && !this.load.data.mainGroupsFound;
+    return html`
+      ${noRuleGroup ? html`<p class="card line status" role="status">${da.noRuleGroup}</p>` : nothing}
+      ${shown.kind === "error"
+        ? this.errorCard(shown.code)
+        : html`<hs-left-over
+            .table=${shown.kind === "ready" ? leftOverTable(shown.data, this.today) : null}
+            .placeholders=${monthsIn(this.trailPeriod())}
+            @month-open=${(e: CustomEvent<string>) => this.push(openMonth(this.state, e.detail, this.today))}
+          ></hs-left-over>`}
+    `;
   }
 
   /** The trail's × moves the focus to its heading, so the keyboard does not fall back to the page's start. */
