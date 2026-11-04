@@ -95,7 +95,8 @@ tests in `addon/web/test/format.test.ts` and `trail.test.ts`, and every test tha
   year. `ViewContext.unitYear: boolean` = `withYear` of the bars' units (`finerUnits(ctx)?.units ?? units`).
   The detail passes `withYear` of its own units.
 
-- [ ] Write the failing tests: `unitName` both ways for a month, a day ("4. november", "4. november 2025") and a year; `withYear` for Jan–Dec 2026
+- [ ] Write the failing tests: `unitName` both ways for a month, a day ("4. november", "4. november 2025") and a year;
+      `withYear` for Jan–Dec 2026
       (false) and Nov 2025–Oct 2026 (true). Page: with "I år" and a chosen August the trail's step, the bar's button
       and the Posteringer group line read "August"; with "Sidste 12 måneder" in November, "August 2026"; with "Alt"
       over three years (override `earliestPostingDate`), "2025"; the key-number label reads "Faste udgifter i August".
@@ -200,7 +201,8 @@ move it to `model/fixed.ts` and import it back), `addon/web/src/i18n/da.ts`; tes
   - `fixedColours(ctx: ViewContext, parts: { key: string | null; size: number }[]): Map<string | null, string>`:
     §5.2's rule.
   - `KeyCard` (in `model/key-numbers.ts`) gains `estimate?: boolean`; the component writes "ca." before such a value.
-  - The list: `fixedList(view: FixedView, chosen: Unit | null): FixedList` (names by `view.unitYear`) with group lines and
+  - The list: `fixedList(view: FixedView, chosen: Unit | null): FixedList` (names by `view.unitYear`) with group
+    lines and
     rows as §6 says, the year rows as §6.3 says.
   - da: every text in §4, §5.4 and §6 (the card labels and subs, "Skraveret: estimat efter i dag", the bar names,
     "Poster i perioden", the sum line, "betalinger", the status texts "Betalt {d}", "Estimat · forventes {d}",
@@ -208,15 +210,19 @@ move it to `model/fixed.ts` and import it back), `addon/web/src/i18n/da.ts`; tes
   - `normalise` (in `state/actions.ts`): with `fixed`, `unit` is kept only when `fixedUnits(...).buttons` and its
     units have that `fullStart`; without `fixed`, as today.
 - Consumes: `dueDatesUntil` (Task 1), `subscriptionStatus`, `amountPerPayment`, `partColours`, `categoryColours`,
-  `PALETTE`, `unitName` with `unitYear` (Task 2), `ViewState.fixed`, `objectGroup` and `objectGroupNames` (Task 4).
+  `PALETTE`, `unitName` with `unitYear` (Task 2), `UnitStep` and `UnitRow` (Task 3), `ViewState.fixed`,
+  `objectGroup` and `objectGroupNames` (Task 4).
 
 - [ ] Write the failing tests: with the fixture and today 2026-10-30 on "I år": twelve units with buttons; paid sums
       per month equal the linked postings'; the estimates' dates and amounts (`amountPerPayment`); a "Forfalden" one
       and one due today are estimates; an "Ikke set" one is one not-seen row with amount 0 and is not counted;
-      a due date before the span is left out; "Sidste år" has no estimate; "Denne måned" gives days and no buttons;
+      a due date before the span is left out; a not-seen monthly bill's later miss before today has no row and
+      no amount; "Sidste år" has no estimate; "Denne måned" gives days and no buttons;
       "Alt" by År runs to 31 Dec. The four "I år" cards' values; "Betalt i år" equals `objectGroupCards`'s value for the
-      same group. The bars' labels as §5.4's examples; the unit step's rows and their sums; the object-group rows: counts,
-      sums, a "0 stk." group found only on postings, Alle's sums, `current`. Colours: a main group keeps `partColours`'s colour, a grey or missing one takes the first free
+      same group. The bars' labels as §5.4's examples; the unit step's rows and their sums; the object-group
+      rows: counts,
+      sums, a "0 stk." group found only on postings, Alle's sums, `current`. Colours: a main group keeps
+      `partColours`'s colour, a grey or missing one takes the first free
       `PALETTE` colour, largest first. The list: groups newest first, rows by date, a chosen unit's rows only, the
       year rows' text, the Kategori column flag off in a category. normalise: a December `unit` with "I år" in January
       is kept with `fixed`, dropped by `leaveFixed` + normalise, and a day's `unit` with "Denne måned" is dropped.
@@ -231,7 +237,8 @@ Model: opus · Review: yes
 **Files:** create `addon/web/src/screens/fixed.ts`, `addon/web/src/components/fixed-bars.ts`,
 `addon/web/src/components/fixed-list.ts`; modify `addon/web/src/app.ts`, `addon/web/src/components/top-card.ts`,
 `addon/web/src/components/key-numbers.ts`, `addon/web/src/model/key-numbers.ts` (the link), `addon/web/src/i18n/da.ts`;
-test in `addon/web/test/fixed-view.test.ts`, and `key-numbers.test.ts` for the link.
+test in `addon/web/test/fixed-view.test.ts`, and `key-numbers.test.ts` for the link; the existing
+`key-numbers.test.ts` tests and Task 5's `objectGroupCards` test change with its new signature.
 
 **Spec:** §2, §3.1, §3.4, §5.4, §6, §8.
 
@@ -239,7 +246,8 @@ test in `addon/web/test/fixed-view.test.ts`, and `key-numbers.test.ts` for the l
 - Produces: `KeyLink`'s subscriptions kind carries `objectGroup: string`; `objectGroupCards` builds one href per card,
   `openFixed`'s hash for that group, so it takes `(ctx, hrefFor: (group: string) => string)`. The `key-link` event's
   detail becomes the `KeyLink` itself, so `onKeyLink` learns the group. The app pushes the open with a `{ fixed: true }`
-  history mark, which like full screen's survives a reload (the same accepted reading of "this page load"). ← (`da.backToOverview` = "Tilbage til overblikket") and Escape go
+  history mark, which like full screen's survives a reload (the same accepted reading of "this page load"). ←
+  (`da.backToOverview` = "Tilbage til overblikket") and Escape go
   back one entry when `history.state` has that mark, otherwise replace with `leaveFixed`; a push inside the view adds an
   entry without the mark, so ← replaces after it.
   The top card in the view: properties `fixed: boolean` and `objectGroups: ObjectGroupRow[] | null`; events `back`
