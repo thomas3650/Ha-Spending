@@ -5,8 +5,8 @@
 
 **Issues:** closes #152, #157 and #132. One branch (`fix/filter-follow-ups-and-full-screen-bars`), one PR.
 
-**Approved:** not yet; waiting for Thomas. On 2026-11-04 he chose these three issues as one change, with no new
-feature, and left the calls below to Claude.
+**Approved:** by Thomas, 2026-11-04. He chose these three issues as one change, with no new feature, and left the
+calls below to Claude.
 
 **Claude's calls, for Thomas to see in the PR:**
 
