@@ -77,13 +77,18 @@ section changes the overview's trail too; it supersedes top filter spec §2.4's 
 ×".
 
 - **No unit chosen:** a dashed button right after the period, named after the grouping: **"Måned"** or **"År"**. Its
-  accessible name is "Vælg måned" or "Vælg år", with `aria-haspopup`.
+  accessible name is "Vælg måned" or "Vælg år".
 - **A unit chosen:** the step is a button with ▾ and its ×, like the main group: `I år ▾ › August ▾ ×`. Its accessible
-  name is "Skift måned: August" (or "Skift år: 2025"), with `aria-haspopup`. The × removes the unit, as today (D55).
+  name is "Skift måned: August" (or "Skift år: 2025"). The × removes the unit, as today (D55).
 - **The list** opens under the step or the dashed button. Its rows are the bars' units, in time order: on the overview
   the period's units (`ctx.units`), in the view the view's units (§5.1). Each row has the unit's name and its sum: on
   the overview the spending in that unit at the level and accounts, as its bar; in the view "9.799 kr. + ca. 1.074
   kr.", as its bar's name (§5.4). The chosen one is marked with `aria-current`. Claude's call on the rows.
+- The buttons and their lists follow the trail's other steps (`components/level-menu.ts`): `aria-expanded` and no
+  `aria-haspopup`, and the list is a `role="group"` of plain buttons. The branch
+  `fix/filter-follow-ups-and-full-screen-bars` sets that rule; the object-group step (§3.4) follows it too.
+- With "Alt" grouped by År, the same step switches the year: "Skift år: 2025". Thomas: "hvis alt er valgt kan man også
+  skifte år på samme måde".
 - Choosing a row chooses the unit as a bar press does: it pushes a history entry, and a bar press still works.
 - **Where the bars are not buttons** (days, a one-month period, D59) there is neither step nor dashed button, as now.
 - While the answer loads and on an error, the trail leaves the unit step out, as today, and the dashed button is
@@ -110,7 +115,7 @@ Thomas: "kan vælge mellem de 3 i top baren som i år".
 
 - The step is a button with ▾, like the period. Its text is the chosen object group's title as Firefly III gives it
   (D38), or **"Alle faste udgifter"** for all of them. Its accessible name is "Skift objektgruppe: Faste udgifter",
-  with `aria-haspopup`. Claude's call on "Alle faste udgifter"; the mockup wrote the group names joined, which would
+  Claude's call on "Alle faste udgifter"; the mockup wrote the group names joined, which would
   change the data's own titles.
 - A press opens a list under the step: one row per object group, by name, then **"Alle"**. The rows are the object
   groups the overview's key numbers show (D41's set in `objectGroupCards`: the subscriptions' groups and the groups
