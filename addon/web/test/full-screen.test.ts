@@ -449,3 +449,16 @@ describe("the detail in full screen", () => {
     expect(app.shadowRoot?.activeElement).toBe(button);
   });
 });
+
+describe("leaving full screen", () => {
+  it("puts the focus on the right card's heading when the opening link is gone", async () => {
+    const { app, root } = await mountWith("");
+    fireEvent.click(getAllByRole(root, "link", { name: /posteringer →$/ })[0] as HTMLElement);
+    await settle(app);
+    expect(pressed(root)).toBe("true");
+    fireEvent.keyDown(window, { key: "Escape" });
+    await settle(app, 5);
+    expect(pressed(root)).toBe("false");
+    expect(app.shadowRoot?.activeElement).toBe(getByRole(root, "heading", { level: 2, name: da.per("month") }));
+  });
+});

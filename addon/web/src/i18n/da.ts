@@ -247,7 +247,6 @@ export const da = {
   hiddenUnreadable: "Skjulte butikker kunne ikke hentes.",
   saveFailed: "Kunne ikke gemme. Prøv igen.",
 
-
   perMonth: (value: string) => `${value} pr. måned`,
   billCount: (n: number) => `${n} stk.`,
   noPayments: "ingen betalinger",

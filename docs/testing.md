@@ -92,7 +92,7 @@ The page's list. Every screenshot is at 1440×960 with the console free of error
    presets with "Alt" and the calendar with two months. Compare `1-alt-forbrug-konti.png`; the period panel has no
    mockup file, its design is the lists spec §1.2 and the [top filter spec](superpowers/specs/2026-11-04-top-filter.md)
    §2.2. Load the page once with `#by=week` and check that it opens on months, with no Gruppér pr. field.
-6. `11-uge`: a custom period of a few months. The first bar is clipped and the last is light, with "i gang".
+6. `11-flere-maaneder`: a custom period of a few months. The first bar is clipped and the last is light, with "i gang".
 7. `12-denne-maaned`: Denne måned. The average reads "gns. … før".
 8. `13-posteringer`: screen 1 on Posteringer.
 9. `14-link`: a click on a posting opens a new tab at the fake's `/transactions/show/<id>`. `addon/dev/options.json`
@@ -142,11 +142,11 @@ The page's list. Every screenshot is at 1440×960 with the console free of error
     px.
 27. `42-posteringer-maerke`: Posteringer, normal and in full screen, with marked rows. A posting linked to a bill carries the
     pill, and its tooltip gives the bill's name. Also at 1440 and 1728 px.
-28. `43-kalender`: the period menu with the calendar. Pick two days by mouse, then press Vis; the period reads "Valgt
-    periode" with those days. Repeat with the keyboard: Tab to a day, Enter or Space picks it, and the picked start and
+28. `43-kalender`: the period menu with the calendar. Pick two days by mouse, then press Vis; the period's trail
+    step shows those days, and "Valgt periode" is only in the step's accessible name. Repeat with the keyboard: Tab to a day, Enter or Space picks it, and the picked start and
     end are announced. Check that a pick, a change of month or year, and a redraw that removes the focused day keep the
     menu open, and that days after today cannot be picked. Check the month and year lists by mouse and keyboard, and the
-    year list's floor. Type `3.1.2024` in Fra and Til: the calendar moves there. Also "Alt": the closed field reads
+    year list's floor. Type `3.1.2024` in Fra and Til: the calendar moves there. Also "Alt": the trail step reads
     "Alt" with the dates. The open menu stays inside the frame at 1440, 1728, 1024 and 900 px. Do this in Safari as well
     as Chrome; Safari is where the typed year failed.
 29. `44-sorter`: Posteringer, normal and in full screen, sorted by each column: one click and a second click; the sorted header
@@ -193,8 +193,7 @@ The page's list. Every screenshot is at 1440×960 with the console free of error
 43. `58-maanedens-dage`: "Sidste måned" and "Denne måned" at Alt forbrug and Mad, at 1440 and 1728 px, normal and full
     screen ([month days spec](superpowers/specs/2026-11-03-month-days.md)). One bar per day, readable axis labels, today
     lighter with "i gang", the days after today empty, no average line, the tooltip on a day, and a day below zero (if
-    the example data has one) with a "+" in its tooltip. A click on a day chooses the month: its step shows in the
-    trail, no bar fades, and a second click removes it.
+    the example data has one) with a "+" in its tooltip. The day bars are not buttons in a one-month period: a click on a day does nothing.
 44. `59-kategori-liste`: at 1440 and 1728 px, the list under the trail's main group and category steps, and under the
     dashed button: the rows are the circle's pieces in its order, each with its colour dot and sum, and the chosen one is
     marked. "Uden hovedgruppe" and "Uden kategori" show when they have a piece. Tab reaches every row in order.
@@ -216,7 +215,7 @@ The page's list. Every screenshot is at 1440×960 with the console free of error
     at 1440 and 1728 px, normal and full screen. The trail with its × in the thin light-grey look (B1), the × in a 24 px
     round hit area, hover and focus giving it a light background. Each × removes its step and puts the focus on the
     heading; Back brings the step back. The key numbers with and without a unit; the full-screen button level with the
-    tabs in both widths; the bar tooltip hiding when the mouse leaves the chart, and on a window blur; In full screen
+    tabs in both widths; the bar tooltip hiding when the mouse leaves the chart, and on a window blur. In full screen
     Posteringer the Kategori column shows from 600 px up. The y-axis of the bars writes its ticks with `axisTickKr`; no
     test guards that ([#132](https://github.com/thomas3650/Ha-Spending/issues/132)).
 48. `63-smaa-rettelser`: the small fixes from the walkthrough ([small walkthrough fixes

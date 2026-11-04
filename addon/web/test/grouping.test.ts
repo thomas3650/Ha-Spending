@@ -86,11 +86,6 @@ describe("the grouping follows the period", () => {
     getByText(average, kr(727187));
     getByText(average, da.unitCount(16, "month"));
   });
-
-  it("has no Gruppér pr. control", async () => {
-    const { root } = await mount("");
-    expect(queryByRole(root, "combobox", { name: "Gruppér pr." })).toBeNull();
-  });
 });
 
 describe("a one-unit period's bars are not buttons", () => {

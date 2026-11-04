@@ -260,6 +260,7 @@ export class SpendingApp extends LitElement {
   private writes: Promise<void> = Promise.resolve();
   /** The detail a close or Back just closed, whose row gets the focus back after the render. */
   private closed: DetailKey | null = null;
+  private leftFullScreen = false;
   /** Set by a row's click only: a link, a reload or full screen leave the focus where it is. */
   private openedByRow = false;
   /** Back is async: until its popstate, history.state still shows the entry being left. */
@@ -471,6 +472,10 @@ export class SpendingApp extends LitElement {
   }
 
   protected override updated(): void {
+    if (this.leftFullScreen) {
+      this.leftFullScreen = false;
+      void this.focusHeadingIfLost();
+    }
     if (this.openedByRow) {
       this.openedByRow = false;
       void this.focusDetail();
@@ -479,6 +484,14 @@ export class SpendingApp extends LitElement {
     if (key === null) return;
     this.closed = null;
     void this.focusRow(key);
+  }
+
+  /** The element that had the focus may be gone after full screen ends; the focus must not fall to the body. */
+  private async focusHeadingIfLost(): Promise<void> {
+    const root = this.renderRoot;
+    await root.querySelector<LitElement>("hs-overview")?.updateComplete;
+    if (this.shadowRoot?.activeElement) return;
+    root.querySelector<HTMLElement>("#hs-right-title")?.focus();
   }
 
   private async focusDetail(): Promise<void> {
@@ -514,6 +527,7 @@ export class SpendingApp extends LitElement {
   }
 
   private change(next: ViewState): void {
+    if (this.state.fullScreen && !next.fullScreen) this.leftFullScreen = true;
     this.state = next;
     this.ensureData();
     this.normaliseState();

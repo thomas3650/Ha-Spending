@@ -375,6 +375,12 @@ describe("the frame", () => {
     getByText(firstCard(root), kr(0));
   });
 
+  it("disables the dashed button when its list would be empty", async () => {
+    const { root } = await mount("period=custom&from=2020-01-01&to=2020-12-31");
+    const dashed = getByRole(getByRole(root, "navigation", { name: da.trail }), "button", { name: da.chooseMainGroup });
+    expect((dashed as HTMLButtonElement).disabled).toBe(true);
+  });
+
   it("links the trail's Alt forbrug to the overview with nothing chosen", async () => {
     const { root } = await mount("group=Mad&category=Café");
     const trail = getByRole(root, "navigation", { name: da.trail });
