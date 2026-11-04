@@ -139,13 +139,10 @@ describe("createDataLoader", () => {
     expect(transactionReads(JANUARY)).toBe(1);
   });
 
-  it("a failed read of the shared transactions in one route does not stop the other for another span", async () => {
-    const failsJanuary = (url: URL) =>
-      url.pathname === "/api/v1/transactions" && url.searchParams.get("start") === JANUARY.start;
-    const { load, loadLeftOver } = setUp(failsJanuary);
-    const [january, february] = await Promise.allSettled([loadLeftOver(JANUARY), load(FEBRUARY)]);
-    expect(january.status).toBe("rejected");
-    expect(february.status).toBe("fulfilled");
+  it("both routes asked at once make one read of the span's transactions", async () => {
+    const { load, loadLeftOver, transactionReads } = setUp();
+    await Promise.all([load(JANUARY), loadLeftOver(JANUARY)]);
+    expect(transactionReads(JANUARY)).toBe(1);
   });
 });
 
@@ -205,8 +202,9 @@ describe("the warnings of Til overs", () => {
       savingsCategories: ["Ukendt opsparing"],
       creditAccounts: ["Ukendt kredit", "Billån", "Kassekredit"],
     };
-    const { load, loadLeftOver, warn } = setUp(undefined, options, ONCE_SEED);
+    const { load, loadLeftOver, warn, clock } = setUp(undefined, options, ONCE_SEED);
     await load(JANUARY);
+    clock.now = new Date(2026, 9, 31, 12);
     await loadLeftOver(FEBRUARY);
     const lines = warn.mock.calls.map(([message]) => String(message));
     const about = (name: string) => lines.filter((line) => line.includes(name));
