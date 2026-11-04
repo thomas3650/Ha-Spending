@@ -2,17 +2,11 @@ import { css, html, LitElement } from "lit";
 import "../components/fixed-bars";
 import "../components/fixed-list";
 import { da } from "../i18n/da";
-import type { FixedView, ObjectGroupRow } from "../model/fixed";
+import type { FixedView } from "../model/fixed";
 import type { FixedList } from "../model/fixed-list";
 
 const BARS_TITLE = "hs-fixed-bars-title";
 const LIST_TITLE = "hs-fixed-list-title";
-
-/** The object-group step's text: the one group when there is only one, else the chosen one or all (spec §3.4). */
-export function objectGroupTitle(rows: ObjectGroupRow[], chosen: string | null): string {
-  if (rows.length === 2) return rows[0].name ?? da.allFixed;
-  return chosen ?? da.allFixed;
-}
 
 /** The fixed-expenses view below its key numbers: the bars on the left, the payments on the right (spec §5, §6). */
 export class Fixed extends LitElement {
@@ -37,7 +31,7 @@ export class Fixed extends LitElement {
     return html`<div class="halves fixed-halves">
       <section class="card half" role="region" aria-labelledby=${BARS_TITLE}>
         <div class="half-head">
-          <h2 id=${BARS_TITLE}>${da.levelPer(this.groupTitle, view.grouping)}</h2>
+          <h2 id=${BARS_TITLE} tabindex="-1">${da.levelPer(this.groupTitle, view.grouping)}</h2>
         </div>
         <hs-fixed-bars
           .bars=${view.bars}

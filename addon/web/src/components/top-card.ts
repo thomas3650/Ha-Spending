@@ -3,7 +3,7 @@ import { css, html, LitElement, nothing } from "lit";
 import { da } from "../i18n/da";
 import type { LevelRow } from "../model/circle";
 import { partName } from "../model/context";
-import type { ObjectGroupRow } from "../model/fixed";
+import type { ObjectGroupRow, ObjectGroupStep } from "../model/fixed";
 import { clearChoices, keepDetail } from "../state/actions";
 import { toHash, type ViewState } from "../state/view";
 import { fire } from "./chip";
@@ -55,6 +55,7 @@ export class TopCard extends LitElement {
     lists: { attribute: false },
     fixed: { attribute: false },
     objectGroups: { attribute: false },
+    objectGroupStep: { attribute: false },
   };
 
   declare state: ViewState;
@@ -68,6 +69,7 @@ export class TopCard extends LitElement {
   declare fixed: boolean;
   /** The object-group step's rows, Alle last; null while the answer loads and on an error. */
   declare objectGroups: ObjectGroupRow[] | null;
+  declare objectGroupStep: ObjectGroupStep;
 
   constructor() {
     super();
@@ -76,6 +78,7 @@ export class TopCard extends LitElement {
     this.lists = null;
     this.fixed = false;
     this.objectGroups = null;
+    this.objectGroupStep = { title: "", single: false };
   }
 
   protected override createRenderRoot(): HTMLElement {
@@ -122,13 +125,12 @@ export class TopCard extends LitElement {
     ${next}`;
   }
 
-  /** With one object group there is nothing to switch to, so the step is its title alone (spec §3.4). */
   private objectGroup() {
-    const rows = this.objectGroups;
-    if (rows !== null && rows.length === 2) return html`<span>${rows[0].name}</span>`;
+    const step = this.objectGroupStep;
+    if (step.single) return html`<span>${step.title}</span>`;
     return html`<hs-object-group-menu
-      .rows=${rows}
-      .name=${this.state.objectGroup ?? da.allFixed}
+      .rows=${this.objectGroups}
+      .name=${step.title}
       @object-group-choose=${(e: CustomEvent<string | null>) => fire(this, "set-object-group", e.detail)}
     ></hs-object-group-menu>`;
   }

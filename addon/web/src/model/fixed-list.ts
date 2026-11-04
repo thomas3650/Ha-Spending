@@ -31,6 +31,8 @@ export interface FixedList {
   title: string;
   summary: string;
   showCategory: boolean;
+  /** A year unit's rows are one per fixed expense, with no date and no status (spec §6.3). */
+  perBill: boolean;
   /** Newest first; null with a chosen unit, which has no group line. */
   groups: FixedGroup[] | null;
   /** Every row, in the order shown. */
@@ -162,6 +164,7 @@ export function fixedList(view: FixedView, chosen: Unit | null): FixedList {
     title: chosen === null ? da.fixed.inPeriod : unitName(chosen, view.grouping, view.unitYear),
     summary: summary(payments),
     showCategory: view.showCategory,
+    perBill: view.grouping === "year",
     groups: chosen === null ? groups.map((g) => g.group) : null,
     rows: groups.flatMap((g) => g.group.rows),
     empty: payments.length === 0 ? view.empty : null,

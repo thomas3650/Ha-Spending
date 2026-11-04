@@ -406,6 +406,19 @@ function objectGroupRows(ctx: ViewContext): ObjectGroupRow[] {
   return [...names.map(row), row(null)];
 }
 
+export interface ObjectGroupStep {
+  /** The step's text. */
+  title: string;
+  /** One object group: nothing to switch to, so the step is its title alone (spec §3.4). */
+  single: boolean;
+}
+
+/** `rows` are §3.4's rows, Alle last; null while the answer loads, when only the state names the group. */
+export function objectGroupStep(rows: ObjectGroupRow[] | null, chosen: string | null): ObjectGroupStep {
+  const single = rows !== null && rows.length === 2;
+  return { title: (single ? rows[0].name : chosen) ?? da.allFixed, single };
+}
+
 /** Resolves the chosen unit against the view's units, not the overview's (spec §5.1). */
 export function fixedView(ctx: ViewContext): FixedView {
   const f = fixedUnits(ctx.data, ctx.state, ctx.today);

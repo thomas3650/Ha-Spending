@@ -122,6 +122,15 @@ export class FixedBars extends LitElement {
     this.chart.setOption(this.option(), { notMerge: true });
   }
 
+  /** Every series with a segment in the bar: the paid ones come first, then the estimates, in the parts' order. */
+  private segments(bar: FixedBar): number[] {
+    const n = this.parts.length;
+    return this.parts.flatMap((part, i) => [
+      ...(bar.paid.has(part.key) ? [i] : []),
+      ...(bar.estimate.has(part.key) ? [n + i] : []),
+    ]).sort((a, b) => a - b);
+  }
+
   private hasEstimates(): boolean {
     return this.bars.some((b) => b.estimate.size > 0);
   }
@@ -220,13 +229,15 @@ export class FixedBars extends LitElement {
         <div class="chart" aria-hidden="true" ${ref(this.chartEl)}></div>
         <div class="visually-hidden">
           <ul>
-            ${this.bars.map((bar) =>
+            ${this.bars.map((bar, i) =>
               this.buttons
                 ? html`<li>
                     <button
                       type="button"
                       aria-pressed=${String(bar.unit.fullStart === this.chosen)}
                       @click=${() => this.fire(bar)}
+                      @focus=${() => this.chart?.highlight(i, this.segments(bar))}
+                      @blur=${() => this.chart?.downplay(i, this.segments(bar))}
                     >
                       ${bar.label}
                     </button>

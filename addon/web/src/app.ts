@@ -35,14 +35,14 @@ import { da } from "./i18n/da";
 import type { AmountFilter } from "./model/amount";
 import { levelRows, unitRows } from "./model/circle";
 import { finerUnits, type ViewContext, viewContext } from "./model/context";
-import { type FixedView, fixedUnits, fixedView } from "./model/fixed";
+import { type FixedView, fixedUnits, fixedView, objectGroupStep } from "./model/fixed";
 import { fixedList } from "./model/fixed-list";
 import { keyCards, type KeyLink, objectGroupCards } from "./model/key-numbers";
 import { shownColumns, shownPostingSort } from "./model/postings";
 import type { HiddenState } from "./model/shops";
 import { DEFAULT_SUBSCRIPTION_SORT, shownSubscriptionSort, subscriptionFirstDescending } from "./model/subscriptions";
 import "./screens/fixed";
-import { fixedStyles, objectGroupTitle } from "./screens/fixed";
+import { fixedStyles } from "./screens/fixed";
 import "./screens/overview";
 import { overviewStyles } from "./screens/overview";
 import {
@@ -302,6 +302,8 @@ export class SpendingApp extends LitElement {
   private closed: DetailKey | null = null;
   /** Full screen or the fixed-expenses view ended, so the focus may have lost its element. */
   private leftScreen = false;
+  /** The fixed-expenses view began, by its link, Back or Forward; the element that had the focus is gone. */
+  private enteredFixed = false;
   private headingAfterBack = false;
   /** Set by a row's click only: a link, a reload or full screen leave the focus where it is. */
   private openedByRow = false;
@@ -558,6 +560,10 @@ export class SpendingApp extends LitElement {
       this.leftScreen = false;
       void this.focusHeadingIfLost();
     }
+    if (this.enteredFixed && this.load.kind === "ready") {
+      this.enteredFixed = false;
+      void this.focusFixedIfLost();
+    }
     if (this.openedByRow) {
       this.openedByRow = false;
       void this.focusDetail();
@@ -574,6 +580,13 @@ export class SpendingApp extends LitElement {
     await root.querySelector<LitElement>("hs-overview")?.updateComplete;
     if (this.shadowRoot?.activeElement) return;
     root.querySelector<HTMLElement>("#hs-right-title")?.focus();
+  }
+
+  private async focusFixedIfLost(): Promise<void> {
+    const root = this.renderRoot;
+    await root.querySelector<LitElement>("hs-fixed")?.updateComplete;
+    if (this.shadowRoot?.activeElement) return;
+    root.querySelector<HTMLElement>("#hs-fixed-bars-title")?.focus();
   }
 
   private async focusDetail(): Promise<void> {
@@ -610,6 +623,8 @@ export class SpendingApp extends LitElement {
 
   private change(next: ViewState): void {
     if ((this.state.fullScreen && !next.fullScreen) || (this.state.fixed && !next.fixed)) this.leftScreen = true;
+    // A page load leaves the focus where it is.
+    if (this.hasUpdated && !this.state.fixed && next.fixed) this.enteredFixed = true;
     this.state = next;
     this.ensureData();
     this.normaliseState();
@@ -783,7 +798,7 @@ export class SpendingApp extends LitElement {
       <hs-fixed
         .view=${view}
         .list=${fixedList(view, view.chosen)}
-        .groupTitle=${objectGroupTitle(view.groups, this.state.objectGroup)}
+        .groupTitle=${objectGroupStep(view.groups, this.state.objectGroup).title}
         @unit-click=${(e: CustomEvent<UnitSelection>) => this.push(chooseFixedUnit(this.state, e.detail.fullStart))}
       ></hs-fixed>
     `;
@@ -852,6 +867,7 @@ export class SpendingApp extends LitElement {
         .lists=${lists}
         .fixed=${this.state.fixed}
         .objectGroups=${view?.groups ?? null}
+        .objectGroupStep=${objectGroupStep(view?.groups ?? null, this.state.objectGroup)}
         @hs-period=${this.onPeriod}
         @hs-accounts=${this.onAccounts}
         @set-main-group=${(e: CustomEvent<string | null>) => this.push(setMainGroup(this.state, e.detail))}

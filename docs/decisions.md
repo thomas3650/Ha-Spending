@@ -392,7 +392,7 @@ to set their status to `superseded by D<n>`, or to name a part a later decision 
 - **Source:** Thomas, 2026-11-01, [the object groups spec](superpowers/specs/2026-11-01-object-groups.md) §1 and §2
 
 ### D39: The custom period uses Vanilla Calendar Pro
-- **Date:** 2026-11-02 · **Status:** active
+- **Date:** 2026-11-02 · **Status:** active; the 800 kB limit superseded by D70
 - **Decision:** The period's custom interval is one calendar from Vanilla Calendar Pro, mounted inline in the menu,
   with Fra and Til fields for typing. The one chunk's `chunkSizeWarningLimit` is 800 kB.
 - **Why:** Safari would not take a typed year in the date field, and the browsers' date fields differ. A library gives
@@ -727,3 +727,9 @@ to set their status to `superseded by D<n>`, or to name a part a later decision 
   and a year repeated on every month said nothing.
 - **Source:** Thomas, 2026-11-04, [fixed expenses over time spec](superpowers/specs/2026-11-04-fixed-expenses-over-time.md)
   §3.2 and §3.3. The list's rows and the dashed button's place are Claude's call.
+
+### D70: The one chunk's warning limit is 900 kB
+- **Date:** 2026-11-04 · **Status:** active
+- **Decision:** The fixed-expenses view takes the one chunk past 800 kB, so its `chunkSizeWarningLimit` is 900 kB.
+- **Why:** The build should not warn, and the view's own code is the growth.
+- **Source:** Claude, 2026-11-04, [fixed expenses over time spec](superpowers/specs/2026-11-04-fixed-expenses-over-time.md).

@@ -13,16 +13,15 @@ export class FixedList extends LitElement {
 
   constructor() {
     super();
-    this.list = { title: "", summary: "", showCategory: true, groups: null, rows: [], empty: null };
+    this.list = { title: "", summary: "", showCategory: true, perBill: false, groups: null, rows: [], empty: null };
   }
 
   protected override createRenderRoot(): HTMLElement {
     return this;
   }
 
-  /** A year unit's rows are one per fixed expense, with no date and no status (spec §6.3). */
   private get perBill(): boolean {
-    return this.list.rows.length > 0 && this.list.rows[0].date === null;
+    return this.list.perBill;
   }
 
   private columns(): number {

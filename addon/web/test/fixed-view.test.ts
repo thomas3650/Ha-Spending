@@ -13,6 +13,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import type { SpendingApp } from "../src/app";
 import { barKr, kr, shortDate, unitName } from "../src/format";
 import { da } from "../src/i18n/da";
+import { fixedBarChart } from "./chart-mock";
 import { answerFor, withSubscriptions } from "./fixture";
 import { json, mount, type MountOptions, settle, unmount } from "./mount";
 
@@ -185,6 +186,33 @@ describe("the way in and out (spec §2)", () => {
     inView(root);
   });
 
+  it("after ← goes back, a further Back goes on past the open and does not reopen the view", async () => {
+    const { app, root } = await open("");
+    await click(app, getByRole(getByRole(root, "group", { name: da.view }), "button", { name: da.postings }));
+    await click(app, link(root, FIXED_CARD));
+    expect(location.hash).toBe("#card=postings&view=fixed&og=Faste+udgifter");
+    await click(app, back(root));
+    await hashBecomes(app, "#card=postings");
+    history.back();
+    await hashBecomes(app, "");
+    inOverview(root);
+  });
+
+  it("the open puts the focus on the bars' heading, and ← and Escape put it on the right card's heading", async () => {
+    const { app, root } = await open("");
+    const active = () => app.shadowRoot?.activeElement;
+    const right = () => getByRole(root, "heading", { level: 2, name: da.per("month") });
+    await click(app, link(root, FIXED_CARD));
+    expect(active()).toBe(getByRole(root, "heading", { level: 2, name: da.levelPer("Faste udgifter", "month") }));
+    await click(app, back(root));
+    await hashBecomes(app, "");
+    expect(active()).toBe(right());
+    await click(app, link(root, FIXED_CARD));
+    fireEvent.keyDown(window, { key: "Escape" });
+    await hashBecomes(app, "");
+    expect(active()).toBe(right());
+  });
+
   it("Escape right after the open goes back too", async () => {
     const { app, root } = await open("");
     await click(app, link(root, FIXED_CARD));
@@ -237,18 +265,36 @@ describe("the way in and out (spec §2)", () => {
   it("waits for a pending Back: the link pressed meanwhile opens the view once it has landed", async () => {
     const { app, root } = await open("");
     await click(app, link(root, FIXED_CARD));
+    const length = history.length;
     const backNow = history.back.bind(history);
     vi.spyOn(history, "back").mockImplementation(() => void setTimeout(backNow));
     fireEvent.click(back(root));
     await ticks();
-    fireEvent.keyDown(window, { key: "Escape" });
     fireEvent.click(link(root, FIXED_CARD));
     await settle(app, 10);
     expect(location.hash).toBe(OPEN);
+    expect(history.length).toBe(length);
     inView(root);
     backNow();
     await hashBecomes(app, "");
     inOverview(root);
+  });
+
+  it("Escape twice while its Back is pending goes back once", async () => {
+    const { app, root } = await open("");
+    await click(app, getByRole(getByRole(root, "group", { name: da.view }), "button", { name: da.postings }));
+    await click(app, link(root, FIXED_CARD));
+    const backNow = history.back.bind(history);
+    const go = history.go.bind(history);
+    vi.spyOn(history, "back").mockImplementation(() => void setTimeout(backNow));
+    vi.spyOn(history, "go").mockImplementation((delta) => void setTimeout(() => go(delta)));
+    fireEvent.keyDown(window, { key: "Escape" });
+    await ticks();
+    fireEvent.keyDown(window, { key: "Escape" });
+    await settle(app, 10);
+    expect(location.hash).toBe("#card=postings");
+    getByRole(root, "region", { name: da.postingsTitle });
+    expect(queryByRole(root, "button", { name: da.backToOverview })).toBeNull();
   });
 
   it("the ← sits outside the trail and has no text", async () => {
@@ -269,6 +315,22 @@ describe("the way in and out (spec §2)", () => {
     const { root } = await mount("view=fixed&og=Faste%20udgifter");
     expect(location.hash).toBe("");
     inOverview(root);
+  });
+});
+
+describe("loading and errors (spec §8)", () => {
+  it("on an error shows the error line, and the period step and ← still work", async () => {
+    const { app, root } = await open(OPEN.slice(1), { answer: () => json({ error: "unreachable" }, 502) });
+    expect(getByRole(root, "alert").textContent).toContain(da.errors.unreachable);
+    await click(app, getByRole(root, "button", { name: new RegExp(`^${da.period}`) }));
+    const periods = getByRole(root, "group", { name: da.period });
+    await click(app, getByRole(periods, "button", { name: da.presets.lastYear }));
+    expect(location.hash).toBe("#period=lastYear&view=fixed&og=Faste+udgifter");
+    getByRole(root, "alert");
+    await click(app, back(root));
+    expect(location.hash).toBe("#period=lastYear");
+    getByRole(root, "alert");
+    expect(queryByRole(root, "button", { name: da.backToOverview })).toBeNull();
   });
 });
 
@@ -297,7 +359,9 @@ describe("the trail (spec §3.1, §3.4)", () => {
       `${da.all}, ${da.billsInPeriod(4, kr(7200000))}`,
     ]);
     expect(rows.map((r) => r.getAttribute("aria-current"))).toEqual([null, "true", null]);
-    expect(rows.every((r) => !r.hasAttribute("aria-haspopup"))).toBe(true);
+    expect(getByRole(root, "button", { name: da.switchObjectGroup("Faste udgifter") }).hasAttribute("aria-haspopup")).toBe(
+      false,
+    );
   });
 
   it("choosing Alle shows Alle faste udgifter and removes a chosen unit", async () => {
@@ -315,7 +379,7 @@ describe("the trail (spec §3.1, §3.4)", () => {
       answer: answer({ bills: [HUSLEJE, AVIS, FORSIKRING] }),
     });
     expect(location.hash).toBe("#view=fixed");
-    expect(queryByRole(root, "button", { name: /^Skift objektgruppe/ })).toBeNull();
+    expect(queryByRole(root, "button", { name: new RegExp(`^${da.switchObjectGroup("")}`) })).toBeNull();
     expect(trailText(root)).toBe(
       `${da.allSpending} › Faste udgifter › ${da.presets.thisYear} ${da.monthStep} ${da.mainGroupStep}`,
     );
@@ -398,7 +462,7 @@ describe("the bars (spec §5)", () => {
     expect(location.hash).toBe("");
     inOverview(root, "day");
     expect(queryByRole(root, "button", { name: da.chooseMonth })).toBeNull();
-    expect(queryByRole(root, "button", { name: /^Skift måned/ })).toBeNull();
+    expect(queryByRole(root, "button", { name: new RegExp(`^${da.switchMonth("")}`) })).toBeNull();
   });
 
   it("a December unit with I år is kept in the view and dropped when ← replaces", async () => {
@@ -421,7 +485,7 @@ describe("the bars (spec §5)", () => {
     const { root } = await open("period=lastYear&view=fixed&og=Faste+udgifter");
     const region = barsRegion(root);
     expect(queryByText(region, da.fixed.hatched)).toBeNull();
-    expect(barNames(root).some((n) => n.includes("estimat"))).toBe(false);
+    expect(barNames(root).some((n) => n.includes(da.fixed.allEstimates))).toBe(false);
   });
 
   it("the legend names the main groups, then the categories, then the fixed expenses, and the hatching", async () => {
@@ -450,6 +514,27 @@ describe("the bars (spec §5)", () => {
     expect(getAllByRole(listRegion(root, october), "row")).toHaveLength(4);
     await click(app, getAllByRole(barsRegion(root), "button")[9]);
     expect(location.hash).toBe(OPEN);
+  });
+});
+
+describe("the bars' keyboard highlight (D19)", () => {
+  it("a focused bar button highlights every segment of its bar, and blur lets go", async () => {
+    const { root } = await open(OPEN.slice(1));
+    const buttons = getAllByRole(barsRegion(root), "button");
+    const chart = fixedBarChart();
+    // One part, Bolig: its paid series is 0 and its estimate series 1.
+    for (const [i, series] of [
+      [0, [0]],
+      [9, [0, 1]],
+      [11, [1]],
+    ] as const) {
+      fireEvent.focus(buttons[i]);
+      fireEvent.blur(buttons[i]);
+      expect(chart.calls.highlight.at(-1)).toBe(i);
+      expect(chart.series.highlight.at(-1)).toEqual(series);
+      expect(chart.calls.downplay.at(-1)).toBe(i);
+      expect(chart.series.downplay.at(-1)).toEqual(series);
+    }
   });
 });
 
