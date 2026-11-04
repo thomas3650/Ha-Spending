@@ -10,6 +10,8 @@ or dependency.
 
 **Tech stack:** TypeScript; Lit with Vitest, happy-dom and Testing Library; ECharts behind the chart mock.
 
+**Approved:** by Claude, 2026-11-04, after `reviewer` rated it Ready.
+
 **Spec:** [`docs/superpowers/specs/2026-11-04-small-follow-ups.md`](../specs/2026-11-04-small-follow-ups.md). Every
 task reads its section there; the plan does not repeat it.
 
@@ -44,7 +46,10 @@ Model: sonnet · Review: yes
 
 - [ ] Write the failing tests in `main-group.test.ts`: with a main group and one of its categories chosen (through the
   hash, as the other tests do), each tab's title names the category (`da.levelPer`, `da.postingsOf`,
-  `da.subscriptionsIn`, `da.shopsIn`); the detail's back button reads `da.backTo(<that title>)`; with `category=`, and with `group=&category=` (`main-group.test.ts`'s Uden kategori test flips on purpose), the Søjler title is `da.levelPer(da.noCategory, "month")`; with the main group alone, the titles name the main group. Use names from the fixture.
+  `da.subscriptionsIn`, `da.shopsIn`); the detail's back button reads `da.backTo(<that title>)`; with `category=`,
+  and with `group=&category=` (`main-group.test.ts`'s Uden kategori test flips on purpose), the Søjler title is
+  `da.levelPer(da.noCategory, "month")`; with the main group alone, the titles name the main group. Use names from
+  the fixture.
 - [ ] Run them and see them fail.
 - [ ] In `cardTitle`, name `levelName(level)` instead of the main group. Drop the doc comment, which no longer holds.
 - [ ] Flip the tests that pin the old title (spec §1's list); list each in the report.
@@ -56,7 +61,8 @@ Model: sonnet · Review: yes
 
 **Files:** modify `addon/web/src/components/circle.ts`, `addon/web/src/screens/overview.ts` (`left()`),
 `docs/testing.md` (Chrome check); tests in `addon/web/test/circle.test.ts` and the tests of the centre's text that
-change (`grep -rn levelInUnit addon/web/test`; `chosen-unit.test.ts`'s centre text is one; the key-number tests that use `levelInUnit` do not change).
+change (`grep -rn levelInUnit addon/web/test`; `chosen-unit.test.ts`'s centre text is one; the key-number tests
+that use `levelInUnit` do not change).
 
 **Spec:** §2.
 
@@ -70,8 +76,8 @@ change (`grep -rn levelInUnit addon/web/test`; `chosen-unit.test.ts`'s centre te
   amount. `left()` passes the name and the unit apart when a unit is chosen and the circle is not at "all"; at "all"
   the unit alone is the name, as today. Add `inUnitLine` to `da.ts`; keep `levelInUnit` if other code uses it.
 - [ ] The centre's name width: set a CSS custom property (for example `--hs-hole`) on `.circle-centre` from
-  `centreWidth` where the options are built, held in a reactive property so a resize redraws it; none before the chart
-  has a width. CSS: the name gets `max-width: var(--hs-hole, none)`, wraps at spaces, and is clamped to two lines
+  `centreWidth`, worked out in the existing `ResizeObserver` callback next to `this.narrow` (not in `option()`, which
+  runs inside `updated()` and would start a second update); none before the chart has a width. CSS: the name gets `max-width: var(--hs-hole, none)`, wraps at spaces, and is clamped to two lines
   with "…"; the unit `white-space: nowrap` with no width limit; the amount unchanged. No `title`; the centre stays
   `pointer-events: none`.
 - [ ] Add the Chrome-check step to `docs/testing.md` as spec §2 says, numbered in with the others.
@@ -85,7 +91,8 @@ Model: sonnet · Review: yes
 **Files:** modify `addon/shared/src/units.ts`, `addon/shared/src/dates.ts`, `addon/web/src/format.ts`,
 `addon/web/src/i18n/da.ts`, `docs/decisions.md`, `README.md`, `docs/domain-language.md`; tests in
 `addon/shared/test/units.test.ts`, `addon/shared/test/dates.test.ts`, `addon/web/test/format.test.ts`,
-`addon/web/test/da.test.ts`, `addon/web/test/finer-units.test.ts`, `addon/web/test/grouping.test.ts`.
+`addon/web/test/da.test.ts`, `addon/web/test/grouping.test.ts`. Not `finer-units.test.ts`: its `"week"` strings are a
+fixture's ids.
 
 **Spec:** §3 and §4.
 
