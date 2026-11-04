@@ -109,6 +109,13 @@ describe("the subscriptions key number", () => {
     card(root, "Faste udgifter");
   });
 
+  it("counts one subscription in the singular", async () => {
+    const { root } = await mountWith("card=subscriptions", [SUBSCRIPTIONS[0]]);
+    expect(text(groupRow(card(root, "Faste udgifter"), "Bolig"))).toContain(da.subscriptionCount(1));
+  });
+});
+
+describe("the subscriptions card", () => {
   it("shows a payment under 1 kr. above the max as no rise, and a larger one as what is paid now", async () => {
     const base = SUBSCRIPTIONS[1];
     const small = { ...base, amountMin: 9800, amountMax: 9900, lastPayment: { ...base.lastPayment!, amount: 9950 } };
@@ -125,13 +132,6 @@ describe("the subscriptions key number", () => {
     ]);
   });
 
-  it("counts one subscription in the singular", async () => {
-    const { root } = await mountWith("card=subscriptions", [SUBSCRIPTIONS[0]]);
-    expect(text(groupRow(card(root, "Faste udgifter"), "Bolig"))).toContain(da.subscriptionCount(1));
-  });
-});
-
-describe("the subscriptions card", () => {
   it("lists every subscription in the order of its status within its group", async () => {
     const { root } = await mountWith("card=subscriptions");
     const region = card(root, "Faste udgifter");
@@ -158,7 +158,10 @@ describe("the subscriptions card", () => {
       "Betalt 1. mar",
     ]);
     expect(cells(region, "Avis").slice(1)).toEqual(["200 kr. hver 2. måned", "1.200 kr.", "Forventes 20. nov"]);
-    getByText(region, da.subscriptionsFoot);
+    getByText(
+      region,
+      "Fra Firefly III. Beløbet er midten af den faste udgifts beløbsinterval, eller den seneste betaling, når den er steget. Om året er det regnet om til et år.",
+    );
     const box = getByRole(region, "group", { name: "Faste udgifter" });
     expect(box.tabIndex).toBe(0);
     getByRole(box, "table");

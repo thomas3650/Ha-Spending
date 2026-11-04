@@ -1,4 +1,4 @@
-import { type ClassifiedPosting, total } from "@ha-spending/shared";
+import { type ClassifiedPosting, share, total } from "@ha-spending/shared";
 
 export interface ShopRow {
   name: string;
@@ -34,7 +34,7 @@ export function shopList(base: ClassifiedPosting[], hidden: ReadonlySet<string>)
   const whole = total(base);
   const rows = [...sums]
     .filter(([, sum]) => sum > 0)
-    .map(([name, sum]) => ({ name, sum, share: whole > 0 ? sum / whole : null }))
+    .map(([name, sum]) => ({ name, sum, share: share(sum, whole) }))
     .sort((a, b) => b.sum - a.sum || a.name.localeCompare(b.name, "da"));
   const hiddenRows = rows.filter((r) => hidden.has(r.name));
   return {

@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { subscriptionStatus, type Subscription } from "@ha-spending/shared";
 import { generateSeed } from "../src/generate";
 
 const s = generateSeed({ today: "2026-10-30", seed: 1 });
@@ -61,11 +62,25 @@ describe("generateSeed", () => {
     for (const x of linked) expect(names).toContain(x.subscription);
   });
 
-  it("has a monthly subscription whose payment fell due two days ago and has not come", () => {
-    const due = (s.subscriptions ?? []).find((x) => x.name === "Fitnessabonnement");
-    const paid = splits.filter((x) => x.subscription === "Fitnessabonnement").map((x) => x.date).sort();
-    expect(due?.repeat).toBe("monthly");
-    expect(paid.at(-1)).toBe("2026-09-28");
+  it("has a subscription whose payment is expected with a date before today", () => {
+    const seeded = (s.subscriptions ?? []).find((x) => x.name === "Fitnessabonnement")!;
+    const last = splits.filter((x) => x.subscription === seeded.name).sort((a, b) => a.date.localeCompare(b.date)).at(-1)!;
+    const øre = (amount: string) => Math.round(Number(amount) * 100);
+    const subscription: Subscription = {
+      id: "1",
+      name: seeded.name,
+      repeat: seeded.repeat,
+      skip: seeded.skip ?? 0,
+      start: seeded.start,
+      end: null,
+      amountMin: øre(seeded.amountMin),
+      amountMax: øre(seeded.amountMax),
+      objectGroup: seeded.objectGroup ?? "",
+      lastPayment: { date: last.date, amount: øre(last.amount), category: last.category ?? null, account: last.source },
+    };
+    const status = subscriptionStatus(subscription, "2026-10-30");
+    expect(status.kind).toBe("expected");
+    if (status.kind === "expected") expect(status.date! < "2026-10-30").toBe(true);
   });
 
   it("puts bills in both object groups and leaves one without", () => {
