@@ -172,7 +172,16 @@ describe("choosing a kind", () => {
     expect(menu(el)).toBeNull();
     expect(document.activeElement).toBe(field(el, da.amountKinds.about));
     expect(kindButton(el).getAttribute("aria-haspopup")).toBeNull();
+    expect(kindButton(el).getAttribute("aria-expanded")).toBe("false");
     expect(fired).toEqual([]);
+  });
+
+  it("marks the kind button expanded while its kinds are open", async () => {
+    const { el } = await render();
+    await choose(el, "about");
+    await press(el, kindButton(el));
+    expect(menu(el)).not.toBeNull();
+    expect(kindButton(el).getAttribute("aria-expanded")).toBe("true");
   });
 
   it("applies the number on Enter, once", async () => {
