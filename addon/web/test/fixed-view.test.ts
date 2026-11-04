@@ -779,9 +779,9 @@ describe("full screen (spec §3)", () => {
     expect(fullButton(root, da.fixed.inPeriod).getAttribute("aria-pressed")).toBe("false");
   }
 
-  function barsAlone(root: HTMLElement): void {
+  function barsAlone(root: HTMLElement, listTitle: string = da.fixed.inPeriod): void {
     barsRegion(root);
-    expect(queryByRole(root, "region", { name: da.fixed.inPeriod })).toBeNull();
+    expect(queryByRole(root, "region", { name: listTitle })).toBeNull();
     expect(keyNumbers(root)).toBeNull();
     expect(fullButton(root, BARS).getAttribute("aria-pressed")).toBe("true");
   }
@@ -840,7 +840,7 @@ describe("full screen (spec §3)", () => {
       await click(app, barButtons(root)[9]);
       expect(location.hash).toBe("#unit=2026-10-01&view=fixed&og=Faste+udgifter&full=bars");
       getByRole(root, "button", { name: da.switchMonth(month("2026-10-01")) });
-      barsAlone(root);
+      barsAlone(root, month("2026-10-01"));
     });
 
     it("in the list's full screen, a unit from the trail's list narrows the list, and full screen stays", async () => {
@@ -985,6 +985,26 @@ describe("full screen (spec §3)", () => {
       await hashBecomes(app, OPEN);
       bothCards(root);
       expect(app.shadowRoot?.activeElement).toBe(scroll);
+    });
+
+    it("a close by the button with the focus lost puts it on the heading of the list that filled the page", async () => {
+      const { app, root } = await fromOverview();
+      await click(app, fullButton(root, da.fixed.inPeriod));
+      (app.shadowRoot?.activeElement as HTMLElement | null)?.blur();
+      await click(app, fullButton(root, da.fixed.inPeriod));
+      await hashBecomes(app, OPEN);
+      bothCards(root);
+      expect(app.shadowRoot?.activeElement).toBe(getByRole(root, "heading", { level: 2, name: da.fixed.inPeriod }));
+    });
+
+    it("a close by Back with the focus lost puts it on the heading of the list that filled the page", async () => {
+      const { app, root } = await fromOverview();
+      await click(app, fullButton(root, da.fixed.inPeriod));
+      (app.shadowRoot?.activeElement as HTMLElement | null)?.blur();
+      history.back();
+      await hashBecomes(app, OPEN);
+      bothCards(root);
+      expect(app.shadowRoot?.activeElement).toBe(getByRole(root, "heading", { level: 2, name: da.fixed.inPeriod }));
     });
 
     it("the focus in the list, then Forward onto the bars' full screen: the focus is on the bars' heading", async () => {

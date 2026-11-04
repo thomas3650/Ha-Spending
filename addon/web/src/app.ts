@@ -315,6 +315,8 @@ export class SpendingApp extends LitElement {
   private leftScreen = false;
   /** The fixed-expenses view began or its full screen changed, so the element that had the focus may be gone. */
   private enteredFixed = false;
+  /** The card whose heading takes a lost focus: the one that fills, or just filled, the page (spec §3.5). */
+  private fixedFocusCard: FixedCard | null = null;
   private headingAfterBack = false;
   /** Set by a row's click only: a link, a reload or full screen leave the focus where it is. */
   private openedByRow = false;
@@ -633,7 +635,7 @@ export class SpendingApp extends LitElement {
     const root = this.renderRoot;
     await root.querySelector<LitElement>("hs-fixed")?.updateComplete;
     if (this.shadowRoot?.activeElement) return;
-    const heading = this.state.fixedFull === "list" ? "#hs-fixed-list-title" : "#hs-fixed-bars-title";
+    const heading = this.fixedFocusCard === "list" ? "#hs-fixed-list-title" : "#hs-fixed-bars-title";
     root.querySelector<HTMLElement>(heading)?.focus();
   }
 
@@ -672,8 +674,11 @@ export class SpendingApp extends LitElement {
   private change(next: ViewState): void {
     if ((this.state.fullScreen && !next.fullScreen) || (this.state.fixed && !next.fixed)) this.leftScreen = true;
     // A page load leaves the focus where it is. A card goes away when the view begins or its full screen changes.
+    const entered = !this.state.fixed && next.fixed;
     const fullChanged = this.state.fixed && next.fixed && this.state.fixedFull !== next.fixedFull;
-    if (this.hasUpdated && ((!this.state.fixed && next.fixed) || fullChanged)) this.enteredFixed = true;
+    if (entered) this.fixedFocusCard = next.fixedFull;
+    else if (fullChanged) this.fixedFocusCard = next.fixedFull ?? this.state.fixedFull;
+    if (this.hasUpdated && (entered || fullChanged)) this.enteredFixed = true;
     this.state = next;
     this.ensureData();
     this.normaliseState();
