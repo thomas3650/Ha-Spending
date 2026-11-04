@@ -19,7 +19,7 @@ function itemsOf(period: { start: string; end: string }): BarItem[] {
   return units.map((unit, i) => ({
     unit,
     axis: unitAxis(unit, "month"),
-    name: unitName(unit, "month"),
+    name: unitName(unit, "month", false),
     amount: totals[i],
     running: isRunning(unit, TODAY),
     choose: unit.fullStart,
@@ -31,7 +31,7 @@ function daysChoosingNothing(): BarItem[] {
   return unitsOf({ start: "2026-09-01", end: "2026-09-03" }, "day", TODAY).map((unit) => ({
     unit,
     axis: unitAxis(unit, "day"),
-    name: unitName(unit, "day"),
+    name: unitName(unit, "day", false),
     amount: 0,
     running: false,
     choose: null,
@@ -72,9 +72,9 @@ describe("the bars", () => {
     expect(buttons).toHaveLength(10);
     const july = items[6].unit;
     const october = items[9].unit;
-    expect(buttons[6]).toBe(getByRole(el, "button", { name: `${unitName(july, "month")}, ${kr(1510000)}` }));
+    expect(buttons[6]).toBe(getByRole(el, "button", { name: `${unitName(july, "month", false)}, ${kr(1510000)}` }));
     expect(buttons[9]).toBe(
-      getByRole(el, "button", { name: `${unitName(october, "month")} (${da.inProgress}), ${kr(1131012)}` }),
+      getByRole(el, "button", { name: `${unitName(october, "month", false)} (${da.inProgress}), ${kr(1131012)}` }),
     );
   });
 
@@ -225,7 +225,7 @@ describe("barTooltip", () => {
     return {
       unit,
       axis: unitAxis(unit, grouping),
-      name: unitName(unit, grouping),
+      name: unitName(unit, grouping, false),
       amount: 1234,
       running: false,
       choose: unit.fullStart,

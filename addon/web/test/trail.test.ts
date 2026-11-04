@@ -5,12 +5,13 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import type { SpendingApp } from "../src/app";
 import { rangeText, unitName } from "../src/format";
 import { da } from "../src/i18n/da";
+import { barButtons, names } from "./bars-helpers";
 import { forgetCharts } from "./chart-mock";
 import { answerFor } from "./fixture";
 import { json, mount, settle, unmount } from "./mount";
 
 const TODAY = "2026-10-30";
-const JAN = unitName(unitAt("2026-01-01", "month", TODAY), "month");
+const JAN = unitName(unitAt("2026-01-01", "month", TODAY), "month", false);
 const ALL_THREE = "unit=2026-01-01&group=Bolig&category=Husleje";
 const YEAR = da.presets.thisYear;
 
@@ -332,4 +333,45 @@ describe("the trail holds the period and the levels", () => {
     await app.updateComplete;
     getByRole(root, "group", { name: da.accounts });
   }
+});
+
+describe("a unit's name carries its year only when the bars cross a new year", () => {
+  const at = (day: string, earliest?: string) => ({
+    now: `${day}T10:00:00Z`,
+    answer: (range: { start: string; end: string }) => {
+      const data = answerFor(range, day);
+      return json(earliest === undefined ? data : { ...data, earliestPostingDate: earliest });
+    },
+  });
+
+  function postingsGroups(root: HTMLElement): string[] {
+    return queryAllByRole(getByRole(root, "region", { name: da.postingsTitle }), "button")
+      .map((b) => b.getAttribute("aria-label") ?? b.textContent ?? "")
+      .filter((n) => /^(Juli|Juli 2026)\b/.test(n));
+  }
+
+  it("with I år the trail, the bar and the Posteringer group read the month alone", async () => {
+    const { root } = await mount("unit=2026-07-01", at(TODAY));
+    expect(trailText(root)).toContain(`› Juli`);
+    expect(trailText(root)).not.toContain("Juli 2026");
+    expect(names(barButtons(root, da.per("month")))[6]).toMatch(/^Juli,/);
+    getByRole(trail(root), "button", { name: da.remove("Juli") });
+  });
+
+  it("with Sidste 12 måneder in November the month keeps its year", async () => {
+    const { root } = await mount("period=last12Months&unit=2026-07-01", at("2026-11-04"));
+    getByRole(trail(root), "button", { name: da.remove("Juli 2026") });
+    expect(names(barButtons(root, da.per("month"))).some((n) => n.startsWith("Juli 2026,"))).toBe(true);
+  });
+
+  it("with Alt over three years the year units read 2025", async () => {
+    const { root } = await mount("period=all&unit=2025-01-01", at(TODAY, "2024-03-01"));
+    getByRole(trail(root), "button", { name: da.remove("2025") });
+  });
+
+  it("names the Posteringer groups of Sidste 12 måneder with their year", async () => {
+    const { root } = await mount("period=last12Months&card=postings", at("2026-11-04"));
+    expect(postingsGroups(root).length).toBeGreaterThan(0);
+    expect(postingsGroups(root).every((n) => n.startsWith("Juli 2026"))).toBe(true);
+  });
 });

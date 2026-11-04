@@ -9,7 +9,7 @@ import {
   unitTotals,
   within,
 } from "@ha-spending/shared";
-import { count, detailAmount, detailKr, tableDate, unitAxis, unitName } from "../format";
+import { count, detailAmount, detailKr, tableDate, unitAxis, unitName, withYear } from "../format";
 import { da } from "../i18n/da";
 import type { DetailKey } from "../state/view";
 import { finerUnits, partName, type ViewContext } from "./context";
@@ -91,7 +91,7 @@ function common(ctx: ViewContext, rows: ClassifiedPosting[], marked: string | nu
       })),
     bars: units.map((unit, i) => {
       const running = isRunning(unit, ctx.today);
-      const label = `${unitName(unit, g)}: ${detailKr(totals[i])}`;
+      const label = `${unitName(unit, g, withYear(units))}: ${detailKr(totals[i])}`;
       const name = i % step === 0 ? unitAxis(unit, g) : "";
       return { name, amount: totals[i], label: running ? `${label} (${da.inProgress})` : label, running };
     }),

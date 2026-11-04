@@ -124,7 +124,7 @@ describe("the detail on the normal page", () => {
 
   it("a row in a fold opened by hand gets the focus back after a close", async () => {
     const { app, root } = await mountLinked("card=postings");
-    const february = unitName(viewContext(linked(THIS_YEAR), DEFAULT_STATE, TODAY).units[1], "month");
+    const february = unitName(viewContext(linked(THIS_YEAR), DEFAULT_STATE, TODAY).units[1], "month", false);
     await click(app, getByRole(region(root, da.postingsTitle), "button", { name: new RegExp(`^${february},`), expanded: false }));
     await click(app, rowButton(region(root, da.postingsTitle), "Kiosken"));
     getByRole(root, "heading", { level: 3, name: "Kiosken" });
@@ -176,7 +176,7 @@ describe("the detail on the normal page", () => {
 
     await click(app, getByRole(root, "button", { name: da.backTo(da.postingsTitle) }));
     const card = region(root, da.postingsTitle);
-    const february = unitName(viewContext(linked(THIS_YEAR), DEFAULT_STATE, TODAY).units[1], "month");
+    const february = unitName(viewContext(linked(THIS_YEAR), DEFAULT_STATE, TODAY).units[1], "month", false);
     await click(app, getByRole(card, "button", { name: new RegExp(`^${february},`), expanded: false }));
     await click(app, rowButton(region(root, da.postingsTitle), "Kiosken"));
     d = detail(region(root, da.postingsTitle), "Kiosken");
@@ -206,7 +206,7 @@ describe("the detail on the normal page", () => {
     const items = getAllByRole(bars, "listitem");
     expect(items).toHaveLength(units.length);
     units.forEach((u, i) => {
-      const label = `${unitName(u, "month")}: 8.000 kr.`;
+      const label = `${unitName(u, "month", false)}: 8.000 kr.`;
       within(items[i]).getByText(i === units.length - 1 ? `${label} (${da.inProgress})` : label);
     });
   });
@@ -218,7 +218,7 @@ describe("the detail on the normal page", () => {
       const { root } = await mountLinked("period=lastMonth&card=subscriptions&detail=s%3Ab1");
       const items = getAllByRole(getByRole(detail(root, "Husleje"), "list", { name: da.detailPer("day") }), "listitem");
       expect(items).toHaveLength(30);
-      items.forEach((item, i) => within(item).getByText(new RegExp(`^${i + 1}\\.9\\.2026: `)));
+      items.forEach((item, i) => within(item).getByText(new RegExp(`^${i + 1}\\. september: `)));
       const names = items.map((item) => queryByText(item, NAME)?.textContent ?? null).filter((n) => n !== null);
       expect(names).toEqual(["1.9.", "5.9.", "9.9.", "13.9.", "17.9.", "21.9.", "25.9.", "29.9."]);
     });
@@ -227,7 +227,7 @@ describe("the detail on the normal page", () => {
       const { root } = await mountLinked("period=lastYear&card=subscriptions&detail=s%3Ab1");
       const items = getAllByRole(getByRole(detail(root, "Husleje"), "list", { name: da.detailPer("month") }), "listitem");
       expect(items).toHaveLength(12);
-      within(items[0]).getByText(/^Januar 2025: /);
+      within(items[0]).getByText(/^Januar: /);
       items.forEach((item, i) => within(item).getByText(da.months[i]));
     });
 

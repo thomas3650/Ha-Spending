@@ -21,6 +21,7 @@ import {
   typedDate,
   unitAxis,
   unitName,
+  withYear,
 } from "../src/format";
 import { da } from "../src/i18n/da";
 
@@ -120,15 +121,25 @@ describe("dates", () => {
 
 describe("units", () => {
   it("names a unit", () => {
-    expect(unitName(unit("2026-10-30", "day"), "day")).toBe("30.10.2026");
-    expect(unitName(unit("2026-10-30", "week"), "week")).toBe("Uge 44 2026");
-    expect(unitName(unit("2026-10-30", "month"), "month")).toBe("Oktober 2026");
-    expect(unitName(unit("2026-10-30", "quarter"), "quarter")).toBe("4. kvartal 2026");
-    expect(unitName(unit("2026-10-30", "year"), "year")).toBe("2026");
+    expect(unitName(unit("2026-10-30", "day"), "day", true)).toBe("30. oktober 2026");
+    expect(unitName(unit("2026-10-30", "week"), "week", false)).toBe("Uge 44 2026");
+    expect(unitName(unit("2026-10-30", "month"), "month", true)).toBe("Oktober 2026");
+    expect(unitName(unit("2026-10-30", "quarter"), "quarter", false)).toBe("4. kvartal 2026");
+    expect(unitName(unit("2026-10-30", "year"), "year", false)).toBe("2026");
+  });
+  it("leaves the year off a month and a day inside one year", () => {
+    expect(unitName(unit("2026-08-12", "month"), "month", false)).toBe("August");
+    expect(unitName(unit("2025-11-04", "day"), "day", false)).toBe("4. november");
+    expect(unitName(unit("2025-11-04", "day"), "day", true)).toBe("4. november 2025");
+    expect(unitName(unit("2026-10-30", "year"), "year", true)).toBe("2026");
+  });
+  it("knows when units cross a new year", () => {
+    expect(withYear(unitsOf({ start: "2026-01-01", end: "2026-12-31" }, "month", today))).toBe(false);
+    expect(withYear(unitsOf({ start: "2025-11-01", end: "2026-10-31" }, "month", today))).toBe(true);
   });
   it("takes the week of a clipped unit from its whole week", () => {
     const first = unitsOf({ start: "2026-01-01", end: "2026-10-30" }, "week", today)[0];
-    expect(unitName(first, "week")).toBe("Uge 1 2026");
+    expect(unitName(first, "week", false)).toBe("Uge 1 2026");
   });
   it("short-names a unit on the axis", () => {
     expect(unitAxis(unit("2026-10-30", "day"), "day")).toBe("30.10.");

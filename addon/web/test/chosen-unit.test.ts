@@ -19,11 +19,11 @@ afterEach(() => {
   forgetCharts();
 });
 
-const JULY_GROUP = da.levelInUnit("Abonnementer", unitName(JUL, "month"));
-const SEPTEMBER = unitName(unitAt("2026-09-01", "month", TODAY), "month");
+const JULY_GROUP = da.levelInUnit("Abonnementer", unitName(JUL, "month", false));
+const SEPTEMBER = unitName(unitAt("2026-09-01", "month", TODAY), "month", false);
 
 function julyName(): string {
-  return unitName(JUL, "month");
+  return unitName(JUL, "month", false);
 }
 
 function viewSwitch(root: HTMLElement): HTMLElement {
@@ -66,7 +66,7 @@ describe("screen 4, a chosen unit", () => {
     expect(hasArrow(empty.root)).toBe(false);
     unmount();
     const first = await mount("unit=2026-01-01", { answer: onlyFrom("2026-01-01") });
-    const january = unitName(unitAt("2026-01-01", "month", TODAY), "month");
+    const january = unitName(unitAt("2026-01-01", "month", TODAY), "month", false);
     expect(cardNames(first.root, [da.levelInUnit("Abonnementer", january)])).toEqual([da.unitTotal(january)]);
     expect(hasArrow(first.root)).toBe(false);
   });

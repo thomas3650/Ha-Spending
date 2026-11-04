@@ -184,9 +184,9 @@ describe("a detail's bars", () => {
     const months = shown(posting(PIZZA_PAID), answerFor(FETCHED));
     expect(months.per).toBe(da.detailPer("month"));
     expect(months.bars).toHaveLength(10);
-    expect(months.bars.filter((b) => b.amount > 0).map((b) => b.label)).toEqual(["September 2026: 500 kr."]);
-    expect(months.bars[0]).toMatchObject({ amount: 0, label: "Januar 2026: 0 kr.", running: false });
-    expect(months.bars[9]).toMatchObject({ running: true, label: `Oktober 2026: 0 kr. (${da.inProgress})` });
+    expect(months.bars.filter((b) => b.amount > 0).map((b) => b.label)).toEqual(["September: 500 kr."]);
+    expect(months.bars[0]).toMatchObject({ amount: 0, label: "Januar: 0 kr.", running: false });
+    expect(months.bars[9]).toMatchObject({ running: true, label: `Oktober: 0 kr. (${da.inProgress})` });
 
     const years = shown(posting(PIZZA_PAID), { ...answerFor(FETCHED), earliestPostingDate: "2024-03-01" }, {
       period: { preset: "all" },

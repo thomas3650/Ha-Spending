@@ -53,7 +53,7 @@ function unitCards(ctx: ViewContext, unit: Unit): [KeyCard] {
   const g = ctx.timeline.grouping;
   const numbers = chosenUnitNumbers(ctx.shown, ctx.timeline, unit);
   const level = ctx.state.level;
-  const name = unitName(unit, g);
+  const name = unitName(unit, g, ctx.unitYear);
 
   const first: KeyCard = {
     label: level.kind === "all" ? da.unitTotal(name) : da.levelInUnit(levelName(level), name),
@@ -86,7 +86,7 @@ function days(period: Period): number {
 export function objectGroupCards(ctx: ViewContext, href: string): KeyCard[] {
   const period = ctx.timeline.period;
   const counted = ctx.chosen ?? period;
-  const unit = ctx.chosen === null ? null : unitName(ctx.chosen, ctx.timeline.grouping);
+  const unit = ctx.chosen === null ? null : unitName(ctx.chosen, ctx.timeline.grouping, ctx.unitYear);
   const linked = within(ctx.shown, counted).flatMap((p) =>
     p.subscription === null ? [] : [{ group: p.subscription.objectGroup, bill: p.subscription.name, amount: p.amount }],
   );

@@ -106,7 +106,7 @@ export function groupedPostings(
     .map(
       (u): PostingGroup => ({
         key: u.unit.fullStart,
-        name: unitName(u.unit, ctx.timeline.grouping),
+        name: unitName(u.unit, ctx.timeline.grouping, ctx.unitYear),
         rows: [...u.postings]
           .sort((a, b) => direction * byDate(a, b))
           .map((p) => row(p, rc)),

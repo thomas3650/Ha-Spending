@@ -84,12 +84,12 @@ describe("the postings list", () => {
     const el = await render(listOf());
     const buttons = groupButtons(el);
     const names = ["10", "09", "08", "07", "06", "05", "04", "03", "02", "01"].map((m) =>
-      unitName(monthUnit(`2026-${m}-01`), "month"),
+      unitName(monthUnit(`2026-${m}-01`), "month", false),
     );
     expect(buttons).toEqual(names.map((n) => getByRole(el, "button", { name: new RegExp(`^${n},`) })));
     const oct = monthUnit("2026-10-01");
     expect(buttons[0]).toBe(
-      getByRole(el, "button", { name: `${unitName(oct, "month")}, ${count(3)}, ${postingAmount(1131012)}` }),
+      getByRole(el, "button", { name: `${unitName(oct, "month", false)}, ${count(3)}, ${postingAmount(1131012)}` }),
     );
     expect(buttons.map((b) => b.getAttribute("aria-expanded")).slice(0, 3)).toEqual(["true", "true", "false"]);
   });
@@ -98,7 +98,7 @@ describe("the postings list", () => {
     const el = await render(listOf());
     const sep = monthUnit("2026-09-01");
     const button = getByRole(el, "button", {
-      name: `${unitName(sep, "month")}, ${count(4)}, ${postingAmount(1150000)}`,
+      name: `${unitName(sep, "month", false)}, ${count(4)}, ${postingAmount(1150000)}`,
     });
     const group = button.closest("tbody") as HTMLElement;
     const amounts = getAllByRole(group, "row")
@@ -114,7 +114,7 @@ describe("the postings list", () => {
   it("folds a group in and out", async () => {
     const el = await render(listOf());
     const aug = monthUnit("2026-08-01");
-    const button = getByRole(el, "button", { name: new RegExp(`^${unitName(aug, "month")},`) });
+    const button = getByRole(el, "button", { name: new RegExp(`^${unitName(aug, "month", false)},`) });
     expect(queryByRole(el, "cell", { name: tableDate("2026-08-10") })).toBeNull();
     fireEvent.click(button);
     await el.updateComplete;
@@ -226,7 +226,7 @@ describe("the postings list", () => {
   it("starts over when the first group changes", async () => {
     const el = await render(listOf());
     const sep = monthUnit("2026-09-01");
-    const button = getByRole(el, "button", { name: new RegExp(`^${unitName(sep, "month")},`) });
+    const button = getByRole(el, "button", { name: new RegExp(`^${unitName(sep, "month", false)},`) });
     fireEvent.click(button);
     await el.updateComplete;
     expect(button.getAttribute("aria-expanded")).toBe("false");
@@ -234,7 +234,7 @@ describe("the postings list", () => {
     el.list = listOf({ period: { preset: "custom", start: "2026-01-01", end: "2026-09-30" } });
     await el.updateComplete;
     const buttons = groupButtons(el);
-    expect(buttons[0]).toBe(getByRole(el, "button", { name: new RegExp(`^${unitName(sep, "month")},`) }));
+    expect(buttons[0]).toBe(getByRole(el, "button", { name: new RegExp(`^${unitName(sep, "month", false)},`) }));
     expect(buttons.map((b) => b.getAttribute("aria-expanded")).slice(0, 3)).toEqual(["true", "true", "false"]);
   });
 

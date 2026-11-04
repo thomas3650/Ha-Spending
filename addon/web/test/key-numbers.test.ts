@@ -15,7 +15,7 @@ type Link = Posting["subscription"];
 
 const FIXED = da.inPeriod("Faste udgifter");
 const SUBS = da.inPeriod("Abonnementer");
-const JULY = unitName(unitAt("2026-07-01", "month", "2026-10-30"), "month");
+const JULY = unitName(unitAt("2026-07-01", "month", "2026-10-30"), "month", false);
 const JULY_FIXED = da.levelInUnit("Faste udgifter", JULY);
 const JULY_SUBS = da.levelInUnit("Abonnementer", JULY);
 
@@ -350,6 +350,12 @@ describe("the key numbers of the object groups", () => {
       expect(name(other.root, FIXED)).toBe(`${FIXED} ${kr(8090000)} ${line(812700, 2)}`);
       unmount();
     }
+  });
+
+  it("names the chosen unit with its year when the bars cross a new year", async () => {
+    const answer = linking(bills, "2026-11-04");
+    const { root } = await mount("period=last12Months&unit=2026-07-01", { answer, now: "2026-11-04T10:00:00Z" });
+    expect(objectCardNames(root, "Juli 2026")).toContain(da.levelInUnit("Faste udgifter", "Juli 2026"));
   });
 
   it("with a chosen unit the value is that unit's payments, and a group with none keeps its card", async () => {

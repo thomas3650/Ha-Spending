@@ -14,7 +14,7 @@ import {
 } from "@ha-spending/shared";
 import type { BarItem } from "../components/bars";
 import type { CircleItem } from "../components/circle";
-import { unitAxis, unitName } from "../format";
+import { unitAxis, unitName, withYear } from "../format";
 import { finerUnits, partName, type ViewContext } from "./context";
 
 function periodCircle(ctx: ViewContext, postings = ctx.circlePostings, level = ctx.circleLevel): CirclePart[] {
@@ -112,7 +112,7 @@ export function barItems(ctx: ViewContext): BarItem[] {
   return units.map((unit, i) => ({
     unit,
     axis: unitAxis(unit, g),
-    name: unitName(unit, g),
+    name: unitName(unit, g, withYear(units)),
     amount: totals[i],
     running: isRunning(unit, ctx.today),
     choose: finer === null ? unit.fullStart : null,

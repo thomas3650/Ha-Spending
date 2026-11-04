@@ -755,7 +755,7 @@ export class SpendingApp extends LitElement {
         .today=${this.today}
         .accounts=${this.accounts}
         .earliest=${this.earliest}
-        .unitName=${ctx?.chosen ? unitName(ctx.chosen, ctx.timeline.grouping) : null}
+        .unitName=${ctx?.chosen ? unitName(ctx.chosen, ctx.timeline.grouping, ctx.unitYear) : null}
         .lists=${lists}
         @hs-period=${this.onPeriod}
         @hs-accounts=${this.onAccounts}
