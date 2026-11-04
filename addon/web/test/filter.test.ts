@@ -1,7 +1,6 @@
 import type { ClassifiedPosting } from "@ha-spending/shared";
 import { describe, expect, it } from "vitest";
-import { parseDanishAmount } from "../src/format";
-import { inAmount, matches, shopSuggestions } from "../src/model/filter";
+import { matches, shopSuggestions } from "../src/model/filter";
 
 function posting(id: string, text: string, shop: string | null, amount: number): ClassifiedPosting {
   return { id, groupId: id, date: "2026-01-01", text, account: "1", category: null, kind: "spending", shop, amount, subscription: null, mainGroup: null };
@@ -113,20 +112,5 @@ describe("shopSuggestions", () => {
       { name: "Netto", sum: 300 },
       { name: "netto", sum: 100 },
     ]);
-  });
-});
-
-describe("the amount bounds", () => {
-  it("compares øre with øre, so a bound with øre holds its posting", () => {
-    const max = parseDanishAmount("1.000,10");
-    expect(inAmount(posting("a", "a", null, 100010), { min: null, max })).toBe(true);
-    expect(inAmount(posting("a", "a", null, 100011), { min: null, max })).toBe(false);
-    expect(inAmount(posting("a", "a", null, 100010), { min: max, max: null })).toBe(true);
-    expect(inAmount(posting("a", "a", null, 100009), { min: max, max: null })).toBe(false);
-  });
-  it("a bound of 0 or 0,5 is a bound", () => {
-    expect(inAmount(posting("a", "a", null, -100), { min: parseDanishAmount("0"), max: null })).toBe(false);
-    expect(inAmount(posting("a", "a", null, 49), { min: parseDanishAmount("0,5"), max: null })).toBe(false);
-    expect(inAmount(posting("a", "a", null, 50), { min: parseDanishAmount("0,5"), max: null })).toBe(true);
   });
 });

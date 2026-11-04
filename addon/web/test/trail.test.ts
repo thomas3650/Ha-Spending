@@ -160,40 +160,12 @@ describe("the trail is the overview's filter", () => {
   });
 });
 
-describe("the trail on Alle posteringer", () => {
-  const ON_ALL = "unit=2026-01-01&group=Bolig&view=all-postings&q=Hus&shop=Netto";
-
-  it("is Alt forbrug › the period › Alle posteringer, with no ×", async () => {
-    const { root } = await mount(ON_ALL);
-    expect(trailText(root)).toBe(`${da.allSpending} › ${YEAR} › ${da.allPostings}`);
-    expect(queryByRole(trail(root), "button", { name: /^Fjern / })).toBeNull();
-  });
-
-  it("Alt forbrug goes back to the overview with the shared choices kept", async () => {
-    const { app, root } = await mount(ON_ALL);
-    fireEvent.click(getByRole(trail(root), "link", { name: da.allSpending }));
-    await settle(app);
-    expect(params().get("view")).toBeNull();
-    expect(params().get("unit")).toBe("2026-01-01");
-    expect(params().get("group")).toBe("Bolig");
-    expect(params().get("q")).toBe("Hus");
-    expect(params().get("shop")).toBe("Netto");
+describe("an old link to Alle posteringer", () => {
+  it("shows the overview's trail with its unit and main group", async () => {
+    const { root } = await mount("unit=2026-01-01&group=Bolig&view=all-postings&q=Hus&shop=Netto");
     expect(trailText(root)).toBe(`${da.allSpending} › ${YEAR} › ${JAN} › Bolig ${da.categoryStep}`);
-  });
-
-  it("a unit removed there is gone on the overview, and Back brings it back", async () => {
-    const { app, root } = await mount("unit=2026-01-01&group=Bolig&view=all-postings");
-    fireEvent.click(getByRole(root, "button", { name: da.remove(JAN) }));
-    await settle(app);
-    fireEvent.click(getByRole(trail(root), "link", { name: da.allSpending }));
-    await settle(app);
-    expect(trailText(root)).toBe(`${da.allSpending} › ${YEAR} › Bolig ${da.categoryStep}`);
-    await back(app);
+    getByRole(trail(root), "button", { name: da.remove(JAN) });
     expect(params().get("view")).toBe("all-postings");
-    expect(queryByRole(root, "button", { name: da.remove(JAN) })).toBeNull();
-    await back(app);
-    expect(params().get("view")).toBe("all-postings");
-    getByRole(root, "button", { name: da.remove(JAN) });
   });
 });
 

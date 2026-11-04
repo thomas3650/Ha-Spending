@@ -90,8 +90,8 @@ describe("a detail's rows", () => {
       { unit },
       { search: "Netto" },
       { shop: "Q8" },
-      { screen: "allPostings", amount: { min: 1, max: 2 } },
-      { screen: "allPostings", objectGroup: "Abonnementer" },
+      { amount: { min: 1, max: 2 } },
+      { card: "postings", fullScreen: true },
     ];
     for (const state of narrowing) {
       const v = shown(sub("b1"), data, state);

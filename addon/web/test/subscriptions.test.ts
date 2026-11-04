@@ -626,7 +626,7 @@ describe("sorting the subscriptions by their headers", () => {
     expect(rowNames(card(root, "Faste udgifter i Bolig"))).toEqual(["Husleje", "Indboforsikring"]);
   });
 
-  it("the sort survives Søjler and back, and a trip to Alle posteringer", async () => {
+  it("the sort survives Søjler and back, and a trip to full-screen Posteringer", async () => {
     const { app, root } = await mountWith(CARD);
     await sortBy(app, root, c.perYear);
     const views = getByRole(root, "group", { name: da.view });
@@ -642,8 +642,8 @@ describe("sorting the subscriptions by their headers", () => {
     const first = getByRole(root, "group", { name: da.spendingInPeriod });
     fireEvent.click(getByRole(first, "link", { name: /→$/ }));
     await settle(app);
-    getByRole(root, "heading", { level: 1, name: da.allPostings });
-    fireEvent.click(getByRole(getByRole(root, "navigation", { name: da.trail }), "link", { name: da.allSpending }));
+    fireEvent.click(getByRole(root, "button", { name: da.fullScreen, pressed: true }));
+    await vi.waitFor(() => expect(location.hash).toBe("#card=postings"));
     await settle(app);
     fireEvent.click(getByRole(getByRole(root, "group", { name: da.view }), "button", { name: "Faste udgifter" }));
     await settle(app);

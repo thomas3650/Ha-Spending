@@ -16,7 +16,6 @@ export const da = {
   allSpending: "Alt forbrug",
   noMainGroup: "Uden hovedgruppe",
   noCategory: "Uden kategori",
-  allPostings: "Alle posteringer",
   trail: "Sti",
   /** Without a range while "Alt"'s dates are not known yet. */
   periodStep: (name: string, range: string | null) => (range === null ? `Periode: ${name}` : `Periode: ${name}, ${range}`),
@@ -176,19 +175,7 @@ export const da = {
   shopChip: (name: string) => `Butik: ${name}`,
   shopOption: (name: string, sum: string) => `${name}, ${sum}`,
   suggestions: "Butikker",
-  addFilter: "+ Filter",
-  filterSearch: "Søg i filtre",
-  noFilterHits: "Ingen filtre passer",
-  mainGroupChip: (name: string) => `Hovedgruppe: ${name}`,
-  categoryChip: (name: string) => `Kategori: ${name}`,
-  amountFilter: "Beløb",
-  amountChip: (min: string | null, max: string | null) => {
-    if (min !== null && max !== null) return `Beløb: ${min}–${max} ${da.kr}`;
-    if (min !== null) return `Beløb: fra ${min} ${da.kr}`;
-    return `Beløb: til ${max ?? ""} ${da.kr}`;
-  },
   amountInvalid: "Skriv et beløb som 1.000,50",
-  add: "Tilføj",
   summary: (count: string, sum: string) => `${count} · ${sum}`,
 
   noSpending: "Ingen forbrug i perioden",
@@ -222,16 +209,9 @@ export const da = {
   billCount: (n: number) => `${n} stk.`,
   noPayments: "ingen betalinger",
   postingsLink: (counted: string) => `${counted} →`,
+  showSubscriptions: "Vis faste udgifter",
   subscriptionCount: (n: number) => `${n} ${n === 1 ? "fast udgift" : "faste udgifter"}`,
   subscriptions: "Faste udgifter",
-  fixedPayments: "Faste betalinger",
-  unitsHeading: {
-    day: "Dage",
-    week: "Uger",
-    month: "Måneder",
-    quarter: "Kvartaler",
-    year: "År",
-  } satisfies Record<Grouping, string>,
   subscriptionsIn: (name: string) => `Faste udgifter i ${name}`,
   perYear: (value: string) => `${value} om året`,
   objectGroupSums: (title: string) => `${title} om året`,

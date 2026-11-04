@@ -3,12 +3,18 @@ import { css, html, LitElement, nothing } from "lit";
 import { da } from "../i18n/da";
 import type { LevelRow } from "../model/circle";
 import { partName } from "../model/context";
-import { backToOverview, clearChoices, keepDetail } from "../state/actions";
+import { clearChoices, keepDetail } from "../state/actions";
 import { toHash, type ViewState } from "../state/view";
 import { fire } from "./chip";
 import "./accounts-picker";
 import "./level-menu";
 import "./period-picker";
+
+/** What `set-category` fires: a category keeps its main group. */
+export interface CategoryChoice {
+  mainGroup: string | null;
+  category: string | null;
+}
 
 /** The rows of the trail's two lists; null while the answer loads and on an error. */
 export interface LevelLists {
@@ -81,9 +87,6 @@ export class TopCard extends LitElement {
 
   private trail() {
     const state = this.state;
-    if (state.screen === "allPostings") {
-      return html`${this.home(backToOverview(state))}${SEP}${this.period(false)}${SEP}<h1 tabindex="-1">${da.allPostings}</h1>`;
-    }
     const level = state.level;
     const unit = this.unitName;
     const mainGroup = level.kind === "all" ? undefined : level.mainGroup;

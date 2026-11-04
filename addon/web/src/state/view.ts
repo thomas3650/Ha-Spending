@@ -35,16 +35,12 @@ export interface ViewState {
   /** The chosen unit's fullStart. */
   unit: string | null;
   card: Card;
-  screen: "overview" | "allPostings";
-  /** The right card fills the page; only on the overview. */
+  /** The right card fills the page. */
   fullScreen: boolean;
-  /** The search and the chosen shop are shared choices; sort, amount and object group belong to Alle posteringer. */
+  /** The quick filter: shared choices that stay when the top filter or the tab changes. */
   search: string;
   shop: string | null;
-  sort: Sort;
   amount: AmountRange | null;
-  /** A Firefly III object group's title; kept even when no posting carries it (D42). */
-  objectGroup: string | null;
   /** The open detail of a bill or a posting (D44). */
   detail: DetailKey | null;
 }
@@ -55,37 +51,23 @@ export const DEFAULT_STATE: ViewState = {
   level: { kind: "all" },
   unit: null,
   card: "bars",
-  screen: "overview",
   fullScreen: false,
   search: "",
   shop: null,
-  sort: { column: "date", descending: true },
   amount: null,
-  objectGroup: null,
   detail: null,
 };
 
+/** Held by the app, not in the hash (top-filter spec §3.4). */
+export const DEFAULT_POSTING_SORT: Sort = { column: "date", descending: true };
+
 const CARDS: readonly Card[] = ["bars", "postings", "subscriptions", "shops"];
-/** The four first names keep old links working; the text columns name their direction. */
-const SORT_NAMES: readonly [string, Sort][] = [
-  ["newest", { column: "date", descending: true }],
-  ["oldest", { column: "date", descending: false }],
-  ["largest", { column: "amount", descending: true }],
-  ["smallest", { column: "amount", descending: false }],
-  ...(["text", "category", "account"] as const).flatMap((column): [string, Sort][] => [
-    [`${column}-asc`, { column, descending: false }],
-    [`${column}-desc`, { column, descending: true }],
-  ]),
-];
+/** The old Alle posteringer screen; its links open Posteringer in full screen. */
 const ALL_POSTINGS = "all-postings";
 const FULL = "full";
 
 function oneOf<T extends string>(values: readonly T[], value: string | null, fallback: T): T {
   return values.find((v) => v === value) ?? fallback;
-}
-
-export function sameSort<C extends string>(a: Sorted<C>, b: Sorted<C>): boolean {
-  return a.column === b.column && a.descending === b.descending;
 }
 
 /** The same column turns around; another column starts in its first direction. */
@@ -97,14 +79,6 @@ export function nextSort<C extends string>(current: Sorted<C>, column: C, firstD
 
 export function postingFirstDescending(column: PostingColumn): boolean {
   return column === "date" || column === "amount";
-}
-
-function parseSort(value: string | null): Sort {
-  return SORT_NAMES.find(([name]) => name === value)?.[1] ?? DEFAULT_STATE.sort;
-}
-
-function sortName(sort: Sort): string | undefined {
-  return SORT_NAMES.find(([, s]) => sameSort(s, sort))?.[0];
 }
 
 function parsePeriod(p: URLSearchParams): PeriodChoice {
@@ -154,7 +128,7 @@ function parseDetail(value: string | null): DetailKey | null {
   return { kind: match[1] === "s" ? "subscription" : "posting", id: match[2] };
 }
 
-/** What does not parse falls back to DEFAULT_STATE's value (D20). */
+/** What does not parse falls back to DEFAULT_STATE's value (D20); an old link's `sort` and `og` are ignored. */
 export function parseHash(hash: string): ViewState {
   const p = new URLSearchParams(hash.startsWith("#") ? hash.slice(1) : hash);
   const accounts = p.get("accounts");
@@ -166,20 +140,17 @@ export function parseHash(hash: string): ViewState {
     accounts: accounts === null ? null : accounts.split(",").filter((id) => id !== ""),
     level: parseLevel(p),
     unit: isDate(unit) ? unit : null,
-    card: oneOf(CARDS, p.get("card"), DEFAULT_STATE.card),
-    screen: allPostings ? "allPostings" : "overview",
-    fullScreen: view === FULL,
+    card: allPostings ? "postings" : oneOf(CARDS, p.get("card"), DEFAULT_STATE.card),
+    fullScreen: allPostings || view === FULL,
     search: p.get("q") ?? DEFAULT_STATE.search,
     shop: p.get("shop") || DEFAULT_STATE.shop,
-    sort: allPostings ? parseSort(p.get("sort")) : DEFAULT_STATE.sort,
-    amount: allPostings ? parseAmount(p) : DEFAULT_STATE.amount,
-    objectGroup: (allPostings && p.get("og")) || DEFAULT_STATE.objectGroup,
+    amount: parseAmount(p),
     detail: parseDetail(p.get("detail")),
   };
 }
 
 /**
- * Without '#'. The keys go in the order of D20, D35, D42 and D44, and defaults are left out, so equal states give
+ * Without '#'. The keys go in the order of the top-filter spec §6, and defaults are left out, so equal states give
  * equal hashes.
  */
 export function toHash(s: ViewState): string {
@@ -196,17 +167,11 @@ export function toHash(s: ViewState): string {
   if (s.level.kind === "category") p.set("category", s.level.category ?? "");
   if (s.unit !== null) p.set("unit", s.unit);
   if (s.card !== DEFAULT_STATE.card) p.set("card", s.card);
-  if (s.screen === "allPostings") p.set("view", ALL_POSTINGS);
-  else if (s.fullScreen) p.set("view", FULL);
+  if (s.fullScreen) p.set("view", FULL);
   if (s.search !== "") p.set("q", s.search);
   if (s.shop !== null) p.set("shop", s.shop);
-  if (s.screen === "allPostings") {
-    const sort = sameSort(s.sort, DEFAULT_STATE.sort) ? undefined : sortName(s.sort);
-    if (sort !== undefined) p.set("sort", sort);
-    if (s.amount?.min != null) p.set("min", writeKroner(s.amount.min));
-    if (s.amount?.max != null) p.set("max", writeKroner(s.amount.max));
-    if (s.objectGroup !== null) p.set("og", s.objectGroup);
-  }
+  if (s.amount?.min != null) p.set("min", writeKroner(s.amount.min));
+  if (s.amount?.max != null) p.set("max", writeKroner(s.amount.max));
   if (s.detail !== null) p.set("detail", `${s.detail.kind === "subscription" ? "s" : "p"}:${s.detail.id}`);
   return p.toString();
 }

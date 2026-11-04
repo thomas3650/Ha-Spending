@@ -1,11 +1,11 @@
 import { describe, expect, it } from "vitest";
 import {
+  DEFAULT_POSTING_SORT,
   DEFAULT_STATE,
   nextSort,
   parseHash,
   periodOf,
   postingFirstDescending,
-  sameSort,
   type Sort,
   toHash,
   type ViewState,
@@ -27,13 +27,10 @@ describe("the view state's hash", () => {
       level: { kind: "category", mainGroup: "Mad", category: "Café" },
       unit: "2026-02-02",
       card: "shops",
-      screen: "allPostings",
-      fullScreen: false,
+      fullScreen: true,
       search: "pizza",
       shop: "Netto",
-      sort: { column: "amount", descending: true },
       amount: { min: 100, max: null },
-      objectGroup: "Åbne aftaler",
       detail: { kind: "posting", id: "p1" },
     };
     expect(parseHash("#" + toHash(s))).toEqual(s);
@@ -51,14 +48,13 @@ describe("the view state's hash", () => {
     expect(parseHash("#card=subscriptions&detail=s%3Ab1")).toEqual(s);
     const all: ViewState = {
       ...DEFAULT_STATE,
-      screen: "allPostings",
+      card: "postings",
+      fullScreen: true,
       search: "rema",
-      sort: LARGEST,
       amount: { min: 500, max: null },
-      objectGroup: "Abonnementer",
       detail: { kind: "posting", id: "p 7" },
     };
-    expect(toHash(all)).toBe("view=all-postings&q=rema&sort=largest&min=5&og=Abonnementer&detail=p%3Ap+7");
+    expect(toHash(all)).toBe("card=postings&view=full&q=rema&min=5&detail=p%3Ap+7");
     expect(parseHash(toHash(all))).toEqual(all);
     expect(parseHash("detail=p:p1").detail).toEqual({ kind: "posting", id: "p1" });
     expect(DEFAULT_STATE.detail).toBeNull();
@@ -94,7 +90,6 @@ describe("the view state's hash", () => {
       ...DEFAULT_STATE,
       period: { preset: "lastMonth" },
       accounts: ["1", "2"],
-      screen: "allPostings",
       amount: { min: 0, max: 500 },
     };
     expect(parseHash(toHash(s))).toEqual(s);
@@ -122,16 +117,15 @@ describe("the view state's hash", () => {
     expect(parseHash("category=Café").level).toEqual({ kind: "all" });
     expect(parseHash("unit=2026-13-01").unit).toBeNull();
     expect(parseHash("card=pie").card).toBe(DEFAULT_STATE.card);
-    expect(parseHash("view=all-postings&sort=random").sort).toEqual(DEFAULT_STATE.sort);
-    expect(parseHash("view=all-postings&min=500&max=100").amount).toBeNull();
-    expect(parseHash("view=all-postings&min=-5").amount).toBeNull();
-    expect(parseHash("view=all-postings&min=1.5&max=10").amount).toEqual({ min: 150, max: 1000 });
-    expect(parseHash("view=all-postings&min=99999999999999999999").amount).toBeNull();
-    expect(parseHash("view=elsewhere").screen).toBe("overview");
+    expect(parseHash("min=500&max=100").amount).toBeNull();
+    expect(parseHash("min=-5").amount).toBeNull();
+    expect(parseHash("min=1.5&max=10").amount).toEqual({ min: 150, max: 1000 });
+    expect(parseHash("min=99999999999999999999").amount).toBeNull();
+    expect(parseHash("view=elsewhere")).toEqual(DEFAULT_STATE);
   });
 
   it("reads the amount bounds in kroner with a dot for øre, and writes them back (D47)", () => {
-    const amount = (hash: string) => parseHash(`view=all-postings&${hash}`).amount;
+    const amount = (hash: string) => parseHash(hash).amount;
     expect(amount("max=1000.50")).toEqual({ min: null, max: 100050 });
     expect(amount("max=1000.5")).toEqual({ min: null, max: 100050 });
     expect(amount("max=1000")).toEqual({ min: null, max: 100000 });
@@ -146,24 +140,23 @@ describe("the view state's hash", () => {
       { min: 5, max: 100000 },
       { min: 0, max: 7 },
     ]) {
-      const s: ViewState = { ...DEFAULT_STATE, screen: "allPostings", amount: range };
+      const s: ViewState = { ...DEFAULT_STATE, amount: range };
       expect(parseHash(toHash(s))).toEqual(s);
     }
-    const hash = (min: number | null, max: number | null) =>
-      toHash({ ...DEFAULT_STATE, screen: "allPostings", amount: { min, max } });
-    expect(hash(null, 100050)).toBe("view=all-postings&max=1000.50");
-    expect(hash(5, 100000)).toBe("view=all-postings&min=0.05&max=1000");
-    expect(hash(0, null)).toBe("view=all-postings&min=0");
+    const hash = (min: number | null, max: number | null) => toHash({ ...DEFAULT_STATE, amount: { min, max } });
+    expect(hash(null, 100050)).toBe("max=1000.50");
+    expect(hash(5, 100000)).toBe("min=0.05&max=1000");
+    expect(hash(0, null)).toBe("min=0");
   });
 
-  it("reads and writes the search on every screen", () => {
+  it("reads and writes the search in both widths", () => {
     const s = parseHash("q=rema");
-    expect(s.screen).toBe("overview");
     expect(s.search).toBe("rema");
+    expect(parseHash("view=full&q=rema").search).toBe("rema");
     expect(toHash(s)).toBe("q=rema");
   });
 
-  it("reads and writes the chosen shop on every screen", () => {
+  it("reads and writes the chosen shop", () => {
     const s = parseHash("shop=Netto");
     expect(s.shop).toBe("Netto");
     expect(toHash(s)).toBe("shop=Netto");
@@ -171,44 +164,14 @@ describe("the view state's hash", () => {
     expect(parseHash("").shop).toBeNull();
   });
 
-  it("writes the shop right after the search and before the sort", () => {
-    const s: ViewState = { ...DEFAULT_STATE, screen: "allPostings", search: "rema", shop: "Netto", sort: LARGEST };
-    expect(toHash(s)).toBe("view=all-postings&q=rema&shop=Netto&sort=largest");
+  it("writes the shop right after the search and before the amount", () => {
+    const s: ViewState = { ...DEFAULT_STATE, search: "rema", shop: "Netto", amount: { min: 500, max: null } };
+    expect(toHash(s)).toBe("q=rema&shop=Netto&min=5");
   });
 
-  it("writes the keys of Alle posteringer in a fixed order", () => {
-    const s: ViewState = { ...DEFAULT_STATE, screen: "allPostings", search: "rema", sort: LARGEST, card: "postings" };
-    expect(toHash(s)).toBe("card=postings&view=all-postings&q=rema&sort=largest");
-  });
-
-  it("reads the sort and amount only on Alle posteringer", () => {
-    const s = parseHash("q=rema&sort=largest&min=5&card=postings");
-    expect(s.sort).toEqual(DEFAULT_STATE.sort);
-    expect(s.amount).toBeNull();
-    expect(toHash({ ...DEFAULT_STATE, sort: LARGEST })).toBe("");
-  });
-
-  it("round-trips og on Alle posteringer", () => {
-    const s: ViewState = {
-      ...DEFAULT_STATE,
-      screen: "allPostings",
-      amount: { min: 100, max: 50000 },
-      objectGroup: "Åbne aftaler & abonnementer",
-    };
-    expect(toHash(s)).toBe("view=all-postings&min=1&max=500&og=%C3%85bne+aftaler+%26+abonnementer");
-    expect(parseHash("#" + toHash(s))).toEqual(s);
-    expect(parseHash("view=all-postings&og=Abonnementer").objectGroup).toBe("Abonnementer");
-  });
-
-  it("an empty og is none", () => {
-    expect(parseHash("view=all-postings&og=").objectGroup).toBeNull();
-    expect(parseHash("view=all-postings").objectGroup).toBeNull();
-    expect(toHash({ ...DEFAULT_STATE, screen: "allPostings", objectGroup: null })).toBe("view=all-postings");
-  });
-
-  it("og is dropped on the overview", () => {
-    expect(parseHash("og=Abonnementer").objectGroup).toBeNull();
-    expect(toHash({ ...DEFAULT_STATE, objectGroup: "Abonnementer" })).toBe("");
+  it("ignores an old link's sort and object group, and never writes them", () => {
+    expect(parseHash("card=postings&sort=largest&og=Abonnementer")).toEqual({ ...DEFAULT_STATE, card: "postings" });
+    expect(toHash(parseHash("q=rema&sort=oldest&og=Abonnementer"))).toBe("q=rema");
   });
 
   it("full screen is view=full, after the card and before the search", () => {
@@ -221,14 +184,22 @@ describe("the view state's hash", () => {
 
   it("view=full holds for every tab and keeps the detail", () => {
     for (const card of ["bars", "postings", "subscriptions", "shops"] as const) {
-      expect(parseHash(`card=${card}&view=full`)).toMatchObject({ card, fullScreen: true, screen: "overview" });
+      expect(parseHash(`card=${card}&view=full`)).toMatchObject({ card, fullScreen: true });
     }
     const s: ViewState = { ...DEFAULT_STATE, card: "postings", fullScreen: true, detail: { kind: "posting", id: "p1" } };
     expect(toHash(s)).toBe("card=postings&view=full&detail=p%3Ap1");
   });
 
-  it("view=all-postings is not full screen, and an unknown view is neither", () => {
-    expect(parseHash("view=all-postings")).toMatchObject({ screen: "allPostings", fullScreen: false });
+  it("an old view=all-postings reads as Posteringer in full screen, without its sort and object group", () => {
+    const old = parseHash("#view=all-postings&sort=oldest&og=X");
+    expect(old).toEqual({ ...DEFAULT_STATE, card: "postings", fullScreen: true });
+    expect(toHash(old)).toBe("card=postings&view=full");
+    expect(parseHash("card=bars&view=all-postings&q=rema")).toEqual({
+      ...DEFAULT_STATE,
+      card: "postings",
+      fullScreen: true,
+      search: "rema",
+    });
     expect(parseHash("view=wide")).toEqual(DEFAULT_STATE);
   });
 
@@ -252,45 +223,6 @@ describe("the view state's hash", () => {
   });
 });
 
-describe("the postings' sort in the hash", () => {
-  const all = (sort: Sort): ViewState => ({ ...DEFAULT_STATE, screen: "allPostings", sort });
-  const sortIn = (hash: string) => new URLSearchParams(hash).get("sort");
-
-  it("reads the old sort names", () => {
-    const named: [string, Sort][] = [
-      ["newest", { column: "date", descending: true }],
-      ["oldest", { column: "date", descending: false }],
-      ["largest", { column: "amount", descending: true }],
-      ["smallest", { column: "amount", descending: false }],
-    ];
-    for (const [name, sort] of named) {
-      const s = parseHash(`view=all-postings&sort=${name}`);
-      expect(s.sort).toEqual(sort);
-      expect(sortIn(toHash(s))).toBe(name === "newest" ? null : name);
-    }
-  });
-
-  it("round-trips a text column's sort", () => {
-    const s = parseHash("view=all-postings&sort=account-desc");
-    expect(s.sort).toEqual({ column: "account", descending: true });
-    expect(toHash(s)).toBe("view=all-postings&sort=account-desc");
-    for (const column of ["text", "category", "account"] as const) {
-      for (const descending of [false, true]) {
-        expect(parseHash(toHash(all({ column, descending }))).sort).toEqual({ column, descending });
-      }
-    }
-  });
-
-  it("falls back on an unknown sort", () => {
-    expect(parseHash("view=all-postings&sort=price").sort).toEqual(DEFAULT_STATE.sort);
-    expect(parseHash("view=all-postings&sort=date-asc").sort).toEqual(DEFAULT_STATE.sort);
-  });
-
-  it("a default sort made anew writes no sort", () => {
-    expect(toHash(all({ column: "date", descending: true }))).toBe("view=all-postings");
-  });
-});
-
 describe("the next sort", () => {
   it("turns the sorted column around and starts another in its first direction", () => {
     const byDate: Sort = { column: "date", descending: true };
@@ -300,10 +232,8 @@ describe("the next sort", () => {
     expect(nextSort(LARGEST, "date", postingFirstDescending)).toEqual(byDate);
   });
 
-  it("compares sorts by what they say", () => {
-    expect(sameSort(LARGEST, { column: "amount", descending: true })).toBe(true);
-    expect(sameSort(LARGEST, { column: "amount", descending: false })).toBe(false);
-    expect(sameSort(LARGEST, { column: "date", descending: true })).toBe(false);
+  it("the postings start newest first", () => {
+    expect(DEFAULT_POSTING_SORT).toEqual({ column: "date", descending: true });
   });
 });
 

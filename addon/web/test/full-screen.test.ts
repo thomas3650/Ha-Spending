@@ -232,17 +232,16 @@ describe("the right card in full screen", () => {
     expect(location.hash).toBe("");
   });
 
-  it("is not on Alle posteringer, where Escape does nothing, and Back returns to it", async () => {
-    const { app, root } = await mount("card=postings");
-    await press(app, root);
-    location.hash = "#card=postings&view=all-postings";
-    await settle(app);
-    getByRole(root, "heading", { level: 1, name: da.allPostings });
-    await escape(app, document.body);
-    expect(location.hash).toBe("#card=postings&view=all-postings");
-    history.back();
-    await hashBecomes(app, "#card=postings&view=full");
+  it("an old link to Alle posteringer opens Posteringer in full screen, newest first, and Escape leaves it", async () => {
+    const { app, root } = await mount("view=all-postings&sort=oldest&og=Abonnementer");
     expectOn(root);
+    const card = getByRole(root, "region", { name: da.postingsTitle });
+    expect(queryByRole(root, "heading", { level: 1, name: /Alle posteringer/ })).toBeNull();
+    const date = getByRole(card, "columnheader", { name: da.columns.unitAndDate("month") });
+    expect(date.getAttribute("aria-sort")).toBe("descending");
+    await escape(app, document.body);
+    expect(location.hash).toBe("#card=postings");
+    expectOff(root);
   });
 
   it("keeps full screen when Escape closes the search's suggestions", async () => {
@@ -388,6 +387,37 @@ describe("the detail in full screen", () => {
     expect(shown()).toBe(0);
     expect(app.shadowRoot?.activeElement).toBe(button);
     expect(location.hash).toBe("#card=postings&detail=p%3Ap25");
+  });
+
+  it("with a detail open, the list has no Konto column, and it comes back when the detail closes", async () => {
+    const { app, root } = await mountWith("card=postings");
+    await press(app, root);
+    getByRole(postingsCard(root), "columnheader", { name: da.columns.account });
+    fireEvent.click(rowButton(root, "Café Søde", "2026-10-26"));
+    await settle(app);
+    const card = postingsCard(root);
+    getByRole(card, "group", { name: "Café Søde" });
+    expect(queryByRole(card, "columnheader", { name: da.columns.account })).toBeNull();
+    const list = getByRole(card, "columnheader", { name: da.columns.category }).closest("table") as HTMLElement;
+    expect(queryAllByRole(list, "cell", { name: "Kreditkort" })).toEqual([]);
+    fireEvent.click(getByRole(getByRole(card, "group", { name: "Café Søde" }), "button", { name: da.close }));
+    await settle(app);
+    getByRole(postingsCard(root), "columnheader", { name: da.columns.account });
+  });
+
+  it("a sort by Konto falls back to the date while the detail hides the column, and returns after", async () => {
+    const { app, root } = await mountWith("card=postings");
+    await press(app, root);
+    fireEvent.click(getByRole(postingsCard(root), "button", { name: da.columns.account }));
+    await settle(app);
+    const sortOf = (name: string) => getByRole(postingsCard(root), "columnheader", { name }).getAttribute("aria-sort");
+    expect(sortOf(da.columns.account)).not.toBeNull();
+    fireEvent.click(getAllByRole(postingsCard(root), "button", { name: "Café Søde" })[0]);
+    await settle(app);
+    expect(sortOf(da.columns.unitAndDate("month"))).toBe("descending");
+    fireEvent.click(getByRole(getByRole(postingsCard(root), "group", { name: "Café Søde" }), "button", { name: da.close }));
+    await settle(app);
+    expect(sortOf(da.columns.account)).not.toBeNull();
   });
 
   it("toggling full screen with a detail opened by a row leaves the focus on the button", async () => {

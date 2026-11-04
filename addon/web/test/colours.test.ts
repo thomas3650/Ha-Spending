@@ -41,11 +41,11 @@ describe("the colours", () => {
     const inCircle = colourByKey("group=").get(null);
     expect(inCircle).toBeDefined();
     expect(inCircle).not.toBe(NO_PIECE);
-    expect(categoryColours(ctxOf("group=&view=all-postings")).get(null)).toBe(inCircle);
-    expect(categoryColours(ctxOf("group=&category=&view=all-postings")).get(null)).toBe(inCircle);
+    expect(categoryColours(ctxOf("group=&card=postings&view=full")).get(null)).toBe(inCircle);
+    expect(categoryColours(ctxOf("group=&category=&card=postings&view=full")).get(null)).toBe(inCircle);
   });
 
   it("greys Uden kategori without a main group filter", () => {
-    expect(categoryColours(ctxOf("view=all-postings")).get(null)).toBe(NO_PIECE);
+    expect(categoryColours(ctxOf("card=postings&view=full")).get(null)).toBe(NO_PIECE);
   });
 });

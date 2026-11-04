@@ -14,11 +14,11 @@ import { barItems, categoryColours, circleItems, circleSpan, circleTotal, partCo
 import { finerUnits, levelName, type ViewContext } from "../model/context";
 import { detailView } from "../model/detail";
 import { matches, shopSuggestions } from "../model/filter";
-import { postingList, shownPostingSort, showsCategory, watchCategoryWidth } from "../model/postings";
+import { postingList, shownColumns, shownPostingSort, watchCategoryWidth } from "../model/postings";
 import { type HiddenState, shopList } from "../model/shops";
 import { DEFAULT_SUBSCRIPTION_SORT, subscriptionTable } from "../model/subscriptions";
 import { hasShops } from "../state/actions";
-import { type Card, DEFAULT_STATE, type Sort, type SubscriptionColumn, type Sorted } from "../state/view";
+import { type Card, DEFAULT_POSTING_SORT, type Sort, type SubscriptionColumn, type Sorted } from "../state/view";
 
 const LEFT_TITLE = "hs-left-title";
 const RIGHT_TITLE = "hs-right-title";
@@ -47,7 +47,7 @@ export class Overview extends LitElement {
 
   constructor() {
     super();
-    this.postingsSort = DEFAULT_STATE.sort;
+    this.postingsSort = DEFAULT_POSTING_SORT;
     this.subscriptionsSort = DEFAULT_SUBSCRIPTION_SORT;
     this.hiddenShops = { kind: "loading" };
     this.shopsAll = false;
@@ -156,8 +156,8 @@ export class Overview extends LitElement {
       body = html`<p class="empty">${unfiltered ? da.noSpending : da.noMatch}</p>`;
     } else {
       const units = chosen === null ? ctx.units : [chosen];
-      const category = showsCategory(this.ctx.state.fullScreen);
-      const sort = shownPostingSort(this.postingsSort, category);
+      const columns = shownColumns(ctx.state.fullScreen, ctx.state.detail !== null);
+      const sort = shownPostingSort(this.postingsSort, columns);
       const list = postingList(postings, units, ctx, sort, categoryColours(ctx));
       body = html`<hs-postings
           .list=${list}
@@ -165,7 +165,8 @@ export class Overview extends LitElement {
           .shop=${shop}
           .grouping=${g}
           .sort=${sort}
-          .showCategory=${category}
+          .showCategory=${columns.category}
+          .showAccount=${columns.account}
           .marked=${ctx.state.detail}
         ></hs-postings>`;
     }

@@ -22,17 +22,16 @@ import { sortHeaderStyles } from "./components/sort-header";
 import { searchStyles } from "./components/search";
 import { shopsStyles } from "./components/shops";
 import { subscriptionsStyles } from "./components/subscriptions";
-import { type LevelLists, topCardStyles } from "./components/top-card";
+import { type CategoryChoice, type LevelLists, topCardStyles } from "./components/top-card";
 import { LoadError, type LoadErrorCode, loadData, loadHiddenShops, setHiddenShop } from "./data/api";
 import { unitName } from "./format";
 import { da } from "./i18n/da";
 import { levelRows } from "./model/circle";
 import { type ViewContext, viewContext } from "./model/context";
-import { keyCards, objectGroupCards } from "./model/key-numbers";
-import { shownPostingSort, showsCategory } from "./model/postings";
+import { keyCards, type KeyLink, objectGroupCards } from "./model/key-numbers";
+import { shownColumns, shownPostingSort } from "./model/postings";
 import type { HiddenState } from "./model/shops";
 import { DEFAULT_SUBSCRIPTION_SORT, shownSubscriptionSort, subscriptionFirstDescending } from "./model/subscriptions";
-import { allPostingsStyles, type CategoryChoice } from "./screens/all-postings";
 import "./screens/overview";
 import { overviewStyles } from "./screens/overview";
 import {
@@ -42,31 +41,26 @@ import {
   detailResolves,
   keepDetail,
   normalise,
-  openAllPostingsFresh,
   openDetail,
-  openObjectGroupPostings,
   openPart,
+  openPostingsFull,
   openShop,
+  openSubscriptions,
   removeCategory,
   removeMainGroup,
   removeShop,
   removeUnit,
   setAccounts,
-  setAmount,
   setCard,
   setCategory,
   setFullScreen,
   setMainGroup,
-  setObjectGroup,
   setPeriod,
   setSearch,
-  setSort,
-  setUnit,
 } from "./state/actions";
 import {
-  type AmountRange,
   type Card,
-  DEFAULT_STATE,
+  DEFAULT_POSTING_SORT,
   type DetailKey,
   nextSort,
   parseHash,
@@ -161,7 +155,6 @@ export class SpendingApp extends LitElement {
     subscriptionsStyles,
     shopsStyles,
     overviewStyles,
-    allPostingsStyles,
     css`
       :host {
         display: block;
@@ -271,7 +264,7 @@ export class SpendingApp extends LitElement {
     this.load = { kind: "idle" };
     this.accounts = null;
     this.earliest = undefined;
-    this.postingsSort = DEFAULT_STATE.sort;
+    this.postingsSort = DEFAULT_POSTING_SORT;
     this.subscriptionsSort = DEFAULT_SUBSCRIPTION_SORT;
     this.shopsAll = false;
     this.shopsHidden = false;
@@ -283,7 +276,8 @@ export class SpendingApp extends LitElement {
     const next = parseHash(location.hash);
     if (toHash(next) === toHash(this.state)) return;
     const prev = this.state;
-    if (prev.detail !== null && next.detail === null && prev.card === next.card && prev.screen === next.screen) {
+    const same = prev.card === next.card && prev.fullScreen === next.fullScreen;
+    if (prev.detail !== null && next.detail === null && same) {
       this.closed = prev.detail;
     }
     this.change(next);
@@ -346,14 +340,17 @@ export class SpendingApp extends LitElement {
     this.change(next);
   }
 
-  /** A push before a pending Back lands would go onto the entry being left, so it waits for the landing. */
-  private openFullScreen(): void {
+  /**
+   * ⤢, or "N posteringer →" with `open` set to openPostingsFull. A push before a pending Back lands would go onto the
+   * entry being left, so it waits for the landing and builds from the landed state.
+   */
+  private openFullScreen(open: (s: ViewState) => ViewState = (s) => setFullScreen(s, true)): void {
     if (this.backPending) {
-      this.afterBack = () => this.openFullScreen();
+      this.afterBack = () => this.openFullScreen(open);
       return;
     }
     if (this.state.fullScreen) return;
-    const next = setFullScreen(this.state, true);
+    const next = open(this.state);
     history.pushState(FULL_ENTRY, "", `#${toHash(next)}`);
     this.change(next);
   }
@@ -471,31 +468,28 @@ export class SpendingApp extends LitElement {
 
   private async focusDetail(): Promise<void> {
     const root = this.renderRoot;
-    await root.querySelector<LitElement>("hs-overview, hs-all-postings")?.updateComplete;
+    await root.querySelector<LitElement>("hs-overview")?.updateComplete;
     root.querySelector<HTMLElement>("hs-detail h3")?.focus({ preventScroll: this.besideList() });
   }
 
   /** In a split of 1024 px or wider the detail stands beside the list, so a focus must not scroll the page. */
   private besideList(): boolean {
-    const split = this.state.screen === "allPostings" || this.state.fullScreen;
-    return split && window.matchMedia("(min-width: 1024px)").matches;
+    return this.state.fullScreen && window.matchMedia("(min-width: 1024px)").matches;
   }
 
-  /** The row's button when its list shows it, else the heading of the card or the page (detail spec §1.3). */
+  /** The row's button when its list shows it, else the card's heading (detail spec §1.3). */
   private async focusRow(key: DetailKey): Promise<void> {
     const root = this.renderRoot;
-    await root.querySelector<LitElement>("hs-overview, hs-all-postings")?.updateComplete;
+    await root.querySelector<LitElement>("hs-overview")?.updateComplete;
     const wanted = `${key.kind === "subscription" ? "s" : "p"}:${key.id}`;
     const button = [...root.querySelectorAll<HTMLElement>("[data-detail]")].find(
       (b) => b.getAttribute("data-detail") === wanted,
     );
-    const heading = root.querySelector<HTMLElement>(
-      this.state.screen === "overview" ? "#hs-right-title" : "hs-top-card h1",
-    );
+    const heading = root.querySelector<HTMLElement>("#hs-right-title");
     (button ?? heading)?.focus({ preventScroll: this.besideList() });
   }
 
-  /** pushState and replaceState fire no event, so the state is set here. A new card or screen closes the detail. */
+  /** pushState and replaceState fire no event, so the state is set here. A new card closes the detail. */
   apply(choice: ViewState, mode: "push" | "replace"): void {
     const next = keepDetail(this.state, choice);
     const hash = toHash(next);
@@ -599,66 +593,58 @@ export class SpendingApp extends LitElement {
     </div>`;
   }
 
+  private onKeyLink(event: CustomEvent<KeyLink["kind"]>): void {
+    if (event.detail === "postings") this.openFullScreen(openPostingsFull);
+    else this.push(openSubscriptions(this.state));
+  }
+
   private keyNumbers(ctx: ViewContext) {
-    const cards = keyCards(ctx, `#${toHash(keepDetail(this.state, openAllPostingsFresh(this.state)))}`);
-    const objectGroups = objectGroupCards(
-      ctx,
-      (t) => `#${toHash(keepDetail(this.state, openObjectGroupPostings(this.state, t)))}`,
-    );
+    const cards = keyCards(ctx, `#${toHash(openPostingsFull(this.state))}`);
+    const objectGroups = objectGroupCards(ctx, `#${toHash(keepDetail(this.state, openSubscriptions(this.state)))}`);
     this.boxes = cards.length + objectGroups.length;
-    return html`<hs-key-numbers .cards=${cards} .objectGroups=${objectGroups}></hs-key-numbers>`;
+    return html`<hs-key-numbers
+      .cards=${cards}
+      .objectGroups=${objectGroups}
+      @key-link=${this.onKeyLink}
+    ></hs-key-numbers>`;
+  }
+
+  private postingSort(column: PostingColumn): void {
+    const columns = shownColumns(this.state.fullScreen, this.state.detail !== null);
+    this.postingsSort = nextSort(shownPostingSort(this.postingsSort, columns), column, postingFirstDescending);
   }
 
   private ready(ctx: ViewContext) {
-    const overview = this.state.screen === "overview";
     return html`
       ${ctx.data.mainGroupsFound ? nothing : html`<p class="card line status" role="status">${da.noRuleGroup}</p>`}
-      ${overview
-        ? html`${this.state.fullScreen ? nothing : this.keyNumbers(ctx)}
-            <hs-overview
-              .ctx=${ctx}
-              .postingsSort=${this.postingsSort}
-              .subscriptionsSort=${this.subscriptionsSort}
-              .hiddenShops=${this.hiddenShops}
-              .hiddenWriteFailed=${this.hiddenWriteFailed}
-              .shopsAll=${this.shopsAll}
-              .shopsHidden=${this.shopsHidden}
-              @posting-sort=${(e: CustomEvent<PostingColumn>) =>
-                (this.postingsSort = nextSort(shownPostingSort(this.postingsSort, showsCategory(this.state.fullScreen)), e.detail, postingFirstDescending))}
-              @subscription-sort=${(e: CustomEvent<SubscriptionColumn>) =>
-                (this.subscriptionsSort = nextSort(
-                  shownSubscriptionSort(this.subscriptionsSort, this.state.level.kind),
-                  e.detail,
-                  subscriptionFirstDescending,
-                ))}
-              @full-screen-toggle=${() => (this.state.fullScreen ? this.closeFullScreen() : this.openFullScreen())}
-              @shops-all-toggle=${() => (this.shopsAll = !this.shopsAll)}
-              @shops-hidden-toggle=${() => (this.shopsHidden = !this.shopsHidden)}
-              @shop-hide=${this.onShopHide}
-              @shop-open=${(e: CustomEvent<string>) => this.push(openShop(this.state, e.detail))}
-              @part-click=${(e: CustomEvent<CircleSelection>) => this.push(openPart(this.state, e.detail.key))}
-              @unit-click=${(e: CustomEvent<UnitSelection>) => this.push(chooseUnit(this.state, e.detail.fullStart))}
-              @card-change=${(e: CustomEvent<Card>) => this.push(setCard(this.state, e.detail))}
-              @search-input=${this.onSearch}
-              @shop-choose=${this.onShopChoose}
-              @shop-remove=${this.onShopRemove}
-            ></hs-overview>`
-        : html`<hs-all-postings
-            .ctx=${ctx}
-            @search-input=${this.onSearch}
-            @shop-choose=${this.onShopChoose}
-            @shop-remove=${this.onShopRemove}
-            @sort-change=${(e: CustomEvent<Sort>) => this.push(setSort(this.state, e.detail))}
-            @remove-main-group=${() => this.push(removeMainGroup(this.state))}
-            @remove-category=${() => this.push(removeCategory(this.state))}
-            @remove-unit=${() => this.push(removeUnit(this.state))}
-            @set-amount=${(e: CustomEvent<AmountRange | null>) => this.push(setAmount(this.state, e.detail))}
-            @set-object-group=${(e: CustomEvent<string | null>) => this.push(setObjectGroup(this.state, e.detail))}
-            @set-unit=${(e: CustomEvent<string>) => this.push(setUnit(this.state, e.detail))}
-            @set-main-group=${(e: CustomEvent<string | null>) => this.push(setMainGroup(this.state, e.detail))}
-            @set-category=${(e: CustomEvent<CategoryChoice>) =>
-              this.push(setCategory(this.state, e.detail.mainGroup, e.detail.category))}
-          ></hs-all-postings>`}
+      ${this.state.fullScreen ? nothing : this.keyNumbers(ctx)}
+        <hs-overview
+          .ctx=${ctx}
+          .postingsSort=${this.postingsSort}
+          .subscriptionsSort=${this.subscriptionsSort}
+          .hiddenShops=${this.hiddenShops}
+          .hiddenWriteFailed=${this.hiddenWriteFailed}
+          .shopsAll=${this.shopsAll}
+          .shopsHidden=${this.shopsHidden}
+          @posting-sort=${(e: CustomEvent<PostingColumn>) => this.postingSort(e.detail)}
+          @subscription-sort=${(e: CustomEvent<SubscriptionColumn>) =>
+            (this.subscriptionsSort = nextSort(
+              shownSubscriptionSort(this.subscriptionsSort, this.state.level.kind),
+              e.detail,
+              subscriptionFirstDescending,
+            ))}
+          @full-screen-toggle=${() => (this.state.fullScreen ? this.closeFullScreen() : this.openFullScreen())}
+          @shops-all-toggle=${() => (this.shopsAll = !this.shopsAll)}
+          @shops-hidden-toggle=${() => (this.shopsHidden = !this.shopsHidden)}
+          @shop-hide=${this.onShopHide}
+          @shop-open=${(e: CustomEvent<string>) => this.push(openShop(this.state, e.detail))}
+          @part-click=${(e: CustomEvent<CircleSelection>) => this.push(openPart(this.state, e.detail.key))}
+          @unit-click=${(e: CustomEvent<UnitSelection>) => this.push(chooseUnit(this.state, e.detail.fullStart))}
+          @card-change=${(e: CustomEvent<Card>) => this.push(setCard(this.state, e.detail))}
+          @search-input=${this.onSearch}
+          @shop-choose=${this.onShopChoose}
+          @shop-remove=${this.onShopRemove}
+        ></hs-overview>
     `;
   }
 
@@ -682,10 +668,10 @@ export class SpendingApp extends LitElement {
       case "ready":
         return ctx === null ? nothing : this.ready(ctx);
       default:
-        return this.state.screen === "overview"
-          ? html`${this.state.fullScreen ? nothing : html`<hs-key-numbers .cards=${null} .boxes=${this.boxes}></hs-key-numbers>`}
-              ${this.loadingHalves()}`
-          : html`<section class="card half" role="region" aria-busy="true" aria-label=${da.loading}></section>`;
+        return html`${this.state.fullScreen
+            ? nothing
+            : html`<hs-key-numbers .cards=${null} .boxes=${this.boxes}></hs-key-numbers>`}
+          ${this.loadingHalves()}`;
     }
   }
 

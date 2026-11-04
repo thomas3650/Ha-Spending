@@ -182,7 +182,7 @@ export const detailStyles = css`
   }
   .detail-split.open {
     display: grid;
-    grid-template-columns: minmax(0, 11fr) minmax(0, 9fr);
+    grid-template-columns: minmax(0, 1fr) 380px;
   }
   .detail-split.open > .split-list {
     padding-right: 16px;

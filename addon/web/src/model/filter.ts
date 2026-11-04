@@ -1,6 +1,4 @@
-import { type ClassifiedPosting, type Posting, within } from "@ha-spending/shared";
-import type { AmountRange } from "../state/view";
-import type { ViewContext } from "./context";
+import type { ClassifiedPosting, Posting } from "@ha-spending/shared";
 
 const SUGGESTIONS = 8;
 
@@ -41,30 +39,7 @@ export function shopSuggestions(base: Posting[], search: string): ShopSuggestion
     .slice(0, SUGGESTIONS);
 }
 
-export function inAmount(p: ClassifiedPosting, range: AmountRange | null): boolean {
-  if (range === null) return true;
-  if (range.min !== null && p.amount < range.min) return false;
-  return range.max === null || p.amount <= range.max;
-}
-
 /** Oldest first, and by id within a day, so the order is stable. */
 export function byDate(a: ClassifiedPosting, b: ClassifiedPosting): number {
   return a.date.localeCompare(b.date) || a.id.localeCompare(b.id);
-}
-
-/** Alle posteringer's postings before the object group, the search and the chosen shop. */
-export function objectGroupBase(ctx: ViewContext): ClassifiedPosting[] {
-  return within(ctx.shown, ctx.chosen ?? ctx.timeline.period).filter((p) => inAmount(p, ctx.state.amount));
-}
-
-/** Alle posteringer's postings before the search and the chosen shop. */
-export function searchBase(ctx: ViewContext): ClassifiedPosting[] {
-  const group = ctx.state.objectGroup;
-  const base = objectGroupBase(ctx);
-  return group === null ? base : base.filter((p) => p.subscription?.objectGroup === group);
-}
-
-export function filteredPostings(ctx: ViewContext): ClassifiedPosting[] {
-  const { search, shop } = ctx.state;
-  return searchBase(ctx).filter((p) => matches(p, search, shop));
 }

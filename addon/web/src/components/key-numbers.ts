@@ -1,9 +1,13 @@
 import { css, html, LitElement, nothing } from "lit";
 import { count } from "../format";
 import { da } from "../i18n/da";
-import type { KeyCard } from "../model/key-numbers";
+import type { KeyCard, KeyLink } from "../model/key-numbers";
+import { fire } from "./chip";
 
-/** The period's key numbers, then one per object group; their placeholder while `cards` is null. */
+/**
+ * The period's key numbers, then one per object group; their placeholder while `cards` is null. A link's plain click
+ * fires `key-link` with its kind, so the app can mark the history entry it pushes; the href serves any other click.
+ */
 export class KeyNumbers extends LitElement {
   static override properties = {
     cards: { attribute: false },
@@ -23,19 +27,28 @@ export class KeyNumbers extends LitElement {
     this.boxes = 2;
   }
 
-  private postingsLine(c: KeyCard) {
-    const p = c.postings;
-    if (p === undefined) return nothing;
-    return p.count === 0
-      ? html`<div class="kpi-link">${count(0)}</div>`
-      : html`<a class="kpi-link" href=${p.href}>${da.postingsLink(count(p.count))}</a>`;
+  private follow(event: MouseEvent, link: KeyLink): void {
+    if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+    event.preventDefault();
+    fire(this, "key-link", link.kind);
+  }
+
+  private linkLine(c: KeyCard) {
+    const link = c.link;
+    if (link === undefined) return nothing;
+    if (link.kind === "postings" && link.count === 0) return html`<div class="kpi-link">${count(0)}</div>`;
+    const text =
+      link.kind === "postings"
+        ? da.postingsLink(count(link.count))
+        : html`${da.showSubscriptions} <span aria-hidden="true">→</span>`;
+    return html`<a class="kpi-link" href=${link.href} @click=${(e: MouseEvent) => this.follow(e, link)}>${text}</a>`;
   }
 
   private plainCard(c: KeyCard) {
     return html`<div class="card kpi" role="group" aria-label=${c.label}>
       <div class="kpi-label">${c.label}</div>
       <div class="kpi-value">${c.value}</div>
-      ${this.postingsLine(c)}
+      ${this.linkLine(c)}
       <div class="kpi-sub">${c.sub}</div>
     </div>`;
   }

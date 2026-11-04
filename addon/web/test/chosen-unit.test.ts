@@ -154,20 +154,15 @@ describe("the object group cards in a chosen unit", () => {
     getByText(fixed, da.noPayments);
   });
 
-  it("link to Alle posteringer with the unit and the main group kept, counting the link's N", async () => {
+  it("the first key number's link keeps the unit and the main group, and the list counts the link's N", async () => {
     const { app, root } = await mount("unit=2026-09-01&group=Mad", { answer });
-    const link = getByRole(
-      getByRole(root, "group", { name: da.levelInUnit("Abonnementer", SEPTEMBER) }),
-      "link",
-      { name: da.postingsLink(count(1)) },
-    );
-    location.hash = link.getAttribute("href") ?? "";
-    window.dispatchEvent(new HashChangeEvent("hashchange"));
+    const link = getByRole(getByRole(root, "group", { name: da.levelInUnit("Mad", SEPTEMBER) }), "link", {
+      name: da.postingsLink(count(3)),
+    });
+    fireEvent.click(link);
     await settle(app);
-    getByRole(root, "heading", { level: 1, name: da.allPostings });
+    getByRole(root, "button", { name: da.fullScreen, pressed: true });
     getByRole(root, "button", { name: da.remove(SEPTEMBER) });
-    getByRole(root, "button", { name: da.remove("Abonnementer") });
-    getByRole(root, "button", { name: da.remove(da.mainGroupChip("Mad")) });
-    getByText(root, da.summary(count(1), kr(70000)));
+    getByText(root, da.summary(count(3), kr(350000)));
   });
 });

@@ -1,14 +1,5 @@
 import { groupingFor, type Level, type SpendingData, unitsOf } from "@ha-spending/shared";
-import {
-  type AmountRange,
-  type Card,
-  DEFAULT_STATE,
-  type DetailKey,
-  type PeriodChoice,
-  periodOf,
-  type Sort,
-  type ViewState,
-} from "./view";
+import { type Card, type DetailKey, type PeriodChoice, periodOf, type ViewState } from "./view";
 
 const ALL: Level = { kind: "all" };
 
@@ -48,10 +39,6 @@ export function chooseUnit(s: ViewState, fullStart: string): ViewState {
   return s.unit === fullStart ? withoutUnit(s) : { ...s, unit: fullStart, card: "postings" };
 }
 
-export function setUnit(s: ViewState, fullStart: string): ViewState {
-  return s.unit === fullStart ? withoutUnit(s) : { ...s, unit: fullStart };
-}
-
 export function setCard(s: ViewState, card: Card): ViewState {
   return { ...s, card };
 }
@@ -60,24 +47,19 @@ export function setFullScreen(s: ViewState, on: boolean): ViewState {
   return { ...s, fullScreen: on };
 }
 
-/** The key number's way in: the search and the chosen shop go (D31, D35). */
-export function openAllPostingsFresh(s: ViewState): ViewState {
-  return { ...s, screen: "allPostings", sort: DEFAULT_STATE.sort, amount: null, objectGroup: null, search: "", shop: null };
+/** "N posteringer →": the quick filter and the detail go, so the list's count matches the link (top-filter §3.1). */
+export function openPostingsFull(s: ViewState): ViewState {
+  return { ...s, card: "postings", fullScreen: true, search: "", shop: null, amount: null, detail: null };
 }
 
-/** The object group's key number: its count follows the chosen unit, so the unit stays. */
-export function openObjectGroupPostings(s: ViewState, title: string): ViewState {
-  return { ...openAllPostingsFresh(s), objectGroup: title };
+/** An object group's "Vis faste udgifter →"; the key numbers are only shown in the normal card (spec §5). */
+export function openSubscriptions(s: ViewState): ViewState {
+  return { ...s, card: "subscriptions", fullScreen: false };
 }
 
 /** The overview's "Alt forbrug": the unit, the main group and the category go; the search and the shop stay. */
 export function clearChoices(s: ViewState): ViewState {
   return { ...withoutUnit(s), level: ALL };
-}
-
-/** Alle posteringer's "Alt forbrug": only what belongs to Alle posteringer goes. */
-export function backToOverview(s: ViewState): ViewState {
-  return { ...s, screen: "overview", sort: DEFAULT_STATE.sort, amount: null, objectGroup: null };
 }
 
 /** A category implies its main group, so it goes too (D21). */
@@ -119,18 +101,6 @@ export function removeShop(s: ViewState): ViewState {
   return { ...s, shop: null };
 }
 
-export function setSort(s: ViewState, sort: Sort): ViewState {
-  return { ...s, sort };
-}
-
-export function setAmount(s: ViewState, amount: AmountRange | null): ViewState {
-  return { ...s, amount: amount && (amount.min !== null || amount.max !== null) ? amount : null };
-}
-
-export function setObjectGroup(s: ViewState, title: string | null): ViewState {
-  return { ...s, objectGroup: title };
-}
-
 export function openDetail(s: ViewState, key: DetailKey): ViewState {
   return { ...s, detail: key };
 }
@@ -139,24 +109,27 @@ export function closeDetail(s: ViewState): ViewState {
   return { ...s, detail: null };
 }
 
-/** The detail belongs to the card and the screen it was opened on; every other choice keeps it (spec §5). */
+/**
+ * The detail belongs to the card and the width it was opened in; every other choice keeps it (spec §5). Turning full
+ * screen on keeps it too, as ⤢ does (top-filter spec §3.2).
+ */
 export function keepDetail(prev: ViewState, next: ViewState): ViewState {
-  return next.card === prev.card && next.screen === prev.screen ? next : closeDetail(next);
+  const width = next.fullScreen === prev.fullScreen || next.fullScreen;
+  return next.card === prev.card && width ? next : closeDetail(next);
 }
 
 /** Spec §5's "Where it resolves", on the answer as it came; the detail itself ignores the level and the unit. */
 export function detailResolves(s: ViewState, data: SpendingData, today: string): boolean {
   const key = s.detail;
   if (key === null) return true;
-  const overview = s.screen === "overview";
   const listed = (id: string) => data.subscriptions.some((b) => b.id === id);
-  if (key.kind === "subscription") return overview && s.card === "subscriptions" && listed(key.id);
+  if (key.kind === "subscription") return s.card === "subscriptions" && listed(key.id);
   const p = data.postings.find((q) => q.id === key.id);
   if (p === undefined) return false;
   const period = periodOf(s.period, today, data.earliestPostingDate);
   if (p.date < period.start || p.date > period.end) return false;
   if (s.accounts !== null && !s.accounts.includes(p.account)) return false;
-  if (!overview || s.card === "postings") return true;
+  if (s.card === "postings") return true;
   return s.card === "subscriptions" && p.subscription !== null && listed(p.subscription.id);
 }
 

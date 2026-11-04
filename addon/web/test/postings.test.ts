@@ -1,4 +1,4 @@
-import { type Grouping, type Period, type SpendingData, unitsOf } from "@ha-spending/shared";
+import { type ClassifiedPosting, type Grouping, type Period, type SpendingData, unitsOf } from "@ha-spending/shared";
 import { fireEvent, getAllByRole, getByRole, queryAllByRole, queryByRole } from "@testing-library/dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
@@ -6,8 +6,8 @@ import "../src/components/postings";
 import { count, postingAmount, tableDate, unitName } from "../src/format";
 import { da } from "../src/i18n/da";
 import { viewContext } from "../src/model/context";
-import { groupedPostings, linkBase, type PostingList, postingHref } from "../src/model/postings";
-import { DEFAULT_STATE, type ViewState } from "../src/state/view";
+import { groupedPostings, linkBase, type PostingList, postingHref, postingList } from "../src/model/postings";
+import { DEFAULT_STATE, type Sort, type ViewState } from "../src/state/view";
 import type { SpendingApp } from "../src/app";
 import { answerFor, LINK } from "./fixture";
 import { json, mount, settle, unmount } from "./mount";
@@ -31,10 +31,14 @@ function weekList(newestFirst = true): PostingList {
   return groupedPostings(ctx.shown, ctx.units, ctx, newestFirst, COLOURS);
 }
 
-async function render(list: PostingList, opts: { showCategory?: boolean; grouping?: Grouping } = {}) {
+async function render(
+  list: PostingList,
+  opts: { showCategory?: boolean; showAccount?: boolean; grouping?: Grouping } = {},
+) {
   const el = document.createElement("hs-postings");
   el.list = list;
   el.showCategory = opts.showCategory ?? false;
+  if (opts.showAccount !== undefined) el.showAccount = opts.showAccount;
   el.grouping = opts.grouping ?? "month";
   document.body.append(el);
   await el.updateComplete;
@@ -156,14 +160,25 @@ describe("the postings list", () => {
 
   it("shows the shop, with the bank text as its title", async () => {
     const el = await render(listOf());
-    const cell = getAllByRole(el, "cell", { name: "Netto" })[0];
-    expect(cell.getAttribute("title")).toBe("DK NETTO 4521");
+    getAllByRole(el, "cell", { name: "Netto", description: "DK NETTO 4521" });
   });
 
-  it("shows the bank text of a posting with no shop, without a title", async () => {
+  it("shows the bank text of a posting with no shop, with its full text as its title", async () => {
     const el = await render(listOf());
-    const cell = getAllByRole(el, "cell", { name: "Husleje" })[0];
-    expect(cell.hasAttribute("title")).toBe(false);
+    getAllByRole(el, "cell", { name: "Husleje", description: "Husleje" });
+  });
+
+  it("shows the Konto column unless told not to, and the group line spans the columns shown", async () => {
+    const shown = await render(listOf());
+    getByRole(shown, "columnheader", { name: da.columns.account });
+    getAllByRole(shown, "cell", { name: "Fælleskonto" });
+    document.body.replaceChildren();
+    const hidden = await render(listOf(), { showCategory: true, showAccount: false });
+    expect(queryByRole(hidden, "columnheader", { name: da.columns.account })).toBeNull();
+    expect(queryAllByRole(hidden, "cell", { name: "Fælleskonto" })).toEqual([]);
+    const columns = getAllByRole(hidden, "columnheader").length;
+    expect(columns).toBe(4);
+    expect(getAllByRole(hidden, "rowheader")[0].getAttribute("colspan")).toBe(String(columns));
   });
 
   it("names the text column for the shop and the text", async () => {
@@ -398,7 +413,7 @@ describe("sorting the postings by their headers", () => {
   });
 
   it("Uden kategori sorts last both ways", async () => {
-    const { app, root } = await mount("view=all-postings");
+    const { app, root } = await mount("card=postings&view=full");
     const category = (r: HTMLElement) => getAllByRole(r, "cell")[2].textContent?.trim();
     await sortBy(app, root, da.columns.category);
     expect(distinct(rows(root).map(category))).toEqual([
@@ -435,10 +450,7 @@ describe("sorting the postings by their headers", () => {
     const first = getByRole(root, "group", { name: da.spendingInPeriod });
     fireEvent.click(getByRole(first, "link", { name: /→$/ }));
     await settle(app);
-    fireEvent.click(getByRole(getByRole(root, "navigation", { name: da.trail }), "link", { name: da.allSpending }));
-    await settle(app);
-    fireEvent.click(getByRole(getByRole(root, "group", { name: da.view }), "button", { name: da.postings }));
-    await settle(app);
+    getByRole(root, "button", { name: da.fullScreen, pressed: true });
     expect(header(root, da.columns.amount).getAttribute("aria-sort")).toBe("ascending");
     expect(amounts(root)[0]).toBe(postingAmount(800000));
   });
@@ -450,5 +462,48 @@ describe("sorting the postings by their headers", () => {
     await sortBy(app, root, da.columns.amount);
     expect(location.hash).toBe(before);
     expect(push).not.toHaveBeenCalled();
+  });
+});
+
+describe("the flat list's order", () => {
+  const TODAY_DATA = answerFor(THIS_YEAR);
+
+  function posting(id: string, date: string, amount: number): ClassifiedPosting {
+    return {
+      id,
+      groupId: id,
+      date,
+      text: id,
+      account: "1",
+      category: null,
+      shop: null,
+      kind: "spending",
+      amount,
+      subscription: null,
+      mainGroup: null,
+    };
+  }
+
+  function flatIds(ps: ClassifiedPosting[], sort: Sort): string[] {
+    const ctx = viewContext({ ...TODAY_DATA, postings: ps }, DEFAULT_STATE, TODAY);
+    const list = postingList(ps, [], ctx, sort, new Map());
+    if (list.kind !== "flat") throw new Error("flat expected");
+    return list.rows.map((r) => r.posting.shop ?? r.posting.text);
+  }
+
+  it("sorts by a column, ties by the newest date then id", () => {
+    const ps = [posting("b", "2026-02-01", 100), posting("a", "2026-02-01", 300), posting("c", "2026-03-01", 100)];
+    expect(flatIds(ps, { column: "amount", descending: true })).toEqual(["a", "c", "b"]);
+    expect(flatIds(ps, { column: "amount", descending: false })).toEqual(["c", "b", "a"]);
+  });
+
+  it("sorts the text the Danish way, A to Å", () => {
+    const ps = [
+      { ...posting("1", "2026-02-01", 100), shop: "Åbutik" },
+      { ...posting("2", "2026-02-01", 100), shop: "Ærø Kro" },
+      { ...posting("3", "2026-02-01", 100), shop: "Zoo" },
+      { ...posting("4", "2026-02-01", 100), text: "Bank" },
+    ];
+    expect(flatIds(ps, { column: "text", descending: false })).toEqual(["Bank", "Zoo", "Ærø Kro", "Åbutik"]);
   });
 });

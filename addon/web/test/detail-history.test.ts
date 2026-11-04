@@ -233,10 +233,10 @@ describe("the detail in the history", () => {
     expect(pressed(root)).toBe("false");
   });
 
-  it("Escape on Alle posteringer closes the detail", async () => {
+  it("Escape on an old link to Alle posteringer closes the detail and keeps full screen", async () => {
     const { app } = await mount("view=all-postings&detail=p%3Ap23");
     await escape(app);
-    expect(location.hash).toBe("#view=all-postings");
+    expect(location.hash).toBe("#card=postings&view=full");
   });
 
   it("Escape with the period dropdown open closes only that and keeps the detail", async () => {
@@ -374,22 +374,15 @@ describe("the links built from an action leave no detail", () => {
     const { app, root } = await mount("card=postings&detail=p%3Ap23");
     const first = getByRole(root, "group", { name: da.spendingInPeriod });
     await follow(app, getByRole(first, "link", { name: /→$/ }));
-    expect(location.hash).toBe("#card=postings&view=all-postings");
+    expect(location.hash).toBe("#card=postings&view=full");
   });
 
-  it("an object group's N posteringer link", async () => {
+  it("an object group's Vis faste udgifter link", async () => {
     const { app, root } = await mount("card=postings&detail=p%3Ap23", {
       answer: (range) => json(withSubscriptions(answerFor(range))),
     });
     const group = getByRole(root, "group", { name: da.inPeriod("Abonnementer") });
-    await follow(app, getByRole(group, "link", { name: /→$/ }));
-    expect(location.hash).toBe("#card=postings&view=all-postings&og=Abonnementer");
-  });
-
-  it("the trail back from Alle posteringer", async () => {
-    const { app, root } = await mount("view=all-postings&detail=p%3Ap23");
-    const trail = getByRole(root, "navigation", { name: da.trail });
-    await follow(app, getByRole(trail, "link", { name: da.allSpending }));
-    expect(location.hash).toBe("");
+    await follow(app, getByRole(group, "link", { name: da.showSubscriptions }));
+    expect(location.hash).toBe("#card=subscriptions");
   });
 });
