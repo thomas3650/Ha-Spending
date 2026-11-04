@@ -1,6 +1,6 @@
 import { css, html, LitElement, nothing } from "lit";
 import { live } from "lit/directives/live.js";
-import { kr, postingAmount } from "../format";
+import { kr, plainCount, postingAmount } from "../format";
 import { da } from "../i18n/da";
 import type { ShopSuggestion } from "../model/filter";
 import { chip, fire } from "./chip";
@@ -131,13 +131,13 @@ export class Search extends LitElement {
   private options() {
     return this.suggestions.map((s, i) => {
       const text = sumText(s.sum);
-      const n = s.count.toLocaleString("da-DK");
+      const n = plainCount(s.count);
       return html`<li
         role="option"
         id="${this.idBase}-${i}"
         class="search-option"
         aria-selected=${String(i === this.active)}
-        aria-label=${da.shopOption(s.name, s.count, text)}
+        aria-label=${da.shopOption(s.name, n, text)}
         @click=${() => this.choose(s.name)}
       >
         <span class="search-option-name">${s.name}</span>

@@ -1,11 +1,12 @@
-import { fireEvent, getByRole, getByText, queryByRole, queryByText } from "@testing-library/dom";
+import { fireEvent, getByRole, getByText } from "@testing-library/dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import type { SpendingApp } from "../src/app";
-import { count, kr } from "../src/format";
+import { kr } from "../src/format";
 import { da } from "../src/i18n/da";
 import type { AmountFilter } from "../src/model/amount";
 import { mount, settle, unmount } from "./mount";
+import { plainSummary, showingSummary } from "./summary";
 
 const ALL = 28;
 const TOTAL = 11566012;
@@ -21,11 +22,6 @@ async function type(app: SpendingApp, root: HTMLElement, text: string) {
   await settle(app);
 }
 
-function showing(root: HTMLElement, shown: number, sum: number | null, parts: string): HTMLElement {
-  const text = da.showing(String(shown), count(ALL), sum === null ? "" : kr(sum), parts);
-  return getByText(root, text);
-}
-
 function ryd(root: HTMLElement): HTMLElement {
   return getByRole(root, "button", { name: da.clearQuick });
 }
@@ -33,52 +29,47 @@ function ryd(root: HTMLElement): HTMLElement {
 describe("the sentence over the list", () => {
   it("reads as before without a quick filter, and offers no Ryd", async () => {
     const { root } = await mount("card=postings");
-    getByText(root, da.summary(count(ALL), kr(TOTAL)));
-    expect(queryByRole(root, "button", { name: da.clearQuick })).toBeNull();
-    expect(queryByText(root, new RegExp(`^Viser`))).toBeNull();
+    plainSummary(root, ALL, TOTAL);
   });
 
   it("names a shop, the text in quotes and an Omkring amount with its ends", async () => {
     const { root } = await mount("card=postings&shop=Pizzeria+Roma&q=1234&about=700");
     const filter: AmountFilter = { kind: "about", value: 70_000 };
-    showing(root, 1, 70_000, ["Pizzeria Roma", da.searchPart("1234"), da.amountWords(filter)].join(" · "));
+    showingSummary(root, 1, ALL, 70_000, ["Pizzeria Roma", da.searchPart("1234"), da.amountWords(filter)].join(" · "));
     expect(da.amountWords(filter)).toContain("(");
-    getByRole(root, "button", { name: da.clearQuick });
   });
 
-  it.each<[string, AmountFilter]>([
-    ["under=4500", { kind: "under", value: 450_000 }],
-    ["over=4500", { kind: "over", value: 450_000 }],
-    ["min=1000&max=2000", { kind: "between", min: 100_000, max: 200_000 }],
-  ])("says the amount in words for %s", async (query, filter) => {
+  it.each<[string, AmountFilter, number, number]>([
+    ["under=4500", { kind: "under", value: 450_000 }, 17, 3_116_012],
+    ["over=4500", { kind: "over", value: 450_000 }, 10, 8_000_000],
+    ["min=1000&max=2000", { kind: "between", min: 100_000, max: 200_000 }, 1, 120_000],
+  ])("says the amount in words for %s", async (query, filter, n, sum) => {
     const { root } = await mount(`card=postings&${query}`);
-    const el = getByRole(root, "region", { name: da.postingsTitle }).querySelector(".postings-summary");
-    expect(el?.textContent).toContain(` — ${da.amountWords(filter)}`);
-    expect(el?.textContent?.trim().startsWith("Viser ")).toBe(true);
+    showingSummary(root, n, ALL, sum, da.amountWords(filter));
   });
 
   it("says Viser 0 af … with no sum when nothing matches, and the list says so", async () => {
     const { root } = await mount("card=postings&q=romaxyz");
-    showing(root, 0, null, da.searchPart("romaxyz"));
+    showingSummary(root, 0, ALL, 0, da.searchPart("romaxyz"));
     getByText(root, da.noMatch);
     ryd(root);
   });
 
   it("stays when the tab and the period change", async () => {
-    const { app, root } = await mount("card=postings&under=4500&q=e");
-    const hash = "#card=postings&q=e&under=4500";
+    const { app, root } = await mount("card=postings&under=4500");
+    const filter: AmountFilter = { kind: "under", value: 450_000 };
     fireEvent.click(getByRole(getByRole(root, "group", { name: da.view }), "button", { name: da.bars }));
     await settle(app);
     fireEvent.click(getByRole(getByRole(root, "group", { name: da.view }), "button", { name: da.postings }));
     await settle(app);
-    expect(location.hash).toBe(hash);
-    expect(root.textContent).toContain(`Viser `);
+    expect(location.hash).toBe("#card=postings&under=4500");
+    showingSummary(root, 17, ALL, 3_116_012, da.amountWords(filter));
     fireEvent.click(getByRole(root, "button", { name: new RegExp(`^${da.period}`) }));
     await app.updateComplete;
     fireEvent.click(getByRole(getByRole(root, "group", { name: da.period }), "button", { name: da.presets.lastYear }));
     await settle(app);
-    expect(location.hash).toBe("#period=lastYear&card=postings&q=e&under=4500");
-    expect(root.textContent).toContain(`Viser `);
+    expect(location.hash).toBe("#period=lastYear&card=postings&under=4500");
+    showingSummary(root, 2, 3, 400_000, da.amountWords(filter));
   });
 });
 
@@ -91,7 +82,7 @@ describe("Ryd", () => {
     expect(location.hash).toBe("#card=postings");
     expect(history.length).toBe(length + 1);
     expect(searchbox(root).value).toBe("");
-    getByText(root, da.summary(count(ALL), kr(TOTAL)));
+    plainSummary(root, ALL, TOTAL);
     expect((app.shadowRoot as ShadowRoot).activeElement).toBe(searchbox(root));
     history.back();
     await vi.waitFor(() => expect(location.hash).toBe("#card=postings&shop=Pizzeria+Roma&q=1234&under=4500"));
@@ -107,7 +98,7 @@ describe("the shop suggestions", () => {
     searchbox(root).focus();
     await type(app, root, "pizz");
     getByRole(getByRole(root, "listbox", { name: da.suggestions }), "option", {
-      name: da.shopOption("Pizzeria Roma", 2, kr(50_000)),
+      name: da.shopOption("Pizzeria Roma", "2", kr(50_000)),
     });
   });
 });

@@ -9,7 +9,7 @@ import "../components/postings";
 import "../components/search";
 import "../components/shops";
 import { objectGroupSums } from "../components/subscriptions";
-import { count, kr, unitName } from "../format";
+import { count, kr, plainCount, unitName } from "../format";
 import { da } from "../i18n/da";
 import { barItems, categoryColours, circleItems, circleSpan, circleTotal, partColours } from "../model/circle";
 import { finerUnits, levelName, type ViewContext } from "../model/context";
@@ -182,7 +182,13 @@ export class Overview extends LitElement {
   }
 
   /** Without a quick filter the count and sum; with one, what is shown of what there is, and Ryd (spec §4.3). */
-  private sentence(all: number, postings: ClassifiedPosting[], search: string, shop: string | null, amount: AmountFilter | null) {
+  private sentence(
+    all: number,
+    postings: ClassifiedPosting[],
+    search: string,
+    shop: string | null,
+    amount: AmountFilter | null,
+  ) {
     const text = search.trim();
     const parts = [
       ...(shop === null ? [] : [shop]),
@@ -193,7 +199,7 @@ export class Overview extends LitElement {
       return html`<p class="postings-summary">${da.summary(count(postings.length), kr(total(postings)))}</p>`;
     }
     const sum = postings.length === 0 ? "" : kr(total(postings));
-    const shown = postings.length.toLocaleString("da-DK");
+    const shown = plainCount(postings.length);
     return html`<p class="postings-summary">
       ${da.showing(shown, count(all), sum, parts.join(" · "))}
       <button type="button" class="postings-clear" @click=${() => fire(this, "quick-clear")}>${da.clearQuick}</button>

@@ -175,7 +175,7 @@ export const da = {
   searchLabel: "Søg",
   shopChip: (name: string) => `Butik: ${name}`,
   shopRowName: (name: string, sum: string) => `${name}, ${sum}`,
-  shopOption: (name: string, count: number, sum: string) => `${name}, ${count.toLocaleString("da-DK")}, ${sum}`,
+  shopOption: (name: string, count: string, sum: string) => `${name}, ${count}, ${sum}`,
   suggestions: "Butikker",
   amountInvalid: "Skriv et beløb som 1.000,50",
   amountEmpty: "Beløb",

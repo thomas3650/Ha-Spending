@@ -179,6 +179,11 @@ export function partLabel(name: string, amount: number, share: number | null): s
   return share === null ? base : `${base}, ${percent(share)}`;
 }
 
+/** A whole number as the page writes it, without a unit. */
+export function plainCount(n: number): string {
+  return whole.format(n);
+}
+
 export function count(n: number): string {
   return `${whole.format(n)} ${n === 1 ? da.postingOne : da.postingMany}`;
 }
