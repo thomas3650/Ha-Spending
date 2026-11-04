@@ -498,6 +498,23 @@ describe("the bars (spec §5)", () => {
     expect(barNames(root).some((n) => n.includes(da.fixed.allEstimates))).toBe(false);
   });
 
+  it("the legend names the due outline when a bar has a due estimate, and only then", async () => {
+    let { root } = await open(OPEN.slice(1));
+    let region = barsRegion(root);
+    getByText(region, da.fixed.hatched);
+    getByText(region, da.fixed.dueOutline);
+    unmount();
+    ({ root } = await open("period=lastYear&view=fixed&og=Faste+udgifter"));
+    region = barsRegion(root);
+    expect(queryByText(region, da.fixed.hatched)).toBeNull();
+    expect(queryByText(region, da.fixed.dueOutline)).toBeNull();
+    unmount();
+    ({ root } = await open(OPEN.slice(1), { answer: answer({ bills: [HUSLEJE, AVIS] }) }));
+    region = barsRegion(root);
+    getByText(region, da.fixed.hatched);
+    expect(queryByText(region, da.fixed.dueOutline)).toBeNull();
+  });
+
   it("the legend names the main groups, then the categories, then the fixed expenses, and the hatching", async () => {
     let { root } = await open("view=fixed");
     let region = barsRegion(root, da.levelPer(da.allFixed, "month"));
@@ -532,11 +549,11 @@ describe("the bars' keyboard highlight (D19)", () => {
     const { root } = await open(OPEN.slice(1));
     const buttons = getAllByRole(barsRegion(root), "button");
     const chart = fixedBarChart();
-    // One part, Bolig: its paid series is 0 and its estimate series 1.
+    // One part, Bolig: its paid series is 0, its due series 1 and its estimate series 2.
     for (const [i, series] of [
       [0, [0]],
-      [9, [0, 1]],
-      [11, [1]],
+      [9, [0, 1, 2]],
+      [11, [2]],
     ] as const) {
       fireEvent.focus(buttons[i]);
       fireEvent.blur(buttons[i]);

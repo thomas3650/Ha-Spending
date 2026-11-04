@@ -1,4 +1,5 @@
 import { NO_PIECE } from "@ha-spending/shared";
+import { escapeHtml } from "../format";
 import { da } from "../i18n/da";
 import { type FixedBar, type FixedPart, sumText } from "./fixed";
 
@@ -35,7 +36,7 @@ function sumsOf(rows: PartSums[]): string {
   );
 }
 
-function partLine(text: string, rows: PartSums[], colour: string): TooltipLine {
+function lineWithDueMark(text: string, rows: PartSums[], colour: string): TooltipLine {
   return { text: rows.some((r) => r.due) ? text + da.fixed.dueMark : text, colour, strong: false };
 }
 
@@ -67,20 +68,15 @@ export function tooltipLines(bar: FixedBar, parts: FixedPart[]): TooltipLine[] {
   }
   const lines: TooltipLine[] = [
     unit,
-    ...kept.map((r) => partLine(da.fixed.partLine(r.part.name, sumsOf([r])), [r], r.part.colour)),
+    ...kept.map((r) => lineWithDueMark(da.fixed.partLine(r.part.name, sumsOf([r])), [r], r.part.colour)),
   ];
-  if (folded.length > 0) lines.push(partLine(da.fixed.others(folded.length, sumsOf(folded)), folded, GREY));
+  if (folded.length > 0) lines.push(lineWithDueMark(da.fixed.others(folded.length, sumsOf(folded)), folded, GREY));
   lines.push({
     text: da.fixed.tooltipTotal(sumText(bar.paidSum, bar.estimateSum, bar.paid.size > 0, bar.estimate.size > 0)),
     colour: null,
     strong: true,
   });
   return lines;
-}
-
-/** Part names are Firefly III's data. */
-export function escapeHtml(text: string): string {
-  return text.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
 }
 
 export function tooltipHtml(lines: TooltipLine[]): string {

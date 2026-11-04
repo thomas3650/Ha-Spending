@@ -2,7 +2,7 @@ import type { Unit } from "@ha-spending/shared";
 import { css, html, LitElement, nothing, type PropertyValues } from "lit";
 import { createRef, ref } from "lit/directives/ref.js";
 import { type Chart, createChart, type EChartsCoreOption } from "../charts/echarts";
-import { axisTickKr, barKr, rangeText } from "../format";
+import { axisTickKr, barKr, escapeHtml, rangeText } from "../format";
 import { da } from "../i18n/da";
 import { visuallyHidden } from "../theme";
 
@@ -61,10 +61,6 @@ function shade(colour: string): string {
   const n = Number.parseInt(m[1], 16);
   const part = (shift: number) => Math.round(((n >> shift) & 0xff) * (1 - FOCUS_SHADE));
   return `#${[16, 8, 0].map((s) => part(s).toString(16).padStart(2, "0")).join("")}`;
-}
-
-function escapeHtml(text: string): string {
-  return text.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
 }
 
 function barName(item: BarItem): string {
