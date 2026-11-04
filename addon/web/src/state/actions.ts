@@ -1,5 +1,8 @@
 import { groupingFor, type Level, type SpendingData, unitsOf } from "@ha-spending/shared";
 import type { AmountFilter } from "../model/amount";
+import { viewContext } from "../model/context";
+import { fixedUnits } from "../model/fixed";
+import { objectGroupNames } from "../model/key-numbers";
 import { type Card, type DetailKey, type PeriodChoice, periodOf, type ViewState } from "./view";
 
 const ALL: Level = { kind: "all" };
@@ -40,6 +43,23 @@ export function chooseUnit(s: ViewState, fullStart: string): ViewState {
   return s.unit === fullStart ? withoutUnit(s) : { ...s, unit: fullStart, card: "postings" };
 }
 
+/** Keeps the card, unlike `chooseUnit`: the fixed-expenses view has no tab to switch to. */
+export function chooseFixedUnit(s: ViewState, fullStart: string): ViewState {
+  return s.unit === fullStart ? withoutUnit(s) : { ...s, unit: fullStart };
+}
+
+export function openFixed(s: ViewState, objectGroup: string): ViewState {
+  return { ...s, fixed: true, objectGroup, fullScreen: false, detail: null };
+}
+
+export function setObjectGroup(s: ViewState, objectGroup: string | null): ViewState {
+  return withoutUnit({ ...s, objectGroup });
+}
+
+export function leaveFixed(s: ViewState): ViewState {
+  return { ...s, fixed: false, objectGroup: null };
+}
+
 export function setCard(s: ViewState, card: Card): ViewState {
   return { ...s, card };
 }
@@ -51,11 +71,6 @@ export function setFullScreen(s: ViewState, on: boolean): ViewState {
 /** "N posteringer →": the quick filter and the detail go, so the list's count matches the link (top-filter §3.1). */
 export function openPostingsFull(s: ViewState): ViewState {
   return { ...s, card: "postings", fullScreen: true, search: "", shop: null, amount: null, detail: null };
-}
-
-/** An object group's "Vis faste udgifter →"; the key numbers are only shown in the normal card (spec §5). */
-export function openSubscriptions(s: ViewState): ViewState {
-  return { ...s, card: "subscriptions", fullScreen: false };
 }
 
 /** The overview's "Alt forbrug": the unit, the main group and the category go; the search and the shop stay. */
@@ -155,18 +170,34 @@ export function hasShops(data: SpendingData): boolean {
   return data.postings.some((p) => p.shop !== null);
 }
 
-/** Drops what the answer does not know. */
-export function normalise(s: ViewState, data: SpendingData, today: string): ViewState {
-  const accounts = s.accounts && s.accounts.filter((id) => data.accounts.some((a) => a.id === id));
+function overviewUnit(s: ViewState, data: SpendingData, today: string): string | null {
   const period = periodOf(s.period, today, data.earliestPostingDate);
   const units = unitsOf(period, groupingFor(period), today);
   // A one-unit period's finer bars choose nothing, so its one unit would only repeat the period (D59).
-  const unit = units.length > 1 && units.some((u) => u.fullStart === s.unit) ? s.unit : null;
+  return units.length > 1 && units.some((u) => u.fullStart === s.unit) ? s.unit : null;
+}
+
+/** The view resolves the unit against its own units, which may run past the overview's period (spec §7). */
+function fixedUnit(s: ViewState, data: SpendingData, today: string): string | null {
+  const f = fixedUnits(data, s, today);
+  return f.buttons && f.units.some((u) => u.fullStart === s.unit) ? s.unit : null;
+}
+
+/** Drops what the answer does not know. */
+export function normalise(s: ViewState, data: SpendingData, today: string): ViewState {
+  const accounts = s.accounts && s.accounts.filter((id) => data.accounts.some((a) => a.id === id));
+  const unit = s.fixed && data.subscriptions.length > 0 ? fixedUnit(s, data, today) : overviewUnit(s, data, today);
   const card =
     (s.card === "subscriptions" && data.subscriptions.length === 0) ||
     (s.card === "shops" && !hasShops(data))
       ? "bars"
       : s.card;
   const known = { ...s, accounts, level: knownLevel(s.level, data), unit, card };
+  if (known.fixed) {
+    if (data.subscriptions.length === 0) return normalise(leaveFixed(known), data, today);
+    const names = objectGroupNames(viewContext(data, known, today));
+    const objectGroup = names.length > 1 && known.objectGroup !== null && names.includes(known.objectGroup) ? known.objectGroup : null;
+    return closeDetail({ ...known, objectGroup });
+  }
   return detailResolves(known, data, today) ? known : closeDetail(known);
 }

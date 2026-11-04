@@ -165,7 +165,7 @@ describe("screen 2, a main group", () => {
 
   it("keeps the chosen unit while filtering to a category", async () => {
     const { app, root } = await mount("group=Mad&unit=2026-09-01");
-    const sep = unitName(unitAt("2026-09-01", "month", TODAY), "month");
+    const sep = unitName(unitAt("2026-09-01", "month", TODAY), "month", false);
     const card = getByRole(root, "region", { name: da.inUnit(da.categories, sep) });
     fireEvent.click(getByRole(card, "button", { name: new RegExp("^Café,") }));
     await settle(app);

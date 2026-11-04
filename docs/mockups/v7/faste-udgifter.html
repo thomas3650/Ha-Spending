@@ -1,0 +1,462 @@
+<!doctype html><html lang="da"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Faste udgifter over tid</title>
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.5.1/dist/echarts.min.js" integrity="sha384-Mx5lkUEQPM1pOJCwFtUICyX45KNojXbkWdYhkKUKsbv391mavbfoAmONbzkgYPzR" crossorigin="anonymous"></script>
+<body>
+<style>
+  :root {
+    --bg: #f5f5f5; --card: #fff; --line: #e3e3e3; --soft: #f0f0f0; --text: #1f1f1f; --muted: #6b6b6b;
+    --accent: #03a9f4; --accent-soft: #e1f3fd; --accent-text: #0277bd; --field: #c9c9c9;
+    --not-seen: #b71c1c; --not-seen-soft: #fdecea; --expected: #37474f; --expected-soft: #eceff1;
+    --paid: #1b5e20; --paid-soft: #e8f5e9;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: Roboto, "Segoe UI", system-ui, sans-serif; color: var(--text); background: var(--bg); font-size: 14px; }
+  .mock { background: #263238; color: #eceff1; padding: 10px 16px; display: flex; flex-wrap: wrap; gap: 8px 20px; align-items: center; font-size: 13px; }
+  .mock b { font-weight: 600; margin-right: 6px; }
+  .mock .opts { display: inline-flex; border: 1px solid #546e7a; border-radius: 6px; overflow: hidden; }
+  .mock button { background: transparent; color: #eceff1; border: 0; border-left: 1px solid #546e7a; padding: 4px 10px; font: inherit; cursor: pointer; }
+  .mock button:first-child { border-left: 0; }
+  .mock button.on { background: #eceff1; color: #263238; font-weight: 600; }
+  .mock .note { color: #b0bec5; flex-basis: 100%; }
+  .page { padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 16px; min-width: 0; }
+  .top { display: flex; align-items: center; gap: 10px; }
+  .top .back { border: 0; background: none; font-size: 18px; cursor: pointer; padding: 0 4px; color: var(--text); }
+  .trail { font-weight: 600; font-size: 15px; } .sep { color: var(--muted); margin: 0 6px; font-weight: normal; }
+  .crumb-x { border: 0; background: none; color: var(--muted); cursor: pointer; font-size: 14px; margin-left: 2px; }
+  .crumb { font-weight: 600; font-size: 15px; } .crumb button { border: 0; background: none; color: var(--muted); cursor: pointer; font-size: 14px; }
+  .chip { display: inline-flex; align-items: center; gap: 4px; border: 1px solid var(--field); border-radius: 6px; padding: 2px 8px; font-size: 13px; background: var(--card); }
+  .chip.grain { color: var(--muted); border-color: var(--line); font-size: 12px; }
+  .chip.x { background: var(--accent-soft); color: var(--accent-text); border-color: var(--accent-soft); font-weight: 600; cursor: pointer; }
+  .accounts { margin-left: auto; border: 1px solid var(--field); border-radius: 6px; padding: 4px 10px; font-size: 13px; min-width: 150px; }
+  .accounts small { display: block; color: var(--muted); font-size: 11px; }
+  .kpis { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 12px; }
+  .kpi-label { color: var(--muted); font-size: 12px; }
+  .kpi-value { font-size: 26px; font-weight: 600; margin: 2px 0; font-variant-numeric: tabular-nums; }
+  .kpi-value.est { color: var(--expected); }
+  .kpi-value.est::before { content: "ca. "; font-size: 16px; font-weight: normal; color: var(--muted); }
+  .kpi-sub { color: var(--muted); font-size: 12px; }
+  .halves { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; align-items: start; }
+  .head { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+  .head h2 { font-size: 16px; margin: 0; flex: 1; }
+  .legend { display: flex; flex-wrap: wrap; gap: 14px; font-size: 12px; color: var(--muted); margin: 0 0 4px; }
+  .legend span { display: inline-flex; align-items: center; gap: 6px; }
+  .sw { width: 14px; height: 12px; border-radius: 2px; display: inline-block; }
+  .sw.est { background: repeating-linear-gradient(-45deg, rgba(3,169,244,.45) 0 3px, rgba(3,169,244,.15) 3px 6px); }
+  #chart { height: 460px; }
+  .foot { color: var(--muted); font-size: 12px; margin: 8px 0 0; }
+  .sum-line { color: var(--muted); font-size: 13px; margin: 0 0 10px; }
+  .sum-line b { color: var(--text); }
+  .list { max-height: 640px; overflow-y: auto; }
+  table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+  th, td { padding: 7px 6px; text-align: left; vertical-align: top; border-bottom: 1px solid var(--line); }
+  thead th { color: var(--muted); font-weight: normal; position: sticky; top: 0; background: var(--card); }
+  .grp th, .grp td { background: var(--soft); font-weight: 600; }
+  .grp .cnt { font-weight: normal; margin-left: 6px; color: var(--muted); }
+  .amt, td:first-child { white-space: nowrap; } .amt { text-align: right; }
+  .mark { display: inline-block; font-size: 11px; color: var(--muted); background: var(--soft); border-radius: 4px; padding: 0 5px; margin-left: 6px; }
+  .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; }
+  tr.est td { color: var(--expected); }
+  tr.est td.amt { font-style: italic; }
+  .status { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 12px; white-space: nowrap; }
+  .status.paid { color: var(--paid); background: var(--paid-soft); }
+  .status.est { color: var(--expected); background: var(--expected-soft); border: 1px dashed #90a4ae; }
+  .status.notSeen { color: var(--not-seen); background: var(--not-seen-soft); }
+  .sub { display: block; color: var(--muted); font-size: 12px; font-weight: normal; }
+  .kpi-link { display: block; color: var(--accent-text); font-size: 12px; text-decoration: none; cursor: pointer; width: fit-content; }
+  .entry { position: relative; outline: 2px solid #ff9800; outline-offset: 3px; border-radius: 4px; cursor: pointer; }
+  .entry::after { content: attr(data-n); position: absolute; top: -12px; right: -14px; width: 18px; height: 18px; border-radius: 50%; background: #ff9800; color: #fff; font-size: 11px; font-weight: 700; display: grid; place-items: center; }
+  .placeholder { height: 240px; border: 1px dashed var(--field); border-radius: 8px; display: grid; place-items: center; color: var(--muted); }
+  .seg { display: inline-flex; border: 1px solid var(--field); border-radius: 6px; overflow: hidden; font-size: 12px; }
+  .seg span { padding: 4px 10px; border-left: 1px solid var(--field); } .seg span:first-child { border-left: 0; }
+  .seg .on { background: var(--accent); color: #fff; font-weight: 600; }
+  .fs { border: 1px solid var(--field); background: var(--card); border-radius: 6px; width: 30px; height: 28px; font-size: 15px; }
+  .how ol { margin: 6px 0 0; padding-left: 20px; } .how li { margin: 4px 0; }
+  [hidden] { display: none !important; }
+  .pick { font: inherit; font-size: 15px; font-weight: 600; cursor: pointer; padding: 3px 10px; }
+  .menu-anchor { position: relative; }
+  .menu { position: absolute; top: calc(100% + 4px); left: 0; z-index: 5; background: var(--card); border: 1px solid var(--line); border-radius: 8px; box-shadow: 0 4px 16px rgba(0,0,0,.12); padding: 4px; min-width: 300px; display: flex; flex-direction: column; }
+  .menu button { text-align: left; border: 0; background: none; padding: 8px 10px; border-radius: 6px; font: inherit; cursor: pointer; }
+  .menu button:hover { background: var(--soft); } .menu button.on { background: var(--accent-soft); color: var(--accent-text); font-weight: 600; }
+  .dashed { font: inherit; font-size: 13px; border: 1px dashed var(--field); background: none; color: var(--muted); border-radius: 6px; padding: 3px 10px; cursor: pointer; }
+  .menu .menu-sum { float: right; color: var(--muted); margin-left: 16px; font-variant-numeric: tabular-nums; }
+  .menu small { display: block; color: var(--muted); font-size: 12px; font-weight: normal; }
+</style>
+
+<div class="mock">
+  <span><b>Skærm</b><span class="opts" id="screens"></span></span>
+  <span><b>Periode</b><span class="opts" id="periods"></span></span>
+  <span><b>Niveau</b><span class="opts" id="levels"></span></span>
+  <span class="note">Mockup med opdigtede tal. "I dag" er 4. november 2026. Klik på en søjle for at se dens poster; ✕ viser hele perioden igen.</span>
+</div>
+
+<div class="page" id="overview">
+  <div class="card top">
+    <span class="trail">Alt forbrug</span><span class="sep">›</span><span class="chip">I år ▾</span>
+    <button class="dashed">Måned</button><button class="dashed">Hovedgruppe</button>
+    <div class="accounts"><small>Konti</small>Alle konti (3) ▾</div>
+  </div>
+  <div class="kpis">
+    <div class="card"><div class="kpi-label">Forbrug i perioden</div><div class="kpi-value">317.893 kr.</div><span class="kpi-link">279 posteringer →</span><div class="kpi-sub">1. jan – 4. nov 2026</div></div>
+    <div class="card"><div class="kpi-label">Gennemsnit pr. måned</div><div class="kpi-value">30.654 kr.</div><div class="kpi-sub">10 måneder</div></div>
+    <div class="card"><div class="kpi-label">Abonnementer i perioden</div><div class="kpi-value" id="ov-abo"></div><span class="kpi-link entry" data-n="1" data-go="c">Vis faste udgifter →</span><div class="kpi-sub">3 stk.</div></div>
+    <div class="card"><div class="kpi-label">Faste udgifter i perioden</div><div class="kpi-value" id="ov-fixed"></div><span class="kpi-link entry" data-n="2" data-go="b">Vis faste udgifter →</span><div class="kpi-sub">5 stk.</div></div>
+  </div>
+  <div class="halves">
+    <section class="card"><div class="head"><h2>Hovedgrupper</h2></div><div class="placeholder">Cirklen, som i dag</div></section>
+    <section class="card"><div class="head"><h2>Faste udgifter</h2><span class="seg"><span>Søjler</span><span>Posteringer</span><span class="on">Faste udgifter</span><span>Butikker</span></span><button class="fs" aria-label="Fuld skærm">⤢</button></div><div class="placeholder">Tabellen over faste udgifter, som i dag</div></section>
+  </div>
+  <div class="card how"><b>Vejen ind (forslag)</b>
+    <ol>
+      <li><b>1 og 2:</b> "Vis faste udgifter →" under et nøgletal åbner visningen med netop den objektgruppe. Periode og niveau følger med fra siden.</li>
+      <li>Fuld skærm på fanen Faste udgifter er uændret: tabellen i hele bredden.</li>
+      <li>Inde i visningen skifter vælgeren efter "Alt forbrug ›" mellem objektgrupperne og Alle, som "I år ▾" skifter periode.</li>
+      <li><b>←</b> i visningen fører tilbage hertil.</li>
+    </ol>
+  </div>
+</div>
+
+<div class="page" id="view">
+  <div class="card top">
+    <button class="back" aria-label="Tilbage til Alt forbrug">←</button>
+    <span class="trail">Alt forbrug<span id="trail-name"></span></span>
+    <span class="sep">›</span><span class="menu-anchor"><button class="chip pick" id="og-chip"></button><span class="menu" id="og-menu" hidden></span></span>
+    <span class="sep">›</span><span class="chip" id="period-chip"></span>
+    <span class="menu-anchor" id="unit-anchor"></span>
+    <div class="accounts"><small>Konti</small>Alle konti (3) ▾</div>
+  </div>
+
+  <div class="kpis" id="kpis"></div>
+
+  <div class="halves">
+    <section class="card">
+      <div class="head"><h2 id="chart-title"></h2></div>
+      <div class="legend" id="legend"></div>
+      <div id="chart"></div>
+      <p class="foot">Estimatet er den faste udgifts beløb fra Firefly III: midten af beløbsintervallet, eller den seneste betaling, når den er steget.</p>
+    </section>
+    <section class="card">
+      <div class="head"><h2 id="list-title"></h2></div>
+      <p class="sum-line" id="sum-line"></p>
+      <div class="list" id="list"></div>
+    </section>
+  </div>
+</div>
+
+<script>
+  const MONTHS = ["januar", "februar", "marts", "april", "maj", "juni", "juli", "august", "september", "oktober", "november", "december"];
+  const SHORT = ["jan", "feb", "mar", "apr", "maj", "jun", "jul", "aug", "sep", "okt", "nov", "dec"];
+  const nf = new Intl.NumberFormat("da-DK", { maximumFractionDigits: 0 });
+  const kr = (v) => `${nf.format(Math.round(v))} kr.`;
+  const d = (y, m, day) => new Date(Date.UTC(y, m - 1, day));
+  const iso = (t) => t.toISOString().slice(0, 10);
+  const addDays = (t, n) => new Date(t.getTime() + n * 86400000);
+  const TODAY = d(2026, 11, 4);
+  const DATA_START = d(2024, 1, 1);
+  const DATA_END = d(2026, 12, 31);
+  const shortDate = (t) => `${t.getUTCDate()}. ${SHORT[t.getUTCMonth()]}`;
+
+  const PALETTE = ["#2a78d6", "#eb6834", "#1baf7a", "#eda100", "#e87ba4", "#008300", "#6250d6", "#e34948"];
+  const MAIN_GROUP = { Husleje: "Bolig", Forsikring: "Bolig", Dagligvarer: "Mad", Mobil: "Abonnementer", Streaming: "Abonnementer", Sport: "Fritid", };
+  // The main groups keep the circle's colour on the overview; the two that are grey there get the free palette colours.
+  const MAIN_COLOURS = { Bolig: "#2a78d6", Mad: "#1baf7a", Abonnementer: "#eda100", Fritid: "#6250d6" };
+  const LEVELS = {
+    all: { label: "Alt forbrug", trail: ["Alt forbrug"], keep: () => true, part: (b) => MAIN_GROUP[b.category] },
+    bolig: { label: "Bolig", trail: ["Alt forbrug", "Bolig"], keep: (b) => MAIN_GROUP[b.category] === "Bolig", part: (b) => b.category },
+    forsikring: { label: "Bolig › Forsikring", trail: ["Alt forbrug", "Bolig", "Forsikring"], keep: (b) => b.category === "Forsikring", part: (b) => b.name },
+  };
+
+  // The made-up subscriptions of addon/dev that have an object group (D38), run over three years so that the months differ.
+  const monthly = (day) => (t) => t.getUTCDate() === day;
+  const BILLS = [
+    { name: "Husleje", group: "Faste udgifter", category: "Husleje", estimate: 9500, on: monthly(1),
+      paid: (t) => (t.getUTCFullYear() === 2024 ? 9200 : 9500) },
+    { name: "Mobilabonnement", group: "Faste udgifter", category: "Mobil", estimate: 174, on: monthly(5), paid: () => 179 },
+    { name: "Alarmselskabet", group: "Faste udgifter", category: "Forsikring", estimate: 500,
+      on: (t) => t.getUTCDate() === 4 && t.getUTCMonth() % 3 === 0, paid: () => 495, missing: ["2026-10-04"] },
+    { name: "Indboforsikring", group: "Faste udgifter", category: "Forsikring", estimate: 3100,
+      on: (t) => t.getUTCDate() === 4 && t.getUTCMonth() === 7, paid: (t) => ({ 2024: 2950, 2025: 3050 })[t.getUTCFullYear()] ?? 3100 },
+    { name: "Madkasse", group: "Faste udgifter", category: "Dagligvarer", estimate: 300, on: (t) => t.getUTCDay() === 2, paid: () => 299 },
+    { name: "Netflix", group: "Abonnementer", category: "Streaming", estimate: 114, on: monthly(7),
+      paid: (t) => (iso(t) >= "2026-09-07" ? 119 : 99) },
+    { name: "Fitnessabonnement", group: "Abonnementer", category: "Sport", estimate: 274, on: monthly(2),
+      paid: () => 279, from: "2025-03-01" },
+    { name: "Spotify", group: "Abonnementer", category: "Streaming", estimate: 149, on: monthly(25),
+      paid: (t) => (iso(t) >= "2026-10-25" ? 149 : 109) },
+  ];
+
+  /** Every payment: paid up to today, an estimate after; kind "notSeen" for one expected but not seen. */
+  const PAYMENTS = [];
+  for (let t = DATA_START; t <= DATA_END; t = addDays(t, 1)) {
+    for (const b of BILLS) {
+      if (!b.on(t) || (b.from && iso(t) < b.from)) continue;
+      const past = t <= TODAY;
+      const kind = !past ? "est" : b.missing?.includes(iso(t)) ? "notSeen" : "paid";
+      PAYMENTS.push({ date: t, bill: b, kind, amount: kind === "paid" ? b.paid(t) : kind === "est" ? b.estimate : 0 });
+    }
+  }
+
+  function monthUnits(from, to) {
+    const units = [];
+    for (let y = from.getUTCFullYear(), m = from.getUTCMonth(); d(y, m + 1, 1) <= to; m === 11 ? (y++, (m = 0)) : m++) {
+      const start = d(y, m + 1, 1), end = addDays(d(y, m + 2, 1), -1);
+      units.push({ start: start < from ? from : start, end: end > to ? to : end, axis: SHORT[m], title: `${MONTHS[m][0].toUpperCase()}${MONTHS[m].slice(1)} ${y}`, multiYear: false });
+    }
+    if (units.length > 12 || units[0].start.getUTCFullYear() !== units.at(-1).start.getUTCFullYear()) {
+      for (const u of units) if (u.start.getUTCMonth() === 0 || u === units[0]) u.axis += `\n${u.start.getUTCFullYear()}`;
+    }
+    return units;
+  }
+
+  const PERIODS = {
+    thisYear: {
+      label: "I år", chip: "I år", from: d(2026, 1, 1), to: d(2026, 12, 31), grain: "Pr. måned",
+      units: () => monthUnits(d(2026, 1, 1), d(2026, 12, 31)), word: "året", whole: "Hele 2026", paidLabel: "Betalt i år",
+    },
+    thisMonth: {
+      label: "Denne måned", chip: "Denne måned", from: d(2026, 11, 1), to: d(2026, 11, 30), grain: "Pr. dag",
+      units: () => Array.from({ length: 30 }, (_, i) => {
+        const t = d(2026, 11, i + 1);
+        return { start: t, end: t, axis: String(i + 1), title: `${i + 1}. november 2026` };
+      }),
+      word: "måneden", whole: "Hele november", paidLabel: "Betalt i november",
+    },
+    last12: {
+      label: "Sidste 12 måneder", chip: "Sidste 12 måneder", from: d(2025, 11, 5), to: TODAY, grain: "Pr. måned",
+      units: () => monthUnits(d(2025, 11, 5), TODAY),
+    },
+    all: {
+      label: "Alt", chip: "Alt", from: DATA_START, to: DATA_END, grain: "Pr. år",
+      units: () => [2024, 2025, 2026].map((y) => ({ start: d(y, 1, 1), end: d(y, 12, 31), axis: String(y), title: String(y), year: true })),
+      word: "2026", whole: "Hele 2026", paidLabel: "Betalt i 2026",
+    },
+  };
+
+  const VARIANTS = {
+    a: { label: "Alle", menu: "Alle", groups: ["Faste udgifter", "Abonnementer"], title: "Faste udgifter og abonnementer" },
+    b: { label: "Kun Faste udgifter", groups: ["Faste udgifter"], title: "Faste udgifter" },
+    c: { label: "Kun Abonnementer", groups: ["Abonnementer"], title: "Abonnementer" },
+  };
+  const SCREENS = { overview: { label: "Siden i dag" }, view: { label: "Ny visning" } };
+
+  let state = { screen: "overview", period: "thisYear", level: "all", variant: "a", chosen: null };
+  const chart = echarts.init(document.getElementById("chart"));
+  chart.on("click", (p) => { state.chosen = state.chosen === p.dataIndex ? null : p.dataIndex; render(); });
+  addEventListener("resize", () => chart.resize());
+
+  function controls() {
+    const make = (id, entries, key) => {
+      const box = document.getElementById(id);
+      box.innerHTML = "";
+      for (const [k, v] of Object.entries(entries)) {
+        const b = document.createElement("button");
+        b.textContent = v.label;
+        b.className = state[key] === k ? "on" : "";
+        b.onclick = () => { state[key] = k; state.chosen = null; render(); };
+        box.append(b);
+      }
+    };
+    make("screens", SCREENS, "screen");
+    make("periods", PERIODS, "period");
+    make("levels", LEVELS, "level");
+    const chip = document.getElementById("og-chip"), menu = document.getElementById("og-menu");
+    chip.textContent = `${VARIANTS[state.variant].title} ▾`;
+    chip.onclick = () => { menu.hidden = !menu.hidden; };
+    const year = PAYMENTS.filter((p) => p.kind === "paid" && p.date >= d(2026, 1, 1));
+    menu.innerHTML = ["b", "c", "a"].map((k) => {
+      const v = VARIANTS[k];
+      const n = BILLS.filter((b) => v.groups.includes(b.group)).length;
+      return `<button data-k="${k}" class="${state.variant === k ? "on" : ""}">${v.menu ?? v.title}<small>${n} stk. · ${kr(sum(year.filter((p) => v.groups.includes(p.bill.group))))} i år</small></button>`;
+    }).join("");
+    for (const b of menu.querySelectorAll("button")) b.onclick = () => { state.variant = b.dataset.k; state.chosen = null; menu.hidden = true; render(); };
+  }
+
+  /** The parts one level down, largest first, each with its colour. */
+  function partsOf(shown, level) {
+    const totals = new Map();
+    for (const p of shown) totals.set(level.part(p.bill), (totals.get(level.part(p.bill)) ?? 0) + p.amount);
+    return [...totals].sort((a, b) => b[1] - a[1]).map(([name], i) => ({
+      name, colour: state.level === "all" ? MAIN_COLOURS[name] : PALETTE[i],
+    }));
+  }
+  let colourOf = () => "#c4c4c4";
+
+  const sum = (ps, kind) => ps.filter((p) => !kind || p.kind === kind).reduce((s, p) => s + p.amount, 0);
+  const inUnit = (ps, u) => ps.filter((p) => p.date >= u.start && p.date <= u.end);
+
+  for (const e of document.querySelectorAll(".entry")) {
+    e.onclick = () => { Object.assign(state, { screen: "view", variant: e.dataset.go, period: "thisYear", level: "all", chosen: null }); render(); scrollTo(0, 0); };
+  }
+  document.querySelector("#view .back").onclick = () => { state.screen = "overview"; render(); };
+
+  function render() {
+    controls();
+    document.getElementById("overview").hidden = state.screen !== "overview";
+    document.getElementById("view").hidden = state.screen !== "view";
+    const year = PAYMENTS.filter((p) => p.kind === "paid" && p.date >= d(2026, 1, 1));
+    document.getElementById("ov-abo").textContent = kr(sum(year.filter((p) => p.bill.group === "Abonnementer")));
+    document.getElementById("ov-fixed").textContent = kr(sum(year.filter((p) => p.bill.group === "Faste udgifter")));
+    if (state.screen !== "view") return;
+    const period = PERIODS[state.period];
+    const variant = VARIANTS[state.variant];
+    const units = period.units();
+    // Within one year a unit is named without its year (Thomas, 2026-11-04).
+    const years = new Set(units.map((u) => u.start.getUTCFullYear()));
+    if (years.size === 1 && !units[0].year) for (const u of units) u.title = u.title.replace(/ \d{4}$/, "");
+    const level = LEVELS[state.level];
+    const shown = PAYMENTS.filter((p) => variant.groups.includes(p.bill.group) && level.keep(p.bill) && p.date >= period.from && p.date <= period.to);
+    const runningIndex = units.findIndex((u) => TODAY >= u.start && TODAY <= u.end);
+    const parts = partsOf(shown, level);
+    colourOf = (bill) => parts.find((x) => x.name === level.part(bill))?.colour ?? "#c4c4c4";
+
+    document.getElementById("trail-name").innerHTML = level.trail.slice(1).map((x) => `<span class="sep">›</span>${x}`).join("");
+    document.getElementById("period-chip").textContent = `${period.chip} ▾`;
+    document.getElementById("chart-title").textContent = `${variant.title} ${period.grain.toLowerCase()}`;
+
+    kpis(period, units, shown, runningIndex);
+    bars(units, shown, parts, level, runningIndex);
+    list(period, units, shown);
+    chart.resize();
+  }
+
+  function kpis(period, units, shown, runningIndex) {
+    const paid = sum(shown, "paid"), est = sum(shown, "est");
+    const perUnit = units.map((u) => sum(inUnit(shown, u)));
+    const top = perUnit.indexOf(Math.max(...perUnit));
+    const card = (label, value, sub, isEst) =>
+      `<div class="card"><div class="kpi-label">${label}</div><div class="kpi-value ${isEst ? "est" : ""}">${value}</div><div class="kpi-sub">${sub}</div></div>`;
+    const range = (a, b) => `${shortDate(a)} ${a.getUTCFullYear() !== b.getUTCFullYear() ? a.getUTCFullYear() + " " : ""}– ${shortDate(b)} ${b.getUTCFullYear()}`;
+    const notSeen = shown.filter((p) => p.kind === "notSeen");
+    const notSeenSub = notSeen.length ? ` · <span style="color:var(--not-seen)">${notSeen.length} ikke set</span>` : "";
+    let html;
+    if (est > 0) {
+      // "Alt" estimates only the running year; the other periods estimate themselves.
+      const runPaid = units[0].year ? sum(inUnit(shown, units[runningIndex]), "paid") : paid;
+      const runStart = units[0].year ? units[runningIndex].start : period.from;
+      const estCount = shown.filter((p) => p.kind === "est").length;
+      const next = shown.find((p) => p.kind === "est");
+      html =
+        card(period.paidLabel, kr(runPaid), `${range(runStart, TODAY)}${notSeenSub}`) +
+        (state.period === "thisYear" ? card("Resterende udgifter", kr(est), `${range(addDays(TODAY, 1), period.to)} · ${estCount} betalinger`, true) : "") +
+        card(`Estimat for ${period.whole.toLowerCase()}`, kr(runPaid + est), `betalt + ca. ${kr(est)} til ${shortDate(period.to)}`, true) +
+        (state.period === "thisYear" ? card("Pr. måned i snit", kr((runPaid + est) / 12), "hele 2026 delt med 12", true)
+        : state.period === "thisMonth" ? card("Næste betaling", next ? kr(next.amount) : "–", next ? `${shortDate(next.date)} · ${next.bill.name}` : "", true)
+        : card("Betalt i alt", kr(paid), range(period.from, TODAY)));
+    } else {
+      html =
+        card("Betalt i perioden", kr(paid), `${range(period.from, period.to)}${notSeenSub}`) +
+        card("Gennemsnit pr. måned", kr(paid / 12), `${units.length} måneder, den første og sidste ikke hele`);
+    }
+    document.getElementById("kpis").innerHTML = html;
+  }
+
+  function bars(units, shown, groups, level, runningIndex) {
+    const hatch = { symbol: "rect", dashArrayX: [1, 0], dashArrayY: [3, 3], rotation: -Math.PI / 4, color: "rgba(255,255,255,0.75)" };
+    const faded = (i) => state.chosen !== null && state.chosen !== i;
+    const series = [];
+    for (const kind of ["paid", "est"]) {
+      for (const g of groups) {
+        series.push({
+          name: `${g.name} · ${kind === "paid" ? "betalt" : "estimat"}`, type: "bar", stack: "all", barMaxWidth: 48,
+          data: units.map((u, i) => {
+            const v = sum(inUnit(shown, u).filter((p) => level.part(p.bill) === g.name), kind);
+            const running = i === runningIndex && kind === "paid" && !units[0].year && state.period === "last12";
+            return { value: v || null, itemStyle: { opacity: faded(i) ? 0.3 : running ? 0.5 : kind === "est" ? 0.55 : 1 } };
+          }),
+          itemStyle: { color: g.colour, decal: kind === "est" ? hatch : undefined },
+        });
+      }
+    }
+    if (runningIndex >= 0) {
+      series[0].markLine = {
+        symbol: "none", silent: true, lineStyle: { color: "#1f1f1f", type: "dashed", width: 1 },
+        label: { formatter: "i dag", position: "end", color: "#1f1f1f" }, data: [{ xAxis: runningIndex }],
+      };
+    }
+    const legend = document.getElementById("legend");
+    legend.innerHTML =
+      groups.map((g) => `<span><i class="sw" style="background:${g.colour}"></i>${g.name}</span>`).join("") +
+      (shown.some((p) => p.kind === "est") ? `<span><i class="sw est"></i>Skraveret: estimat efter i dag</span>` : "");
+    chart.setOption({
+      animation: false,
+      grid: { left: 56, right: 16, top: 24, bottom: 48 },
+      tooltip: {
+        trigger: "axis", axisPointer: { type: "shadow" },
+        formatter: (ps) => {
+          const u = units[ps[0].dataIndex];
+          const ws = inUnit(shown, u);
+          const p = sum(ws, "paid"), e = sum(ws, "est");
+          return `<b>${u.title}</b><br>Betalt: ${kr(p)}${e ? `<br>Estimat: ca. ${kr(e)}<br>I alt: ca. ${kr(p + e)}` : ""}`;
+        },
+      },
+      xAxis: { type: "category", data: units.map((u) => u.axis), axisTick: { show: false }, axisLine: { lineStyle: { color: "#e3e3e3" } }, axisLabel: { color: "#6b6b6b", interval: 0, fontSize: units.length > 20 ? 10 : 12 } },
+      yAxis: { type: "value", axisLabel: { color: "#6b6b6b", formatter: (v) => nf.format(v) }, splitLine: { lineStyle: { color: "#ececec" } } },
+      series,
+    }, true);
+  }
+
+  const statusOf = (p) =>
+    p.kind === "paid" ? `<span class="status paid">Betalt ${shortDate(p.date)}</span>`
+    : p.kind === "est" ? `<span class="status est">Estimat · forventes ${shortDate(p.date)}</span>`
+    : `<span class="status notSeen">Ikke set · ventet ${shortDate(p.date)}</span>`;
+  const amountOf = (p) => (p.kind === "est" ? `ca. ${kr(p.amount)}` : p.kind === "notSeen" ? "–" : kr(p.amount));
+  const mark = (p) => `<span class="mark">${p.bill.group}</span>`;
+
+  function paymentRows(ps) {
+    return [...ps].sort((a, b) => a.date - b.date || a.bill.name.localeCompare(b.bill.name, "da")).map((p) =>
+      `<tr class="${p.kind}"><td>${shortDate(p.date)}</td><td><i class="dot" style="background:${colourOf(p.bill)}"></i>${p.bill.name}${mark(p)}</td><td>${p.bill.category}</td><td class="amt">${amountOf(p)}</td><td>${statusOf(p)}</td></tr>`).join("");
+  }
+
+  /** A year holds about 150 payments, so its rows are one per fixed expense. */
+  function billRows(ps) {
+    const by = new Map();
+    for (const p of ps) by.set(p.bill, [...(by.get(p.bill) ?? []), p]);
+    return [...by].sort((a, b) => sum(b[1]) - sum(a[1])).map(([bill, list]) => {
+      const n = list.length, e = list.filter((p) => p.kind === "est").length, miss = list.filter((p) => p.kind === "notSeen").length;
+      const next = list.find((p) => p.kind === "est");
+      const parts = [`${n} betalinger`, e ? `heraf ${e} estimat, næste forventes ${shortDate(next.date)}` : "", miss ? `<span style="color:var(--not-seen)">${miss} ikke set</span>` : ""].filter(Boolean).join(" · ");
+      return `<tr class="${e === n ? "est" : ""}"><td colspan="2"><i class="dot" style="background:${colourOf(bill)}"></i>${bill.name}<span class="mark">${bill.group}</span><span class="sub">${parts}</span></td><td>${bill.category}</td><td class="amt">${e ? "ca. " : ""}${kr(sum(list))}</td><td></td></tr>`;
+    }).join("");
+  }
+
+  /** The unit as a trail step like the others: a dashed button to choose one, or the chosen one with ▾ and ×. */
+  function unitStep(period, units, shown, chosen) {
+    const anchor = document.getElementById("unit-anchor");
+    if (period.grain === "Pr. dag") { anchor.innerHTML = ""; return; }
+    const word = units[0].year ? "År" : "Måned";
+    anchor.innerHTML = (chosen
+      ? `<span class="sep">›</span><button class="chip pick" id="unit-pick">${chosen.title} ▾</button><button class="crumb-x" id="clear" aria-label="Fjern ${chosen.title}">✕</button>`
+      : `<button class="dashed" id="unit-pick">${word}</button>`) +
+      `<span class="menu" id="unit-menu" hidden>${units.map((u, i) => {
+        const ws = inUnit(shown, u), p = sum(ws, "paid"), e = sum(ws, "est");
+        const amount = e && p ? `${kr(p)} + ca. ${kr(e)}` : e ? `ca. ${kr(e)}` : kr(p);
+        return `<button data-i="${i}" class="${state.chosen === i ? "on" : ""}">${u.title}<span class="menu-sum">${amount}</span></button>`;
+      }).join("")}</span>`;
+    const menu = document.getElementById("unit-menu");
+    document.getElementById("unit-pick").onclick = () => { menu.hidden = !menu.hidden; };
+    for (const b of menu.querySelectorAll("button")) b.onclick = () => { state.chosen = Number(b.dataset.i); render(); };
+    if (chosen) document.getElementById("clear").onclick = () => { state.chosen = null; render(); };
+  }
+
+  function list(period, units, shown) {
+    const chosen = state.chosen === null ? null : units[state.chosen];
+    document.getElementById("list-title").textContent = chosen ? chosen.title : `Poster i perioden`;
+    unitStep(period, units, shown, chosen);
+    const scope = chosen ? [chosen] : [...units].reverse();
+    const ps = chosen ? inUnit(shown, chosen) : shown;
+    const p = sum(ps, "paid"), e = sum(ps, "est");
+    document.getElementById("sum-line").innerHTML =
+      `${ps.length} betalinger · betalt <b>${kr(p)}</b>${e ? ` · estimat <b>ca. ${kr(e)}</b> · i alt <b>ca. ${kr(p + e)}</b>` : ""}`;
+    const head = `<thead><tr><th>${units[0].year ? "" : "Dato"}</th><th>Fast udgift</th><th>Kategori</th><th class="amt">Beløb</th><th>Status</th></tr></thead>`;
+    const bodies = scope.map((u) => {
+      const ws = inUnit(shown, u);
+      if (ws.length === 0) return "";
+      const up = sum(ws, "paid"), ue = sum(ws, "est");
+      const label = ue && up ? `${kr(up)} + ca. ${kr(ue)}` : ue ? `ca. ${kr(ue)}` : kr(up);
+      const group = chosen ? "" : `<tr class="grp"><th colspan="3">${u.title}<span class="cnt">${ws.length} betalinger${ue && !up ? " · estimat" : ue ? " · i gang" : ""}</span></th><td class="amt">${label}</td><td></td></tr>`;
+      return `<tbody>${group}${u.year ? billRows(ws) : paymentRows(ws)}</tbody>`;
+    }).join("");
+    document.getElementById("list").innerHTML = `<table>${head}${bodies}</table>`;
+  }
+
+  render();
+</script>

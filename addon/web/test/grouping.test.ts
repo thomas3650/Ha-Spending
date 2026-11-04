@@ -3,7 +3,7 @@ import { getAllByRole, getByRole, getByText, queryAllByRole, queryByRole } from 
 import { afterEach, describe, expect, it } from "vitest";
 
 import { type BarItem, barTooltip } from "../src/components/bars";
-import { kr, unitName } from "../src/format";
+import { kr, unitName, withYear } from "../src/format";
 import { da } from "../src/i18n/da";
 import { barsList, barButtons, names } from "./bars-helpers";
 import { forgetCharts } from "./chart-mock";
@@ -33,7 +33,8 @@ function shownNames(buttons: HTMLElement[]): string[] {
 }
 
 function monthNames(period: Period, today: string): string[] {
-  return unitsOf(period, "month", today).map((u) => unitName(u, "month"));
+  const units = unitsOf(period, "month", today);
+  return units.map((u) => unitName(u, "month", withYear(units)));
 }
 
 function barItems(root: HTMLElement): BarItem[] {
@@ -94,7 +95,7 @@ describe("a one-unit period's bars are not buttons", () => {
     const list = barsList(root, da.per("day"));
     expect(queryAllByRole(list, "button")).toHaveLength(0);
     expect(getAllByRole(list, "listitem")).toHaveLength(31);
-    expect(barTooltip(barItems(root)[0]).split("<br>")[0]).toBe(unitName(unitAt("2026-10-01", "day", TODAY), "day"));
+    expect(barTooltip(barItems(root)[0]).split("<br>")[0]).toBe(unitName(unitAt("2026-10-01", "day", TODAY), "day", false));
   });
 
   it("I år in January draws January's days with tooltips and no buttons", async () => {
@@ -103,13 +104,13 @@ describe("a one-unit period's bars are not buttons", () => {
     const list = barsList(root, da.per("day"));
     expect(queryAllByRole(list, "button")).toHaveLength(0);
     expect(getAllByRole(list, "listitem")).toHaveLength(31);
-    expect(barTooltip(barItems(root)[0]).split("<br>")[0]).toBe(unitName(unitAt("2026-01-01", "day", today), "day"));
+    expect(barTooltip(barItems(root)[0]).split("<br>")[0]).toBe(unitName(unitAt("2026-01-01", "day", today), "day", false));
   });
 });
 
 describe("the unit step after the grouping", () => {
-  const october = unitName(unitAt("2026-10-01", "month", TODAY), "month");
-  const april = unitName(unitAt("2026-04-01", "month", TODAY), "month");
+  const october = unitName(unitAt("2026-10-01", "month", TODAY), "month", false);
+  const april = unitName(unitAt("2026-04-01", "month", TODAY), "month", false);
 
   it("a one-unit period shows no unit step", async () => {
     const { root } = await mount("period=thisMonth&unit=2026-10-01");

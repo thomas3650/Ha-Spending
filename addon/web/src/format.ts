@@ -134,14 +134,19 @@ export function rangeText(period: Period): string {
   return `${start.day}. ${da.months[start.month - 1]} – ${endText}`;
 }
 
-export function unitName(unit: Unit, g: Grouping): string {
+/** True when the units span more than one calendar year, so a month or a day needs its year to be told apart. */
+export function withYear(units: Unit[]): boolean {
+  return new Set(units.map((u) => parts(u.fullStart).year)).size > 1;
+}
+
+export function unitName(unit: Unit, g: Grouping, withYear: boolean): string {
   const date = unit.fullStart;
-  const { year } = parts(date);
+  const { year, day } = parts(date);
   switch (g) {
     case "day":
-      return tableDate(date);
+      return `${day}. ${monthName(date)}${withYear ? ` ${year}` : ""}`;
     case "month":
-      return `${upperFirst(monthName(date))} ${year}`;
+      return withYear ? `${upperFirst(monthName(date))} ${year}` : upperFirst(monthName(date));
     case "year":
       return String(year);
   }

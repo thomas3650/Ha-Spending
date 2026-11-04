@@ -10,8 +10,9 @@ use([PieChart, BarChart, GridComponent, MarkLineComponent, TooltipComponent, SVG
 export interface Chart {
   setOption(option: EChartsCoreOption, opts?: { notMerge?: boolean }): void;
   on(event: "click", handler: (p: { dataIndex: number }) => void): void;
-  highlight(dataIndex: number): void;
-  downplay(dataIndex: number): void;
+  /** The first series unless `series` names others, as a stack's bar is one item in each of its series. */
+  highlight(dataIndex: number, series?: number[]): void;
+  downplay(dataIndex: number, series?: number[]): void;
   hideTip(): void;
   dispose(): void;
 }
@@ -33,8 +34,8 @@ export function createChart(el: HTMLElement, opts: ChartOptions = {}): Chart {
   return {
     setOption: (option, setOpts) => chart.setOption(option, setOpts),
     on: (event, handler) => chart.on(event, (p) => handler({ dataIndex: (p as { dataIndex: number }).dataIndex })),
-    highlight: (dataIndex) => chart.dispatchAction({ type: "highlight", seriesIndex: 0, dataIndex }),
-    downplay: (dataIndex) => chart.dispatchAction({ type: "downplay", seriesIndex: 0, dataIndex }),
+    highlight: (dataIndex, series = [0]) => chart.dispatchAction({ type: "highlight", seriesIndex: series, dataIndex }),
+    downplay: (dataIndex, series = [0]) => chart.dispatchAction({ type: "downplay", seriesIndex: series, dataIndex }),
     hideTip,
     dispose: () => {
       observer.disconnect();

@@ -323,7 +323,7 @@ describe("the Butikker card", () => {
       da.shopRowName("Q8", kr(90000)),
       da.shopRowName("Café Søde", kr(50000)),
     ]);
-    getByRole(getByRole(root, "navigation", { name: da.trail }), "button", { name: da.remove("Juli 2026") });
+    getByRole(getByRole(root, "navigation", { name: da.trail }), "button", { name: da.remove("Juli") });
   });
 
   it("the search and the chosen shop do not narrow the list, and the chosen shop is pressed", async () => {

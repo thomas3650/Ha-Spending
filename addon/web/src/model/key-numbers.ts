@@ -4,13 +4,17 @@ import { da } from "../i18n/da";
 import { levelName, type ViewContext } from "./context";
 
 /** The line under a key number's value; `href` is the hash it opens, and the app handles the click itself. */
-export type KeyLink = { kind: "postings"; count: number; href: string } | { kind: "subscriptions"; href: string };
+export type KeyLink =
+  | { kind: "postings"; count: number; href: string }
+  | { kind: "subscriptions"; objectGroup: string; href: string };
 
 export interface KeyCard {
   label: string;
   value: string;
   sub: string;
   link?: KeyLink;
+  /** The value is an estimate, which the card marks with "ca.". */
+  estimate?: boolean;
 }
 
 /** ctx.parentTotal is already the chosen unit's when one is chosen. */
@@ -53,7 +57,7 @@ function unitCards(ctx: ViewContext, unit: Unit): [KeyCard] {
   const g = ctx.timeline.grouping;
   const numbers = chosenUnitNumbers(ctx.shown, ctx.timeline, unit);
   const level = ctx.state.level;
-  const name = unitName(unit, g);
+  const name = unitName(unit, g, ctx.unitYear);
 
   const first: KeyCard = {
     label: level.kind === "all" ? da.unitTotal(name) : da.levelInUnit(levelName(level), name),
@@ -77,40 +81,53 @@ function days(period: Period): number {
   return (Date.parse(period.end) - Date.parse(period.start)) / DAY + 1;
 }
 
+/** A sum per month over the period, or null when it is shorter than 28 days. */
+export function perMonth(sum: number, period: Period): number | null {
+  const length = days(period);
+  return length < 28 ? null : sum / (length / MONTH_DAYS);
+}
+
+/** The object groups that a kept bill has or a shown posting in the period is linked to, unsorted. */
+export function objectGroupNames(ctx: ViewContext): string[] {
+  const inPeriod = within(ctx.shown, ctx.timeline.period).flatMap((p) =>
+    p.subscription === null ? [] : [p.subscription.objectGroup],
+  );
+  return [...new Set([...ctx.data.subscriptions.map((s) => s.objectGroup), ...inPeriod])];
+}
+
 /**
  * One card per object group that a kept bill has or a shown posting in the period is linked to; empty gives the
  * period's key numbers only (spec §4). The fetched range does not count. The set of groups is the period's; with a
- * chosen unit only the payments counted narrow to it. Each links to the Faste udgifter tab, which exists only when the
- * answer has bills.
+ * chosen unit only the payments counted narrow to it. Each links to the fixed-expenses view on its own group, which
+ * exists only when the answer has bills.
  */
-export function objectGroupCards(ctx: ViewContext, href: string): KeyCard[] {
+export function objectGroupCards(ctx: ViewContext, hrefFor: (group: string) => string): KeyCard[] {
   const period = ctx.timeline.period;
   const counted = ctx.chosen ?? period;
-  const unit = ctx.chosen === null ? null : unitName(ctx.chosen, ctx.timeline.grouping);
+  const unit = ctx.chosen === null ? null : unitName(ctx.chosen, ctx.timeline.grouping, ctx.unitYear);
   const linked = within(ctx.shown, counted).flatMap((p) =>
     p.subscription === null ? [] : [{ group: p.subscription.objectGroup, bill: p.subscription.name, amount: p.amount }],
   );
-  const inPeriod = within(ctx.shown, period).flatMap((p) => (p.subscription === null ? [] : [p.subscription.objectGroup]));
-  const names = new Set([...ctx.data.subscriptions.map((s) => s.objectGroup), ...inPeriod]);
-  const length = days(period);
-  const link: KeyLink | undefined = ctx.data.subscriptions.length === 0 ? undefined : { kind: "subscriptions", href };
-  return [...names]
+  const names = objectGroupNames(ctx);
+  const withLink = ctx.data.subscriptions.length > 0;
+  return names
     .sort((a, b) => a.localeCompare(b, "da"))
     .map((name) => {
       const payments = linked.filter((l) => l.group === name);
       const bills = new Set(payments.map((l) => l.bill)).size;
       const sum = payments.reduce((acc, l) => acc + l.amount, 0);
+      const average = perMonth(sum, period);
       const sub =
         bills === 0
           ? da.noPayments
-          : unit !== null || length < 28
+          : unit !== null || average === null
             ? da.billCount(bills)
-            : `${da.perMonth(kr(sum / (length / MONTH_DAYS)))} · ${da.billCount(bills)}`;
+            : `${da.perMonth(kr(average))} · ${da.billCount(bills)}`;
       return {
         label: unit === null ? da.inPeriod(name) : da.levelInUnit(name, unit),
         value: kr(sum),
         sub,
-        link,
+        link: withLink ? { kind: "subscriptions", objectGroup: name, href: hrefFor(name) } : undefined,
       };
     });
 }

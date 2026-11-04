@@ -19,11 +19,11 @@ afterEach(() => {
   forgetCharts();
 });
 
-const JULY_GROUP = da.levelInUnit("Abonnementer", unitName(JUL, "month"));
-const SEPTEMBER = unitName(unitAt("2026-09-01", "month", TODAY), "month");
+const JULY_GROUP = da.levelInUnit("Abonnementer", unitName(JUL, "month", false));
+const SEPTEMBER = unitName(unitAt("2026-09-01", "month", TODAY), "month", false);
 
 function julyName(): string {
-  return unitName(JUL, "month");
+  return unitName(JUL, "month", false);
 }
 
 function viewSwitch(root: HTMLElement): HTMLElement {
@@ -56,6 +56,18 @@ describe("screen 4, a chosen unit", () => {
     expect(hasArrow(root)).toBe(false);
   });
 
+  it("chooses July from the trail as from its bar", async () => {
+    const { app, root } = await mount("");
+    const trail = getByRole(root, "navigation", { name: da.trail });
+    fireEvent.click(getByRole(trail, "button", { name: da.chooseMonth }));
+    await app.updateComplete;
+    fireEvent.click(getByRole(getByRole(trail, "group", { name: da.units }), "button", { name: `${julyName()}, ${kr(JULY)}` }));
+    await settle(app);
+    expect(location.hash).toBe("#unit=2026-07-01&card=postings");
+    expect(getByRole(viewSwitch(root), "button", { name: da.postings }).getAttribute("aria-pressed")).toBe("true");
+    getByRole(trail, "button", { name: da.switchMonth(julyName()) });
+  });
+
   it("a chosen unit with nothing before it has only its sum", async () => {
     const onlyFrom = (from: string) => (range: Period) => {
       const answer = answerFor(range);
@@ -66,7 +78,7 @@ describe("screen 4, a chosen unit", () => {
     expect(hasArrow(empty.root)).toBe(false);
     unmount();
     const first = await mount("unit=2026-01-01", { answer: onlyFrom("2026-01-01") });
-    const january = unitName(unitAt("2026-01-01", "month", TODAY), "month");
+    const january = unitName(unitAt("2026-01-01", "month", TODAY), "month", false);
     expect(cardNames(first.root, [da.levelInUnit("Abonnementer", january)])).toEqual([da.unitTotal(january)]);
     expect(hasArrow(first.root)).toBe(false);
   });

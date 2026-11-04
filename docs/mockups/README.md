@@ -71,6 +71,13 @@ the spec holds.
 | 5 | A | A day below zero: A has the tooltip "+… kr. retur" and an unsigned axis below zero. Tried: B |
 | 6 | the second | "I år" by År on 3 November and on 5 January: one version ends today, the second runs the year out with empty slots |
 
+## Fixed expenses over time
+
+The view that "Vis faste udgifter →" opens: the fixed expenses per unit as bars, paid and estimated, and the payments
+under each bar. Under [`v7/`](v7/faste-udgifter.html); its bar at the top switches between the page today and the
+view, the period and the level. "Today" in it is 4 November 2026. Where it differs from the
+[fixed expenses over time spec](../superpowers/specs/2026-11-04-fixed-expenses-over-time.md), the spec holds.
+
 ## Budget
 
 Five ideas for a page of its own with Firefly III's budgets, none chosen yet. Under [`v4/`](v4/budget.html); open it

@@ -99,7 +99,7 @@ describe("screen 1, all spending", () => {
     expect(getByRole(viewSwitch(root), "button", { name: da.bars }).getAttribute("aria-pressed")).toBe("false");
     const card = getByRole(root, "region", { name: da.postingsTitle });
     const oct = unitAt("2026-10-01", "month", TODAY);
-    expect(getByRole(card, "button", { name: new RegExp(`^${unitName(oct, "month")},`) }).getAttribute("aria-expanded")).toBe(
+    expect(getByRole(card, "button", { name: new RegExp(`^${unitName(oct, "month", false)},`) }).getAttribute("aria-expanded")).toBe(
       "true",
     );
     expect(location.hash).toBe("#card=postings");
@@ -237,7 +237,7 @@ describe("the search on Posteringer", () => {
     const { root } = await mount("period=custom&from=2026-10-01&to=2026-12-31&unit=2026-12-01&card=postings");
     const card = getByRole(root, "region", { name: da.postingsTitle });
     const trail = getByRole(root, "navigation", { name: da.trail });
-    getByRole(trail, "button", { name: da.remove(unitName(unitAt("2026-12-01", "month", TODAY), "month")) });
+    getByRole(trail, "button", { name: da.remove(unitName(unitAt("2026-12-01", "month", TODAY), "month", false)) });
     searchbox(card);
     getByText(card, da.noSpending);
   });
@@ -503,7 +503,7 @@ describe("the Beløb pill on Posteringer", () => {
     const { app, root } = await mount("card=postings");
     plainSummary(root, ALL, TOTAL);
     const july = (n: number, sum: number) =>
-      getByRole(postingsCard(root), "button", { name: `${unitName(JULY, "month")}, ${count(n)}, ${postingAmount(sum)}` });
+      getByRole(postingsCard(root), "button", { name: `${unitName(JULY, "month", false)}, ${count(n)}, ${postingAmount(sum)}` });
     july(5, 1_510_000);
     const length = history.length;
     await applyAmount(app, root, "under", "4.500");

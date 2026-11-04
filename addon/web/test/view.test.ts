@@ -29,6 +29,8 @@ describe("the view state's hash", () => {
       unit: "2026-02-02",
       card: "shops",
       fullScreen: true,
+      fixed: false,
+      objectGroup: null,
       search: "pizza",
       shop: "Netto",
       amount: { kind: "about", value: 80_000 },
@@ -231,6 +233,26 @@ describe("the view state's hash", () => {
       search: "rema",
     });
     expect(parseHash("view=wide")).toEqual(DEFAULT_STATE);
+  });
+
+  it("the fixed-expenses view is view=fixed with og right after it", () => {
+    const s: ViewState = { ...DEFAULT_STATE, fixed: true, objectGroup: "Faste udgifter", search: "rema" };
+    expect(toHash(s)).toBe("view=fixed&og=Faste+udgifter&q=rema");
+    expect(parseHash("#view=fixed&og=Faste%20udgifter&q=rema")).toEqual(s);
+    expect(parseHash("#" + toHash(s))).toEqual(s);
+    expect(toHash({ ...DEFAULT_STATE, fixed: true })).toBe("view=fixed");
+    expect(DEFAULT_STATE.fixed).toBe(false);
+    expect(DEFAULT_STATE.objectGroup).toBeNull();
+  });
+
+  it("drops og without view=fixed and never writes it", () => {
+    expect(parseHash("og=Faste%20udgifter")).toEqual(DEFAULT_STATE);
+    expect(toHash({ ...DEFAULT_STATE, objectGroup: "Faste udgifter" })).toBe("");
+  });
+
+  it("keeps the first view, and fixed is not full screen", () => {
+    expect(parseHash("view=fixed&view=full")).toEqual({ ...DEFAULT_STATE, fixed: true });
+    expect(parseHash("view=full&view=fixed")).toEqual({ ...DEFAULT_STATE, fullScreen: true });
   });
 
   it("tells no accounts from all accounts", () => {

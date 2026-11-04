@@ -668,7 +668,7 @@ describe("the loading placeholder's key-number boxes", () => {
   }
 
   async function chooseJuly(root: HTMLElement, app: Parameters<typeof settle>[0]) {
-    const july = unitName(unitAt("2026-07-01", "month", "2026-10-30"), "month");
+    const july = unitName(unitAt("2026-07-01", "month", "2026-10-30"), "month", false);
     const bars = getByRole(root, "region", { name: da.per("month") });
     fireEvent.click(getByRole(bars, "button", { name: new RegExp(`^${july},`) }));
     await settle(app);

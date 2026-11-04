@@ -15,7 +15,7 @@ type Link = Posting["subscription"];
 
 const FIXED = da.inPeriod("Faste udgifter");
 const SUBS = da.inPeriod("Abonnementer");
-const JULY = unitName(unitAt("2026-07-01", "month", "2026-10-30"), "month");
+const JULY = unitName(unitAt("2026-07-01", "month", "2026-10-30"), "month", false);
 const JULY_FIXED = da.levelInUnit("Faste udgifter", JULY);
 const JULY_SUBS = da.levelInUnit("Abonnementer", JULY);
 
@@ -352,6 +352,17 @@ describe("the key numbers of the object groups", () => {
     }
   });
 
+  it("names the chosen unit without its year with I år", async () => {
+    const { root } = await mount("unit=2026-07-01", { answer: BILLS });
+    expect(objectCardNames(root, "Juli")).toContain("Faste udgifter i juli");
+  });
+
+  it("names the chosen unit with its year when the bars cross a new year", async () => {
+    const answer = linking(bills, "2026-11-04");
+    const { root } = await mount("period=last12Months&unit=2026-07-01", { answer, now: "2026-11-04T10:00:00Z" });
+    expect(objectCardNames(root, "Juli 2026")).toContain(da.levelInUnit("Faste udgifter", "Juli 2026"));
+  });
+
   it("with a chosen unit the value is that unit's payments, and a group with none keeps its card", async () => {
     const { root } = await mount("unit=2026-07-01", { answer: BILLS });
     expect(objectCardNames(root, JULY)).toEqual([JULY_SUBS, JULY_FIXED]);
@@ -430,25 +441,25 @@ describe("the key numbers of the object groups", () => {
 });
 
 describe("the link on each object group's key number", () => {
-  it("each object group's key number links to Faste udgifter", async () => {
+  it("each object group's key number links to the fixed-expenses view on its own group", async () => {
     const { root } = await mount("", { answer: BILLS });
-    for (const label of [FIXED, SUBS]) {
+    for (const [label, hash] of [
+      [FIXED, "#view=fixed&og=Faste+udgifter"],
+      [SUBS, "#view=fixed&og=Abonnementer"],
+    ]) {
       const link = subscriptionsLink(root, label);
       expect(link.textContent?.replace(/\s+/g, " ").trim()).toBe(`${da.showSubscriptions} →`);
-      expect(link.getAttribute("href")).toBe("#card=subscriptions");
+      expect(link.getAttribute("href")).toBe(hash);
     }
   });
 
-  it("shows the Faste udgifter tab in the normal card in one entry, and Back returns to the card before", async () => {
+  it("opens the fixed-expenses view in one entry, and Back returns to the card before", async () => {
     const { app, root } = await mount("card=postings&q=Netto", { answer: BILLS });
     const length = history.length;
     await follow(app, subscriptionsLink(root, FIXED));
-    expect(location.hash).toBe("#card=subscriptions&q=Netto");
+    expect(location.hash).toBe("#card=postings&view=fixed&og=Faste+udgifter&q=Netto");
     expect(history.length).toBe(length + 1);
-    getByRole(root, "region", { name: da.subscriptions });
-    const tab = getByRole(getByRole(root, "group", { name: da.view }), "button", { name: da.subscriptions });
-    expect(tab.getAttribute("aria-pressed")).toBe("true");
-    expect(isFullScreen(root)).toBe(false);
+    getByRole(root, "button", { name: da.switchObjectGroup("Faste udgifter") });
     history.back();
     await hashBecomes(app, "#card=postings&q=Netto");
     getByRole(root, "region", { name: da.postingsTitle });
@@ -457,7 +468,7 @@ describe("the link on each object group's key number", () => {
   it("closes an open detail on another card", async () => {
     const { app, root } = await mount("card=postings&detail=p%3Ap26", { answer: BILLS });
     await follow(app, subscriptionsLink(root, FIXED));
-    expect(location.hash).toBe("#card=subscriptions");
+    expect(location.hash).toBe("#card=postings&view=fixed&og=Faste+udgifter");
     expect(queryByRole(root, "group", { name: "Café Søde" })).toBeNull();
   });
 
@@ -479,7 +490,7 @@ describe("the link on each object group's key number", () => {
     expect(name(root, FIXED)).toBe(`${FIXED} ${kr(8090000)} ${line(812700, 2)}`);
   });
 
-  it("a plain card has no link, as there is no Faste udgifter tab", async () => {
+  it("a plain card has no link, as there is no fixed-expenses view", async () => {
     const { root } = await mount("");
     expect(getAllByRole(root, "group", { name: SUBS })).toHaveLength(1);
     expect(queryByRole(objectCard(root, SUBS), "link")).toBeNull();

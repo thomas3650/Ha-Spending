@@ -71,6 +71,18 @@ export function nextDate(s: Subscription, today: string): string | null {
   return s.end !== null && date > s.end ? null : date;
 }
 
+export function dueDatesUntil(s: Subscription, today: string, until: string): string[] {
+  const first = nextDate(s, today);
+  if (first === null) return [];
+  let k = 0;
+  while (dueDate(s, k) < first) k++;
+  const dates: string[] = [];
+  for (let date = dueDate(s, k); date <= until && (s.end === null || date <= s.end); date = dueDate(s, ++k)) {
+    dates.push(date);
+  }
+  return dates;
+}
+
 export type SubscriptionStatus =
   | { kind: "notSeen"; expected: string }
   | { kind: "risen"; max: number; paid: number }

@@ -5,6 +5,7 @@ import {
   amountPerPayment,
   amountPerYear,
   gapMonths,
+  dueDatesUntil,
   nextDate,
   subscriptionStatus,
 } from "../src/subscriptions";
@@ -197,5 +198,47 @@ describe("subscriptionStatus", () => {
   it("is paid when there is a payment and no next date", () => {
     const s = subscription({ end: "2026-10-31", lastPayment: paid("2026-10-01") });
     expect(subscriptionStatus(s, today)).toEqual({ kind: "paid", date: "2026-10-01" });
+  });
+});
+
+describe("dueDatesUntil", () => {
+  it("lists the monthly dates after the last payment up to the limit", () => {
+    const s = subscription({ start: "2026-01-15", lastPayment: paid("2026-10-15") });
+    expect(dueDatesUntil(s, "2026-10-20", "2026-12-31")).toEqual(["2026-11-15", "2026-12-15"]);
+  });
+
+  it("steps weekly with a skip by 14 days", () => {
+    const s = subscription({ repeat: "weekly", skip: 1, start: "2026-11-02" });
+    expect(dueDatesUntil(s, "2026-11-02", "2026-12-10")).toEqual(["2026-11-02", "2026-11-16", "2026-11-30"]);
+  });
+
+  it("steps quarterly", () => {
+    const s = subscription({ repeat: "quarterly", start: "2026-01-10", lastPayment: paid("2026-10-10") });
+    expect(dueDatesUntil(s, "2026-10-12", "2027-12-31")).toEqual(["2027-01-10", "2027-04-10", "2027-07-10", "2027-10-10"]);
+  });
+
+  it("steps yearly", () => {
+    const s = subscription({ repeat: "yearly", start: "2025-03-01", lastPayment: paid("2026-03-01") });
+    expect(dueDatesUntil(s, "2026-06-01", "2028-12-31")).toEqual(["2027-03-01", "2028-03-01"]);
+  });
+
+  it("stops at the end date", () => {
+    const s = subscription({ start: "2026-01-15", end: "2026-11-30", lastPayment: paid("2026-10-15") });
+    expect(dueDatesUntil(s, "2026-10-20", "2026-12-31")).toEqual(["2026-11-15"]);
+  });
+
+  it("counts every date from the start so a month end does not drift", () => {
+    const s = subscription({ start: "2026-01-31" });
+    expect(dueDatesUntil(s, "2026-01-31", "2026-04-30")).toEqual(["2026-01-31", "2026-02-28", "2026-03-31", "2026-04-30"]);
+  });
+
+  it("starts at a due date that has already passed", () => {
+    const s = subscription({ start: "2026-01-15", lastPayment: paid("2026-09-15") });
+    expect(dueDatesUntil(s, "2026-11-01", "2026-12-31")).toEqual(["2026-10-15", "2026-11-15", "2026-12-15"]);
+  });
+
+  it("is empty when there is no next date", () => {
+    const s = subscription({ start: "2026-01-15", end: "2026-10-31", lastPayment: paid("2026-10-15") });
+    expect(dueDatesUntil(s, "2026-11-01", "2026-12-31")).toEqual([]);
   });
 });

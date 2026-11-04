@@ -4,6 +4,7 @@ import { afterEach, describe, expect, it } from "vitest";
 
 import { kr, unitName } from "../src/format";
 import { da } from "../src/i18n/da";
+import { type BarItem, barTooltip } from "../src/components/bars";
 import { barsList, names } from "./bars-helpers";
 import { barChart, forgetCharts } from "./chart-mock";
 import { answerFor, OBJECT_GROUP } from "./fixture";
@@ -16,7 +17,7 @@ afterEach(() => {
 });
 
 const TODAY = "2026-10-30";
-const SEPTEMBER = unitName(unitAt("2026-09-01", "month", TODAY), "month");
+const SEPTEMBER = unitName(unitAt("2026-09-01", "month", TODAY), "month", false);
 
 /** A one-unit period's day bars choose nothing, so they are named by list items, not buttons. */
 function dayItems(root: HTMLElement): HTMLElement[] {
@@ -24,12 +25,22 @@ function dayItems(root: HTMLElement): HTMLElement[] {
 }
 
 describe("a one-month period draws its days", () => {
+  it("Denne måned names its days without a year, in the bar and the tooltip", async () => {
+    const { root } = await mount("period=thisMonth");
+    expect(names(dayItems(root))[3]).toBe(`4. oktober, ${kr(0)}`);
+    const item = (root.querySelector("hs-bars") as unknown as { items: BarItem[] }).items[3];
+    expect(item.name).toBe("4. oktober");
+    expect(barTooltip(item)).toContain("4. oktober");
+    expect(barTooltip(item)).not.toContain("2026");
+  });
+
+
   it("Sidste måned draws a bar per day of September", async () => {
     const { root } = await mount("period=lastMonth");
     const shown = names(dayItems(root));
     expect(shown).toHaveLength(30);
-    expect(shown[0]).toBe(`1.9.2026, ${kr(800000)}`);
-    expect(shown[29]).toBe(`30.9.2026, ${kr(0)}`);
+    expect(shown[0]).toBe(`1. september, ${kr(800000)}`);
+    expect(shown[29]).toBe(`30. september, ${kr(0)}`);
     expect(queryByRole(root, "region", { name: da.per("month") })).toBeNull();
   });
 
@@ -52,12 +63,12 @@ describe("a one-month period draws its days", () => {
       return json({ ...data, postings });
     };
     const { root } = await mount("period=lastMonth", { answer });
-    expect(names(dayItems(root))).toContain(`20.9.2026, ${kr(85000)}`);
+    expect(names(dayItems(root))).toContain(`20. september, ${kr(85000)}`);
   });
 
   it("a refund-only day is named with a plus", async () => {
     const { root } = await mount("period=lastMonth");
-    expect(names(dayItems(root))).toContain(`22.9.2026, +${kr(20000)} ${da.refundMark}`);
+    expect(names(dayItems(root))).toContain(`22. september, +${kr(20000)} ${da.refundMark}`);
   });
 
   it("Denne måned draws the whole month", async () => {

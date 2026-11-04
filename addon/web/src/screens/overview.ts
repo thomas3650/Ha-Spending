@@ -97,7 +97,7 @@ export class Overview extends LitElement {
     const hint = all ? null : selected ? da.chosenHint(name) : da.circleHintGroup;
     const empty = circleSpan(ctx).length === 0;
     const heading = all ? da.mainGroups : da.categories;
-    const unit = ctx.chosen === null ? null : unitName(ctx.chosen, ctx.timeline.grouping);
+    const unit = ctx.chosen === null ? null : unitName(ctx.chosen, ctx.timeline.grouping, ctx.unitYear);
     const centreName = unit !== null && all ? unit : name;
     const centreUnit = unit === null || all ? "" : da.inUnitLine(unit);
     return html`<section class="card half" role="region" aria-labelledby=${LEFT_TITLE}>

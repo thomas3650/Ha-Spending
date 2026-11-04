@@ -402,6 +402,6 @@ describe("the links built from an action leave no detail", () => {
     });
     const group = getByRole(root, "group", { name: da.inPeriod("Abonnementer") });
     await follow(app, getByRole(group, "link", { name: da.showSubscriptions }));
-    expect(location.hash).toBe("#card=subscriptions");
+    expect(location.hash).toBe("#card=postings&view=fixed&og=Abonnementer");
   });
 });

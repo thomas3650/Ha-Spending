@@ -13,6 +13,7 @@ import {
   unitsOf,
   within,
 } from "@ha-spending/shared";
+import { withYear } from "../format";
 import { da } from "../i18n/da";
 import { periodOf, type ViewState } from "../state/view";
 
@@ -24,6 +25,8 @@ export interface ViewContext {
   timeline: Timeline;
   units: Unit[];
   chosen: Unit | null;
+  /** Whether unit names carry their year: the bars' units cross a new year. */
+  unitYear: boolean;
   /** Every level, within the chosen accounts and the fetched range. */
   postings: ClassifiedPosting[];
   /** The key numbers', the bars' and Posteringer's postings. */
@@ -63,13 +66,14 @@ export function viewContext(data: SpendingData, state: ViewState, today: string)
   const circleLevel: Level = state.level.kind === "all" ? ALL : { kind: "mainGroup", mainGroup: state.level.mainGroup };
   const parentLevel = parentOf(state.level);
   const span = chosen ?? timeline.period;
-  return {
+  const ctx: ViewContext = {
     data,
     state,
     today,
     timeline,
     units,
     chosen,
+    unitYear: false,
     postings,
     shown: select(postings, state.level, null),
     circleLevel,
@@ -77,6 +81,8 @@ export function viewContext(data: SpendingData, state: ViewState, today: string)
     parentLevel,
     parentTotal: parentLevel === null ? null : total(within(select(postings, parentLevel, null), span)),
   };
+  ctx.unitYear = withYear(finerUnits(ctx)?.units ?? units);
+  return ctx;
 }
 
 export interface Finer {

@@ -45,7 +45,7 @@ function dayItems(root: HTMLElement): HTMLElement[] {
 }
 
 function monthNames(period: Period, today = TODAY): string[] {
-  return unitsOf(period, "month", today).map((u) => unitName(u, "month"));
+  return unitsOf(period, "month", today).map((u) => unitName(u, "month", false));
 }
 
 function nowAt(day: string) {
@@ -57,8 +57,8 @@ describe("a one-unit period draws finer bars", () => {
     const { root } = await mount("period=custom&from=2026-10-19&to=2026-10-25", { answer: withWeekPosting });
     const items = dayItems(root);
     expect(items).toHaveLength(7);
-    expect(names(items)[0].startsWith("19.10.2026")).toBe(true);
-    expect(names(items)[6].startsWith("25.10.2026")).toBe(true);
+    expect(names(items)[0].startsWith("19. oktober")).toBe(true);
+    expect(names(items)[6].startsWith("25. oktober")).toBe(true);
   });
 
   it("Wednesday to Friday draws three days", async () => {
@@ -70,7 +70,7 @@ describe("a one-unit period draws finer bars", () => {
     const { root } = await mount("period=custom&from=2026-10-21&to=2026-10-21", { answer: withWeekPosting });
     const shown = names(dayItems(root));
     expect(shown).toHaveLength(1);
-    expect(shown[0].startsWith("21.10.2026")).toBe(true);
+    expect(shown[0].startsWith("21. oktober")).toBe(true);
   });
 
   it("Sidste måned draws its days", async () => {
@@ -90,7 +90,7 @@ describe("a one-unit period draws finer bars", () => {
     const answer = (r: Period) => json({ ...answerFor(r), earliestPostingDate: "2026-10-10" });
     const { root } = await mount("period=all", { answer });
     const items = dayItems(root);
-    expect(names(items)[0].startsWith("10.10.2026")).toBe(true);
+    expect(names(items)[0].startsWith("10. oktober")).toBe(true);
     expect(running(items)).toEqual(Array.from({ length: 22 }, (_, i) => i === 20));
   });
 });
@@ -100,7 +100,7 @@ describe("a period of more than one unit draws its own bars", () => {
     const { root } = await mount("period=custom&from=2026-07-01&to=2026-09-30");
     const shown = names(barButtons(root, da.per("month")));
     expect(shown).toHaveLength(3);
-    ["Juli 2026", "August 2026", "September 2026"].forEach((name, i) => {
+    ["Juli", "August", "September"].forEach((name, i) => {
       expect(shown[i].startsWith(name)).toBe(true);
     });
   });
@@ -109,9 +109,9 @@ describe("a period of more than one unit draws its own bars", () => {
     const { root } = await mount("period=custom&from=2026-08-15&to=2026-09-30");
     const shown = names(barButtons(root, da.per("month")));
     expect(shown).toHaveLength(2);
-    expect(shown[0].startsWith("August 2026")).toBe(true);
+    expect(shown[0].startsWith("August")).toBe(true);
     const first = (root.querySelector("hs-bars") as unknown as { items: BarItem[] }).items[0];
-    expect(first.name).toBe("August 2026");
+    expect(first.name).toBe("August");
     expect(barTooltip(first)).toContain(rangeText({ start: "2026-08-15", end: "2026-08-31" }));
   });
 

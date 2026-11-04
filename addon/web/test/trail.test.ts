@@ -3,14 +3,15 @@ import { fireEvent, getByRole, queryAllByRole, queryByRole } from "@testing-libr
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import type { SpendingApp } from "../src/app";
-import { rangeText, unitName } from "../src/format";
+import { kr, rangeText, unitName } from "../src/format";
 import { da } from "../src/i18n/da";
+import { barButtons, names } from "./bars-helpers";
 import { forgetCharts } from "./chart-mock";
 import { answerFor } from "./fixture";
 import { json, mount, settle, unmount } from "./mount";
 
 const TODAY = "2026-10-30";
-const JAN = unitName(unitAt("2026-01-01", "month", TODAY), "month");
+const JAN = unitName(unitAt("2026-01-01", "month", TODAY), "month", false);
 const ALL_THREE = "unit=2026-01-01&group=Bolig&category=Husleje";
 const YEAR = da.presets.thisYear;
 
@@ -78,7 +79,7 @@ describe("the trail is the overview's filter", () => {
     expect(params().get("unit")).toBeNull();
     expect(params().get("group")).toBe("Bolig");
     expect(params().get("category")).toBe("Husleje");
-    expect(trailText(root)).toBe(`${da.allSpending} › ${YEAR} › Bolig › Husleje`);
+    expect(trailText(root)).toBe(`${da.allSpending} › ${YEAR} ${da.monthStep} › Bolig › Husleje`);
     expect(focused(root)).toBe(heading(root));
   });
 
@@ -112,24 +113,24 @@ describe("the trail is the overview's filter", () => {
     expect(params().get("category")).toBeNull();
     expect(params().get("q")).toBe("Hus");
     expect(params().get("shop")).toBe("Netto");
-    expect(trailText(root)).toBe(`${da.allSpending} › ${YEAR} ${da.mainGroupStep}`);
+    expect(trailText(root)).toBe(`${da.allSpending} › ${YEAR} ${da.monthStep} ${da.mainGroupStep}`);
   });
 
   it("with nothing chosen has no link and no ×", async () => {
     const { root } = await mount("");
-    expect(trailText(root)).toBe(`${da.allSpending} › ${YEAR} ${da.mainGroupStep}`);
+    expect(trailText(root)).toBe(`${da.allSpending} › ${YEAR} ${da.monthStep} ${da.mainGroupStep}`);
     expect(queryByRole(trail(root), "link", { name: da.allSpending })).toBeNull();
     expect(queryByRole(trail(root), "button", { name: /^Fjern / })).toBeNull();
   });
 
   it("leaves the unit out while the answer loads", async () => {
     const { root } = await mount("unit=2026-01-01&group=Bolig", { answer: () => new Promise<Response>(() => {}) });
-    expect(trailText(root)).toBe(`${da.allSpending} › ${YEAR} › Bolig ${da.categoryStep}`);
+    expect(trailText(root)).toBe(`${da.allSpending} › ${YEAR} ${da.monthStep} › Bolig ${da.categoryStep}`);
   });
 
   it("leaves the unit out on an error", async () => {
     const { root } = await mount("unit=2026-01-01&group=Bolig", { answer: () => json({ error: "refused" }, 502) });
-    expect(trailText(root)).toBe(`${da.allSpending} › ${YEAR} › Bolig ${da.categoryStep}`);
+    expect(trailText(root)).toBe(`${da.allSpending} › ${YEAR} ${da.monthStep} › Bolig ${da.categoryStep}`);
   });
 
   it("shows no step for a unit the period does not have", async () => {
@@ -142,7 +143,7 @@ describe("the trail is the overview's filter", () => {
     const { app, root } = await mount(ALL_THREE);
     fireEvent.click(x(root, JAN));
     await settle(app);
-    expect(trailText(root)).toBe(`${da.allSpending} › ${YEAR} › Bolig › Husleje`);
+    expect(trailText(root)).toBe(`${da.allSpending} › ${YEAR} ${da.monthStep} › Bolig › Husleje`);
     await back(app);
     expect(trailText(root)).toBe(`${da.allSpending} › ${YEAR} › ${JAN} › Bolig › Husleje`);
   });
@@ -185,7 +186,7 @@ describe("the trail holds the period and the levels", () => {
 
   it("reads Alt forbrug › I år Hovedgruppe on an empty hash, with the period as the heading", async () => {
     const { root } = await mount("");
-    expect(trailText(root)).toBe(`${da.allSpending} › ${YEAR} ${da.mainGroupStep}`);
+    expect(trailText(root)).toBe(`${da.allSpending} › ${YEAR} ${da.monthStep} ${da.mainGroupStep}`);
     expect(queryByRole(trail(root), "link", { name: da.allSpending })).toBeNull();
     expect(headingText(root)).toBe(YEAR);
     expect(heading(root).contains(periodStep(root))).toBe(true);
@@ -236,7 +237,7 @@ describe("the trail holds the period and the levels", () => {
     await settle(app);
     expect(push).toHaveBeenCalledWith(null, "", "#period=lastYear");
     expect(queryByRole(root, "group", { name: da.period })).toBeNull();
-    expect(trailText(root)).toBe(`${da.allSpending} › ${da.presets.lastYear} ${da.mainGroupStep}`);
+    expect(trailText(root)).toBe(`${da.allSpending} › ${da.presets.lastYear} ${da.monthStep} ${da.mainGroupStep}`);
     expect(headingText(root)).toBe(da.presets.lastYear);
   });
 
@@ -245,7 +246,7 @@ describe("the trail holds the period and the levels", () => {
     const range = rangeText({ start: "2026-01-01", end: "2026-03-15" });
     const step = getByRole(trail(root), "button", { name: da.periodStep(da.customLabel, range) });
     expect(step.textContent?.trim()).toBe(range);
-    expect(trailText(root)).toBe(`${da.allSpending} › ${range} ${da.mainGroupStep}`);
+    expect(trailText(root)).toBe(`${da.allSpending} › ${range} ${da.monthStep} ${da.mainGroupStep}`);
   });
 
   it("names Alt by itself before the first answer", async () => {
@@ -255,7 +256,7 @@ describe("the trail holds the period and the levels", () => {
 
   it("shows a chosen main group and category as buttons with a ×, and no dashed button after a category", async () => {
     const { root } = await mount("group=Bolig&category=Husleje");
-    expect(trailText(root)).toBe(`${da.allSpending} › ${YEAR} › Bolig › Husleje`);
+    expect(trailText(root)).toBe(`${da.allSpending} › ${YEAR} ${da.monthStep} › Bolig › Husleje`);
     const mainGroup = getByRole(trail(root), "button", { name: da.switchMainGroup("Bolig") });
     const category = getByRole(trail(root), "button", { name: da.switchCategory("Husleje") });
     expect(mainGroup.getAttribute("aria-expanded")).toBe("false");
@@ -332,4 +333,195 @@ describe("the trail holds the period and the levels", () => {
     await app.updateComplete;
     getByRole(root, "group", { name: da.accounts });
   }
+});
+
+describe("a unit's name carries its year only when the bars cross a new year", () => {
+  const at = (day: string, earliest?: string) => ({
+    now: `${day}T10:00:00Z`,
+    answer: (range: { start: string; end: string }) => {
+      const data = answerFor(range, day);
+      return json(earliest === undefined ? data : { ...data, earliestPostingDate: earliest });
+    },
+  });
+
+  function postingsGroups(root: HTMLElement): string[] {
+    return queryAllByRole(getByRole(root, "region", { name: da.postingsTitle }), "button")
+      .map((b) => b.getAttribute("aria-label") ?? b.textContent ?? "")
+      .filter((n) => /^Juli\b/.test(n));
+  }
+
+  it("with I år the trail, the bar and the Posteringer group read the month alone", async () => {
+    const { root } = await mount("unit=2026-07-01", at(TODAY));
+    getByRole(trail(root), "button", { name: da.remove("Juli") });
+    expect(queryByRole(trail(root), "button", { name: da.remove("Juli 2026") })).toBeNull();
+    expect(names(barButtons(root, da.per("month")))[6]).toMatch(/^Juli,/);
+    getByRole(trail(root), "button", { name: da.remove("Juli") });
+  });
+
+  it("with I år the Posteringer group lines are months without a year", async () => {
+    const { root } = await mount("card=postings", at(TODAY));
+    expect(postingsGroups(root).length).toBe(1);
+    expect(postingsGroups(root)[0]).toMatch(/^Juli, /);
+  });
+
+  it("with Sidste 12 måneder in November the month keeps its year", async () => {
+    const { root } = await mount("period=last12Months&unit=2026-07-01", at("2026-11-04"));
+    getByRole(trail(root), "button", { name: da.remove("Juli 2026") });
+    expect(names(barButtons(root, da.per("month"))).some((n) => n.startsWith("Juli 2026,"))).toBe(true);
+  });
+
+  it("with Alt over three years the year units read 2025", async () => {
+    const { root } = await mount("period=all&unit=2025-01-01", at(TODAY, "2024-03-01"));
+    getByRole(trail(root), "button", { name: da.remove("2025") });
+  });
+
+  it("names the Posteringer groups of Sidste 12 måneder with their year", async () => {
+    const { root } = await mount("period=last12Months&card=postings", at("2026-11-04"));
+    expect(postingsGroups(root).length).toBeGreaterThan(0);
+    expect(postingsGroups(root).every((n) => n.startsWith("Juli 2026"))).toBe(true);
+  });
+});
+
+describe("the unit step", () => {
+  const month = (m: number) => unitName(unitAt(`2026-${String(m).padStart(2, "0")}-01`, "month", TODAY), "month", false);
+  const AUG = month(8);
+  const SEP = month(9);
+
+  function step(root: HTMLElement, name: string): HTMLButtonElement {
+    return getByRole(trail(root), "button", { name }) as HTMLButtonElement;
+  }
+
+  function list(root: HTMLElement): HTMLElement {
+    return getByRole(trail(root), "group", { name: da.units });
+  }
+
+  function rows(root: HTMLElement): string[] {
+    return queryAllByRole(list(root), "button").map((b) => b.getAttribute("aria-label") ?? "");
+  }
+
+  async function open(app: SpendingApp, button: HTMLElement): Promise<void> {
+    fireEvent.click(button);
+    await app.updateComplete;
+  }
+
+  it("with nothing chosen is a dashed Måned after the period, before the level's dashed button", async () => {
+    const { root } = await mount("");
+    expect(trailText(root)).toBe(`${da.allSpending} › ${YEAR} ${da.monthStep} ${da.mainGroupStep}`);
+    const dashed = step(root, da.chooseMonth);
+    expect(dashed.textContent?.trim()).toBe(da.monthStep);
+    expect(dashed.getAttribute("aria-expanded")).toBe("false");
+    expect(dashed.getAttribute("aria-haspopup")).toBeNull();
+    expect(dashed.disabled).toBe(false);
+  });
+
+  it("lists the months in time order with their sums", async () => {
+    const { app, root } = await mount("");
+    await open(app, step(root, da.chooseMonth));
+    expect(step(root, da.chooseMonth).getAttribute("aria-expanded")).toBe("true");
+    const sums = [1100000, 1115000, 1160000, 1100000, 1100000, 1100000, 1510000, 1100000, 1150000, 1131012];
+    expect(rows(root)).toEqual(sums.map((sum, i) => `${month(i + 1)}, ${kr(sum)}`));
+    expect(queryAllByRole(list(root), "button").filter((b) => b.getAttribute("aria-current") !== null)).toEqual([]);
+  });
+
+  it("choosing a month shows its step and ×, in one history entry, and presses its bar", async () => {
+    const { app, root } = await mount("");
+    await open(app, step(root, da.chooseMonth));
+    const push = vi.spyOn(history, "pushState");
+    fireEvent.click(getByRole(list(root), "button", { name: `${AUG}, ${kr(1100000)}` }));
+    await settle(app);
+    expect(push).toHaveBeenCalledTimes(1);
+    expect(params().get("unit")).toBe("2026-08-01");
+    expect(queryByRole(trail(root), "group", { name: da.units })).toBeNull();
+    const chosen = step(root, da.switchMonth(AUG));
+    expect(chosen.getAttribute("aria-haspopup")).toBeNull();
+    expect(chosen.getAttribute("aria-expanded")).toBe("false");
+    getByRole(trail(root), "button", { name: da.remove(AUG) });
+    expect(trailText(root)).toBe(`${da.allSpending} › ${YEAR} › ${AUG} ${da.mainGroupStep}`);
+    expect(queryByRole(trail(root), "button", { name: da.chooseMonth })).toBeNull();
+    fireEvent.click(getByRole(getByRole(root, "group", { name: da.view }), "button", { name: da.bars }));
+    await settle(app);
+    expect(getByRole(root, "button", { name: new RegExp(`^${AUG},`) }).getAttribute("aria-pressed")).toBe("true");
+  });
+
+  it("the chosen step's list marks it and switches the month", async () => {
+    const { app, root } = await mount("unit=2026-08-01");
+    await open(app, step(root, da.switchMonth(AUG)));
+    const current = getByRole(list(root), "button", { name: `${AUG}, ${kr(1100000)}` });
+    expect(current.getAttribute("aria-current")).toBe("true");
+    fireEvent.click(current);
+    await settle(app);
+    expect(params().get("unit")).toBe("2026-08-01");
+    await open(app, step(root, da.switchMonth(AUG)));
+    fireEvent.click(getByRole(list(root), "button", { name: `${SEP}, ${kr(1150000)}` }));
+    await settle(app);
+    expect(params().get("unit")).toBe("2026-09-01");
+    step(root, da.switchMonth(SEP));
+  });
+
+  it("the × removes the unit and brings the dashed button back", async () => {
+    const { app, root } = await mount("unit=2026-08-01&group=Bolig");
+    expect(trailText(root)).toBe(`${da.allSpending} › ${YEAR} › ${AUG} › Bolig ${da.categoryStep}`);
+    fireEvent.click(x(root, AUG));
+    await settle(app);
+    expect(params().get("unit")).toBeNull();
+    expect(trailText(root)).toBe(`${da.allSpending} › ${YEAR} ${da.monthStep} › Bolig ${da.categoryStep}`);
+    step(root, da.chooseMonth);
+  });
+
+  it("as the last step is the heading, which reads the month", async () => {
+    const { root } = await mount("unit=2026-08-01");
+    expect(headingText(root)).toBe(AUG);
+    expect(heading(root).contains(step(root, da.switchMonth(AUG)))).toBe(true);
+  });
+
+  it("with Alt over three years chooses the year", async () => {
+    const { app, root } = await mount("period=all", {
+      answer: (range) => json({ ...answerFor(range), earliestPostingDate: "2024-03-01" }),
+    });
+    const dashed = step(root, da.chooseYear);
+    expect(dashed.textContent?.trim()).toBe(da.yearStep);
+    expect(queryByRole(trail(root), "button", { name: da.chooseMonth })).toBeNull();
+    await open(app, dashed);
+    fireEvent.click(getByRole(list(root), "button", { name: /^2025, / }));
+    await settle(app);
+    step(root, da.switchYear("2025"));
+  });
+
+  it("with Denne måned has neither step nor dashed button, also before the answer", async () => {
+    const { root } = await mount("period=thisMonth");
+    expect(queryByRole(trail(root), "button", { name: da.chooseMonth })).toBeNull();
+    expect(queryByRole(trail(root), "button", { name: /^Skift måned/ })).toBeNull();
+    unmount();
+    const loading = await mount("period=thisMonth", { answer: () => new Promise<Response>(() => {}) });
+    expect(queryByRole(trail(loading.root), "button", { name: da.chooseMonth })).toBeNull();
+  });
+
+  it("is a disabled dashed button while the answer loads and on an error", async () => {
+    const loading = await mount("unit=2026-08-01", { answer: () => new Promise<Response>(() => {}) });
+    expect(step(loading.root, da.chooseMonth).disabled).toBe(true);
+    expect(queryByRole(trail(loading.root), "button", { name: da.switchMonth(AUG) })).toBeNull();
+    unmount();
+    const failed = await mount("unit=2026-08-01", { answer: () => json({ error: "refused" }, 502) });
+    expect(step(failed.root, da.chooseMonth).disabled).toBe(true);
+    expect(queryByRole(trail(failed.root), "button", { name: da.switchMonth(AUG) })).toBeNull();
+  });
+
+  it("reads a month with more refunds than spending as a refund", async () => {
+    const { app, root } = await mount("", {
+      answer: (range) => {
+        const data = answerFor(range);
+        const refund = {
+          ...data.postings[0],
+          id: "refund",
+          groupId: "refund",
+          date: "2026-08-12",
+          kind: "refund" as const,
+          amount: -2000000,
+        };
+        return json({ ...data, postings: [...data.postings, refund].filter((p) => p.date >= range.start && p.date <= range.end) });
+      },
+    });
+    await open(app, step(root, da.chooseMonth));
+    getByRole(list(root), "button", { name: `${AUG}, +${kr(900000)} ${da.refundMark}` });
+  });
 });

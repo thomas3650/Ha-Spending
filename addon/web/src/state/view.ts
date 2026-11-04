@@ -32,6 +32,10 @@ export interface ViewState {
   card: Card;
   /** The right card fills the page. */
   fullScreen: boolean;
+  /** The fixed-expenses view replaces the overview; it is never full screen. */
+  fixed: boolean;
+  /** The fixed-expenses view's object group; null is Alle. Only with `fixed`. */
+  objectGroup: string | null;
   /** The quick filter: shared choices that stay when the top filter or the tab changes. */
   search: string;
   shop: string | null;
@@ -47,6 +51,8 @@ export const DEFAULT_STATE: ViewState = {
   unit: null,
   card: "bars",
   fullScreen: false,
+  fixed: false,
+  objectGroup: null,
   search: "",
   shop: null,
   amount: null,
@@ -60,6 +66,7 @@ const CARDS: readonly Card[] = ["bars", "postings", "subscriptions", "shops"];
 /** The old Alle posteringer screen; its links open Posteringer in full screen. */
 const ALL_POSTINGS = "all-postings";
 const FULL = "full";
+const FIXED = "fixed";
 
 function oneOf<T extends string>(values: readonly T[], value: string | null, fallback: T): T {
   return values.find((v) => v === value) ?? fallback;
@@ -138,13 +145,14 @@ function parseDetail(value: string | null): DetailKey | null {
   return { kind: match[1] === "s" ? "subscription" : "posting", id: match[2] };
 }
 
-/** What does not parse falls back to DEFAULT_STATE's value (D20); an old link's `sort` and `og` are ignored. */
+/** What does not parse falls back to DEFAULT_STATE's value (D20); an old link's `sort` is ignored, and `og` only counts with `view=fixed`. */
 export function parseHash(hash: string): ViewState {
   const p = new URLSearchParams(hash.startsWith("#") ? hash.slice(1) : hash);
   const accounts = p.get("accounts");
   const unit = p.get("unit") ?? undefined;
   const view = p.get("view");
   const allPostings = view === ALL_POSTINGS;
+  const fixed = view === FIXED;
   return {
     period: parsePeriod(p),
     accounts: accounts === null ? null : accounts.split(",").filter((id) => id !== ""),
@@ -152,6 +160,8 @@ export function parseHash(hash: string): ViewState {
     unit: isDate(unit) ? unit : null,
     card: allPostings ? "postings" : oneOf(CARDS, p.get("card"), DEFAULT_STATE.card),
     fullScreen: allPostings || view === FULL,
+    fixed,
+    objectGroup: fixed ? p.get("og") || null : null,
     search: p.get("q") ?? DEFAULT_STATE.search,
     shop: p.get("shop") || DEFAULT_STATE.shop,
     amount: parseAmount(p),
@@ -177,7 +187,12 @@ export function toHash(s: ViewState): string {
   if (s.level.kind === "category") p.set("category", s.level.category ?? "");
   if (s.unit !== null) p.set("unit", s.unit);
   if (s.card !== DEFAULT_STATE.card) p.set("card", s.card);
-  if (s.fullScreen) p.set("view", FULL);
+  if (s.fixed) {
+    p.set("view", FIXED);
+    if (s.objectGroup !== null) p.set("og", s.objectGroup);
+  } else if (s.fullScreen) {
+    p.set("view", FULL);
+  }
   if (s.search !== "") p.set("q", s.search);
   if (s.shop !== null) p.set("shop", s.shop);
   if (s.amount !== null) writeAmount(p, s.amount);
