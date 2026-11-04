@@ -6,6 +6,7 @@ export interface ShopSuggestion {
   name: string;
   /** The net sum in øre, refunds subtracted. */
   sum: number;
+  count: number;
 }
 
 export function fold(text: string): string {
@@ -28,13 +29,15 @@ export function textOnlyHit(p: Posting, search: string): boolean {
 export function shopSuggestions(base: Posting[], search: string): ShopSuggestion[] {
   const query = fold(search);
   if (query === "") return [];
-  const sums = new Map<string, number>();
+  const totals = new Map<string, { sum: number; count: number }>();
   for (const p of base) {
-    if (p.shop !== null && fold(p.shop).includes(query)) sums.set(p.shop, (sums.get(p.shop) ?? 0) + p.amount);
+    if (p.shop === null || !fold(p.shop).includes(query)) continue;
+    const total = totals.get(p.shop) ?? { sum: 0, count: 0 };
+    totals.set(p.shop, { sum: total.sum + p.amount, count: total.count + 1 });
   }
   const rank = (name: string) => (fold(name).startsWith(query) ? 0 : 1);
-  return [...sums]
-    .map(([name, sum]) => ({ name, sum }))
+  return [...totals]
+    .map(([name, { sum, count }]) => ({ name, sum, count }))
     .sort((a, b) => rank(a.name) - rank(b.name) || b.sum - a.sum || a.name.localeCompare(b.name, "da"))
     .slice(0, SUGGESTIONS);
 }

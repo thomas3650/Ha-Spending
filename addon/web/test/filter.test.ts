@@ -55,9 +55,9 @@ describe("shopSuggestions", () => {
       posting("f", "t", null, 99999),
     ];
     expect(shopSuggestions(base, "netto")).toEqual([
-      { name: "Netto", sum: 15000 },
-      { name: "Netto Nord", sum: 15000 },
-      { name: "Netto Syd", sum: 15000 },
+      { name: "Netto", sum: 15000, count: 2 },
+      { name: "Netto Nord", sum: 15000, count: 1 },
+      { name: "Netto Syd", sum: 15000, count: 1 },
     ]);
   });
 
@@ -69,9 +69,9 @@ describe("shopSuggestions", () => {
       posting("d", "t", "Coop Mad", -300),
     ];
     expect(shopSuggestions(base, "coop")).toEqual([
-      { name: "Coop 365", sum: 500 },
-      { name: "Coop", sum: 0 },
-      { name: "Coop Mad", sum: -300 },
+      { name: "Coop 365", sum: 500, count: 1 },
+      { name: "Coop", sum: 0, count: 2 },
+      { name: "Coop Mad", sum: -300, count: 1 },
     ]);
   });
 
@@ -79,7 +79,7 @@ describe("shopSuggestions", () => {
     const base = Array.from({ length: 12 }, (_, i) => posting(`p${i}`, "t", `Shop ${String(i).padStart(2, "0")}`, 100 + i));
     const found = shopSuggestions(base, "shop");
     expect(found).toHaveLength(8);
-    expect(found[0]).toEqual({ name: "Shop 11", sum: 111 });
+    expect(found[0]).toEqual({ name: "Shop 11", sum: 111, count: 1 });
   });
 
   it("lists the names starting with the text first, each tier by sum", () => {
@@ -99,18 +99,18 @@ describe("shopSuggestions", () => {
     ];
     const found = shopSuggestions(base, "sol");
     expect(found).toHaveLength(8);
-    expect(found[0]).toEqual({ name: "Solhat", sum: 1 });
+    expect(found[0]).toEqual({ name: "Solhat", sum: 1, count: 1 });
   });
 
   it("finds a Danish name through spaces and case", () => {
-    expect(shopSuggestions([posting("a", "t", "Føtex", 100)], "  føt ")).toEqual([{ name: "Føtex", sum: 100 }]);
+    expect(shopSuggestions([posting("a", "t", "Føtex", 100)], "  føt ")).toEqual([{ name: "Føtex", sum: 100, count: 1 }]);
   });
 
   it("keeps two shops that differ only in case apart, each with its own sum", () => {
     const base = [posting("a", "t", "netto", 100), posting("b", "t", "Netto", 300)];
     expect(shopSuggestions(base, "netto")).toEqual([
-      { name: "Netto", sum: 300 },
-      { name: "netto", sum: 100 },
+      { name: "Netto", sum: 300, count: 1 },
+      { name: "netto", sum: 100, count: 1 },
     ]);
   });
 });

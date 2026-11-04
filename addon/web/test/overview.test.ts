@@ -128,8 +128,13 @@ describe("the search on Posteringer", () => {
     await settle(app);
   }
 
-  function summary(root: HTMLElement, n: number, sum: number): HTMLElement {
-    return getByText(root, da.summary(count(n), kr(sum)));
+  function summary(root: HTMLElement, n: number, sum: number, all = ALL): HTMLElement {
+    const line = root.querySelector<HTMLElement>(".postings-summary");
+    const flat = (t: string) => t.replace(/\s+/g, " ").trim();
+    const text = flat(line?.textContent ?? "");
+    if (!text.startsWith("Viser ")) return getByText(root, da.summary(count(n), kr(sum)));
+    expect(text.startsWith(flat(`Viser ${n} af ${count(all)}${n === 0 ? "" : ` · ${kr(sum)}`} — `))).toBe(true);
+    return line as HTMLElement;
   }
 
   function postingTexts(card: HTMLElement): string[] {
@@ -272,7 +277,7 @@ describe("the search on Posteringer", () => {
     const { app, root } = await mount("card=postings", { answer });
     await type(app, root, "øl");
     expect(postingTexts(getByRole(root, "region", { name: da.postingsTitle }))).toEqual(["ØL OG VAND"]);
-    summary(root, 1, 12500);
+    summary(root, 1, 12500, ALL + 1);
   });
 
   it("counts everything for a search of spaces", async () => {
@@ -285,7 +290,7 @@ describe("the search on Posteringer", () => {
     const { root } = await mount("group=Mad&category=Caf%C3%A9&unit=2026-07-01&card=postings&q=e");
     const card = getByRole(root, "region", { name: da.postingsOf("Mad") });
     expect(postingTexts(card)).toEqual(["Café Søde"]);
-    summary(root, 1, 50000);
+    summary(root, 1, 50000, 1);
   });
 
   it("starts the postings list afresh on a new search", async () => {
@@ -317,7 +322,7 @@ describe("the search on Posteringer", () => {
   });
 
   describe("the shop", () => {
-    const ROMA = da.shopOption("Pizzeria Roma", kr(50000));
+    const ROMA = da.shopOption("Pizzeria Roma", 2, kr(50000));
     const CHIP = da.remove(da.shopChip("Pizzeria Roma"));
 
     function card(root: HTMLElement): HTMLElement {
@@ -453,8 +458,13 @@ describe("the Beløb pill on Posteringer", () => {
     return getByRole(root, "group", { name: da.amountName(filter) });
   }
 
-  function summary(root: HTMLElement, n: number, sum: number): HTMLElement {
-    return getByText(root, da.summary(count(n), kr(sum)));
+  function summary(root: HTMLElement, n: number, sum: number, all = ALL): HTMLElement {
+    const line = root.querySelector<HTMLElement>(".postings-summary");
+    const flat = (t: string) => t.replace(/\s+/g, " ").trim();
+    const text = flat(line?.textContent ?? "");
+    if (!text.startsWith("Viser ")) return getByText(root, da.summary(count(n), kr(sum)));
+    expect(text.startsWith(flat(`Viser ${n} af ${count(all)}${n === 0 ? "" : ` · ${kr(sum)}`} — `))).toBe(true);
+    return line as HTMLElement;
   }
 
   function postingsCard(root: HTMLElement): HTMLElement {
@@ -572,7 +582,7 @@ describe("the Beløb pill on Posteringer", () => {
     await settle(app);
     expect(location.hash).toBe("#period=lastYear&card=postings&under=4500");
     pill(root, UNDER);
-    summary(root, 2, 400_000);
+    summary(root, 2, 400_000, 3);
   });
 
   it("says nothing matches when the amount leaves no posting", async () => {

@@ -39,6 +39,7 @@ import { overviewStyles } from "./screens/overview";
 import {
   chooseShop,
   chooseUnit,
+  clearQuickFilter,
   closeDetail,
   detailResolves,
   keepDetail,
@@ -594,6 +595,18 @@ export class SpendingApp extends LitElement {
     this.apply(removeShop(this.state), event.detail === "key" ? "replace" : "push");
   }
 
+  private onQuickClear(): void {
+    this.push(clearQuickFilter(this.state));
+    void this.focusSearch();
+  }
+
+  private async focusSearch(): Promise<void> {
+    await this.updateComplete;
+    const overview = this.renderRoot.querySelector<LitElement>("hs-overview");
+    await overview?.updateComplete;
+    this.renderRoot.querySelector<HTMLElement>("hs-search input")?.focus();
+  }
+
   private push(next: ViewState): void {
     this.apply(next, "push");
   }
@@ -658,6 +671,7 @@ export class SpendingApp extends LitElement {
           @search-input=${this.onSearch}
           @shop-choose=${this.onShopChoose}
           @shop-remove=${this.onShopRemove}
+          @quick-clear=${this.onQuickClear}
           @amount-change=${(e: CustomEvent<AmountFilter | null>) => this.push(setAmount(this.state, e.detail))}
         ></hs-overview>
     `;

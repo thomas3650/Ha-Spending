@@ -1,4 +1,4 @@
-import { keyNumbers, total, within } from "@ha-spending/shared";
+import { type ClassifiedPosting, keyNumbers, total, within } from "@ha-spending/shared";
 import { css, html, LitElement, nothing } from "lit";
 import "../components/amount-pill";
 import "../components/bars";
@@ -13,7 +13,7 @@ import { count, kr, unitName } from "../format";
 import { da } from "../i18n/da";
 import { barItems, categoryColours, circleItems, circleSpan, circleTotal, partColours } from "../model/circle";
 import { finerUnits, levelName, type ViewContext } from "../model/context";
-import { inAmount } from "../model/amount";
+import { type AmountFilter, inAmount } from "../model/amount";
 import { detailView } from "../model/detail";
 import { matches, shopSuggestions } from "../model/filter";
 import { postingList, shownColumns, shownPostingSort, watchCategoryWidth } from "../model/postings";
@@ -177,8 +177,27 @@ export class Overview extends LitElement {
         <hs-search .search=${search} .shop=${shop} .suggestions=${shopSuggestions(base, search)}></hs-search>
         <hs-amount-pill .amount=${amount}></hs-amount-pill>
       </div>
-      <p class="postings-summary">${da.summary(count(postings.length), kr(total(postings)))}</p>`;
+      ${this.sentence(base.length, postings, search, shop, amount)}`;
     return { above, list: body };
+  }
+
+  /** Without a quick filter the count and sum; with one, what is shown of what there is, and Ryd (spec §4.3). */
+  private sentence(all: number, postings: ClassifiedPosting[], search: string, shop: string | null, amount: AmountFilter | null) {
+    const text = search.trim();
+    const parts = [
+      ...(shop === null ? [] : [shop]),
+      ...(text === "" ? [] : [da.searchPart(text)]),
+      ...(amount === null ? [] : [da.amountWords(amount)]),
+    ];
+    if (parts.length === 0) {
+      return html`<p class="postings-summary">${da.summary(count(postings.length), kr(total(postings)))}</p>`;
+    }
+    const sum = postings.length === 0 ? "" : kr(total(postings));
+    const shown = postings.length.toLocaleString("da-DK");
+    return html`<p class="postings-summary">
+      ${da.showing(shown, count(all), sum, parts.join(" · "))}
+      <button type="button" class="postings-clear" @click=${() => fire(this, "quick-clear")}>${da.clearQuick}</button>
+    </p>`;
   }
 
   /** A chosen category is named by the trail; the title names its main group, so it does not change. */
@@ -460,6 +479,15 @@ export const overviewStyles = css`
     display: flex;
     gap: 8px;
     align-items: flex-start;
+  }
+  .postings-clear {
+    margin-left: 8px;
+    padding: 0;
+    font: inherit;
+    color: var(--hs-accent-text);
+    background: none;
+    border: 0;
+    cursor: pointer;
   }
   .postings-summary {
     margin: 12px 0;

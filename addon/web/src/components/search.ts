@@ -131,16 +131,17 @@ export class Search extends LitElement {
   private options() {
     return this.suggestions.map((s, i) => {
       const text = sumText(s.sum);
+      const n = s.count.toLocaleString("da-DK");
       return html`<li
         role="option"
         id="${this.idBase}-${i}"
         class="search-option"
         aria-selected=${String(i === this.active)}
-        aria-label=${da.shopOption(s.name, text)}
+        aria-label=${da.shopOption(s.name, s.count, text)}
         @click=${() => this.choose(s.name)}
       >
         <span class="search-option-name">${s.name}</span>
-        <span class="search-option-sum">${text}</span>
+        <span class="search-option-sum">${n} · ${text}</span>
       </li>`;
     });
   }

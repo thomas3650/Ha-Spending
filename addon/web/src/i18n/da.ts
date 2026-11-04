@@ -174,7 +174,8 @@ export const da = {
   search: 'Søg i butik og tekst, fx "Netto"',
   searchLabel: "Søg",
   shopChip: (name: string) => `Butik: ${name}`,
-  shopOption: (name: string, sum: string) => `${name}, ${sum}`,
+  shopRowName: (name: string, sum: string) => `${name}, ${sum}`,
+  shopOption: (name: string, count: number, sum: string) => `${name}, ${count.toLocaleString("da-DK")}, ${sum}`,
   suggestions: "Butikker",
   amountInvalid: "Skriv et beløb som 1.000,50",
   amountEmpty: "Beløb",
@@ -214,6 +215,11 @@ export const da = {
   amountName: (filter: AmountFilter | null): string =>
     filter === null ? da.amountEmpty : `${da.amountEmpty}: ${da.amountShort(filter)}`,
   summary: (count: string, sum: string) => `${count} · ${sum}`,
+  /** With no hit the sum is empty and goes. */
+  showing: (shown: string, all: string, sum: string, parts: string) =>
+    `Viser ${shown} af ${all}${sum === "" ? "" : ` · ${sum}`} — ${parts}`,
+  searchPart: (text: string) => `"${text}"`,
+  clearQuick: "Ryd",
 
   noSpending: "Ingen forbrug i perioden",
   noMatch: "Ingen posteringer passer til filtrene",

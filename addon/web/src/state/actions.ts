@@ -106,6 +106,11 @@ export function setAmount(s: ViewState, amount: AmountFilter | null): ViewState 
   return { ...s, amount };
 }
 
+/** One push: Ryd clears the three together (top-filter spec §4.3). */
+export function clearQuickFilter(s: ViewState): ViewState {
+  return { ...s, search: "", shop: null, amount: null };
+}
+
 export function openDetail(s: ViewState, key: DetailKey): ViewState {
   return { ...s, detail: key };
 }
