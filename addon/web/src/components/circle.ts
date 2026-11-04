@@ -30,6 +30,7 @@ const LONG_LINE = { length: 16, length2: 10 };
 const LONG_LINE_EXTRA = LONG_LINE.length + LONG_LINE.length2 - SHORT_LINE.length - SHORT_LINE.length2;
 const RING_MIN = 0.46;
 const RING_MAX = 0.62;
+const NARROW_HOLE = 0.62;
 
 /**
  * Long lines let the small pieces' lines bend gently, but they take room from the labels, so only where the smallest
@@ -52,6 +53,12 @@ export function ringRadius(width: number, height: number): [number, number] {
   const room = LABEL_ROOM + (longLines(width, height) ? LONG_LINE_EXTRA : 0);
   const outer = Math.max(RING_MIN * half, Math.min(RING_MAX * half, width / 2 - room));
   return [Math.round(outer * 0.74), Math.round(outer)];
+}
+
+/** The widest the centre's name may be, in px: 80 % of the hole's diameter, the hole being the ring's inner circle. */
+export function centreWidth(width: number, height: number, narrow: boolean): number {
+  const diameter = narrow ? NARROW_HOLE * Math.min(width, height) : 2 * ringRadius(width, height)[0];
+  return Math.round(0.8 * diameter);
 }
 
 /** The small pieces come last, so turning the ring by their half puts their middle at 9 o'clock (UI spec §3.2). */
@@ -84,6 +91,8 @@ export class Circle extends LitElement {
   static override properties = {
     items: { attribute: false },
     centreName: { attribute: false },
+    centreUnit: { attribute: false },
+    hole: { attribute: false },
     centreAmount: { attribute: false },
     selected: { attribute: false },
     selectable: { attribute: false },
@@ -92,6 +101,10 @@ export class Circle extends LitElement {
 
   declare items: CircleItem[];
   declare centreName: string;
+  /** The unit on its own line under the name; empty for none. */
+  declare centreUnit: string;
+  /** The width limit of the centre's name in px, 0 before the chart has a width. */
+  declare hole: number;
   declare centreAmount: number;
   declare selected: CircleSelection | null;
   declare selectable: boolean;
@@ -109,6 +122,8 @@ export class Circle extends LitElement {
     super();
     this.items = [];
     this.centreName = "";
+    this.centreUnit = "";
+    this.hole = 0;
     this.centreAmount = 0;
     this.selected = null;
     this.selectable = false;
@@ -160,7 +175,10 @@ export class Circle extends LitElement {
         this.requestUpdate();
       });
       this.resizeObserver = new ResizeObserver(() => {
-        if (el.clientWidth > 0) this.narrow = el.clientWidth < NARROW_CHART;
+        if (el.clientWidth > 0) {
+          this.narrow = el.clientWidth < NARROW_CHART;
+          this.hole = centreWidth(el.clientWidth, el.clientHeight, this.narrow);
+        }
         if (`${el.clientWidth}x${el.clientHeight}` === this.ringSize) return;
         this.chartStale = true;
         this.requestUpdate();
@@ -266,8 +284,9 @@ export class Circle extends LitElement {
     return html`<div class=${this.narrow ? "circle circle-narrow" : "circle"}>
       <div class="circle-ring">
         <div class="chart" aria-hidden="true" ${ref(this.chartEl)}></div>
-        <div class="circle-centre">
+        <div class="circle-centre" style=${this.hole > 0 ? `--hs-hole: ${this.hole}px` : ""}>
           <div class="circle-centre-name">${this.centreName}</div>
+          ${this.centreUnit === "" ? nothing : html`<div class="circle-centre-unit">${this.centreUnit}</div>`}
           <div class="circle-centre-amount">${kr(this.centreAmount)}</div>
         </div>
       </div>
@@ -379,8 +398,18 @@ export const circleStyles = [
       text-align: center;
     }
     .circle-centre-name {
+      max-width: var(--hs-hole, none);
+      overflow: hidden;
+      display: -webkit-box;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 2;
       color: var(--hs-muted);
       font-size: 13px;
+    }
+    .circle-centre-unit {
+      color: var(--hs-muted);
+      font-size: 13px;
+      white-space: nowrap;
     }
     .circle-centre-amount {
       font-size: 20px;

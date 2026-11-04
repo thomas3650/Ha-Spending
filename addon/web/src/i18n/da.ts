@@ -137,6 +137,7 @@ export const da = {
     n === 12 ? `gns. de 12 ${da.groupings[g].many} før` : `gns. af ${da.unitCount(n, g)} før`,
   noDataBefore: "ingen data før perioden",
   unitTotal: (name: string) => `${name} i alt`,
+  inUnitLine: (name: string) => `i ${name.toLowerCase()}`,
   levelInUnit: (level: string, name: string) => `${level} i ${name.toLowerCase()}`,
   none: "–",
 

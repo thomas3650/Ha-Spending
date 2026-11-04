@@ -98,7 +98,8 @@ export class Overview extends LitElement {
     const empty = circleSpan(ctx).length === 0;
     const heading = all ? da.mainGroups : da.categories;
     const unit = ctx.chosen === null ? null : unitName(ctx.chosen, ctx.timeline.grouping);
-    const centre = unit === null ? name : all ? unit : da.levelInUnit(name, unit);
+    const centreName = unit !== null && all ? unit : name;
+    const centreUnit = unit === null || all ? "" : da.inUnitLine(unit);
     return html`<section class="card half" role="region" aria-labelledby=${LEFT_TITLE}>
       <div class="half-head">
         <h2 id=${LEFT_TITLE}>${unit === null ? heading : da.inUnit(heading, unit)}</h2>
@@ -108,7 +109,8 @@ export class Overview extends LitElement {
         ? this.empty()
         : html`<hs-circle
               .items=${items}
-              .centreName=${centre}
+              .centreName=${centreName}
+              .centreUnit=${centreUnit}
               .centreAmount=${whole}
               .selectable=${!all}
               .selected=${selected}

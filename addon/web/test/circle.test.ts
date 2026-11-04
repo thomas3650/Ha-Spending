@@ -4,7 +4,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import "../src/components/circle";
 import { parseRichText } from "zrender/lib/graphic/helper/parseText.js";
-import { type CircleItem, type CircleSelection, labelText, leaderLine, ringRadius, ringStartAngle } from "../src/components/circle";
+import { centreWidth, type CircleItem, type CircleSelection, labelText, leaderLine, ringRadius, ringStartAngle } from "../src/components/circle";
 import { kr, partLabel, percent } from "../src/format";
 import { da } from "../src/i18n/da";
 import { partName } from "../src/model/context";
@@ -35,6 +35,7 @@ interface Options {
   selected?: CircleSelection | null;
   selectable?: boolean;
   narrow?: boolean;
+  centreUnit?: string;
 }
 
 async function render(opts: Options) {
@@ -45,6 +46,7 @@ async function render(opts: Options) {
   el.selected = opts.selected ?? null;
   el.selectable = opts.selectable ?? false;
   el.narrow = opts.narrow ?? false;
+  el.centreUnit = opts.centreUnit ?? "";
   document.body.append(el);
   await el.updateComplete;
   return el;
@@ -186,6 +188,19 @@ describe("the circle", () => {
     expect(ringRadius(531, 400)).toEqual([77, 104]);
     expect(ringRadius(500, 400)).toEqual([74, 100]);
     expect(ringRadius(350, 560)).toEqual([60, 81]);
+  });
+
+  it("keeps the centre's name to 80 % of the hole's diameter", () => {
+    expect(centreWidth(1000, 400, false)).toBe(147);
+    expect(centreWidth(500, 400, false)).toBe(118);
+    expect(centreWidth(350, 240, true)).toBe(119);
+    expect(centreWidth(1000, 400, true)).toBe(198);
+  });
+
+  it("shows the unit on its own line between the name and the amount", async () => {
+    const el = await render({ items: itemsOf({ kind: "all" }, "mainGroup"), centreName: "Bolig og transport", centreUnit: "i oktober 2026" });
+    getByText(el, "Bolig og transport");
+    getByText(el, "i oktober 2026");
   });
 
   it("draws long leader lines only where the smallest ring leaves the labels their whole room", () => {

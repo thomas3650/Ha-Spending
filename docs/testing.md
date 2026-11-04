@@ -245,3 +245,7 @@ The page's list. Every screenshot is at 1440×960 with the console free of error
     The bar's tooltip says "+… kr. retur", the axis goes only a little below zero, and no tick has a minus.
     The accessibility tree of the trail's steps and of the Beløb pill shows no "menu", and the empty pill is named
     "Filtrér på beløb".
+51. `66-hullets-tekst`: the donut's centre ([small follow-ups spec](superpowers/specs/2026-11-04-small-follow-ups.md) §2).
+    Choose a month and a main group with a long name (two words and "og"). The name is on at most two lines inside the
+    hole, the unit ("i …") is on its own line under it, and the amount is under that. At Alt forbrug with a month
+    chosen, the unit alone is the name. Also at 1600 px wide and with the chart under 400 px wide (narrow).
