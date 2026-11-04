@@ -21,7 +21,7 @@ async function render(amount: AmountFilter | null = null) {
 }
 
 function emptyButton(el: HTMLElement): HTMLElement {
-  return getByRole(el, "button", { name: da.amountEmpty });
+  return getByRole(el, "button", { name: da.filterAmount });
 }
 
 function kindButton(el: HTMLElement): HTMLElement {
@@ -127,11 +127,11 @@ afterEach(() => {
 });
 
 describe("the empty pill", () => {
-  it("is a button named Beløb that opens the kinds", async () => {
+  it("is a button named Filtrér på beløb that opens the kinds", async () => {
     const { el } = await render();
     const button = emptyButton(el);
     expect(button.textContent).toContain(da.kr);
-    expect(button.getAttribute("aria-haspopup")).toBe("true");
+    expect(button.getAttribute("aria-haspopup")).toBeNull();
     expect(button.getAttribute("aria-expanded")).toBe("false");
     expect(menu(el)).toBeNull();
 
@@ -171,7 +171,7 @@ describe("choosing a kind", () => {
     await choose(el, "about");
     expect(menu(el)).toBeNull();
     expect(document.activeElement).toBe(field(el, da.amountKinds.about));
-    expect(kindButton(el).getAttribute("aria-haspopup")).toBe("true");
+    expect(kindButton(el).getAttribute("aria-haspopup")).toBeNull();
     expect(fired).toEqual([]);
   });
 
@@ -340,7 +340,7 @@ describe("the filled pill", () => {
     const pill = getByRole(el, "group", { name: "Beløb: omkring 800 kr." });
     expect(field(pill, da.amountKinds.about).value).toBe("800");
     expect(pill.textContent).toContain(da.kr);
-    expect(queryByRole(el, "button", { name: da.amountEmpty })).toBeNull();
+    expect(queryByRole(el, "button", { name: da.filterAmount })).toBeNull();
   });
 
   it("shows Mellem's two numbers", async () => {

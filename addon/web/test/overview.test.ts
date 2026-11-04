@@ -441,9 +441,8 @@ describe("the Beløb pill on Posteringer", () => {
     return getByRole(root, "combobox", { name: da.searchLabel });
   }
 
-  /** Beløb's column header has the empty pill's name, but no popup. */
   function emptyPill(root: HTMLElement): HTMLElement | null {
-    return queryAllByRole(root, "button", { name: da.amountEmpty }).find((b) => b.hasAttribute("aria-haspopup")) ?? null;
+    return queryByRole(root, "button", { name: da.filterAmount });
   }
 
   function pill(root: HTMLElement, filter: AmountFilter): HTMLElement {
@@ -544,6 +543,12 @@ describe("the Beløb pill on Posteringer", () => {
     await settle(app);
     expect(emptyPill(root)).not.toBeNull();
     plainSummary(root, ALL, TOTAL);
+  });
+
+  it("names the empty pill apart from the Beløb column header", async () => {
+    const { root } = await mount("card=postings");
+    expect(getAllByRole(root, "button", { name: da.amountEmpty })).toHaveLength(1);
+    getByRole(root, "button", { name: da.filterAmount });
   });
 
   it("stays when the tab changes", async () => {
