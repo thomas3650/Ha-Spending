@@ -461,4 +461,25 @@ describe("leaving full screen", () => {
     expect(pressed(root)).toBe("false");
     expect(app.shadowRoot?.activeElement).toBe(getByRole(root, "heading", { level: 2, name: da.per("month") }));
   });
+
+  it("puts the focus on the right card's heading after Back too, when a focused row is gone", async () => {
+    const { app, root } = await mountWith("");
+    fireEvent.click(getAllByRole(root, "link", { name: /posteringer →$/ })[0] as HTMLElement);
+    await settle(app);
+    const row = getAllByRole(root, "button").find((b) => b.getAttribute("data-detail") !== null) as HTMLElement;
+    fireEvent.click(row);
+    await settle(app);
+    getByRole(root, "heading", { level: 3 });
+    // A browser fires popstate after the call returns; happy-dom fires it at once.
+    const back = history.back.bind(history);
+    const go = history.go.bind(history);
+    vi.spyOn(history, "back").mockImplementation(() => void setTimeout(back));
+    vi.spyOn(history, "go").mockImplementation((delta) => void setTimeout(() => go(delta)));
+    fireEvent.keyDown(window, { key: "Escape" });
+    await settle(app, 5);
+    fireEvent.keyDown(window, { key: "Escape" });
+    await settle(app, 10);
+    expect(pressed(root)).toBe("false");
+    expect(app.shadowRoot?.activeElement).toBe(getByRole(root, "heading", { level: 2, name: da.per("month") }));
+  });
 });

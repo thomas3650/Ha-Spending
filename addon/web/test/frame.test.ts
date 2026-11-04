@@ -377,6 +377,7 @@ describe("the frame", () => {
 
   it("disables the dashed button when its list would be empty", async () => {
     const { root } = await mount("period=custom&from=2020-01-01&to=2020-12-31");
+    getByText(getAllByRole(root, "region")[0] as HTMLElement, da.noSpending);
     const dashed = getByRole(getByRole(root, "navigation", { name: da.trail }), "button", { name: da.chooseMainGroup });
     expect((dashed as HTMLButtonElement).disabled).toBe(true);
   });

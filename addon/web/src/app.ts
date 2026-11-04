@@ -261,6 +261,7 @@ export class SpendingApp extends LitElement {
   /** The detail a close or Back just closed, whose row gets the focus back after the render. */
   private closed: DetailKey | null = null;
   private leftFullScreen = false;
+  private headingAfterBack = false;
   /** Set by a row's click only: a link, a reload or full screen leave the focus where it is. */
   private openedByRow = false;
   /** Back is async: until its popstate, history.state still shows the entry being left. */
@@ -299,6 +300,11 @@ export class SpendingApp extends LitElement {
   private readonly onPop = (): void => {
     this.backPending = false;
     this.onHash();
+    if (this.headingAfterBack) {
+      this.headingAfterBack = false;
+      this.leftFullScreen = true;
+      this.requestUpdate();
+    }
     const quick = this.quickOnLanding;
     this.quickOnLanding = null;
     if (quick !== null) this.keepQuickFilter(quick);
@@ -388,6 +394,7 @@ export class SpendingApp extends LitElement {
       const quick = { search: off.search, shop: off.shop, amount: off.amount };
       this.quickOnLanding = entry.quick === quickKey(quick) ? null : quick;
       this.change(entry.full === true ? off : closeDetail(off));
+      this.headingAfterBack = true;
       this.goBack(entry.full === true ? 1 : 2);
       return;
     }
