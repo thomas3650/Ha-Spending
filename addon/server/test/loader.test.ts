@@ -40,13 +40,17 @@ const SPAN_FREE = {
   accounts: /^\/api\/v1\/accounts$/,
   bills: /^\/api\/v1\/bills$/,
 };
+/** The asset, revenue and liability accounts are three reads. */
+const PER_SPAN_FREE: Record<keyof typeof SPAN_FREE, number> = { rules: 1, categories: 1, accounts: 3, bills: 1 };
+
+const spanFreeReads = () => Object.entries(SPAN_FREE) as [keyof typeof SPAN_FREE, RegExp][];
 
 describe("createDataLoader", () => {
   it("two spans read in a row ask for the rules, categories, accounts and bills once", async () => {
     const { load, asked } = setUp();
     await load(JANUARY);
     const february = await load(FEBRUARY);
-    for (const pattern of Object.values(SPAN_FREE)) expect(asked(pattern)).toBe(1);
+    for (const [name, pattern] of spanFreeReads()) expect(asked(pattern), name).toBe(PER_SPAN_FREE[name]);
     expect(february.postings.every((p) => p.date >= FEBRUARY.start && p.date <= FEBRUARY.end)).toBe(true);
     expect(february.categories.length).toBeGreaterThan(0);
   });
@@ -57,11 +61,11 @@ describe("createDataLoader", () => {
     await load(JANUARY);
     clock.now = new Date(2026, 9, 31, 0, 1);
     const march = await load(MARCH);
-    for (const pattern of Object.values(SPAN_FREE)) expect(asked(pattern)).toBe(2);
+    for (const [name, pattern] of spanFreeReads()) expect(asked(pattern), name).toBe(2 * PER_SPAN_FREE[name]);
     expect(march.today).toBe("2026-10-31");
     const january = await load(JANUARY);
     expect(january.today).toBe("2026-10-31");
-    for (const pattern of Object.values(SPAN_FREE)) expect(asked(pattern)).toBe(2);
+    for (const [name, pattern] of spanFreeReads()) expect(asked(pattern), name).toBe(2 * PER_SPAN_FREE[name]);
   });
 
   it("after a failed read of the rules the next call asks for them again", async () => {
@@ -101,6 +105,6 @@ describe("createDataLoader", () => {
     const answer = (february as PromiseFulfilledResult<Awaited<ReturnType<typeof load>>>).value;
     expect(answer.postings.length).toBeGreaterThan(0);
     expect(answer.mainGroupsFound).toBe(true);
-    for (const pattern of Object.values(SPAN_FREE)) expect(asked(pattern)).toBe(1);
+    for (const [name, pattern] of spanFreeReads()) expect(asked(pattern), name).toBe(PER_SPAN_FREE[name]);
   });
 });

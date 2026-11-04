@@ -82,6 +82,45 @@ export interface SpendingData {
    * row and no box.
    */
   subscriptions: Subscription[];
+  /** true: some member in the options is a revenue account, so the page shows Til overs. */
+  leftOver: boolean;
+}
+
+/** One member's money in a month of Til overs, in øre. */
+export interface LeftOverMember {
+  name: string;
+  paidIn: number;
+  back: number;
+}
+
+/** One calendar month of Til overs, in øre, with the signs of the Til overs spec §3. */
+export interface LeftOverMonth {
+  /** YYYY-MM. */
+  month: string;
+  paidIn: number;
+  back: number;
+  /** By name; only the members with an amount that is not zero. */
+  members: LeftOverMember[];
+  spending: number;
+  /** Above zero when money went to savings. */
+  savings: number;
+  /** Above zero when the credit line was paid down. */
+  credit: number;
+  other: number;
+  /** paidIn − back − spending − credit − savings + other. */
+  change: number;
+}
+
+/** The answer of `/api/left-over`. */
+export interface LeftOverData {
+  range: Period;
+  today: string;
+  /** Some name in the savings option is a category. */
+  hasSavings: boolean;
+  /** Some name in the credit option is an asset account. */
+  hasCredit: boolean;
+  /** Every calendar month the range touches, newest first. */
+  months: LeftOverMonth[];
 }
 
 export type DataErrorCode = "unreachable" | "refused" | "bad-request" | "internal";
