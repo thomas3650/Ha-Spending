@@ -60,10 +60,10 @@ Claude proposed these, and Thomas agreed:
   | Not seen | **Ikke set** (red, no border) |
 
   The date it used to carry is the row's Dato cell. A paid row's Dato is its posting's date; an estimate's and a
-  not-seen row's is the due date. So nothing is lost. This supersedes fixed expenses over time spec §6.3's status texts
-  ("Betalt 1. aug", "Estimat · forventes 1. dec", "Estimat · forfalden 3. nov", "Ikke set · ventet 4. okt"). That spec
-  says Thomas asked for the expected date with the estimate. The date stays, in its own column. The estimate is still
-  marked by "ca." before the amount, the amount's italics and the status's dashed border.
+  not-seen row's is the due date. So nothing is lost. This supersedes fixed expenses over time spec §6.3's status
+  texts ("Betalt 1. aug", "Estimat · forventes 1. dec", "Estimat · forfalden 3. nov", "Ikke set · ventet 4. okt").
+  That spec says Thomas asked for the expected date with the estimate. The date stays, in its own column. The
+  estimate is still marked by "ca." before the amount, the amount's italics and the status's dashed border.
 - **A year unit** ("Alt" by År, one row per fixed expense) has no Dato and no status column, as now. Its line under the
   name ("12 betalinger · heraf 2 estimat, næste forventes 1. dec · 1 ikke set") keeps its dates.
 
@@ -288,16 +288,16 @@ and the colours (§5) are checked in Chrome, not in tests.
   - eleven parts giving nine lines and "2 andre: …", and ten parts giving ten lines and no folded line;
   - the legend's order, and the total line keeping paid and estimates apart;
   - the folded line's grey swatch, and its " · forfalden" when a folded part is due;
-  - the exported step that turns the lines into the tooltip's HTML escapes a part name holding `<` ([D68](../../decisions.md):
-    the chart's wiring is not read in tests).
+  - the exported step that turns the lines into the tooltip's HTML escapes a part name holding `<`
+    ([D68](../../decisions.md): the chart's wiring is not read in tests).
 - **§5.1:** a model unit test: the tab's row for a due subscription is marked due, keeps the Forventes kind, and keeps
   its place in the Status sort. Its text reads "Forfalden …".
 - **§5.3:**
   - With a due estimate in the bars the legend has "Rød kant: forfalden"; without one it does not.
   - The legend reads "Skraveret: estimat" when there are estimates.
   - A model test: a part with a due estimate and a future one in the running unit gives a due sum and an estimate sum.
-- **The Chrome check** ([`testing.md`](../../testing.md#chrome-check)), in the fast loop at 1100, 1200, 1440 and 1728 px, at
-  900 px for the stacked halves, and in a window about 500 px high:
+- **The Chrome check** ([`testing.md`](../../testing.md#chrome-check)), in the fast loop at 1100, 1200, 1440 and
+  1728 px, at 900 px for the stacked halves, and in a window about 500 px high:
   - the normal list fits with no sideways scroll, no badge and no cut status or sum, with one object group and with
     "Alle";
   - each card's full screen, the list's badges in full screen, and the bars reaching the bottom edge, or keeping
