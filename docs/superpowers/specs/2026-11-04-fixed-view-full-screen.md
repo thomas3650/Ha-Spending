@@ -3,7 +3,7 @@
 **Real Home Assistant:** no change there from this work. The release reaches the house through the house session
 ([`releasing.md`](../../releasing.md#after-a-release)). No new option, no new file in `/data`, no server change.
 
-**Issue:** closes #174. One branch, one PR.
+**Issue:** closes #174 and #171 (the same list bug, filed from the release check). One branch, one PR.
 
 **Approved:** by Thomas on 2026-11-04 ("Godkendt, kør til release"), after `reviewer` rated it Ready.
 
