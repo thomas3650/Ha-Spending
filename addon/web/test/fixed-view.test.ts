@@ -4,6 +4,7 @@ import {
   getAllByRole,
   getByRole,
   getByText,
+  getByTitle,
   queryAllByRole,
   queryByRole,
   queryByText,
@@ -151,6 +152,11 @@ function barNames(root: HTMLElement, title?: string): string[] {
 
 function listRegion(root: HTMLElement, title = da.fixed.inPeriod): HTMLElement {
   return getByRole(root, "region", { name: title });
+}
+
+/** The payment rows, not the header or a unit's group line. */
+function dataRows(list: HTMLElement): HTMLElement[] {
+  return getAllByRole(list, "row").filter((r) => queryAllByRole(r, "cell").length > 2);
 }
 
 async function openGroups(app: SpendingApp, root: HTMLElement, name: string): Promise<HTMLElement> {
@@ -626,7 +632,7 @@ describe("the accounts and refunds (spec §5.3)", () => {
       queryAllByRole(r, "cell").map((c) => flat(c.textContent)),
     );
     const row = cells.find((c) => c[0] === shortDate("2026-07-20", TODAY));
-    expect(row?.slice(3)).toEqual([flat(barKr(-100000)), da.fixed.status.paid(shortDate("2026-07-20", TODAY))]);
+    expect(row?.slice(3)).toEqual([flat(barKr(-100000)), da.fixed.status.paid]);
   });
 });
 
@@ -659,13 +665,13 @@ describe("the payments (spec §6)", () => {
       queryAllByRole(r, "cell").map((c) => flat(c.textContent)),
     );
     const row = (date: string, name: string) => cells.find((c) => c[0] === date && c[1].startsWith(name));
-    expect(row(shortDate("2026-10-01", TODAY), "Husleje")?.slice(2)).toEqual(["Husleje", flat(barKr(800000)), da.fixed.status.paid(shortDate("2026-10-01", TODAY))]);
-    expect(row(shortDate("2026-10-31", TODAY), "Avis")?.slice(3)).toEqual([flat(da.fixed.estimated(kr(20000))), da.fixed.status.expected(shortDate("2026-10-31", TODAY))]);
+    expect(row(shortDate("2026-10-01", TODAY), "Husleje")?.slice(2)).toEqual(["Husleje", flat(barKr(800000)), da.fixed.status.paid]);
+    expect(row(shortDate("2026-10-31", TODAY), "Avis")?.slice(3)).toEqual([flat(da.fixed.estimated(kr(20000))), da.fixed.status.expected]);
     expect(row(shortDate("2026-10-28", TODAY), "Forsikring")?.slice(3)).toEqual([
       flat(da.fixed.estimated(kr(30000))),
-      da.fixed.status.due(shortDate("2026-10-28", TODAY)),
+      da.fixed.status.due,
     ]);
-    expect(row(shortDate("2026-09-12", TODAY), "Tennis")?.slice(2)).toEqual(["Gaver", da.none, da.fixed.status.notSeen(shortDate("2026-09-12", TODAY))]);
+    expect(row(shortDate("2026-09-12", TODAY), "Tennis")?.slice(2)).toEqual(["Gaver", da.none, da.fixed.status.notSeen]);
     expect(cells.filter((c) => c[1]?.startsWith("Tennis") && c[0] === shortDate("2026-10-12", TODAY))).toEqual([]);
   });
 
@@ -677,6 +683,37 @@ describe("the payments (spec §6)", () => {
     expect(queryByRole(list, "columnheader", { name: da.fixed.dateColumn })).toBeNull();
     const text = flat(list.textContent);
     expect(text).toContain(`${da.fixed.payments(11)} · ${da.fixed.ofWhichEstimates(2, shortDate("2026-11-01", TODAY))}`);
+  });
+
+  it("with one object group chosen, no row has the object group's badge in its name", async () => {
+    const { root } = await open(OPEN.slice(1));
+    const names = dataRows(listRegion(root)).map((r) => flat(queryAllByRole(r, "cell")[1].textContent));
+    expect(names.length).toBeGreaterThan(0);
+    for (const name of names) expect(name).not.toContain("Faste udgifter");
+  });
+
+  it("with Alle, a row's name has no badge and names its object group in its tooltip", async () => {
+    const { root } = await open("view=fixed");
+    const husleje = dataRows(listRegion(root))
+      .map((r) => queryAllByRole(r, "cell")[1])
+      .filter((c) => flat(c.textContent).startsWith("Husleje"));
+    expect(husleje.length).toBeGreaterThan(0);
+    for (const cell of husleje) {
+      expect(flat(cell.textContent)).toBe("Husleje");
+      getByTitle(cell, "Husleje · Faste udgifter");
+    }
+  });
+
+  it("Alt by År with Alle starts each row's line with its object group", async () => {
+    const { root } = await open("period=all&view=fixed", { answer: answer({ earliest: "2023-01-01" }) });
+    const groupOf = new Map(BILLS.map((b) => [b.name, b.objectGroup]));
+    const names = dataRows(listRegion(root)).map((r) => flat(queryAllByRole(r, "cell")[0].textContent));
+    expect(names.length).toBeGreaterThan(0);
+    for (const text of names) {
+      const name = [...groupOf.keys()].find((n) => text.startsWith(`${n} `));
+      expect(name, text).toBeDefined();
+      expect(text.startsWith(`${name} ${groupOf.get(name ?? "")} · `), text).toBe(true);
+    }
   });
 
   it("has a Kategori column at Alt forbrug and in a main group, and none in a category", async () => {

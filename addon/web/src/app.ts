@@ -792,13 +792,15 @@ export class SpendingApp extends LitElement {
   /** The view's own cards stand where the overview's key numbers do (spec §4). */
   private fixedScreen(ctx: ViewContext, view: FixedView) {
     this.boxes = view.cards.length;
+    const step = objectGroupStep(view.groups, this.state.objectGroup);
+    const oneGroup = this.state.objectGroup !== null || step.single;
     return html`
       ${ctx.data.mainGroupsFound ? nothing : html`<p class="card line status" role="status">${da.noRuleGroup}</p>`}
       <hs-key-numbers .cards=${view.cards} .objectGroups=${[]}></hs-key-numbers>
       <hs-fixed
         .view=${view}
-        .list=${fixedList(view, view.chosen)}
-        .groupTitle=${objectGroupStep(view.groups, this.state.objectGroup).title}
+        .list=${fixedList(view, view.chosen, { full: false, oneGroup })}
+        .groupTitle=${step.title}
         @unit-click=${(e: CustomEvent<UnitSelection>) => this.push(chooseFixedUnit(this.state, e.detail.fullStart))}
       ></hs-fixed>
     `;

@@ -315,12 +315,14 @@ export const da = {
     summaryEstimate: (estimate: string) => `estimat ca. ${estimate}`,
     summaryTotal: (total: string) => `i alt ca. ${total}`,
     allEstimates: "estimat",
+    /** One word: the row's Dato holds the date (fixed view full screen spec §2.1). */
     status: {
-      paid: (date: string) => `Betalt ${date}`,
-      expected: (date: string) => `Estimat · forventes ${date}`,
-      due: (date: string) => `Estimat · forfalden ${date}`,
-      notSeen: (date: string) => `Ikke set · ventet ${date}`,
+      paid: "Betalt",
+      expected: "Forventes",
+      due: "Forfalden",
+      notSeen: "Ikke set",
     },
+    nameInGroup: (name: string, objectGroup: string) => `${name} · ${objectGroup}`,
     ofWhichEstimates: (n: number, next: string) => `heraf ${n} estimat, næste forventes ${next}`,
     empty: (level: string) => `Ingen faste udgifter i ${level} i perioden`,
   },

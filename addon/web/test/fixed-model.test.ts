@@ -419,9 +419,9 @@ describe("the view's list", () => {
     expect(names.at(-1)).toBe("Januar");
     const july = list.groups?.find((g) => g.name === "Juli");
     expect(july?.rows.map((r) => [r.date, r.name, r.status?.text])).toEqual([
-      ["1. jul", "Husleje", "Betalt 1. jul"],
-      ["3. jul", "Bilforsikring", "Betalt 3. jul"],
-      ["5. jul", "Indboforsikring", "Ikke set · ventet 5. jul"],
+      ["1. jul", "Husleje", da.fixed.status.paid],
+      ["3. jul", "Bilforsikring", da.fixed.status.paid],
+      ["5. jul", "Indboforsikring", da.fixed.status.notSeen],
     ]);
     expect(july?.rows[2].amount).toBe(da.none);
     expect(july?.count).toBe(da.fixed.payments(2));
@@ -429,7 +429,8 @@ describe("the view's list", () => {
     expect(december?.count).toBe(`${da.fixed.payments(1)} · estimat`);
     expect(december?.rows[0]).toMatchObject({
       amount: `ca. ${kr(800000)}`,
-      status: { text: "Estimat · forventes 1. dec" },
+      date: "1. dec",
+      status: { text: da.fixed.status.expected },
     });
     expect(list.groups?.find((g) => g.name === "Oktober")?.count).toBe(`${da.fixed.payments(1)} · i gang`);
   });
@@ -451,7 +452,11 @@ describe("the view's list", () => {
   it("names a due estimate forfalden", () => {
     const due = bill("d1", "Forfalden", { start: "2026-01-28", lastPayment: paidOn("2026-09-28") });
     const rows = fixedList(viewOf(FIXED, linked([due])), null).rows;
-    expect(rows.find((r) => r.date === "28. okt")?.status?.text).toBe("Estimat · forfalden 28. okt");
+    expect(rows.find((r) => r.date === "28. okt")?.status).toEqual({
+      kind: "estimate",
+      due: true,
+      text: da.fixed.status.due,
+    });
   });
 
   it("shows only a chosen unit's rows, with no group line", () => {
@@ -474,6 +479,38 @@ describe("the view's list", () => {
       ["Avis", "1 betaling · heraf 1 estimat, næste forventes 20. nov", `ca. ${kr(20000)}`, null],
       ["Indboforsikring", "1 ikke set", da.none, null],
     ]);
+  });
+
+  it("in the normal card with several object groups, names the group in the name's tooltip and the year's line", () => {
+    const data = { ...linked(), earliestPostingDate: "2023-05-01" };
+    const list = fixedList(viewOf(`period=all&${FIXED}`, data), null, { full: false, oneGroup: false });
+    expect(list.full).toBe(false);
+    const husleje = list.groups?.find((g) => g.name === "2026")?.rows.find((r) => r.name === "Husleje");
+    expect(husleje).toMatchObject({
+      badge: false,
+      nameTitle: "Husleje · Faste udgifter",
+      sub: "Faste udgifter · 12 betalinger · heraf 2 estimat, næste forventes 1. nov",
+    });
+  });
+
+  it("with one object group, has no badge and the plain name in the tooltip", () => {
+    const row = fixedList(viewOf(FIXED), null).rows.find((r) => r.name === "Husleje");
+    expect(row).toMatchObject({ badge: false, nameTitle: "Husleje" });
+  });
+
+  it("in full screen, has the badge, the plain name and a year's line without the group", () => {
+    const data = { ...linked(), earliestPostingDate: "2023-05-01" };
+    const list = fixedList(viewOf(`period=all&${FIXED}`, data), null, { full: true, oneGroup: false });
+    expect(list.full).toBe(true);
+    const year = list.groups?.find((g) => g.name === "2026")?.rows ?? [];
+    expect(year.length).toBeGreaterThan(0);
+    for (const r of year) {
+      expect(r.badge).toBe(true);
+      expect(r.nameTitle).toBe(r.name);
+      expect(r.sub?.startsWith(r.objectGroup)).toBe(false);
+    }
+    const rows = fixedList(viewOf(FIXED), null, { full: true, oneGroup: false }).rows;
+    expect(rows.every((r) => r.badge && r.nameTitle === r.name)).toBe(true);
   });
 
   it("shows the Kategori column outside a category", () => {
