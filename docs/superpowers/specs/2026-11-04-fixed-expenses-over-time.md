@@ -41,8 +41,8 @@ too, "synligt det er et estimat", and with "I år" what was paid so far, what re
 - **Out:** a ← button before the trail and Escape (when no dropdown or list is open) leave the view. The ← button is
   outside the "Sti" landmark, named "Tilbage til overblikket" and with no text node. Claude's call.
   - When the view's open was pushed in this page load and nothing has been pushed since, they go back one entry.
-  - Otherwise they replace the current entry with the view off. Choosing an object group, a bar, a period or a level
-    in the view each push an entry, so after any of them ← replaces.
+  - Otherwise they replace the current entry with the view off. Choosing an object group, a bar, a unit from the trail's
+    list, a period or a level in the view each push an entry, so after any of them ← replaces.
   - On the way out a chosen unit the overview's period does not have is dropped (§7). Claude's call, as top filter
     spec §3.2 does for full screen.
 - The view is in the hash (§7), so Back and a reload work.
@@ -79,11 +79,14 @@ section changes the overview's trail too; it supersedes top filter spec §2.4's 
 - **No unit chosen:** a dashed button right after the period, named after the grouping: **"Måned"** or **"År"**. Its
   accessible name is "Vælg måned" or "Vælg år".
 - **A unit chosen:** the step is a button with ▾ and its ×, like the main group: `I år ▾ › August ▾ ×`. Its accessible
-  name is "Skift måned: August" (or "Skift år: 2025"). The × removes the unit, as today (D55).
+  name is "Skift måned: August" (or "Skift år: 2025"). The × removes the unit, as today (D55). When it is the last
+  step, the `h1` wraps it as top filter spec §2.1 says for the period, a main group or a category: the heading's text
+  is "August".
 - **The list** opens under the step or the dashed button. Its rows are the bars' units, in time order: on the overview
   the period's units (`ctx.units`), in the view the view's units (§5.1). Each row has the unit's name and its sum: on
-  the overview the spending in that unit at the level and accounts, as its bar; in the view "9.799 kr. + ca. 1.074
-  kr.", as its bar's name (§5.4). The chosen one is marked with `aria-current`. Claude's call on the rows.
+  the overview the spending in that unit at the level and accounts, as its bar, and a unit below zero reads "+… kr.
+  retur" as the bar does (D54); in the view the sum as §6.1's group line writes it ("9.799 kr. + ca. 1.074 kr."). The
+  chosen one is marked with `aria-current`. Claude's call on the rows.
 - The buttons and their lists follow the trail's other steps (`components/level-menu.ts`): `aria-expanded` and no
   `aria-haspopup`, and the list is a `role="group"` of plain buttons. The branch
   `fix/filter-follow-ups-and-full-screen-bars` sets that rule; the object-group step (§3.4) follows it too.
@@ -95,7 +98,9 @@ section changes the overview's trail too; it supersedes top filter spec §2.4's 
   disabled, as the level's dashed button is (top filter spec §2.5).
 - With nothing chosen, the trail has two dashed buttons side by side: `Alt forbrug › I år ▾ [Måned] [Hovedgruppe]`.
   With a main group chosen and no unit, the dashed "Måned" stays after the period:
-  `Alt forbrug › I år ▾ [Måned] › Bolig ▾ × [Kategori]`. Claude's call.
+  `Alt forbrug › I år ▾ [Måned] › Bolig ▾ × [Kategori]`. So the unit's dashed button sits right after the period,
+  before the "›" to the main group, and top filter spec §2.5's dashed button for the level is unchanged: it still
+  comes after the last step. Claude's call.
 
 ### 3.3 Unit names within one year
 
@@ -104,9 +109,9 @@ Thomas: "hvis kun 1 år er valgt måned er uden årstal". This holds on both scr
 - When every unit of the bars lies in one calendar year, a unit's name has no year: "August", "4. november". When the
   units cross a new year, as "Sidste 12 måneder" in November does, every name keeps its year: "August 2026". A year
   unit is always its year, "2026".
-- Everything that names a unit follows: the trail's unit step and its list, the bars' tooltips and buttons, the
-  Posteringer group lines, the key-number labels ("Faste udgifter i August", D56), and in the view the list's title and
-  group lines. The axis labels stay as today.
+- Everything that names a unit follows, among them: the trail's unit step and its list, the bars' tooltips and
+  buttons, the detail's bars (D54), the Posteringer group lines, the key-number labels ("Faste udgifter i August",
+  D56), and in the view the list's title and group lines. The axis labels stay as today.
 - `unitName` gets this rule; the builder decides how it learns whether the units cross a year. Claude's call.
 
 ### 3.4 The object-group step
@@ -306,11 +311,12 @@ Made-up data only. Hard rule 5: behaviour through roles, accessible names and re
 - §2: "Vis faste udgifter" under an object-group card opens the view with that group in the object-group step, the
   same period and level, and `view=fixed` and `og` in the hash; `history.back()` returns to the overview's tab. ← and
   Escape right after the open go back, and a following Back does not reopen the view. ← after choosing another object
-  group leaves the view by a replace. The Faste udgifter tab's ⤢ still opens its table in full screen.
+  group, and after choosing a unit from the trail's list, leaves the view by a replace. The Faste udgifter tab's ⤢
+  still opens its table in full screen.
 - §3.1: the "Sti" text reads "Alt forbrug › Faste udgifter › I år Måned Hovedgruppe", and in Bolig "Alt forbrug ›
-  Faste udgifter › I år Måned › Bolig Kategori". "Skift objektgruppe: Faste udgifter" opens the groups and Alle with their counts
-  and sums; choosing Alle shows "Alle faste udgifter" and removes a chosen unit; with one object group there is no
-  list.
+  Faste udgifter › I år Måned › Bolig Kategori". "Skift objektgruppe: Faste udgifter" opens the groups and Alle with
+  their counts and sums; choosing Alle shows "Alle faste udgifter" and removes a chosen unit; with one object group
+  there is no list.
 - §3.2, on the overview and in the view: with no unit, "Vælg måned" lists the units in time order with their sums;
   choosing one shows "Skift måned: August" with its ×, pushes a history entry and marks the bar; its list switches to
   another month; the × removes it. "Alt" over more than 24 months has "Vælg år". "Denne måned" has neither. While
@@ -350,6 +356,8 @@ Changed in the same PR:
 - `docs/domain-language.md`: the fixed-expenses view, an estimate (`estimate` in code), the drawn span; the Object
   group row's link "opens the Faste udgifter card" becomes "opens the fixed-expenses view" with D66; the line on the
   hash keys gets D66.
+- `docs/domain-language.md`, too: the Chosen unit row's "the bar the user clicked" becomes "the bar or the trail's
+  unit list the user chose it from", with D69.
 - `docs/architecture.md`: its "What exists now" sentence gets the view.
 - `docs/testing.md`: the Chrome check gets §9's steps, and its trail steps get the month step.
 - `docs/README.md`: the map gets this spec's plan. This branch already adds the spec to the map and the mockup to
