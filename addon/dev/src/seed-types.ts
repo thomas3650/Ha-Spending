@@ -2,10 +2,11 @@ import type { Repeat } from "@ha-spending/shared";
 
 /** Close to Firefly III's POST bodies, so one dataset feeds the fake and a real Firefly III alike. */
 export interface SeedSplit {
-  type: "withdrawal" | "deposit" | "transfer";
+  type: "withdrawal" | "deposit" | "transfer" | "opening balance" | "reconciliation";
   date: string;
   amount: string;
   description: string;
+  /** For an opening balance or a reconciliation, the name of Firefly III's own account that holds the other side. */
   source: string;
   /** Left out on a withdrawal: the expense account `(no name)`, the Data Importer's name for no counterparty. */
   destination?: string;

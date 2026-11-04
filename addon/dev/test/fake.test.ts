@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { createFakeFirefly } from "../src/fake";
 import { exampleSeed } from "../src/example";
 import { generateSeed } from "../src/generate";
+import { seedFirefly } from "../src/seed-firefly";
 import type { SeedData } from "../src/seed-types";
 
 const token = "fake-token";
@@ -461,6 +462,45 @@ describe("the fake Firefly III", () => {
       expect(laan.map((a) => a.attributes.type)).toEqual(["liabilities"]);
       expect(paid).toMatchObject({ destination_id: laan[0].id, destination_name: "Laan", destination_type: "Loan" });
     });
+
+    it("answers an opening balance and a reconciliation, and lists neither special account", async () => {
+      const data = seed();
+      data.transactions.push(
+        { splits: [{ type: "opening balance", date: "2026-01-01", amount: "5000.00", description: "Opening balance",
+          source: "Konto A - Initial balance account", destination: "Konto A" }] },
+        { splits: [{ type: "reconciliation", date: "2026-01-09", amount: "12.00", description: "Reconciliation",
+          source: "Konto A reconciliation", destination: "Konto A" }] },
+      );
+      const { json } = client(createFakeFirefly(data));
+      const groups = (await json<Page<Group>>("transactions?start=2026-01-01&end=2026-01-31&type=all")).data;
+      expect(byDescription(groups, "Opening balance").attributes.transactions[0]).toMatchObject({
+        type: "opening balance",
+        source_type: "Initial balance account",
+        destination_type: "Asset account",
+      });
+      expect(byDescription(groups, "Reconciliation").attributes.transactions[0]).toMatchObject({
+        type: "reconciliation",
+        source_type: "Reconciliation account",
+        destination_type: "Asset account",
+      });
+      for (const type of ["asset", "revenue", "expense", "liabilities", "all"]) {
+        const names = named(await json<Accounts>(`accounts?type=${type}`));
+        expect(names.filter((n) => n.includes("Initial balance") || n.includes("reconciliation"))).toEqual([]);
+      }
+    });
+  });
+
+  it("refuses to seed a real Firefly III with an opening balance or a reconciliation", async () => {
+    for (const type of ["opening balance", "reconciliation"] as const) {
+      const data: SeedData = {
+        accounts: [{ name: "Konto A", active: true }],
+        categories: [],
+        ruleGroups: [],
+        transactions: [{ splits: [{ type, date: "2026-01-01", amount: "1.00", description: "x", source: "S",
+          destination: "Konto A" }] }],
+      };
+      await expect(seedFirefly("http://f", token, data)).rejects.toThrow(type);
+    }
   });
 
   it("answers the faults", async () => {

@@ -226,7 +226,8 @@ describe("earliestPostingDate", () => {
       ...exampleSeed,
       transactions: splits.map(([type, date]) => ({
         splits: [{ type, date, amount: "1", description: date, source: type === "deposit" ? "Netto" : "Konto A",
-          destination: { withdrawal: "Netto", deposit: "Konto A", transfer: "Konto B" }[type] }],
+          destination: { withdrawal: "Netto", deposit: "Konto A", transfer: "Konto B", "opening balance": "Konto A",
+          reconciliation: "Konto A" }[type] }],
       })),
     });
 

@@ -4,6 +4,13 @@ import type { SeedData, SeedSplit } from "./seed-types";
 export async function seedFirefly(baseUrl: string, token: string, data: SeedData): Promise<void> {
   const base = baseUrl.replace(/\/+$/, "");
 
+  // A real Firefly III makes these through the account, not as a transaction.
+  for (const s of data.transactions.flatMap((group) => group.splits)) {
+    if (s.type === "opening balance" || s.type === "reconciliation") {
+      throw new Error(`seedFirefly: a seed cannot hold a split of the type ${s.type}`);
+    }
+  }
+
   // In order, one at a time: Firefly III numbers the rules in the order they arrive.
   async function send(method: "POST" | "PUT", path: string, body: unknown): Promise<{ data?: { id?: string } }> {
     const response = await fetch(`${base}/api/v1/${path}`, {
