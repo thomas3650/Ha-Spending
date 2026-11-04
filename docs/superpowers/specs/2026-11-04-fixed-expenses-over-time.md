@@ -5,7 +5,7 @@
 
 **Issue:** closes #163. One branch, one PR.
 
-**Approved:** not yet. Thomas approves this spec after `reviewer` rates it Ready.
+**Approved:** by Thomas on 2026-11-04 ("ok approve"), after `reviewer` rated it Ready.
 
 Thomas and Claude brainstormed this on 2026-11-04 with the mockup
 [`v7/faste-udgifter.html`](../../mockups/v7/faste-udgifter.html). Thomas's words are quoted or named as his; the
