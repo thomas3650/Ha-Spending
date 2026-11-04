@@ -11,7 +11,7 @@ key; the app gets the view's full screen beside the overview's. No server change
 
 **Tech stack:** TypeScript; Lit with Vitest, happy-dom and Testing Library; ECharts behind the chart mock.
 
-**Approved:** pending.
+**Approved:** by Claude, 2026-11-04, after `reviewer` rated it Ready.
 
 **Spec:** [`docs/superpowers/specs/2026-11-04-fixed-view-full-screen.md`](../specs/2026-11-04-fixed-view-full-screen.md).
 Every task reads its sections there; the plan does not repeat them.
@@ -255,8 +255,9 @@ Model: opus · Review: yes
   card gets the `fill` class in full screen; the list's does not. The styles the button needs move or are
   shared, not copied.
 - [ ] D67's height for the view, extending today's selectors: in `app.ts` `.page:has(.half.fill)`, `> hs-fixed` as a
-  flex column, `.halves:has(> .half.fill)`, and `.half.fill { display: flex; flex-direction: column }`; in `fixed-bars.ts` `.fill > hs-fixed-bars` and `.fill .fixed-bars` as
-  flex columns (the legend and the chart are siblings) and `.fill .fixed-bars .chart { flex: 1 1 0; height: auto;
+  flex column, `.halves:has(> .half.fill)`, and `.half.fill { display: flex; flex-direction: column }`; in
+  `fixed-bars.ts` `.fill > hs-fixed-bars` and `.fill .fixed-bars` as flex columns (the legend and the chart are
+  siblings) and `.fill .fixed-bars .chart { flex: 1 1 0; height: auto;
   min-height: 400px; overflow: hidden }`.
 - [ ] `app.ts`:
   - hide the view's key numbers while `fixedFull` is set; one placeholder region while loading with `fixedFull` set;
