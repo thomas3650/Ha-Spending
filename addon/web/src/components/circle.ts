@@ -192,9 +192,15 @@ export class Circle extends LitElement {
             borderRadius: 4,
             overflow: "break",
             // Room for a chosen piece's label, which moves out with its piece after the labels are spread.
-            minMargin: 8,
+            minMargin: 12,
           },
-          labelLine: { show: labelled, length: 6, length2: 8, lineStyle: { color: token("--hs-leader") } },
+          labelLine: {
+            show: labelled,
+            length: 16,
+            length2: 10,
+            maxSurfaceAngle: 80,
+            lineStyle: { color: token("--hs-leader") },
+          },
           emphasis: {
             scale: true,
             scaleSize: 6,

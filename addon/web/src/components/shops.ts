@@ -84,7 +84,8 @@ export class Shops extends LitElement {
     const offerHidden = this.canHide && hidden.length > 0;
     const shownHidden = offerHidden && this.showHidden ? hidden : [];
     const scale = barScale([...rows, ...shownHidden]);
-    return html`<ol class="shops">
+    const lists = this.canHide ? "shops shops-hideable" : "shops";
+    return html`<ol class=${lists}>
         ${rows.map((r, i) => this.row(r, i + 1, scale))}
       </ol>
       ${limited
@@ -99,7 +100,7 @@ export class Shops extends LitElement {
         : nothing}
       ${shownHidden.length === 0
         ? nothing
-        : html`<ul class="shops shops-hidden">
+        : html`<ul class=${`${lists} shops-hidden`}>
             ${shownHidden.map((r) => this.row(r, null, scale))}
           </ul>`}
       ${offerHidden
@@ -123,13 +124,17 @@ export const shopsStyles = css`
     list-style: none;
     font-variant-numeric: tabular-nums;
   }
+  /* Each row is its own grid, so only fixed widths after the bar make every track end at one place. */
   .shop-row {
     display: grid;
-    grid-template-columns: 2.5ch minmax(6em, 16em) minmax(40px, 1fr) auto 4.5ch auto;
+    grid-template-columns: 2.5ch minmax(6em, 16em) minmax(40px, 1fr) 11ch 5.5ch;
     align-items: center;
     gap: 4px 10px;
     padding: 6px 0;
     border-bottom: 1px solid var(--hs-line);
+  }
+  .shops-hideable .shop-row {
+    grid-template-columns: 2.5ch minmax(6em, 16em) minmax(40px, 1fr) 11ch 5.5ch 4.5ch;
   }
   .shop-place {
     color: var(--hs-muted);
