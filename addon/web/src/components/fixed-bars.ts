@@ -5,7 +5,8 @@ import { styleMap } from "lit/directives/style-map.js";
 import { type Chart, createChart, type EChartsCoreOption } from "../charts/echarts";
 import { axisTickKr, barKr, kr, unitAxis } from "../format";
 import { da } from "../i18n/da";
-import type { FixedBar, FixedPart } from "../model/fixed";
+import { type FixedBar, type FixedPart, sumText } from "../model/fixed";
+import { escapeHtml } from "../model/fixed-tooltip";
 import type { UnitSelection } from "./bars";
 
 const FADED = 0.3;
@@ -18,14 +19,13 @@ const HATCH = {
   color: "rgba(255, 255, 255, 0.75)",
 };
 
-function escapeHtml(text: string): string {
-  return text.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
-}
-
 function tooltip(bar: FixedBar): string {
   const lines = [bar.name, da.fixed.tooltipPaid(barKr(bar.paidSum))];
   if (bar.estimate.size > 0) {
-    lines.push(da.fixed.tooltipEstimate(kr(bar.estimateSum)), da.fixed.tooltipTotal(kr(bar.paidSum + bar.estimateSum)));
+    lines.push(
+      da.fixed.tooltipEstimate(kr(bar.estimateSum)),
+      da.fixed.tooltipTotal(sumText(bar.paidSum, bar.estimateSum, bar.paid.size > 0, true)),
+    );
   }
   return lines.map(escapeHtml).join("<br>");
 }

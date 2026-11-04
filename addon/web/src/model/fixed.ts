@@ -94,7 +94,10 @@ export interface FixedBar {
   unit: Unit;
   name: string;
   paid: Map<string | null, number>;
+  /** Every estimate, a due one included. */
   estimate: Map<string | null, number>;
+  /** The due estimates, also in `estimate` (spec §5.3). */
+  due: Map<string | null, number>;
   paidSum: number;
   estimateSum: number;
   /** The bar button's name (spec §5.4). */
@@ -250,7 +253,7 @@ function fixedParts(ctx: ViewContext, payments: FixedPayment[], of: Of): FixedPa
 }
 
 /** §6.1's sum: "9.799 kr. + ca. 1.074 kr." when mixed. */
-function sumText(paid: number, estimate: number, hasPaid: boolean, hasEstimate: boolean): string {
+export function sumText(paid: number, estimate: number, hasPaid: boolean, hasEstimate: boolean): string {
   if (!hasEstimate) return barKr(paid);
   return hasPaid ? da.fixed.sum(barKr(paid), kr(estimate)) : da.fixed.estimated(kr(estimate));
 }
@@ -276,6 +279,7 @@ function fixedBars(
   return units.map((unit) => {
     const paid = new Map<string | null, number>();
     const estimate = new Map<string | null, number>();
+    const due = new Map<string | null, number>();
     let hasPaid = false;
     let hasEstimate = false;
     for (const p of payments) {
@@ -286,6 +290,7 @@ function fixedBars(
       } else if (p.kind === "estimate") {
         hasEstimate = true;
         addTo(estimate, p);
+        if (p.due) addTo(due, p);
       }
     }
     const paidSum = [...paid.values()].reduce((a, b) => a + b, 0);
@@ -296,6 +301,7 @@ function fixedBars(
       name,
       paid,
       estimate,
+      due,
       paidSum,
       estimateSum,
       label: barLabel(name, paidSum, estimateSum, hasPaid, hasEstimate),

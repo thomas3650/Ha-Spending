@@ -299,7 +299,11 @@ export const da = {
     todayMark: "i dag",
     tooltipPaid: (paid: string) => `Betalt: ${paid}`,
     tooltipEstimate: (estimate: string) => `Estimat: ca. ${estimate}`,
-    tooltipTotal: (total: string) => `I alt: ca. ${total}`,
+    tooltipTotal: (sums: string) => `I alt: ${sums}`,
+    partLine: (name: string, sums: string) => `${name}: ${sums}`,
+    dueMark: " · forfalden",
+    others: (n: number, sums: string) => `${n} andre: ${sums}`,
+    noPaymentsTip: "Ingen betalinger",
     /** The other columns are `subscriptionColumns`' name, category, amount and status. */
     dateColumn: "Dato",
     barPaid: (unit: string, paid: string) => `${unit}: betalt ${paid}`,

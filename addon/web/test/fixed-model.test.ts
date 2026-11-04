@@ -276,6 +276,22 @@ describe("the view's bars", () => {
     expect(subscriptions[2].label).toBe("Marts: ingen betalinger");
   });
 
+  it("keeps a part's due estimates apart, and in the estimates", () => {
+    const due = bill("d1", "Forfalden", { start: "2026-01-28", lastPayment: paidOn("2026-09-28") });
+    const data = linked([due, MOBILE]);
+    const bars = viewOf(FIXED, data).bars;
+    const october = bars[9];
+    expect(october.due).toEqual(new Map([["Bolig", 10000]]));
+    expect(october.estimate).toEqual(new Map([["Bolig", 20000]]));
+    const paid = paidIn(data, "Faste udgifter", { start: "2026-10-01", end: "2026-10-31" });
+    expect(october.paidSum).toBe(paid);
+    expect(october.estimateSum).toBe(20000);
+    expect(october.label).toBe(da.fixed.barMixed("Oktober", kr(paid), kr(20000)));
+    expect(october.sum).toBe(da.fixed.sum(kr(paid), kr(20000)));
+    expect(bars[10].estimate.size).toBeGreaterThan(0);
+    expect(bars[10].due.size).toBe(0);
+  });
+
   it("marks the running unit", () => {
     expect(viewOf(FIXED).bars.map((b) => b.running)).toEqual(Array.from({ length: 12 }, (_, i) => i === 9));
   });
