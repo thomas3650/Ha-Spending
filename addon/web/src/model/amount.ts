@@ -9,8 +9,8 @@ const whole = new Intl.NumberFormat("da-DK", { maximumFractionDigits: 0 });
 const cents = new Intl.NumberFormat("da-DK", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
 /**
- * Omkring's ends: ±20 %, each rounded to 50 kr. from 250 kr. up and to whole kroner below. In integers, so a tie
- * rounds the same on every machine.
+ * Omkring's ends: ±20 %, each rounded to 50 kr. from 250 kr. up and to whole kroner below. Scaled by 4/5 and 6/5,
+ * not 0.8 and 1.2, which binary floating point holds inexactly, so an end that falls on a tie is not nudged below it.
  */
 export function aboutBounds(value: number): { min: number; max: number } {
   const step = value >= 25_000 ? 5_000 : 100;

@@ -1,4 +1,4 @@
-import { fireEvent, getAllByRole, getByRole, queryByRole, queryByText } from "@testing-library/dom";
+import { fireEvent, getAllByRole, getByRole, getByText, queryAllByRole, queryByRole, queryByText } from "@testing-library/dom";
 import { afterEach, describe, expect, it } from "vitest";
 
 import "../src/components/amount-pill";
@@ -89,6 +89,37 @@ function blurOnRemoval(el: AmountPill): MutationObserver {
   });
   observer.observe(el, { childList: true, subtree: true });
   return observer;
+}
+
+/**
+ * A browser's mousedown: unless the page prevents it, the focus goes to the nearest focusable element under the
+ * pointer, or to the body. Safari does not focus a button on a click, so it skips buttons.
+ */
+function mouseDown(target: Element, opts: { safari?: boolean } = {}) {
+  if (!fireEvent.mouseDown(target)) return;
+  for (let node: Element | null = target; node !== null; node = node.parentElement) {
+    const focusable =
+      node.hasAttribute("tabindex") || node instanceof HTMLInputElement || (!opts.safari && node instanceof HTMLButtonElement);
+    if (focusable) {
+      (node as HTMLElement).focus();
+      return;
+    }
+  }
+  (document.activeElement as HTMLElement | null)?.blur();
+}
+
+async function click(el: AmountPill, target: Element, opts: { safari?: boolean } = {}) {
+  mouseDown(target, opts);
+  fireEvent.click(target);
+  await settle(el);
+}
+
+/** The element a Tab moves to: the next button or field in the page's order. */
+function nextByTab(): Element | undefined {
+  const order = [...queryAllByRole(document.body, "button"), ...queryAllByRole(document.body, "textbox")].sort((a, b) =>
+    a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1,
+  );
+  return order[order.indexOf(document.activeElement as HTMLElement) + 1];
 }
 
 afterEach(() => {
@@ -253,7 +284,57 @@ describe("Mellem", () => {
   });
 });
 
+describe("clicks inside the pill", () => {
+  it("keeps a half-typed Mellem when the pill's own background is clicked", async () => {
+    const { el, fired } = await render();
+    await choose(el, "between");
+    await type(el, field(el, da.amountMin), "800");
+    await click(el, getByText(el, "–"));
+    await click(el, getByText(el, da.kr));
+    expect(fired).toEqual([]);
+    expect(field(el, da.amountMin).value).toBe("800");
+  });
+
+  it("fires one null for Fjern beløb while a new number is typed, in Safari too", async () => {
+    for (const safari of [false, true]) {
+      const { el, fired } = await render({ kind: "over", value: 50_000 });
+      await type(el, field(el, da.amountKinds.over), "700");
+      await click(el, getByRole(el, "button", { name: da.removeAmount }), { safari });
+      expect(fired).toEqual([null]);
+      document.body.replaceChildren();
+    }
+  });
+
+  it("opens the kinds without applying a typed number, in Safari too", async () => {
+    for (const safari of [false, true]) {
+      const { el, fired } = await render({ kind: "over", value: 50_000 });
+      await type(el, field(el, da.amountKinds.over), "700");
+      await click(el, kindButton(el), { safari });
+      expect(menu(el)).not.toBeNull();
+      expect(fired).toEqual([]);
+      document.body.replaceChildren();
+    }
+  });
+});
+
 describe("the filled pill", () => {
+  it("reaches the first kind with the first Tab after opening the kinds", async () => {
+    const { el } = await render({ kind: "over", value: 50_000 });
+    await press(el, kindButton(el));
+    expect(nextByTab()).toBe(getByRole(menu(el) as HTMLElement, "button", { name: da.amountKinds.about }));
+  });
+
+  it("keeps the error while the number is still invalid after a switch", async () => {
+    const { el, fired } = await render({ kind: "over", value: 50_000 });
+    const input = field(el, da.amountKinds.over);
+    await type(el, input, "abc");
+    await enter(el, input);
+    await choose(el, "under");
+    expect(fired).toEqual([]);
+    expect(queryByText(el, da.amountInvalid)).not.toBeNull();
+    expect(field(el, da.amountKinds.under).getAttribute("aria-invalid")).toBe("true");
+  });
+
   it("is named by its filter and shows its number", async () => {
     const { el } = await render({ kind: "about", value: 80_000 });
     const pill = getByRole(el, "group", { name: "Beløb: omkring 800 kr." });

@@ -136,8 +136,8 @@ export class AmountPill extends Dropdown {
     if (kind !== this.kind) {
       if (kind === "between" || this.kind === "between") this.second = "";
       this.kind = kind;
-      this.invalid = false;
       const reading = this.read(kind);
+      this.invalid = this.invalid && "invalid" in reading;
       if (this.applied !== null && "filter" in reading && reading.filter !== null) this.change(reading.filter);
     }
     await this.focusField(kind === "between" && this.first.trim() !== "" ? "second" : "first");
@@ -216,7 +216,8 @@ export class AmountPill extends Dropdown {
   }
 
   private pill(kind: AmountKind) {
-    return html`<div class="amount-pill" role="group" aria-label=${da.amountName(this.applied)}>
+    // tabindex -1: a click on the pill's background keeps the focus inside, so it is not a leave.
+    return html`<div class="amount-pill" tabindex="-1" role="group" aria-label=${da.amountName(this.applied)}>
       <button
         type="button"
         class="amount-kind"
@@ -227,6 +228,7 @@ export class AmountPill extends Dropdown {
       >
         <span aria-hidden="true">${SYMBOLS[kind]}</span>
       </button>
+      ${this.menu()}
       ${kind === "between"
         ? html`${this.number("first", da.amountMin)}<span class="amount-dash" aria-hidden="true">–</span>${this.number(
               "second",
@@ -234,7 +236,13 @@ export class AmountPill extends Dropdown {
             )}`
         : this.number("first", da.amountKinds[kind])}
       <span class="amount-kr">${da.kr}</span>
-      <button type="button" class="amount-x" aria-label=${da.removeAmount} @click=${() => void this.clear()}>
+      <button
+        type="button"
+        class="amount-x"
+        aria-label=${da.removeAmount}
+        @mousedown=${(e: Event) => e.preventDefault()}
+        @click=${() => void this.clear()}
+      >
         <svg viewBox="0 0 10 10" width="10" height="10" aria-hidden="true" focusable="false">
           <path d="M2 2 8 8M8 2 2 8" />
         </svg>
@@ -244,7 +252,7 @@ export class AmountPill extends Dropdown {
 
   override render() {
     const kind = this.kind;
-    return html`<div class="dd">
+    return html`<div class="dd ${this.invalid ? "amount-has-error" : ""}">
       ${kind === null
         ? html`<button
             type="button"
@@ -255,9 +263,9 @@ export class AmountPill extends Dropdown {
             @click=${() => this.toggle()}
           >
             <span aria-hidden="true">${da.kr}</span> ${da.amountEmpty}
-          </button>`
+          </button>
+            ${this.menu()}`
         : this.pill(kind)}
-      ${this.menu()}
       ${this.invalid ? html`<p id="${this.idBase}-invalid" class="amount-error">${da.amountInvalid}</p>` : nothing}
     </div>`;
   }
@@ -280,6 +288,9 @@ export const amountPillStyles = css`
     background: var(--hs-accent-soft);
     color: var(--hs-text);
     font: inherit;
+  }
+  .amount-pill:focus {
+    outline: none;
   }
   .amount-pill:focus-within {
     border-color: var(--hs-accent);
@@ -374,6 +385,9 @@ export const amountPillStyles = css`
     width: 230px;
     padding: 6px;
   }
+  .amount-has-error .dd-menu.amount-menu {
+    top: calc(100% + 24px);
+  }
   .amount-option {
     display: flex;
     align-items: center;
@@ -422,6 +436,7 @@ export const amountPillStyles = css`
     white-space: nowrap;
     color: var(--hs-up);
     font-size: 12px;
+    line-height: 16px;
   }
 `;
 
