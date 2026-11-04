@@ -201,7 +201,7 @@ describe("readSpendingData", () => {
     expect(d.postings.some((p) => p.shop === null)).toBe(true);
     expect(d.postings.some((p) => p.kind === "refund" && p.shop !== null)).toBe(true);
     expect(d.categories.some((c) => c.mainGroup === null)).toBe(true);
-    expect(d.accounts).toHaveLength(3);
+    expect(d.accounts).toHaveLength(4);
     expect(d.earliestPostingDate! >= "2025-08-01" && d.earliestPostingDate! <= "2025-08-15").toBe(true);
     const shown = parts(within(classify(d.postings, d.categories), year), { kind: "all" });
     expect(shown.filter((p) => p.amount > 0).length).toBeGreaterThan(8);

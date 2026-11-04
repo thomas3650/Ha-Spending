@@ -1,5 +1,6 @@
-import { createFakeFirefly, type SeedData, type SeedRule, type SeedSplit } from "@ha-spending/dev";
+import { createFakeFirefly, generateSeed, type SeedData, type SeedRule, type SeedSplit } from "@ha-spending/dev";
 import type { LeftOverData, LeftOverMonth, Period } from "@ha-spending/shared";
+import { readFileSync } from "node:fs";
 import { describe, expect, it, vi } from "vitest";
 import { createFireflyClient, getAllPages } from "../src/firefly/client";
 import { leftOverMonths, readLeftOverData } from "../src/firefly/left-over";
@@ -405,5 +406,29 @@ describe("leftOverMonths", () => {
     });
     expect(months).toEqual([month("2026-09", { other: -70000, change: -70000 })]);
     expect(warn).not.toHaveBeenCalled();
+  });
+});
+
+describe("readLeftOverData, the fast loop's household", () => {
+  it("keeps the sum rule every month, and every column has an amount", async () => {
+    const todayOfSeed = "2026-10-30";
+    const fake = createFakeFirefly(generateSeed({ today: todayOfSeed, seed: 1 }));
+    const client = createFireflyClient({ baseUrl: "http://f", token: "fake-token", fetch: fake.fetch });
+    const options = JSON.parse(readFileSync(new URL("../../dev/options.json", import.meta.url), "utf8")) as {
+      excluded_main_groups: string[]; members: string[]; savings_categories: string[]; credit_accounts: string[];
+    };
+    const data = await readLeftOverData(
+      client,
+      { ...settings, excludedMainGroups: options.excluded_main_groups, members: options.members,
+        savingsCategories: options.savings_categories, creditAccounts: options.credit_accounts },
+      { start: "2025-11-01", end: todayOfSeed },
+      { today: todayOfSeed, warn: () => {} },
+    );
+    expectConsistent(data);
+    expect(data.months).toHaveLength(12);
+    expect(data.months.some((m) => m.paidIn !== 0)).toBe(true);
+    expect(data.months.some((m) => m.back !== 0)).toBe(true);
+    expect(data.months.some((m) => m.credit !== 0)).toBe(true);
+    expect(data.months.some((m) => m.savings !== 0)).toBe(true);
   });
 });

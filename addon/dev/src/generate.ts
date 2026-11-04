@@ -16,6 +16,7 @@ function mulberry32(seed: number): () => number {
 const JOINT = "Fælleskonto";
 const BUDGET = "Budgetkonto";
 const CARD = "Kreditkort";
+const CREDIT_LINE = "Kassekredit";
 
 const INCOME_AND_TRANSFERS = "Penge ind og ud";
 const FIXED_COSTS = "Faste udgifter";
@@ -150,6 +151,24 @@ export function generateSeed(options: { today: string; seed: number }): SeedData
       add({ type: "deposit", date: day(3), amount: "1000.00", description: "Fra familien", source: "Familien",
         destination: BUDGET, category: "Indskud" });
     }
+    for (const member of ["Anna", "Bo"]) {
+      add({ type: "deposit", date: day(2), amount: member === "Anna" ? "15000.00" : "12000.00",
+        description: `Indskud fra ${member}`, source: member, destination: JOINT, category: "Indskud" });
+    }
+    if (m % 4 === 2) {
+      add({ type: "deposit", date: day(14), amount: "2500.00", description: "Ekstra indskud fra Bo", source: "Bo",
+        destination: JOINT, category: "Indskud" });
+    }
+    if (m % 3 === 0) withdrawal(day(18), JOINT, "Anna", "1800.00", "Indskud");
+    if (m % 4 === 0) {
+      add({ type: "transfer", date: day(10), amount: "3000.00", description: "Træk på kassekreditten",
+        source: CREDIT_LINE, destination: JOINT });
+    }
+    if (m % 4 === 1 && m > startMonth) {
+      add({ type: "transfer", date: day(10), amount: "3000.00", description: "Betaling af kassekreditten",
+        source: JOINT, destination: CREDIT_LINE });
+    }
+    withdrawal(day(20), JOINT, "Billån", "2500.00");
     if (m % 6 === 0) withdrawal(day(15), JOINT, "Kommunen", kroner(1500, 2500), "Ejendomsskat");
 
     for (let date = day(between(1, 4)); date <= last; date = addDays(date, 7)) {
@@ -248,7 +267,8 @@ export function generateSeed(options: { today: string; seed: number }): SeedData
   transactions.sort((a, b) => (a.splits[0].date < b.splits[0].date ? -1 : a.splits[0].date > b.splits[0].date ? 1 : 0));
 
   return {
-    accounts: [JOINT, BUDGET, CARD].map((name) => ({ name, active: true })),
+    accounts: [JOINT, BUDGET, CARD, CREDIT_LINE].map((name) => ({ name, active: true })),
+    otherAccounts: [{ name: "Billån", type: "liabilities", active: true }],
     categories,
     subscriptions,
     ruleGroups: [{ title: "Hovedgrupper", rules }],
