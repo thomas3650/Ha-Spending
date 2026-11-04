@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.16.0](https://github.com/thomas3650/Ha-Spending/compare/v0.15.0...v0.16.0) (2026-11-04)
+
+
+### Features
+
+* the bars fill the height in full screen, and the top-filter follow-ups ([#164](https://github.com/thomas3650/Ha-Spending/issues/164)) ([69e9be7](https://github.com/thomas3650/Ha-Spending/commit/69e9be7a249850e87fbc82963c0025efba6fdbbb))
+
 ## [0.15.0](https://github.com/thomas3650/Ha-Spending/compare/v0.14.1...v0.15.0) (2026-11-04)
 
 
