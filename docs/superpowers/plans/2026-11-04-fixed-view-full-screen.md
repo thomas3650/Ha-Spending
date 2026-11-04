@@ -238,7 +238,7 @@ Model: opus · Review: yes
 
 - [ ] Write the failing tests, one per spec §6 §3.1, §3.2, §3.3, §3.5 and §3.7 case, using `getByRole(root, "button",
   { name: da.fullScreenOf(<title>) })`, the regions by name, `history.back()`/`history.forward()` with `hashBecomes`,
-  and `fireEvent.keyDown(document, { key: "Escape" })` as the existing view tests do. Among them: the buttons are
+  and `fireEvent.keyDown(window, { key: "Escape" })` as the existing view tests do. Among them: the buttons are
   there with `og=` an object group that has no fixed expenses at the level (the list's empty text); the bars' full
   screen has no list region and no key-number group; a bar press in full screen keeps `full=bars` in the hash; the
   list's full screen shows the badge; the focus cases read `document.activeElement` through the app's shadow root, as
@@ -251,10 +251,11 @@ Model: opus · Review: yes
   and its icons, named `fullScreenOf(<the card's title>)`, `aria-pressed` per `full`. Both cards keep fixed template
   positions; full screen drops the other one with `nothing`, as `overview.ts` does
   (`${single ? nothing : this.left()} ${this.right()}`), so the card that stays keeps its DOM and the focus. The
-  bars' card gets the `fill` class in full screen; the list's does not. The styles the button needs move or are
+  `.halves` wrapper gets the `single` class while `full` is set, so the card has the page's whole width. The bars'
+  card gets the `fill` class in full screen; the list's does not. The styles the button needs move or are
   shared, not copied.
 - [ ] D67's height for the view, extending today's selectors: in `app.ts` `.page:has(.half.fill)`, `> hs-fixed` as a
-  flex column, and `.halves:has(> .half.fill)`; in `fixed-bars.ts` `.fill > hs-fixed-bars` and `.fill .fixed-bars` as
+  flex column, `.halves:has(> .half.fill)`, and `.half.fill { display: flex; flex-direction: column }`; in `fixed-bars.ts` `.fill > hs-fixed-bars` and `.fill .fixed-bars` as
   flex columns (the legend and the chart are siblings) and `.fill .fixed-bars .chart { flex: 1 1 0; height: auto;
   min-height: 400px; overflow: hidden }`.
 - [ ] `app.ts`:
