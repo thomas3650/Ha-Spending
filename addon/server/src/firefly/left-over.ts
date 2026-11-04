@@ -15,7 +15,7 @@ export interface LeftOverRules {
   warn: (message: string) => void;
 }
 
-/** An opening balance or a reconciliation is no money in or out (spec §3.2). */
+/** An opening balance or a reconciliation is no money in or out (the Til overs spec §3.2). */
 const READ_TYPES = new Set(["withdrawal", "deposit", "transfer"]);
 
 const MISSORTED =
@@ -24,7 +24,7 @@ const MISSORTED =
 
 type Bucket = { kind: "paidIn" | "back"; member: string } | { kind: "savings" | "other" };
 
-/** Buckets 2 to 5 of spec §3.2, the first that takes the split. */
+/** Buckets 2 to 5 of the Til overs spec §3.2, the first that takes the split. */
 function bucketAfterSpending(split: WireSplit, rules: LeftOverRules): Bucket {
   if (split.type === "deposit" && split.source_type === REVENUE && rules.members.has(split.source_name)) {
     return { kind: "paidIn", member: split.source_name };
@@ -83,7 +83,8 @@ export function leftOverMonths(groups: WireGroup[], range: Period, rules: LeftOv
       if (rules.creditAccounts.has(side.name)) month.credit += side.onto;
       else month.change += side.onto;
     }
-    // A split between two household accounts only moves money between them.
+    // A split between two household accounts only moves money between them; one with no side on them is not the
+    // household's money.
     if (sides.length !== 1) continue;
 
     const onto = sides[0].onto;

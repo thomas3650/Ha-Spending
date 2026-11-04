@@ -46,7 +46,7 @@ const PER_SPAN_FREE: Record<keyof typeof SPAN_FREE, number> = { rules: 1, catego
 const spanFreeReads = () => Object.entries(SPAN_FREE) as [keyof typeof SPAN_FREE, RegExp][];
 
 describe("createDataLoader", () => {
-  it("two spans read in a row ask for the rules, categories, accounts and bills once", async () => {
+  it("two spans read in a row share one span-free read of the rules, categories, accounts and bills", async () => {
     const { load, asked } = setUp();
     await load(JANUARY);
     const february = await load(FEBRUARY);

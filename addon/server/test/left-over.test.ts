@@ -208,6 +208,19 @@ describe("readLeftOverData, the buckets", () => {
     expect(data.months).toEqual([month("2026-09", { credit: -100000, other: -100000 })]);
   });
 
+  it("spending in a savings category is Forbrug, with the warning", async () => {
+    const { data, warn } = await read([withdrawal("2026-09-03", "400.00", "Netto", "Dagligvarer")], SEPTEMBER,
+      { savingsCategories: ["Dagligvarer"] });
+    expect(data.months).toEqual([month("2026-09", { spending: 40000, change: -40000 })]);
+    expectWarnedPlainly(warn, "Dagligvarer", "Netto", "400");
+  });
+
+  it("a withdrawal from the liability to a shop touches no household account and changes nothing", async () => {
+    const { data, warn } = await read([withdrawal("2026-09-03", "400.00", "Netto", "Dagligvarer", "Billån")]);
+    expect(data.months).toEqual([month("2026-09")]);
+    expect(warn).not.toHaveBeenCalled();
+  });
+
   it("a credit name that is the liability is no credit line", async () => {
     const { data } = await read([withdrawal("2026-09-01", "1000.00", "Billån", "Afdrag")], SEPTEMBER,
       { creditAccounts: ["Billån"] });
