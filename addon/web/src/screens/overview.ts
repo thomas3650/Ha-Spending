@@ -130,7 +130,7 @@ export class Overview extends LitElement {
 
   private bars() {
     const ctx = this.ctx;
-    // On finer bars the key numbers' average is a whole week's, month's, quarter's or year's, far above any finer bar.
+    // On finer bars the key numbers' average is a whole month's, far above any finer bar.
     const avg = finerUnits(ctx) === null ? keyNumbers(ctx.shown, ctx.timeline).average.amount : null;
     const average = avg === null ? null : { amount: avg, label: da.average(kr(avg)) };
     const level = ctx.state.level;

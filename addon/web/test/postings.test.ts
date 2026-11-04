@@ -1,4 +1,4 @@
-import { type ClassifiedPosting, type Grouping, type Period, type SpendingData, unitsOf } from "@ha-spending/shared";
+import { type ClassifiedPosting, type Grouping, type Period, type SpendingData } from "@ha-spending/shared";
 import { fireEvent, getAllByRole, getAllByTitle, getByRole, queryAllByRole, queryByRole } from "@testing-library/dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
@@ -24,10 +24,28 @@ function listOf(state: Partial<ViewState> = {}, data: SpendingData = answerFor(T
   return groupedPostings(ctx.shown, ctx.units, ctx, true, COLOURS);
 }
 
-/** Weeks give more groups than the list shows at once; the page itself never groups by week. */
-function weekList(newestFirst = true): PostingList {
-  const base = viewContext(answerFor(THIS_YEAR), DEFAULT_STATE, TODAY);
-  const ctx = { ...base, timeline: { ...base.timeline, grouping: "week" as const }, units: unitsOf(THIS_YEAR, "week", TODAY) };
+/** Two years by month give more groups than the list shows at once, and the page can reach that. */
+function monthList(newestFirst = true): PostingList {
+  const range = { start: "2024-11-01", end: "2026-10-31" };
+  const base = answerFor(range);
+  const earlier: SpendingData["postings"] = Array.from({ length: 13 }, (_, i) => {
+    const date = new Date(Date.UTC(2024, 10 + i, 15)).toISOString().slice(0, 10);
+    return {
+      id: `m${i}`,
+      groupId: `mg${i}`,
+      date,
+      text: "Netto",
+      account: "1",
+      category: "Dagligvarer",
+      shop: "Netto",
+      kind: "spending",
+      amount: 10000,
+      subscription: null,
+    };
+  });
+  const data = { ...base, postings: [...base.postings, ...earlier].sort((x, y) => y.date.localeCompare(x.date)) };
+  const state = { ...DEFAULT_STATE, period: { preset: "custom" as const, ...range } };
+  const ctx = viewContext(data, state, TODAY);
   return groupedPostings(ctx.shown, ctx.units, ctx, newestFirst, COLOURS);
 }
 
@@ -109,7 +127,7 @@ describe("the postings list", () => {
   });
 
   it("shows older groups", async () => {
-    const el = await render(weekList(), { grouping: "week" });
+    const el = await render(monthList(), { grouping: "month" });
     expect(groupButtons(el)).toHaveLength(12);
     fireEvent.click(getByRole(el, "button", { name: da.showOlder }));
     await el.updateComplete;
@@ -117,7 +135,7 @@ describe("the postings list", () => {
   });
 
   it("shows newer groups when oldest first", async () => {
-    const el = await render(weekList(false), { grouping: "week" });
+    const el = await render(monthList(false), { grouping: "month" });
     expect(groupButtons(el)).toHaveLength(12);
     expect(queryByRole(el, "button", { name: da.showOlder })).toBeNull();
     fireEvent.click(getByRole(el, "button", { name: da.showNewer }));
@@ -221,11 +239,11 @@ describe("the postings list", () => {
   });
 
   it("starts over when the search changes", async () => {
-    const full = weekList();
+    const full = monthList();
     if (full.kind !== "grouped") throw new Error("expected a grouped list");
     const first = { ...full, groups: full.groups.slice(0, 14) };
     const second = { ...full, groups: [full.groups[0], ...full.groups.slice(2, 15)] };
-    const el = await render(first, { grouping: "week" });
+    const el = await render(first, { grouping: "month" });
     fireEvent.click(groupButtons(el)[2]);
     fireEvent.click(getByRole(el, "button", { name: da.showOlder }));
     await el.updateComplete;
@@ -242,11 +260,11 @@ describe("the postings list", () => {
   });
 
   it("starts over when the shop changes", async () => {
-    const full = weekList();
+    const full = monthList();
     if (full.kind !== "grouped") throw new Error("expected a grouped list");
     const first = { ...full, groups: full.groups.slice(0, 14) };
     const second = { ...full, groups: [full.groups[0], ...full.groups.slice(2, 15)] };
-    const el = await render(first, { grouping: "week" });
+    const el = await render(first, { grouping: "month" });
     fireEvent.click(groupButtons(el)[2]);
     fireEvent.click(getByRole(el, "button", { name: da.showOlder }));
     await el.updateComplete;
