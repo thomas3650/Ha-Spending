@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.15.0](https://github.com/thomas3650/Ha-Spending/compare/v0.14.1...v0.15.0) (2026-11-04)
+
+
+### Features
+
+* one top filter, one quick filter and one full-screen list ([#158](https://github.com/thomas3650/Ha-Spending/issues/158)) ([a0df255](https://github.com/thomas3650/Ha-Spending/commit/a0df2558bb1a875107997e89b46cfe177cb6a70b))
+
+
+### Bug Fixes
+
+* small fixes from the 2026-11-04 walkthrough ([#154](https://github.com/thomas3650/Ha-Spending/issues/154)) ([3f49a86](https://github.com/thomas3650/Ha-Spending/commit/3f49a866a49ef2bc2a4e65c5e7448883f0acc9c9))
+
 ## [0.14.1](https://github.com/thomas3650/Ha-Spending/compare/v0.14.0...v0.14.1) (2026-11-04)
 
 
