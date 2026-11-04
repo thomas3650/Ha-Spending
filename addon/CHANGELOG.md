@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.17.0](https://github.com/thomas3650/Ha-Spending/compare/v0.16.1...v0.17.0) (2026-11-04)
+
+
+### Features
+
+* a view of the fixed expenses over time, and the month in the trail ([#168](https://github.com/thomas3650/Ha-Spending/issues/168)) ([f128e23](https://github.com/thomas3650/Ha-Spending/commit/f128e23864c89b645271cd60a4a034f179c02daf))
+
 ## [0.16.1](https://github.com/thomas3650/Ha-Spending/compare/v0.16.0...v0.16.1) (2026-11-04)
 
 
