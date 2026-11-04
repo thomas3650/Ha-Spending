@@ -31,7 +31,7 @@ Every task reads its sections there; the plan does not repeat them.
 - "Today" for the estimates and the statuses is `data.today` (spec intro). The units use `ctx.today`, as today.
 - Commits: Conventional Commits, `git commit -F <file>` with the message in `.superpowers/fixed-expenses/`, ending with
   `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`.
-- Decision numbers D66 and D69 are this spec's. D67 and D68 belong to `fix/filter-follow-ups-and-full-screen-bars`; do
+- Decision numbers D66 and D70 are this spec's (D69 went to #166 before the merge; the build's chunk limit is D71). D67 and D68 belong to `fix/filter-follow-ups-and-full-screen-bars`; do
   not renumber.
 
 ## Review focus
@@ -275,7 +275,7 @@ Model: sonnet · Review: no
 
 **Spec:** §10, §11.
 
-- [ ] Change each doc as §10 says. Add D66 and D69 as §11 writes them, with the Source link from `docs/decisions.md`
+- [ ] Change each doc as §10 says. Add D66 and D70 as §11 writes them, with the Source link from `docs/decisions.md`
       as `superpowers/specs/2026-11-04-fixed-expenses-over-time.md`. Set each status in §11's table exactly. The map in
       `docs/README.md` gets this plan.
 - [ ] `node scripts/check-links.mjs`; commit `docs: the fixed-expenses view and the unit step`.

@@ -364,13 +364,13 @@ Changed in the same PR:
   group row's link "opens the Faste udgifter card" becomes "opens the fixed-expenses view" with D66; the line on the
   hash keys gets D66.
 - `docs/domain-language.md`, too: the Chosen unit row's "the bar the user clicked" becomes "the bar or the trail's
-  unit list the user chose it from", with D69.
+  unit list the user chose it from", with D70.
 - `docs/architecture.md`: its "What exists now" sentence gets the view.
 - `docs/testing.md`: the Chrome check gets §9's steps, and its trail steps get the month step.
 - `docs/README.md`: the map gets this spec's plan. This branch already adds the spec to the map and the mockup to
   `docs/mockups/README.md`.
-- `docs/decisions.md`: D66 and D69 below, and the statuses they change. D67 and D68 are taken by the branch
-  `fix/filter-follow-ups-and-full-screen-bars`.
+- `docs/decisions.md`: D66 and D70 below, and the statuses they change. D67 and D68 came with #164, D69 with #166,
+  and the build's chunk limit is D71.
 
 ## 11. Decisions
 
@@ -391,7 +391,7 @@ Changed in the same PR:
   `decisions.md` the link is `superpowers/specs/…`). The span, the colour rule for parts without a circle colour and
   the hash rules are Claude's call.
 
-### D69: The unit is a trail step with a list, and a unit within one year has no year
+### D70: The unit is a trail step with a list, and a unit within one year has no year
 
 - **Date:** 2026-11-04 · **Status:** active
 - **Decision:**

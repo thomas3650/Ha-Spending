@@ -98,7 +98,8 @@ export class Overview extends LitElement {
     const empty = circleSpan(ctx).length === 0;
     const heading = all ? da.mainGroups : da.categories;
     const unit = ctx.chosen === null ? null : unitName(ctx.chosen, ctx.timeline.grouping, ctx.unitYear);
-    const centre = unit === null ? name : all ? unit : da.levelInUnit(name, unit);
+    const centreName = unit !== null && all ? unit : name;
+    const centreUnit = unit === null || all ? "" : da.inUnitLine(unit);
     return html`<section class="card half" role="region" aria-labelledby=${LEFT_TITLE}>
       <div class="half-head">
         <h2 id=${LEFT_TITLE}>${unit === null ? heading : da.inUnit(heading, unit)}</h2>
@@ -108,7 +109,8 @@ export class Overview extends LitElement {
         ? this.empty()
         : html`<hs-circle
               .items=${items}
-              .centreName=${centre}
+              .centreName=${centreName}
+              .centreUnit=${centreUnit}
               .centreAmount=${whole}
               .selectable=${!all}
               .selected=${selected}
@@ -206,7 +208,6 @@ export class Overview extends LitElement {
     </p>`;
   }
 
-  /** A chosen category is named by the trail; the title names its main group, so it does not change. */
   private cardTitle(card: Card): string {
     const level = this.ctx.state.level;
     const g = finerUnits(this.ctx)?.grouping ?? this.ctx.timeline.grouping;
@@ -216,7 +217,7 @@ export class Overview extends LitElement {
       if (card === "shops") return da.shops;
       return da.per(g);
     }
-    const name = levelName({ kind: "mainGroup", mainGroup: level.mainGroup });
+    const name = levelName(level);
     if (card === "subscriptions") return da.subscriptionsIn(name);
     if (card === "postings") return da.postingsOf(name);
     if (card === "shops") return da.shopsIn(name);

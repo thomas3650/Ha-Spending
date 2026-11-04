@@ -123,7 +123,6 @@ describe("the unit step after the grouping", () => {
     expect(queryAllByRole(trail(root), "button", { name: new RegExp(`^${da.remove("")}`) })).toHaveLength(0);
     expect(new URLSearchParams(location.hash.slice(1)).get("unit")).toBeNull();
     expect(barButtons(root, da.per("month"))).toHaveLength(10);
-    expect(queryByRole(root, "region", { name: da.per("week") })).toBeNull();
   });
 
   it("an old quarter's unit shows as its first month", async () => {

@@ -122,9 +122,7 @@ describe("dates", () => {
 describe("units", () => {
   it("names a unit", () => {
     expect(unitName(unit("2026-10-30", "day"), "day", true)).toBe("30. oktober 2026");
-    expect(unitName(unit("2026-10-30", "week"), "week", false)).toBe("Uge 44 2026");
     expect(unitName(unit("2026-10-30", "month"), "month", true)).toBe("Oktober 2026");
-    expect(unitName(unit("2026-10-30", "quarter"), "quarter", false)).toBe("4. kvartal 2026");
     expect(unitName(unit("2026-10-30", "year"), "year", false)).toBe("2026");
   });
   it("leaves the year off a month and a day inside one year", () => {
@@ -137,15 +135,13 @@ describe("units", () => {
     expect(withYear(unitsOf({ start: "2026-01-01", end: "2026-12-31" }, "month", today))).toBe(false);
     expect(withYear(unitsOf({ start: "2025-11-01", end: "2026-10-31" }, "month", today))).toBe(true);
   });
-  it("takes the week of a clipped unit from its whole week", () => {
-    const first = unitsOf({ start: "2026-01-01", end: "2026-10-30" }, "week", today)[0];
-    expect(unitName(first, "week", false)).toBe("Uge 1 2026");
+  it("takes the name of a clipped unit from its whole unit", () => {
+    const first = unitsOf({ start: "2026-01-15", end: "2026-10-30" }, "month", today)[0];
+    expect(unitName(first, "month", true)).toBe("Januar 2026");
   });
   it("short-names a unit on the axis", () => {
     expect(unitAxis(unit("2026-10-30", "day"), "day")).toBe("30.10.");
-    expect(unitAxis(unit("2026-10-30", "week"), "week")).toBe("uge 44");
     expect(unitAxis(unit("2026-05-10", "month"), "month")).toBe("maj");
-    expect(unitAxis(unit("2026-10-30", "quarter"), "quarter")).toBe("K4");
     expect(unitAxis(unit("2026-10-30", "year"), "year")).toBe("2026");
   });
 });

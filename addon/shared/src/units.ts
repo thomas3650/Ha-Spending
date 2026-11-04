@@ -1,13 +1,13 @@
-import { addDays, firstOfMonth, isoWeekday } from "./dates";
+import { addDays, firstOfMonth } from "./dates";
 import type { Period } from "./types";
 
-export type Grouping = "day" | "week" | "month" | "quarter" | "year";
+export type Grouping = "day" | "month" | "year";
 
 export interface Unit {
   /** Clipped to the period. */
   start: string;
   end: string;
-  /** The whole calendar unit; an ISO week runs Monday to Sunday. */
+  /** The whole calendar unit. */
   fullStart: string;
   fullEnd: string;
   /** Still running on today, or after today. */
@@ -28,16 +28,8 @@ function fullBounds(date: string, grouping: Grouping): [string, string] {
   switch (grouping) {
     case "day":
       return [date, date];
-    case "week": {
-      const monday = addDays(date, 1 - isoWeekday(date));
-      return [monday, addDays(monday, 6)];
-    }
     case "month":
       return [firstOfMonth(year, month), addDays(firstOfMonth(year, month + 1), -1)];
-    case "quarter": {
-      const first = month - ((month - 1) % 3);
-      return [firstOfMonth(year, first), addDays(firstOfMonth(year, first + 3), -1)];
-    }
     case "year":
       return [firstOfMonth(year, 1), addDays(firstOfMonth(year + 1, 1), -1)];
   }

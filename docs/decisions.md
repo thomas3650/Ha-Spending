@@ -392,7 +392,7 @@ to set their status to `superseded by D<n>`, or to name a part a later decision 
 - **Source:** Thomas, 2026-11-01, [the object groups spec](superpowers/specs/2026-11-01-object-groups.md) §1 and §2
 
 ### D39: The custom period uses Vanilla Calendar Pro
-- **Date:** 2026-11-02 · **Status:** active; the 800 kB limit superseded by D70
+- **Date:** 2026-11-02 · **Status:** active; the 800 kB limit superseded by D71
 - **Decision:** The period's custom interval is one calendar from Vanilla Calendar Pro, mounted inline in the menu,
   with Fra and Til fields for typing. The one chunk's `chunkSizeWarningLimit` is 800 kB.
 - **Why:** Safari would not take a typed year in the date field, and the browsers' date fields differ. A library gives
@@ -717,7 +717,15 @@ to set their status to `superseded by D<n>`, or to name a part a later decision 
 - **Why:** One line of wiring is not worth a kind of test that later tests would copy (#132).
 - **Source:** Claude, 2026-11-04, [full-screen bars spec](superpowers/specs/2026-11-04-full-screen-bars-and-follow-ups.md) §3.
 
-### D69: The unit is a trail step with a list, and a unit within one year has no year
+### D69: No week or quarter grouping
+- **Date:** 2026-11-04 · **Status:** active
+- **Decision:** The page groups by day, month or year only. A later choice of grouping brings others back with its own
+  spec.
+- **Why:** Since [D59](#d59-the-trail-holds-the-period-and-the-grouping-follows-it) nothing reaches week or quarter,
+  and dead code needs tests and care (#159).
+- **Source:** Claude, 2026-11-04, [small follow-ups spec](superpowers/specs/2026-11-04-small-follow-ups.md) §3.
+
+### D70: The unit is a trail step with a list, and a unit within one year has no year
 - **Date:** 2026-11-04 · **Status:** active
 - **Decision:**
   - On every screen the period is followed by the unit step: a dashed "Måned" or "År" with no unit, or the chosen unit
@@ -728,7 +736,7 @@ to set their status to `superseded by D<n>`, or to name a part a later decision 
 - **Source:** Thomas, 2026-11-04, [fixed expenses over time spec](superpowers/specs/2026-11-04-fixed-expenses-over-time.md)
   §3.2 and §3.3. The list's rows and the dashed button's place are Claude's call.
 
-### D70: The one chunk's warning limit is 900 kB
+### D71: The one chunk's warning limit is 900 kB
 - **Date:** 2026-11-04 · **Status:** active
 - **Decision:** The fixed-expenses view takes the one chunk past 800 kB, so its `chunkSizeWarningLimit` is 900 kB.
 - **Why:** The build should not warn, and the view's own code is the growth.

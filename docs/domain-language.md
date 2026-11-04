@@ -15,13 +15,13 @@ its name in code, so the same thing has one name everywhere. The Danish word is 
 | Uden kategori | Uden kategori | `category: null` on a posting ([D15](decisions.md)) |
 | Period | periode | `period` (type `Period`) |
 | Grouping | gruppering | `grouping` (type `Grouping`): follows the period, Måned up to 24 months and År beyond ([D59](decisions.md)) |
-| Unit | enhed | `unit` (type `Unit`): one day, week, month, quarter or year of a period |
+| Unit | enhed | `unit` (type `Unit`): one day, month or year of a period |
 | Timeline | — | `timeline` (type `Timeline`): a period, a grouping, today and the earliest posting |
 | Whole unit | hel enhed | `isWhole`; the rule is in [D16](decisions.md) |
 | Today | i dag | `today`: the day the data was read |
 | View state | — | `ViewState`: everything the page shows, kept in the URL hash ([D20](decisions.md)) |
 | Level | niveau | `level`: the screen's depth, from all spending to a main group to a category |
-| Chosen unit | valgt enhed | `unit` in the view state: the bar or the trail's unit list the user chose it from ([D69](decisions.md)) |
+| Chosen unit | valgt enhed | `unit` in the view state: the bar or the trail's unit list the user chose it from ([D70](decisions.md)) |
 | Subscription | fast udgift | `subscription` (type `Subscription`); Firefly III's API calls it a bill |
 | Due date | forfaldsdato | a date a subscription is expected to be paid: the start date, then every `skip + 1` periods |
 | Next date | næste dato | the due date the last payment does not cover, or none past the end date; the rules are in [the spec](superpowers/specs/2026-11-01-subscriptions.md#22-the-due-dates-and-the-next-date) |

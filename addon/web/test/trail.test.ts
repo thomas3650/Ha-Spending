@@ -150,12 +150,12 @@ describe("the trail is the overview's filter", () => {
 
   it("the right card has no unit or category chip", async () => {
     const { root } = await mount(ALL_THREE);
-    const right = getByRole(root, "region", { name: da.levelPer("Bolig", "month") });
+    const right = getByRole(root, "region", { name: da.levelPer("Husleje", "month") });
     expect(queryByRole(right, "button", { name: da.remove(JAN) })).toBeNull();
     expect(queryByRole(right, "button", { name: da.remove("Husleje") })).toBeNull();
     unmount();
     const postings = await mount(`${ALL_THREE}&card=postings`).then((m) => m.root);
-    const list = getByRole(postings, "region", { name: da.postingsOf("Bolig") });
+    const list = getByRole(postings, "region", { name: da.postingsOf("Husleje") });
     expect(queryByRole(list, "button", { name: da.remove(JAN) })).toBeNull();
     expect(queryByRole(list, "button", { name: da.remove("Husleje") })).toBeNull();
   });
