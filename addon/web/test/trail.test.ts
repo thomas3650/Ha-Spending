@@ -258,13 +258,27 @@ describe("the trail holds the period and the levels", () => {
     expect(trailText(root)).toBe(`${da.allSpending} › ${YEAR} › Bolig › Husleje`);
     const mainGroup = getByRole(trail(root), "button", { name: da.switchMainGroup("Bolig") });
     const category = getByRole(trail(root), "button", { name: da.switchCategory("Husleje") });
-    expect(mainGroup.getAttribute("aria-haspopup")).not.toBeNull();
-    expect(category.getAttribute("aria-haspopup")).not.toBeNull();
+    expect(mainGroup.getAttribute("aria-expanded")).toBe("false");
+    expect(category.getAttribute("aria-expanded")).toBe("false");
+    expect(mainGroup.getAttribute("aria-haspopup")).toBeNull();
+    expect(category.getAttribute("aria-haspopup")).toBeNull();
     expect(heading(root).contains(category)).toBe(true);
     getByRole(trail(root), "button", { name: da.remove("Bolig") });
     getByRole(trail(root), "button", { name: da.remove("Husleje") });
     expect(queryByRole(trail(root), "button", { name: da.chooseMainGroup })).toBeNull();
     expect(queryByRole(trail(root), "button", { name: da.chooseCategory })).toBeNull();
+  });
+
+  it("gives the dashed buttons an expanded state and no popup role", async () => {
+    const { root } = await mount("");
+    const mainGroup = dashed(root, da.chooseMainGroup);
+    expect(mainGroup.getAttribute("aria-expanded")).toBe("false");
+    expect(mainGroup.getAttribute("aria-haspopup")).toBeNull();
+    unmount();
+    const { root: withGroup } = await mount("group=Bolig");
+    const category = dashed(withGroup, da.chooseCategory);
+    expect(category.getAttribute("aria-expanded")).toBe("false");
+    expect(category.getAttribute("aria-haspopup")).toBeNull();
   });
 
   it("disables the dashed button and the level steps while loading, and the period step works", async () => {

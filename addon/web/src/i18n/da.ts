@@ -179,6 +179,7 @@ export const da = {
   suggestions: "Butikker",
   amountInvalid: "Skriv et beløb som 1.000,50",
   amountEmpty: "Beløb",
+  filterAmount: "Filtrér på beløb",
   amountKinds: {
     about: "Omkring",
     under: "Under",

@@ -254,7 +254,7 @@ describe("the first key number's link to Posteringer in full screen", () => {
   it("⤡ after the link keeps an amount set in full screen", async () => {
     const { app, root } = await mount("card=postings&under=4500");
     await follow(app, postingsLink(root));
-    const pill = getAllByRole(root, "button", { name: da.amountEmpty }).find((b) => b.hasAttribute("aria-haspopup"));
+    const pill = getByRole(root, "button", { name: da.filterAmount });
     fireEvent.click(pill as HTMLElement);
     await settle(app);
     const kinds = getByRole(root, "group", { name: da.amountKindsLabel });

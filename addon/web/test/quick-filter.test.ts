@@ -56,20 +56,23 @@ describe("the sentence over the list", () => {
   });
 
   it("stays when the tab and the period change", async () => {
-    const { app, root } = await mount("card=postings&under=4500");
+    const { app, root } = await mount("card=postings&q=Netto&under=4500");
     const filter: AmountFilter = { kind: "under", value: 450_000 };
+    const parts = [da.searchPart("Netto"), da.amountWords(filter)].join(" · ");
     fireEvent.click(getByRole(getByRole(root, "group", { name: da.view }), "button", { name: da.bars }));
     await settle(app);
     fireEvent.click(getByRole(getByRole(root, "group", { name: da.view }), "button", { name: da.postings }));
     await settle(app);
-    expect(location.hash).toBe("#card=postings&under=4500");
-    showingSummary(root, 17, ALL, 3_116_012, da.amountWords(filter));
+    expect(location.hash).toBe("#card=postings&q=Netto&under=4500");
+    expect(searchbox(root).value).toBe("Netto");
+    showingSummary(root, 9, ALL, 2_700_000, parts);
     fireEvent.click(getByRole(root, "button", { name: new RegExp(`^${da.period}`) }));
     await app.updateComplete;
     fireEvent.click(getByRole(getByRole(root, "group", { name: da.period }), "button", { name: da.presets.lastYear }));
     await settle(app);
-    expect(location.hash).toBe("#period=lastYear&card=postings&under=4500");
-    showingSummary(root, 2, 3, 400_000, da.amountWords(filter));
+    expect(location.hash).toBe("#period=lastYear&card=postings&q=Netto&under=4500");
+    expect(searchbox(root).value).toBe("Netto");
+    showingSummary(root, 1, 3, 300_000, parts);
   });
 });
 

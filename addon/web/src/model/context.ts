@@ -84,22 +84,14 @@ export interface Finer {
   units: Unit[];
 }
 
-const FINER: Record<Exclude<Grouping, "day">, Grouping> = {
-  week: "day",
-  month: "day",
-  quarter: "month",
-  year: "month",
-};
-
 /**
- * The finer units of the Søjler card and the detail when the period holds one unit of its grouping, else null (D54).
- * It steps finer until there are two or more units or it reaches days. "Denne måned" and "I år" end today, so they run
- * on to their own last day within the one unit; "Alt" has no last day of its own and runs to the one unit's end. The
- * units after today are empty slots.
+ * The days of the Søjler card and the detail when the period is one month, else null: a period inside one month draws
+ * its days (D54, D59). "Denne måned" and "I år" end today, so they run on to their own last day within the month; "Alt"
+ * has no last day of its own and runs to the month's end. The days after today are empty slots.
  */
 export function finerUnits(ctx: ViewContext): Finer | null {
   const grouping = ctx.timeline.grouping;
-  if (ctx.units.length !== 1 || grouping === "day") return null;
+  if (grouping !== "month" || ctx.units.length !== 1) return null;
   const period = ctx.timeline.period;
   const unitEnd = ctx.units[0].fullEnd;
   const preset = ctx.state.period.preset;
@@ -111,13 +103,7 @@ export function finerUnits(ctx: ViewContext): Finer | null {
     end = unitEnd;
   }
   const span = { start: period.start, end };
-  let g = FINER[grouping];
-  let units = unitsOf(span, g, ctx.today);
-  while (units.length === 1 && g !== "day") {
-    g = FINER[g];
-    units = unitsOf(span, g, ctx.today);
-  }
-  return { grouping: g, units };
+  return { grouping: "day", units: unitsOf(span, "day", ctx.today) };
 }
 
 export function partName(key: string | null, of: "mainGroup" | "category"): string {

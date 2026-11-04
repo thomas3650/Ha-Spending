@@ -222,7 +222,6 @@ export class AmountPill extends Dropdown {
         type="button"
         class="amount-kind"
         aria-label=${da.amountKindButton}
-        aria-haspopup="true"
         aria-expanded=${this.open ? "true" : "false"}
         @click=${() => this.toggle()}
       >
@@ -257,8 +256,7 @@ export class AmountPill extends Dropdown {
         ? html`<button
             type="button"
             class="amount-pill amount-empty"
-            aria-label=${da.amountName(null)}
-            aria-haspopup="true"
+            aria-label=${da.filterAmount}
             aria-expanded=${this.open ? "true" : "false"}
             @click=${() => this.toggle()}
           >

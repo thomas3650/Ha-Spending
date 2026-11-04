@@ -207,6 +207,8 @@ export class Bars extends LitElement {
       },
       tooltip: {
         trigger: "item",
+        // Inside the chart, so full screen's clipped chart never cuts a tooltip off.
+        confine: true,
         formatter: (p: { dataIndex: number }) => {
           const item = items[p.dataIndex];
           return item ? barTooltip(item) : "";
@@ -315,6 +317,21 @@ export const barsStyles = [
   css`
     .bars .chart {
       height: 400px;
+    }
+    .fill > hs-bars,
+    .fill .bars {
+      display: flex;
+      flex-direction: column;
+      flex: 1 1 auto;
+      min-height: 0;
+    }
+    /* A basis of 0 keeps ECharts' pixel-sized inner element out of the chart's own height. The clip keeps its hidden
+       tooltip, left at its last place, from reaching below a chart that got lower. */
+    .fill .bars .chart {
+      flex: 1 1 0;
+      height: auto;
+      min-height: 400px;
+      overflow: hidden;
     }
   `,
 ];

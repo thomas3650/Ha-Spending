@@ -61,7 +61,6 @@ export class LevelMenu extends Dropdown {
       type="button"
       class=${name === null ? "trail-add" : "trail-dd"}
       aria-label=${label}
-      aria-haspopup="true"
       aria-expanded=${this.open ? "true" : "false"}
       ?disabled=${this.disabled}
       @click=${() => this.toggle()}
