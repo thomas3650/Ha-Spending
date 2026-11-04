@@ -77,6 +77,14 @@ function days(period: Period): number {
   return (Date.parse(period.end) - Date.parse(period.start)) / DAY + 1;
 }
 
+/** The object groups that a kept bill has or a shown posting in the period is linked to, unsorted. */
+export function objectGroupNames(ctx: ViewContext): string[] {
+  const inPeriod = within(ctx.shown, ctx.timeline.period).flatMap((p) =>
+    p.subscription === null ? [] : [p.subscription.objectGroup],
+  );
+  return [...new Set([...ctx.data.subscriptions.map((s) => s.objectGroup), ...inPeriod])];
+}
+
 /**
  * One card per object group that a kept bill has or a shown posting in the period is linked to; empty gives the
  * period's key numbers only (spec §4). The fetched range does not count. The set of groups is the period's; with a
@@ -90,11 +98,10 @@ export function objectGroupCards(ctx: ViewContext, href: string): KeyCard[] {
   const linked = within(ctx.shown, counted).flatMap((p) =>
     p.subscription === null ? [] : [{ group: p.subscription.objectGroup, bill: p.subscription.name, amount: p.amount }],
   );
-  const inPeriod = within(ctx.shown, period).flatMap((p) => (p.subscription === null ? [] : [p.subscription.objectGroup]));
-  const names = new Set([...ctx.data.subscriptions.map((s) => s.objectGroup), ...inPeriod]);
+  const names = objectGroupNames(ctx);
   const length = days(period);
   const link: KeyLink | undefined = ctx.data.subscriptions.length === 0 ? undefined : { kind: "subscriptions", href };
-  return [...names]
+  return names
     .sort((a, b) => a.localeCompare(b, "da"))
     .map((name) => {
       const payments = linked.filter((l) => l.group === name);

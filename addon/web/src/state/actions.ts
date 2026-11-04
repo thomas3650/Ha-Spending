@@ -1,5 +1,7 @@
 import { groupingFor, type Level, type SpendingData, unitsOf } from "@ha-spending/shared";
 import type { AmountFilter } from "../model/amount";
+import { viewContext } from "../model/context";
+import { objectGroupNames } from "../model/key-numbers";
 import { type Card, type DetailKey, type PeriodChoice, periodOf, type ViewState } from "./view";
 
 const ALL: Level = { kind: "all" };
@@ -38,6 +40,23 @@ export function openPart(s: ViewState, key: string | null): ViewState {
 
 export function chooseUnit(s: ViewState, fullStart: string): ViewState {
   return s.unit === fullStart ? withoutUnit(s) : { ...s, unit: fullStart, card: "postings" };
+}
+
+/** Keeps the card, unlike `chooseUnit`: the fixed-expenses view has no tab to switch to. */
+export function chooseFixedUnit(s: ViewState, fullStart: string): ViewState {
+  return s.unit === fullStart ? withoutUnit(s) : { ...s, unit: fullStart };
+}
+
+export function openFixed(s: ViewState, objectGroup: string): ViewState {
+  return { ...s, fixed: true, objectGroup, fullScreen: false, detail: null };
+}
+
+export function setObjectGroup(s: ViewState, objectGroup: string | null): ViewState {
+  return withoutUnit({ ...s, objectGroup });
+}
+
+export function leaveFixed(s: ViewState): ViewState {
+  return { ...s, fixed: false, objectGroup: null };
 }
 
 export function setCard(s: ViewState, card: Card): ViewState {
@@ -168,5 +187,11 @@ export function normalise(s: ViewState, data: SpendingData, today: string): View
       ? "bars"
       : s.card;
   const known = { ...s, accounts, level: knownLevel(s.level, data), unit, card };
+  if (known.fixed) {
+    if (data.subscriptions.length === 0) return normalise(leaveFixed(known), data, today);
+    const names = objectGroupNames(viewContext(data, known, today));
+    const objectGroup = names.length > 1 && known.objectGroup !== null && names.includes(known.objectGroup) ? known.objectGroup : null;
+    return closeDetail({ ...known, objectGroup });
+  }
   return detailResolves(known, data, today) ? known : closeDetail(known);
 }

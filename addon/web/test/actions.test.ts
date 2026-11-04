@@ -2,13 +2,16 @@ import type { Level, SpendingData, Subscription } from "@ha-spending/shared";
 import { describe, expect, it } from "vitest";
 import {
   chooseShop,
+  chooseFixedUnit,
   chooseUnit,
   clearChoices,
   closeDetail,
   detailResolves,
   keepDetail,
+  leaveFixed,
   normalise,
   openDetail,
+  openFixed,
   openPart,
   openPostingsFull,
   openShop,
@@ -25,6 +28,7 @@ import {
   setFullScreen,
   setSearch,
   setAmount,
+  setObjectGroup,
 } from "../src/state/actions";
 import type { AmountFilter } from "../src/model/amount";
 import { DEFAULT_STATE, type DetailKey, type ViewState } from "../src/state/view";
@@ -445,5 +449,77 @@ describe("the detail", () => {
       ];
       for (const next of nexts) expect(keepDetail(s, next).detail).toEqual(s.detail);
     }
+  });
+});
+
+describe("the fixed-expenses view", () => {
+  const today = "2026-10-30";
+  const range = { start: "2025-12-01", end: today };
+  const withBills = { ...answerFor(range), subscriptions: SUBSCRIPTIONS };
+  const fixed: ViewState = { ...DEFAULT_STATE, fixed: true, objectGroup: "Faste udgifter" };
+
+  it("opens with the group, leaving full screen and the detail and keeping the rest", () => {
+    const from: ViewState = {
+      ...DEFAULT_STATE,
+      card: "shops",
+      fullScreen: true,
+      search: "rema",
+      unit: "2026-07-01",
+      detail: { kind: "posting", id: "p1" },
+    };
+    expect(openFixed(from, "Abonnementer")).toEqual({
+      ...from,
+      fixed: true,
+      objectGroup: "Abonnementer",
+      fullScreen: false,
+      detail: null,
+    });
+  });
+
+  it("setObjectGroup chooses the group and drops the unit", () => {
+    expect(setObjectGroup({ ...fixed, unit: "2026-07-01" }, null)).toEqual({ ...fixed, objectGroup: null, unit: null });
+    expect(setObjectGroup(fixed, "Abonnementer").objectGroup).toBe("Abonnementer");
+  });
+
+  it("chooseFixedUnit chooses and unchooses a unit and keeps the card", () => {
+    const s: ViewState = { ...fixed, card: "bars" };
+    expect(chooseFixedUnit(s, "2026-07-01")).toEqual({ ...s, unit: "2026-07-01" });
+    expect(chooseFixedUnit({ ...s, unit: "2026-07-01" }, "2026-07-01")).toEqual(s);
+  });
+
+  it("leaveFixed turns fixed off and clears the group", () => {
+    expect(leaveFixed({ ...fixed, search: "x" })).toEqual({ ...DEFAULT_STATE, search: "x" });
+  });
+
+  it("normalise keeps fixed with a known group", () => {
+    expect(normalise(fixed, withBills, today)).toEqual(fixed);
+  });
+
+  it("normalise turns fixed off when the answer has no subscriptions", () => {
+    const n = normalise(fixed, answerFor(range), today);
+    expect(n.fixed).toBe(false);
+    expect(n.objectGroup).toBeNull();
+  });
+
+  it("normalise drops a group the answer does not have", () => {
+    expect(normalise({ ...fixed, objectGroup: "Ukendt" }, withBills, today).objectGroup).toBeNull();
+  });
+
+  it("normalise drops the group when there is only one", () => {
+    const base = answerFor(range);
+    const one = {
+      ...base,
+      postings: base.postings.map((p) => ({ ...p, subscription: null })),
+      subscriptions: SUBSCRIPTIONS.filter((b) => b.objectGroup === "Faste udgifter"),
+    };
+    const n = normalise(fixed, one, today);
+    expect(n.fixed).toBe(true);
+    expect(n.objectGroup).toBeNull();
+  });
+
+  it("normalise drops the detail in the fixed view", () => {
+    const withDetail: ViewState = { ...fixed, card: "subscriptions", detail: { kind: "subscription", id: "b1" } };
+    expect(normalise({ ...withDetail, fixed: false, objectGroup: null }, withBills, today).detail).not.toBeNull();
+    expect(normalise(withDetail, withBills, today).detail).toBeNull();
   });
 });
