@@ -1,4 +1,4 @@
-import { addDays, firstOfMonth } from "./dates";
+import { addDays, addMonths, firstOfMonth } from "./dates";
 import type { Period } from "./types";
 
 export type Preset = "thisMonth" | "lastMonth" | "last3Months" | "last12Months" | "thisYear" | "lastYear" | "all";
@@ -40,4 +40,12 @@ export function presetPeriod(preset: Preset, today: string, earliest: string | n
     case "lastYear":
       return { start: firstOfMonth(year - 1, 1), end: addDays(firstOfMonth(year, 1), -1) };
   }
+}
+
+/**
+ * At most 24 months is grouped by month, longer by year. Up to 24 months by year would hold at most one whole year,
+ * which D16 averages over the years before the data.
+ */
+export function groupingFor(period: Period): "month" | "year" {
+  return period.end < addMonths(period.start, 24) ? "month" : "year";
 }

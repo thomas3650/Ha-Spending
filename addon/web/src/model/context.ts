@@ -2,6 +2,7 @@ import {
   type ClassifiedPosting,
   classify,
   type Grouping,
+  groupingFor,
   type Level,
   select,
   type SpendingData,
@@ -48,9 +49,10 @@ function parentOf(level: Level): Level | null {
 }
 
 export function viewContext(data: SpendingData, state: ViewState, today: string): ViewContext {
+  const period = periodOf(state.period, today, data.earliestPostingDate);
   const timeline: Timeline = {
-    period: periodOf(state.period, today, data.earliestPostingDate),
-    grouping: state.grouping,
+    period,
+    grouping: groupingFor(period),
     today,
     earliest: data.earliestPostingDate,
   };

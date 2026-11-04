@@ -1,6 +1,6 @@
 import { css, html, LitElement, nothing } from "lit";
 import { live } from "lit/directives/live.js";
-import { kr, postingAmount } from "../format";
+import { kr, plainCount, postingAmount } from "../format";
 import { da } from "../i18n/da";
 import type { ShopSuggestion } from "../model/filter";
 import { chip, fire } from "./chip";
@@ -131,16 +131,17 @@ export class Search extends LitElement {
   private options() {
     return this.suggestions.map((s, i) => {
       const text = sumText(s.sum);
+      const n = plainCount(s.count);
       return html`<li
         role="option"
         id="${this.idBase}-${i}"
         class="search-option"
         aria-selected=${String(i === this.active)}
-        aria-label=${da.shopOption(s.name, text)}
+        aria-label=${da.shopOption(s.name, n, text)}
         @click=${() => this.choose(s.name)}
       >
         <span class="search-option-name">${s.name}</span>
-        <span class="search-option-sum">${text}</span>
+        <span class="search-option-sum">${n} · ${text}</span>
       </li>`;
     });
   }
@@ -191,8 +192,17 @@ export const searchStyles = css`
     align-items: center;
     gap: 8px;
   }
+  /* As high as the Beløb pill beside it (top-filter spec §4). */
   hs-search .all-search {
     flex: 1 1 100%;
+    box-sizing: border-box;
+    height: 36px;
+    padding: 0 12px;
+    border: 1px solid var(--hs-field);
+    border-radius: 8px;
+    background: var(--hs-card);
+    color: var(--hs-text);
+    font: inherit;
   }
   .search-chip-row {
     flex-basis: 100%;

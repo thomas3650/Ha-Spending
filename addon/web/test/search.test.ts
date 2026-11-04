@@ -8,9 +8,9 @@ import { da } from "../src/i18n/da";
 import type { ShopSuggestion } from "../src/model/filter";
 
 const SUGGESTIONS: ShopSuggestion[] = [
-  { name: "Netto", sum: 315000 },
-  { name: "Nordisk Café", sum: 4500 },
-  { name: "Nørrebro Cykler", sum: -20000 },
+  { name: "Netto", sum: 315000, count: 3 },
+  { name: "Nordisk Café", sum: 4500, count: 1 },
+  { name: "Nørrebro Cykler", sum: -20000, count: 12 },
 ];
 
 interface Fired {
@@ -87,26 +87,28 @@ describe("the search field with shop suggestions", () => {
     expect(box.getAttribute("aria-expanded")).toBe("false");
   });
 
-  it("offers the shops while the field has focus, each named by its name and sum", async () => {
+  it("offers the shops while the field has focus, each named by its name, count and sum", async () => {
     const { el } = await render();
     expect(list(el)).toBeNull();
     await focus(el);
     expect(field(el).getAttribute("aria-expanded")).toBe("true");
     const options = getAllByRole(list(el) as HTMLElement, "option");
     expect(options).toEqual([
-      getByRole(el, "option", { name: da.shopOption("Netto", kr(315000)) }),
-      getByRole(el, "option", { name: da.shopOption("Nordisk Café", kr(4500)) }),
-      getByRole(el, "option", { name: da.shopOption("Nørrebro Cykler", postingAmount(-20000)) }),
+      getByRole(el, "option", { name: da.shopOption("Netto", "3", kr(315000)) }),
+      getByRole(el, "option", { name: da.shopOption("Nordisk Café", "1", kr(4500)) }),
+      getByRole(el, "option", { name: da.shopOption("Nørrebro Cykler", "12", postingAmount(-20000)) }),
     ]);
     expect(options[0]?.textContent).toContain("Netto");
     expect(options[0]?.textContent).toContain(kr(315000));
+    expect(options[0]?.textContent?.replace(/\s+/g, " ").trim()).toBe(`Netto 3 · ${kr(315000)}`);
+    expect(options[2]?.textContent).toContain("12");
     expect(options[2]?.textContent).toContain("+200,00");
   });
 
   it("reads a net of zero as a posting amount", async () => {
-    const { el } = await render({ suggestions: [{ name: "Netto", sum: 0 }] });
+    const { el } = await render({ suggestions: [{ name: "Netto", sum: 0, count: 3 }] });
     await focus(el);
-    getByRole(el, "option", { name: da.shopOption("Netto", postingAmount(0)) });
+    getByRole(el, "option", { name: da.shopOption("Netto", "3", postingAmount(0)) });
   });
 
   it("offers nothing with no suggestions", async () => {
@@ -145,15 +147,15 @@ describe("the search field with shop suggestions", () => {
     expect(highlighted(el)).toBeNull();
     expect(field(el).hasAttribute("aria-activedescendant")).toBe(false);
     await key(el, "ArrowDown");
-    expect(highlighted(el)?.getAttribute("aria-label")).toBe(da.shopOption("Netto", kr(315000)));
+    expect(highlighted(el)?.getAttribute("aria-label")).toBe(da.shopOption("Netto", "3", kr(315000)));
     expect(field(el).getAttribute("aria-activedescendant")).toBe(highlighted(el)?.id);
     await key(el, "ArrowDown");
     await key(el, "ArrowDown");
-    expect(highlighted(el)?.getAttribute("aria-label")).toBe(da.shopOption("Nørrebro Cykler", postingAmount(-20000)));
+    expect(highlighted(el)?.getAttribute("aria-label")).toBe(da.shopOption("Nørrebro Cykler", "12", postingAmount(-20000)));
     await key(el, "ArrowDown");
-    expect(highlighted(el)?.getAttribute("aria-label")).toBe(da.shopOption("Netto", kr(315000)));
+    expect(highlighted(el)?.getAttribute("aria-label")).toBe(da.shopOption("Netto", "3", kr(315000)));
     await key(el, "ArrowUp");
-    expect(highlighted(el)?.getAttribute("aria-label")).toBe(da.shopOption("Nørrebro Cykler", postingAmount(-20000)));
+    expect(highlighted(el)?.getAttribute("aria-label")).toBe(da.shopOption("Nørrebro Cykler", "12", postingAmount(-20000)));
     await key(el, "ArrowUp");
     await key(el, "Enter");
     expect(fired).toEqual([{ name: "shop-choose", detail: "Nordisk Café" }]);
@@ -241,7 +243,7 @@ describe("the search field with shop suggestions", () => {
   it("chooses an option on a click and focuses the field again", async () => {
     const { el, fired } = await render();
     await openWithFocusElsewhere(el);
-    fireEvent.click(getByRole(el, "option", { name: da.shopOption("Netto", kr(315000)) }));
+    fireEvent.click(getByRole(el, "option", { name: da.shopOption("Netto", "3", kr(315000)) }));
     expect(fired).toEqual([{ name: "shop-choose", detail: "Netto" }]);
     expect(document.activeElement).toBe(field(el));
   });
@@ -249,7 +251,7 @@ describe("the search field with shop suggestions", () => {
   it("chooses an option once on a tap's pointer, mouse and click events", async () => {
     const { el, fired } = await render();
     await focus(el);
-    const option = getByRole(el, "option", { name: da.shopOption("Netto", kr(315000)) });
+    const option = getByRole(el, "option", { name: da.shopOption("Netto", "3", kr(315000)) });
     fireEvent.pointerDown(option);
     fireEvent.pointerUp(option);
     expect(fireEvent.mouseDown(option)).toBe(false);
@@ -260,7 +262,7 @@ describe("the search field with shop suggestions", () => {
   it("prevents the default of a press on the list", async () => {
     const { el } = await render();
     await focus(el);
-    const option = getByRole(el, "option", { name: da.shopOption("Netto", kr(315000)) });
+    const option = getByRole(el, "option", { name: da.shopOption("Netto", "3", kr(315000)) });
     expect(fireEvent.mouseDown(option)).toBe(false);
   });
 

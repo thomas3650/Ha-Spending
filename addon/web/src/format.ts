@@ -1,6 +1,5 @@
 import { isDate, isoWeek, type Grouping, type Period, type Unit } from "@ha-spending/shared";
 import { da } from "./i18n/da";
-import type { AmountRange } from "./state/view";
 
 const whole = new Intl.NumberFormat("da-DK", { maximumFractionDigits: 0 });
 const cents = new Intl.NumberFormat("da-DK", {
@@ -62,14 +61,6 @@ export function kr(ore: number): string {
 export function barKr(ore: number): string {
   const text = kr(ore);
   return ore < 0 && !isZero(text) ? `+${text} ${da.refundMark}` : text;
-}
-
-export function amountChip(range: AmountRange): string {
-  const text = (ore: number | null) => {
-    if (ore === null) return null;
-    return ore % 100 === 0 ? whole.format(ore / 100) : cents.format(ore / 100);
-  };
-  return da.amountChip(text(range.min), text(range.max));
 }
 
 /**
@@ -186,6 +177,11 @@ export function unitAxis(unit: Unit, g: Grouping): string {
 export function partLabel(name: string, amount: number, share: number | null): string {
   const base = `${name}, ${kr(amount)}`;
   return share === null ? base : `${base}, ${percent(share)}`;
+}
+
+/** A whole number as the page writes it, without a unit. */
+export function plainCount(n: number): string {
+  return whole.format(n);
 }
 
 export function count(n: number): string {

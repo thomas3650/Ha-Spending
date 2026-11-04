@@ -1,13 +1,13 @@
 import { byUnit, type ClassifiedPosting, NO_PIECE, type Posting, type Unit } from "@ha-spending/shared";
 import { unitName } from "../format";
 import { type ViewContext, partName } from "./context";
-import { DEFAULT_STATE, type PostingColumn, type Sort } from "../state/view";
+import { DEFAULT_POSTING_SORT, type PostingColumn, type Sort } from "../state/view";
 import { byDate } from "./filter";
 
 const WIDE = "(min-width: 600px)";
 
 /** Whether the list shows the Kategori column: in full screen, on a viewport wide enough to hold it with the rest. */
-export function showsCategory(fullScreen: boolean): boolean {
+function showsCategory(fullScreen: boolean): boolean {
   return fullScreen && window.matchMedia(WIDE).matches;
 }
 
@@ -17,9 +17,20 @@ export function watchCategoryWidth(onChange: () => void): () => void {
   return () => query.removeEventListener("change", onChange);
 }
 
-/** Kategori is a column only when `category` is true; elsewhere a sort by it falls back to the default. */
-export function shownPostingSort(sort: Sort, category: boolean): Sort {
-  return sort.column === "category" && !category ? DEFAULT_STATE.sort : sort;
+export interface PostingColumns {
+  category: boolean;
+  account: boolean;
+}
+
+/** Whether the list shows Kategori and Konto. In full screen an open detail shows the account, so Konto goes. */
+export function shownColumns(fullScreen: boolean, detailOpen: boolean): PostingColumns {
+  return { category: showsCategory(fullScreen), account: !(fullScreen && detailOpen) };
+}
+
+/** A sort by a column the list does not show falls back to the default. */
+export function shownPostingSort(sort: Sort, columns: PostingColumns): Sort {
+  const hidden = (sort.column === "category" && !columns.category) || (sort.column === "account" && !columns.account);
+  return hidden ? DEFAULT_POSTING_SORT : sort;
 }
 
 export interface PostingRow {

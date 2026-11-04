@@ -7,7 +7,7 @@ import { count, postingAmount, tableDate } from "../format";
 import { da } from "../i18n/da";
 import { textOnlyHit } from "../model/filter";
 import type { PostingGroup, PostingList, PostingRow } from "../model/postings";
-import { DEFAULT_STATE, type DetailKey, type PostingColumn, type Sort } from "../state/view";
+import { DEFAULT_POSTING_SORT, type DetailKey, type PostingColumn, type Sort } from "../state/view";
 
 const GROUPS_STEP = 12;
 const ROWS_STEP = 100;
@@ -29,6 +29,7 @@ export class Postings extends LitElement {
     query: { attribute: false },
     shop: { attribute: false },
     showCategory: { attribute: false },
+    showAccount: { attribute: false },
     grouping: { attribute: false },
     sort: { attribute: false },
     marked: { attribute: false },
@@ -40,6 +41,7 @@ export class Postings extends LitElement {
   declare query: string;
   declare shop: string | null;
   declare showCategory: boolean;
+  declare showAccount: boolean;
   declare grouping: Grouping;
   declare sort: Sort;
   /** The row whose detail is open. */
@@ -56,8 +58,9 @@ export class Postings extends LitElement {
     this.query = "";
     this.shop = null;
     this.showCategory = false;
+    this.showAccount = true;
     this.grouping = "month";
-    this.sort = DEFAULT_STATE.sort;
+    this.sort = DEFAULT_POSTING_SORT;
     this.marked = null;
     this.toggled = new Set();
     this.shown = 0;
@@ -88,7 +91,7 @@ export class Postings extends LitElement {
   }
 
   private columns(): number {
-    return this.showCategory ? 5 : 4;
+    return 3 + Number(this.showCategory) + Number(this.showAccount);
   }
 
   /** The click is the row's, so a click beside the name opens the detail too; the button gives the keyboard a way. */
@@ -98,7 +101,7 @@ export class Postings extends LitElement {
     const mark =
       p.subscription === null
         ? nothing
-        : html` <span class="object-group-mark" title=${p.subscription.name} aria-hidden="true"
+        : html`<span class="object-group-mark" title=${p.subscription.name} aria-hidden="true"
               >${p.subscription.objectGroup}</span
             ><span class="visually-hidden">${p.subscription.objectGroup}, ${p.subscription.name}</span>`;
     return html`<tr
@@ -107,15 +110,18 @@ export class Postings extends LitElement {
       @click=${() => fire(this, "detail-open", { kind: "posting", id: p.id })}
     >
       <td class="posting-date">${tableDate(p.date)}</td>
-      <td title=${p.shop === null ? nothing : p.text}>
-        <button type="button" class="row-name" data-detail=${`p:${p.id}`}>${p.shop ?? p.text}</button>${mark}${textOnlyHit(p, this.query) ? html`<span class="posting-bank-text">${p.text}</span>` : nothing}
+      <td class="posting-text" title=${p.shop ?? p.text}>
+        <div class="posting-name">
+          <button type="button" class="row-name" data-detail=${`p:${p.id}`}>${p.shop ?? p.text}</button>${mark}
+        </div>
+        ${textOnlyHit(p, this.query) ? html`<span class="posting-bank-text" title=${p.text}>${p.text}</span>` : nothing}
       </td>
       ${this.showCategory
-        ? html`<td>
+        ? html`<td class="posting-clip" title=${r.category}>
             <span class="posting-dot" aria-hidden="true" style=${styleMap({ background: r.colour })}></span>${r.category}
           </td>`
         : nothing}
-      <td>${r.account}</td>
+      ${this.showAccount ? html`<td class="posting-clip" title=${r.account}>${r.account}</td>` : nothing}
       <td class="posting-amount">${postingAmount(p.amount)}</td>
     </tr>`;
   }
@@ -154,7 +160,8 @@ export class Postings extends LitElement {
     const head = html`<thead>
       <tr>
         ${th("date", da.columns.unitAndDate(this.grouping))} ${th("text", da.columns.text)}
-        ${this.showCategory ? th("category", da.columns.category) : nothing} ${th("account", da.columns.account)}
+        ${this.showCategory ? th("category", da.columns.category) : nothing}
+        ${this.showAccount ? th("account", da.columns.account) : nothing}
         ${th("amount", da.columns.amount, "posting-amount")}
       </tr>
     </thead>`;
@@ -192,7 +199,35 @@ export const postingsStyles = css`
   .postings td {
     padding: 8px 6px;
     text-align: left;
+    white-space: nowrap;
     border-bottom: 1px solid var(--hs-line);
+  }
+  /* No cell wraps (top-filter spec §3.3): the text column takes what the others leave, and a long text ends in "…". */
+  .postings td.posting-text {
+    width: 100%;
+    max-width: 0;
+  }
+  .postings .posting-name {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+    min-width: 0;
+  }
+  .postings .posting-name .row-name,
+  .postings .posting-bank-text,
+  .postings td.posting-clip {
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .postings .posting-name .row-name {
+    min-width: 0;
+    white-space: nowrap;
+  }
+  .postings .posting-name .object-group-mark {
+    flex: none;
+  }
+  .postings td.posting-clip {
+    max-width: 14em;
   }
   .postings thead th {
     color: var(--hs-muted);

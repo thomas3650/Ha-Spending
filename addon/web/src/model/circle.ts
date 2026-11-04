@@ -3,8 +3,10 @@ import {
   type CirclePart,
   type ClassifiedPosting,
   isRunning,
+  type Level,
   NO_PIECE,
   parts,
+  select,
   share,
   total,
   unitTotals,
@@ -15,14 +17,47 @@ import type { CircleItem } from "../components/circle";
 import { unitAxis, unitName } from "../format";
 import { finerUnits, partName, type ViewContext } from "./context";
 
-function periodCircle(ctx: ViewContext): CirclePart[] {
-  return circle(parts(within(ctx.circlePostings, ctx.timeline.period), ctx.circleLevel));
+function periodCircle(ctx: ViewContext, postings = ctx.circlePostings, level = ctx.circleLevel): CirclePart[] {
+  return circle(parts(within(postings, ctx.timeline.period), level));
 }
 
 /** The chosen unit's circle keeps the period's colours (D16). */
-function shownCircle(ctx: ViewContext): CirclePart[] {
-  if (ctx.chosen === null) return periodCircle(ctx);
-  return circle(parts(within(ctx.circlePostings, ctx.chosen), ctx.circleLevel), periodCircle(ctx));
+function shownCircle(ctx: ViewContext, postings = ctx.circlePostings, level = ctx.circleLevel): CirclePart[] {
+  if (ctx.chosen === null) return periodCircle(ctx, postings, level);
+  return circle(parts(within(postings, ctx.chosen), level), periodCircle(ctx, postings, level));
+}
+
+export interface LevelRow {
+  key: string | null;
+  name: string;
+  colour: string;
+  sum: number;
+  current: boolean;
+}
+
+/**
+ * The circle's pieces at a level, as the trail's list shows them, plus the chosen one when it has no piece, so the
+ * list always says where the page is. The category list needs a chosen main group.
+ */
+export function levelRows(ctx: ViewContext, of: "mainGroup" | "category"): LevelRow[] {
+  const chosen = ctx.state.level;
+  if (of === "category" && chosen.kind === "all") return [];
+  const level: Level =
+    chosen.kind === "all" || of === "mainGroup" ? { kind: "all" } : { kind: "mainGroup", mainGroup: chosen.mainGroup };
+  const current = chosenKey(chosen, of);
+  const rows = shownCircle(ctx, select(ctx.postings, level, null), level)
+    .filter((p) => p.piece || p.key === current)
+    .map((p) => ({ key: p.key, name: partName(p.key, of), colour: p.colour, sum: p.amount, current: p.key === current }));
+  if (current !== undefined && !rows.some((r) => r.current)) {
+    rows.push({ key: current, name: partName(current, of), colour: NO_PIECE, sum: 0, current: true });
+  }
+  return rows;
+}
+
+/** undefined when nothing is chosen at that level: null is Uden hovedgruppe or Uden kategori. */
+function chosenKey(level: Level, of: "mainGroup" | "category"): string | null | undefined {
+  if (of === "mainGroup") return level.kind === "all" ? undefined : level.mainGroup;
+  return level.kind === "category" ? level.category : undefined;
 }
 
 /** The circle's postings in the chosen unit, or in the period. */
@@ -80,6 +115,6 @@ export function barItems(ctx: ViewContext): BarItem[] {
     name: unitName(unit, g),
     amount: totals[i],
     running: isRunning(unit, ctx.today),
-    choose: finer === null ? unit.fullStart : ctx.units[0].fullStart,
+    choose: finer === null ? unit.fullStart : null,
   }));
 }

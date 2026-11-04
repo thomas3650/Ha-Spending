@@ -133,20 +133,11 @@ describe("screen 4, a chosen unit", () => {
   it("shows only the unit in Posteringer", async () => {
     const { root } = await mount("unit=2026-07-01&card=postings");
     const card = getByRole(root, "region", { name: da.postingsTitle });
-    const groups = getAllByRole(card, "button", { expanded: true });
+    const table = getByRole(card, "table");
+    const groups = getAllByRole(table, "button", { expanded: true });
     expect(groups).toHaveLength(1);
-    expect(queryByRole(card, "button", { expanded: false })).toBeNull();
+    expect(queryByRole(table, "button", { expanded: false })).toBeNull();
     expect(groups[0]).toBe(getByRole(card, "button", { name: new RegExp(`^${julyName()},`) }));
-  });
-
-  it("drops a unit the new grouping does not have", async () => {
-    const { app, root } = await mount(CHOSEN);
-    const select = getByRole(root, "combobox", { name: da.groupBy }) as HTMLSelectElement;
-    select.value = "week";
-    fireEvent.change(select);
-    await settle(app);
-    expect(queryByRole(root, "button", { name: da.remove(julyName()) })).toBeNull();
-    expect(new URLSearchParams(location.hash.slice(1)).has("unit")).toBe(false);
   });
 });
 
@@ -164,20 +155,15 @@ describe("the object group cards in a chosen unit", () => {
     getByText(fixed, da.noPayments);
   });
 
-  it("link to Alle posteringer with the unit and the main group kept, counting the link's N", async () => {
+  it("the first key number's link keeps the unit and the main group, and the list counts the link's N", async () => {
     const { app, root } = await mount("unit=2026-09-01&group=Mad", { answer });
-    const link = getByRole(
-      getByRole(root, "group", { name: da.levelInUnit("Abonnementer", SEPTEMBER) }),
-      "link",
-      { name: da.postingsLink(count(1)) },
-    );
-    location.hash = link.getAttribute("href") ?? "";
-    window.dispatchEvent(new HashChangeEvent("hashchange"));
+    const link = getByRole(getByRole(root, "group", { name: da.levelInUnit("Mad", SEPTEMBER) }), "link", {
+      name: da.postingsLink(count(3)),
+    });
+    fireEvent.click(link);
     await settle(app);
-    getByRole(root, "heading", { level: 1, name: da.allPostings });
+    getByRole(root, "button", { name: da.fullScreen, pressed: true });
     getByRole(root, "button", { name: da.remove(SEPTEMBER) });
-    getByRole(root, "button", { name: da.remove("Abonnementer") });
-    getByRole(root, "button", { name: da.remove(da.mainGroupChip("Mad")) });
-    getByText(root, da.summary(count(1), kr(70000)));
+    getByText(root, da.summary(count(3), kr(350000)));
   });
 });

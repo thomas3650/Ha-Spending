@@ -1,5 +1,6 @@
-import { keyNumbers, total, within } from "@ha-spending/shared";
+import { type ClassifiedPosting, keyNumbers, total, within } from "@ha-spending/shared";
 import { css, html, LitElement, nothing } from "lit";
+import "../components/amount-pill";
 import "../components/bars";
 import { detailSplit } from "../components/detail";
 import { fire } from "../components/chip";
@@ -8,17 +9,18 @@ import "../components/postings";
 import "../components/search";
 import "../components/shops";
 import { objectGroupSums } from "../components/subscriptions";
-import { count, kr, unitName } from "../format";
+import { count, kr, plainCount, unitName } from "../format";
 import { da } from "../i18n/da";
 import { barItems, categoryColours, circleItems, circleSpan, circleTotal, partColours } from "../model/circle";
 import { finerUnits, levelName, type ViewContext } from "../model/context";
+import { type AmountFilter, inAmount } from "../model/amount";
 import { detailView } from "../model/detail";
 import { matches, shopSuggestions } from "../model/filter";
-import { postingList, shownPostingSort, showsCategory, watchCategoryWidth } from "../model/postings";
+import { postingList, shownColumns, shownPostingSort, watchCategoryWidth } from "../model/postings";
 import { type HiddenState, shopList } from "../model/shops";
 import { DEFAULT_SUBSCRIPTION_SORT, subscriptionTable } from "../model/subscriptions";
 import { hasShops } from "../state/actions";
-import { type Card, DEFAULT_STATE, type Sort, type SubscriptionColumn, type Sorted } from "../state/view";
+import { type Card, DEFAULT_POSTING_SORT, type Sort, type SubscriptionColumn, type Sorted } from "../state/view";
 
 const LEFT_TITLE = "hs-left-title";
 const RIGHT_TITLE = "hs-right-title";
@@ -29,7 +31,6 @@ const SHOPS_LIMIT = 10;
 export class Overview extends LitElement {
   static override properties = {
     ctx: { attribute: false },
-    fullScreen: { attribute: false },
     postingsSort: { attribute: false },
     subscriptionsSort: { attribute: false },
     hiddenShops: { attribute: false },
@@ -39,7 +40,6 @@ export class Overview extends LitElement {
   };
 
   declare ctx: ViewContext;
-  declare fullScreen: boolean;
   declare postingsSort: Sort;
   declare subscriptionsSort: Sorted<SubscriptionColumn>;
   declare hiddenShops: HiddenState;
@@ -49,8 +49,7 @@ export class Overview extends LitElement {
 
   constructor() {
     super();
-    this.fullScreen = false;
-    this.postingsSort = DEFAULT_STATE.sort;
+    this.postingsSort = DEFAULT_POSTING_SORT;
     this.subscriptionsSort = DEFAULT_SUBSCRIPTION_SORT;
     this.hiddenShops = { kind: "loading" };
     this.shopsAll = false;
@@ -150,17 +149,18 @@ export class Overview extends LitElement {
     const search = ctx.state.search;
     const chosen = ctx.chosen;
     const shop = ctx.state.shop;
+    const amount = ctx.state.amount;
     const base = within(ctx.shown, chosen ?? ctx.timeline.period);
-    const postings = base.filter((p) => matches(p, search, shop));
+    const postings = base.filter((p) => matches(p, search, shop) && inAmount(p, amount));
     const g = ctx.timeline.grouping;
     let body: unknown;
     if (postings.length === 0) {
-      const unfiltered = search.trim() === "" && shop === null;
+      const unfiltered = search.trim() === "" && shop === null && amount === null;
       body = html`<p class="empty">${unfiltered ? da.noSpending : da.noMatch}</p>`;
     } else {
       const units = chosen === null ? ctx.units : [chosen];
-      const category = showsCategory(this.fullScreen);
-      const sort = shownPostingSort(this.postingsSort, category);
+      const columns = shownColumns(ctx.state.fullScreen, ctx.state.detail !== null);
+      const sort = shownPostingSort(this.postingsSort, columns);
       const list = postingList(postings, units, ctx, sort, categoryColours(ctx));
       body = html`<hs-postings
           .list=${list}
@@ -168,15 +168,42 @@ export class Overview extends LitElement {
           .shop=${shop}
           .grouping=${g}
           .sort=${sort}
-          .showCategory=${category}
+          .showCategory=${columns.category}
+          .showAccount=${columns.account}
           .marked=${ctx.state.detail}
         ></hs-postings>`;
     }
     const above = html`<div class="postings-search-row">
         <hs-search .search=${search} .shop=${shop} .suggestions=${shopSuggestions(base, search)}></hs-search>
+        <hs-amount-pill .amount=${amount}></hs-amount-pill>
       </div>
-      <p class="postings-summary">${da.summary(count(postings.length), kr(total(postings)))}</p>`;
+      ${this.sentence(base.length, postings, search, shop, amount)}`;
     return { above, list: body };
+  }
+
+  /** Without a quick filter the count and sum; with one, what is shown of what there is, and Ryd (spec §4.3). */
+  private sentence(
+    all: number,
+    postings: ClassifiedPosting[],
+    search: string,
+    shop: string | null,
+    amount: AmountFilter | null,
+  ) {
+    const text = search.trim();
+    const parts = [
+      ...(shop === null ? [] : [shop]),
+      ...(text === "" ? [] : [da.searchPart(text)]),
+      ...(amount === null ? [] : [da.amountWords(amount)]),
+    ];
+    if (parts.length === 0) {
+      return html`<p class="postings-summary">${da.summary(count(postings.length), kr(total(postings)))}</p>`;
+    }
+    const sum = postings.length === 0 ? "" : kr(total(postings));
+    const shown = plainCount(postings.length);
+    return html`<p class="postings-summary">
+      ${da.showing(shown, count(all), sum, parts.join(" · "))}
+      <button type="button" class="postings-clear" @click=${() => fire(this, "quick-clear")}>${da.clearQuick}</button>
+    </p>`;
   }
 
   /** A chosen category is named by the trail; the title names its main group, so it does not change. */
@@ -224,7 +251,7 @@ export class Overview extends LitElement {
       .all=${this.shopsAll}
       .showHidden=${this.shopsHidden}
       .canHide=${state.kind === "ready"}
-      .limit=${this.fullScreen ? null : SHOPS_LIMIT}
+      .limit=${this.ctx.state.fullScreen ? null : SHOPS_LIMIT}
     ></hs-shops>`;
   }
 
@@ -237,11 +264,11 @@ export class Overview extends LitElement {
     const listed = card === "subscriptions" || card === "postings";
     const view = listed && ctx.state.detail !== null ? detailView(ctx.state.detail, ctx) : null;
     // Full screen has the room to put the detail beside the list (detail spec §1.2).
-    const inPlace = view !== null && !this.fullScreen;
+    const inPlace = view !== null && !this.ctx.state.fullScreen;
     let body: unknown;
     if (listed) {
       const { above, list } = card === "subscriptions" ? this.subscriptions(title) : this.postings();
-      body = detailSplit(above, list, view, !this.fullScreen);
+      body = detailSplit(above, list, view, !this.ctx.state.fullScreen);
     } else if (card === "shops") body = this.shops();
     else if (inPeriod.length === 0) body = this.empty();
     else body = this.bars();
@@ -270,11 +297,11 @@ export class Overview extends LitElement {
             type="button"
             class="full-screen"
             aria-label=${da.fullScreen}
-            aria-pressed=${String(this.fullScreen)}
+            aria-pressed=${String(this.ctx.state.fullScreen)}
             @click=${() => fire(this, "full-screen-toggle")}
           >
             <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false">
-              <path d=${this.fullScreen ? COLLAPSE : EXPAND} />
+              <path d=${this.ctx.state.fullScreen ? COLLAPSE : EXPAND} />
             </svg>
           </button>
         </div>
@@ -287,7 +314,7 @@ export class Overview extends LitElement {
   }
 
   override render() {
-    const single = this.fullScreen;
+    const single = this.ctx.state.fullScreen;
     return html`<div class="halves ${single ? "single" : ""}">${single ? nothing : this.left()} ${this.right()}</div>`;
   }
 }
@@ -453,10 +480,20 @@ export const overviewStyles = css`
     color: var(--hs-muted);
     font-size: 12px;
   }
+  /* A chosen shop's chip wraps below the field, so the row aligns to the top and the pill keeps its height. */
   .postings-search-row {
     display: flex;
     gap: 8px;
-    align-items: stretch;
+    align-items: flex-start;
+  }
+  .postings-clear {
+    margin-left: 8px;
+    padding: 0;
+    font: inherit;
+    color: var(--hs-accent-text);
+    background: none;
+    border: 0;
+    cursor: pointer;
   }
   .postings-summary {
     margin: 12px 0;

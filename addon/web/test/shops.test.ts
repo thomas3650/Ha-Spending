@@ -152,7 +152,7 @@ describe("the Butikker list", () => {
 
   it("fires the name, a hide and the toggles", async () => {
     const { el, fired } = await render();
-    fireEvent.click(getByRole(el, "button", { name: da.shopOption("Netto", kr(30000)) }));
+    fireEvent.click(getByRole(el, "button", { name: da.shopRowName("Netto", kr(30000)) }));
     fireEvent.click(getByRole(el, "button", { name: da.hideShop("Rema") }));
     fireEvent.click(getByRole(el, "button", { name: da.showHidden(2, kr(55000)) }));
     expect(fired).toEqual([
@@ -172,7 +172,7 @@ describe("the Butikker list", () => {
       `Kommunen ${kr(5000).replace(/\s/g, " ")} ${pct(0.05)} ${da.show}`,
     ]);
     fireEvent.click(getByRole(el, "button", { name: da.showShop("Kommunen") }));
-    fireEvent.click(getByRole(el, "button", { name: da.shopOption("Udlejer", kr(50000)) }));
+    fireEvent.click(getByRole(el, "button", { name: da.shopRowName("Udlejer", kr(50000)) }));
     fireEvent.click(getByRole(el, "button", { name: da.hideHidden }));
     expect(fired).toEqual([
       { name: "shop-hide", detail: { shop: "Kommunen", hidden: false } },
@@ -191,7 +191,7 @@ describe("the Butikker list", () => {
   it("marks the chosen shop", async () => {
     const { el } = await render({ chosen: "Rema" });
     expect(getAllByRole(el, "button", { pressed: true }).map(text)).toEqual(["Rema"]);
-    getByRole(el, "button", { name: da.shopOption("Netto", kr(30000)), pressed: false });
+    getByRole(el, "button", { name: da.shopRowName("Netto", kr(30000)), pressed: false });
   });
 
   it("shows < 1 % for a shop with a tiny share and no share when the base has none", async () => {
@@ -222,7 +222,7 @@ describe("the Butikker list", () => {
 
 afterEach(unmount);
 
-const NETTO = da.shopOption("Netto", kr(3150000));
+const NETTO = da.shopRowName("Netto", kr(3150000));
 
 function viewSwitch(root: HTMLElement): HTMLElement {
   return getByRole(root, "group", { name: da.view });
@@ -301,11 +301,11 @@ describe("the Butikker card", () => {
     expect(names(card(root))).toEqual(["Netto", "Boghandlen", "Q8", "Café Søde", "Shell", "Pizzeria Roma"]);
     expect(labels(card(root))).toEqual([
       NETTO,
-      da.shopOption("Boghandlen", kr(120000)),
-      da.shopOption("Q8", kr(90000)),
-      da.shopOption("Café Søde", kr(81012)),
-      da.shopOption("Shell", kr(60000)),
-      da.shopOption("Pizzeria Roma", kr(50000)),
+      da.shopRowName("Boghandlen", kr(120000)),
+      da.shopRowName("Q8", kr(90000)),
+      da.shopRowName("Café Søde", kr(81012)),
+      da.shopRowName("Shell", kr(60000)),
+      da.shopRowName("Pizzeria Roma", kr(50000)),
     ]);
   });
 
@@ -318,10 +318,10 @@ describe("the Butikker card", () => {
     unmount();
     ({ root } = await mount("unit=2026-07-01&card=shops"));
     expect(labels(card(root))).toEqual([
-      da.shopOption("Netto", kr(450000)),
-      da.shopOption("Boghandlen", kr(120000)),
-      da.shopOption("Q8", kr(90000)),
-      da.shopOption("Café Søde", kr(50000)),
+      da.shopRowName("Netto", kr(450000)),
+      da.shopRowName("Boghandlen", kr(120000)),
+      da.shopRowName("Q8", kr(90000)),
+      da.shopRowName("Café Søde", kr(50000)),
     ]);
     getByRole(getByRole(root, "navigation", { name: da.trail }), "button", { name: da.remove("Juli 2026") });
   });
@@ -486,8 +486,8 @@ describe("hiding a shop", () => {
   it("the rows follow the period", async () => {
     const { root } = await mount("period=lastYear&card=shops");
     expect(labels(card(root))).toEqual([
-      da.shopOption("Netto", kr(300000)),
-      da.shopOption("Legetøjsbutikken", kr(100000)),
+      da.shopRowName("Netto", kr(300000)),
+      da.shopRowName("Legetøjsbutikken", kr(100000)),
     ]);
   });
 

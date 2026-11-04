@@ -13,10 +13,12 @@ import {
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import type { SpendingApp } from "../src/app";
-import { count, kr, partLabel, unitName } from "../src/format";
+import { count, kr, partLabel, postingAmount, unitName } from "../src/format";
 import { da } from "../src/i18n/da";
+import type { AmountFilter } from "../src/model/amount";
 import { answerFor } from "./fixture";
 import { json, mount, settle, unmount } from "./mount";
+import { plainSummary, showingSummary } from "./summary";
 
 const TODAY = "2026-10-30";
 const TOTAL = 11566012;
@@ -113,17 +115,6 @@ describe("screen 1, all spending", () => {
     const names = getAllByRole(viewSwitch(root), "button").map((b) => b.textContent?.trim());
     expect(names).toEqual([da.bars, da.postings, da.shops]);
   });
-
-  it("keeps the grouping on the bars", async () => {
-    const { app, root } = await mount("");
-    const select = getByRole(root, "combobox", { name: da.groupBy }) as HTMLSelectElement;
-    select.value = "week";
-    fireEvent.change(select);
-    await settle(app);
-    const card = getByRole(root, "region", { name: da.per("week") });
-    getByRole(card, "heading", { name: da.per("week") });
-    expect(barButtons(card)).toHaveLength(44);
-  });
 });
 
 describe("the search on Posteringer", () => {
@@ -136,10 +127,6 @@ describe("the search on Posteringer", () => {
   async function type(app: SpendingApp, root: HTMLElement, text: string) {
     fireEvent.input(searchbox(root), { target: { value: text } });
     await settle(app);
-  }
-
-  function summary(root: HTMLElement, n: number, sum: number): HTMLElement {
-    return getByText(root, da.summary(count(n), kr(sum)));
   }
 
   function postingTexts(card: HTMLElement): string[] {
@@ -158,13 +145,13 @@ describe("the search on Posteringer", () => {
     const { app, root } = await mount("card=postings");
     const box = searchbox(root);
     expect(box.getAttribute("placeholder")).toBe(da.search);
-    summary(root, ALL, TOTAL);
+    plainSummary(root, ALL, TOTAL);
     const replace = vi.spyOn(history, "replaceState");
     const push = vi.spyOn(history, "pushState");
     await type(app, root, "roma");
     const card = getByRole(root, "region", { name: da.postingsTitle });
     expect(postingTexts(card)).toEqual(["Pizzeria Roma", "Pizzeria Roma"]);
-    summary(root, 2, 50000);
+    showingSummary(root, 2, ALL, 50000);
     expect(new URLSearchParams(location.hash.slice(1)).get("q")).toBe("roma");
     expect(replace).toHaveBeenCalled();
     expect(push).not.toHaveBeenCalled();
@@ -196,7 +183,7 @@ describe("the search on Posteringer", () => {
     expect(before).toHaveLength(3);
     expect(before.every((text) => text !== "")).toBe(true);
     await type(app, root, "roma");
-    summary(root, 2, 50000);
+    showingSummary(root, 2, ALL, 50000);
     expect(keyNumberTexts(root)).toEqual(before);
     expect(getAllByText(circleCard(root), kr(TOTAL))).toHaveLength(2);
     fireEvent.click(getByRole(viewSwitch(root), "button", { name: da.bars }));
@@ -213,14 +200,14 @@ describe("the search on Posteringer", () => {
     fireEvent.click(getByRole(viewSwitch(root), "button", { name: da.postings }));
     await settle(app);
     expect(searchbox(root).value).toBe("roma");
-    summary(root, 2, 50000);
+    showingSummary(root, 2, ALL, 50000);
   });
 
   it("shows only the matching rows from a link", async () => {
     const { root } = await mount("card=postings&q=caf%C3%A9");
     expect(searchbox(root).value).toBe("café");
     expect(postingTexts(getByRole(root, "region", { name: da.postingsTitle }))).toEqual(["Café Søde", "Café Søde"]);
-    summary(root, 2, 81012);
+    showingSummary(root, 2, ALL, 81012);
   });
 
   it("says nothing matches for a chosen shop that has no posting, and offers no shops", async () => {
@@ -229,7 +216,7 @@ describe("the search on Posteringer", () => {
     getByRole(card, "button", { name: da.remove(da.shopChip("Ukendt")) });
     getByText(root, da.noMatch);
     expect(root.textContent).not.toContain(da.noSpending);
-    summary(root, 0, 0);
+    showingSummary(root, 0, ALL, 0);
     searchbox(root).focus();
     await type(app, root, "n");
     expect(queryByRole(root, "listbox", { name: da.suggestions })).toBeNull();
@@ -241,7 +228,7 @@ describe("the search on Posteringer", () => {
     box.focus();
     await type(app, root, "romaxyz");
     getByText(root, da.noMatch);
-    summary(root, 0, 0);
+    showingSummary(root, 0, ALL, 0);
     expect(searchbox(root)).toBe(box);
     expect((app.shadowRoot as ShadowRoot).activeElement).toBe(box);
   });
@@ -282,26 +269,27 @@ describe("the search on Posteringer", () => {
     const { app, root } = await mount("card=postings", { answer });
     await type(app, root, "øl");
     expect(postingTexts(getByRole(root, "region", { name: da.postingsTitle }))).toEqual(["ØL OG VAND"]);
-    summary(root, 1, 12500);
+    showingSummary(root, 1, ALL + 1, 12500);
   });
 
   it("counts everything for a search of spaces", async () => {
     const { app, root } = await mount("card=postings");
     await type(app, root, "   ");
-    summary(root, ALL, TOTAL);
+    plainSummary(root, ALL, TOTAL);
   });
 
   it("holds only the category's matching postings in the chosen unit", async () => {
     const { root } = await mount("group=Mad&category=Caf%C3%A9&unit=2026-07-01&card=postings&q=e");
     const card = getByRole(root, "region", { name: da.postingsOf("Mad") });
     expect(postingTexts(card)).toEqual(["Café Søde"]);
-    summary(root, 1, 50000);
+    showingSummary(root, 1, 1, 50000);
   });
 
   it("starts the postings list afresh on a new search", async () => {
-    const { app, root } = await mount("by=week&card=postings");
+    const { app, root } = await mount("card=postings");
     const card = () => getByRole(root, "region", { name: da.postingsTitle });
-    const groupLines = () => getAllByRole(card(), "button").filter((b) => b.hasAttribute("aria-expanded"));
+    const groupLines = () =>
+      getAllByRole(getByRole(card(), "table"), "button").filter((b) => b.hasAttribute("aria-expanded"));
     const states = () => groupLines().slice(0, 2).map((b) => b.getAttribute("aria-expanded"));
     expect(states()).toEqual(["true", "true"]);
     fireEvent.click(groupLines()[0] as HTMLElement);
@@ -326,7 +314,7 @@ describe("the search on Posteringer", () => {
   });
 
   describe("the shop", () => {
-    const ROMA = da.shopOption("Pizzeria Roma", kr(50000));
+    const ROMA = da.shopOption("Pizzeria Roma", "2", kr(50000));
     const CHIP = da.remove(da.shopChip("Pizzeria Roma"));
 
     function card(root: HTMLElement): HTMLElement {
@@ -345,8 +333,9 @@ describe("the search on Posteringer", () => {
     it("finds the rows by their shop although the bank text says otherwise", async () => {
       const { app, root } = await mount("card=postings");
       await type(app, root, "roma");
-      expect(getAllByTitle(card(root), "MOBILEPAY 1234")).toHaveLength(2);
-      summary(root, 2, 50000);
+      expect(getAllByTitle(card(root), "Pizzeria Roma")).toHaveLength(2);
+      expect(card(root).textContent).not.toContain("MOBILEPAY 1234");
+      showingSummary(root, 2, ALL, 50000);
     });
 
     it("finds a row with no shop by its text, and offers no shop", async () => {
@@ -367,7 +356,7 @@ describe("the search on Posteringer", () => {
       expect(searchbox(root).value).toBe("");
       getByRole(card(root), "button", { name: CHIP });
       expect(postingTexts(card(root))).toEqual(["Pizzeria Roma", "Pizzeria Roma"]);
-      summary(root, 2, 50000);
+      showingSummary(root, 2, ALL, 50000);
       expect(location.hash).toContain("shop=Pizzeria+Roma");
       expect(params().has("q")).toBe(false);
       history.back();
@@ -399,10 +388,10 @@ describe("the search on Posteringer", () => {
       const { app, root } = await mount("card=postings&shop=Pizzeria+Roma");
       await type(app, root, "kiosk");
       getByText(root, da.noMatch);
-      summary(root, 0, 0);
+      showingSummary(root, 0, ALL, 0);
       await type(app, root, "1234");
       expect(postingTexts(card(root))).toEqual(["Pizzeria Roma", "Pizzeria Roma"]);
-      summary(root, 2, 50000);
+      showingSummary(root, 2, ALL, 50000);
     });
 
     it("unchooses the shop from the chip with a history entry", async () => {
@@ -411,7 +400,7 @@ describe("the search on Posteringer", () => {
       fireEvent.click(getByRole(root, "button", { name: CHIP }));
       await settle(app);
       expect(queryByRole(root, "button", { name: CHIP })).toBeNull();
-      summary(root, ALL, TOTAL);
+      plainSummary(root, ALL, TOTAL);
       expect(params().has("shop")).toBe(false);
       expect(push).toHaveBeenCalled();
     });
@@ -423,7 +412,7 @@ describe("the search on Posteringer", () => {
       fireEvent.keyDown(searchbox(root), { key: "Backspace" });
       await settle(app);
       expect(queryByRole(root, "button", { name: CHIP })).toBeNull();
-      summary(root, ALL, TOTAL);
+      plainSummary(root, ALL, TOTAL);
       expect(params().has("shop")).toBe(false);
       expect(replace).toHaveBeenCalled();
       expect(push).not.toHaveBeenCalled();
@@ -436,9 +425,159 @@ describe("the search on Posteringer", () => {
       await typeFocused(app, root, "pizz");
       fireEvent.click(getByRole(root, "option", { name: ROMA }));
       await settle(app);
-      summary(root, 2, 50000);
+      showingSummary(root, 2, ALL, 50000);
       expect(keyNumberTexts(root)).toEqual(before);
       expect(getAllByText(circleCard(root), kr(TOTAL))).toHaveLength(2);
     });
+  });
+});
+
+describe("the Beløb pill on Posteringer", () => {
+  const ALL = 28;
+  const UNDER: AmountFilter = { kind: "under", value: 450_000 };
+  const JULY = unitAt("2026-07-01", "month", TODAY);
+
+  function searchbox(root: HTMLElement): HTMLElement {
+    return getByRole(root, "combobox", { name: da.searchLabel });
+  }
+
+  /** Beløb's column header has the empty pill's name, but no popup. */
+  function emptyPill(root: HTMLElement): HTMLElement | null {
+    return queryAllByRole(root, "button", { name: da.amountEmpty }).find((b) => b.hasAttribute("aria-haspopup")) ?? null;
+  }
+
+  function pill(root: HTMLElement, filter: AmountFilter): HTMLElement {
+    return getByRole(root, "group", { name: da.amountName(filter) });
+  }
+
+  function postingsCard(root: HTMLElement): HTMLElement {
+    return getByRole(root, "region", { name: da.postingsTitle });
+  }
+
+  async function chooseKind(app: SpendingApp, root: HTMLElement, kind: AmountFilter["kind"]) {
+    const opener = queryByRole(root, "button", { name: da.amountKindButton }) ?? emptyPill(root);
+    if (opener === null) throw new Error("no pill");
+    opener.focus();
+    fireEvent.click(opener);
+    await settle(app);
+    const option = getByRole(getByRole(root, "group", { name: da.amountKindsLabel }), "button", {
+      name: da.amountKinds[kind],
+    });
+    option.focus();
+    fireEvent.click(option);
+    await settle(app);
+  }
+
+  async function applyAmount(app: SpendingApp, root: HTMLElement, kind: "about" | "under" | "over", text: string) {
+    await chooseKind(app, root, kind);
+    const input = getByRole(root, "textbox", { name: da.amountKinds[kind] });
+    fireEvent.input(input, { target: { value: text } });
+    await settle(app);
+    fireEvent.keyDown(input, { key: "Enter" });
+    await settle(app);
+  }
+
+  /** The page's groups but the view switch and the pill: the key numbers. */
+  function keyNumberTexts(root: HTMLElement): string[] {
+    return getAllByRole(root, "group")
+      .filter((g) => {
+        const name = g.getAttribute("aria-label") ?? "";
+        return name !== da.view && !name.startsWith(da.amountEmpty);
+      })
+      .map((g) => g.textContent?.replace(/\s+/g, " ").trim() ?? "");
+  }
+
+  it("is on the Posteringer tab right after the search, in the normal card and in full screen", async () => {
+    for (const hash of ["card=postings", "card=postings&view=full"]) {
+      const { root } = await mount(hash);
+      const card = postingsCard(root);
+      const button = emptyPill(card);
+      if (button === null) throw new Error(`no pill on ${hash}`);
+      expect(searchbox(card).compareDocumentPosition(button) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+      unmount();
+    }
+    const { root } = await mount("");
+    expect(emptyPill(root)).toBeNull();
+  });
+
+  it("Under 4.500 leaves out the posting of exactly 4.500 kr. and keeps those below, in one history entry", async () => {
+    const { app, root } = await mount("card=postings");
+    plainSummary(root, ALL, TOTAL);
+    const july = (n: number, sum: number) =>
+      getByRole(postingsCard(root), "button", { name: `${unitName(JULY, "month")}, ${count(n)}, ${postingAmount(sum)}` });
+    july(5, 1_510_000);
+    const length = history.length;
+    await applyAmount(app, root, "under", "4.500");
+    expect(location.hash).toBe("#card=postings&under=4500");
+    expect(history.length).toBe(length + 1);
+    pill(root, UNDER);
+    showingSummary(root, 17, ALL, 3_116_012);
+    july(3, 260_000);
+  });
+
+  it("does not change the key numbers or the circle", async () => {
+    const { app, root } = await mount("card=postings");
+    const before = keyNumberTexts(root);
+    expect(before).toHaveLength(3);
+    await applyAmount(app, root, "under", "4.500");
+    showingSummary(root, 17, ALL, 3_116_012);
+    expect(keyNumberTexts(root)).toEqual(before);
+    expect(getAllByText(circleCard(root), kr(TOTAL))).toHaveLength(2);
+  });
+
+  it("pushes one entry per change, and Back gives the amount before", async () => {
+    const { app, root } = await mount("card=postings");
+    const length = history.length;
+    await applyAmount(app, root, "under", "4.500");
+    await chooseKind(app, root, "over");
+    expect(location.hash).toBe("#card=postings&over=4500");
+    expect(history.length).toBe(length + 2);
+    pill(root, { kind: "over", value: 450_000 });
+    showingSummary(root, 10, ALL, 8_000_000);
+    history.back();
+    await vi.waitFor(() => expect(location.hash).toBe("#card=postings&under=4500"));
+    await settle(app);
+    pill(root, UNDER);
+    showingSummary(root, 17, ALL, 3_116_012);
+    history.back();
+    await vi.waitFor(() => expect(location.hash).toBe("#card=postings"));
+    await settle(app);
+    expect(emptyPill(root)).not.toBeNull();
+    plainSummary(root, ALL, TOTAL);
+  });
+
+  it("stays when the tab changes", async () => {
+    const { app, root } = await mount("card=postings&under=4500");
+    fireEvent.click(getByRole(viewSwitch(root), "button", { name: da.bars }));
+    await settle(app);
+    expect(location.hash).toBe("#under=4500");
+    fireEvent.click(getByRole(viewSwitch(root), "button", { name: da.postings }));
+    await settle(app);
+    pill(root, UNDER);
+    showingSummary(root, 17, ALL, 3_116_012);
+  });
+
+  it("stays when the period changes", async () => {
+    const { app, root } = await mount("card=postings&under=4500");
+    fireEvent.click(getByRole(root, "button", { name: new RegExp(`^${da.period}`) }));
+    await app.updateComplete;
+    fireEvent.click(getByRole(getByRole(root, "group", { name: da.period }), "button", { name: da.presets.lastYear }));
+    await settle(app);
+    expect(location.hash).toBe("#period=lastYear&card=postings&under=4500");
+    pill(root, UNDER);
+    showingSummary(root, 2, 3, 400_000);
+  });
+
+  it("says nothing matches when the amount leaves no posting", async () => {
+    const { root } = await mount("card=postings&over=10000");
+    getByText(root, da.noMatch);
+    expect(root.textContent).not.toContain(da.noSpending);
+    showingSummary(root, 0, ALL, 0);
+  });
+
+  it("shows an old max alone as Under", async () => {
+    const { root } = await mount("card=postings&max=4500");
+    pill(root, UNDER);
+    showingSummary(root, 17, ALL, 3_116_012);
   });
 });

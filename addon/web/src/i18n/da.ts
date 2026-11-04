@@ -1,4 +1,5 @@
 import type { Grouping, Preset, Repeat } from "@ha-spending/shared";
+import { aboutBounds, type AmountFilter, type AmountKind, amountText } from "../model/amount";
 
 interface GroupingTexts {
   label: string;
@@ -16,8 +17,15 @@ export const da = {
   allSpending: "Alt forbrug",
   noMainGroup: "Uden hovedgruppe",
   noCategory: "Uden kategori",
-  allPostings: "Alle posteringer",
   trail: "Sti",
+  /** Without a range while "Alt"'s dates are not known yet. */
+  periodStep: (name: string, range: string | null) => (range === null ? `Periode: ${name}` : `Periode: ${name}, ${range}`),
+  switchMainGroup: (name: string) => `Skift hovedgruppe: ${name}`,
+  switchCategory: (name: string) => `Skift kategori: ${name}`,
+  chooseMainGroup: "Vælg hovedgruppe",
+  chooseCategory: "Vælg kategori",
+  mainGroupStep: "Hovedgruppe",
+  categoryStep: "Kategori",
 
   period: "Periode",
   presets: {
@@ -74,7 +82,6 @@ export const da = {
     week: "Ugedage",
     dates: "Dage",
   },
-  groupBy: "Gruppér pr.",
   accounts: "Konti",
   allAccounts: "Alle konti",
   allAccountsCount: (n: number) => `Alle konti (${n})`,
@@ -167,22 +174,52 @@ export const da = {
   search: 'Søg i butik og tekst, fx "Netto"',
   searchLabel: "Søg",
   shopChip: (name: string) => `Butik: ${name}`,
-  shopOption: (name: string, sum: string) => `${name}, ${sum}`,
+  shopRowName: (name: string, sum: string) => `${name}, ${sum}`,
+  shopOption: (name: string, count: string, sum: string) => `${name}, ${count}, ${sum}`,
   suggestions: "Butikker",
-  addFilter: "+ Filter",
-  filterSearch: "Søg i filtre",
-  noFilterHits: "Ingen filtre passer",
-  mainGroupChip: (name: string) => `Hovedgruppe: ${name}`,
-  categoryChip: (name: string) => `Kategori: ${name}`,
-  amountFilter: "Beløb",
-  amountChip: (min: string | null, max: string | null) => {
-    if (min !== null && max !== null) return `Beløb: ${min}–${max} ${da.kr}`;
-    if (min !== null) return `Beløb: fra ${min} ${da.kr}`;
-    return `Beløb: til ${max ?? ""} ${da.kr}`;
-  },
   amountInvalid: "Skriv et beløb som 1.000,50",
-  add: "Tilføj",
+  amountEmpty: "Beløb",
+  amountKinds: {
+    about: "Omkring",
+    under: "Under",
+    over: "Over",
+    between: "Mellem",
+  } satisfies Record<AmountKind, string>,
+  amountHints: {
+    about: "±20 %",
+    between: "to beløb",
+  } satisfies Partial<Record<AmountKind, string>>,
+  amountKindsLabel: "Beløbstyper",
+  amountKindButton: "Vælg beløbstype",
+  amountMin: "Mindste beløb",
+  amountMax: "Største beløb",
+  removeAmount: "Fjern beløb",
+  amountShort: (filter: AmountFilter): string => {
+    switch (filter.kind) {
+      case "about":
+        return `omkring ${amountText(filter.value)} ${da.kr}`;
+      case "under":
+        return `under ${amountText(filter.value)} ${da.kr}`;
+      case "over":
+        return `over ${amountText(filter.value)} ${da.kr}`;
+      case "between":
+        return `${amountText(filter.min)}–${amountText(filter.max)} ${da.kr}`;
+    }
+  },
+  /** The sentence over the list spells out Omkring's ends; the pill's name does not. */
+  amountWords: (filter: AmountFilter): string => {
+    if (filter.kind !== "about") return da.amountShort(filter);
+    const { min, max } = aboutBounds(filter.value);
+    return `${da.amountShort(filter)} (${amountText(min)}–${amountText(max)} ${da.kr})`;
+  },
+  amountName: (filter: AmountFilter | null): string =>
+    filter === null ? da.amountEmpty : `${da.amountEmpty}: ${da.amountShort(filter)}`,
   summary: (count: string, sum: string) => `${count} · ${sum}`,
+  /** With no hit the sum is empty and goes. */
+  showing: (shown: string, all: string, sum: string, parts: string) =>
+    `Viser ${shown} af ${all}${sum === "" ? "" : ` · ${sum}`} — ${parts}`,
+  searchPart: (text: string) => `"${text}"`,
+  clearQuick: "Ryd",
 
   noSpending: "Ingen forbrug i perioden",
   noMatch: "Ingen posteringer passer til filtrene",
@@ -210,22 +247,13 @@ export const da = {
   hiddenUnreadable: "Skjulte butikker kunne ikke hentes.",
   saveFailed: "Kunne ikke gemme. Prøv igen.",
 
-  periodClosed: (label: string, range: string) => `${label} · ${range}`,
-
   perMonth: (value: string) => `${value} pr. måned`,
   billCount: (n: number) => `${n} stk.`,
   noPayments: "ingen betalinger",
   postingsLink: (counted: string) => `${counted} →`,
+  showSubscriptions: "Vis faste udgifter",
   subscriptionCount: (n: number) => `${n} ${n === 1 ? "fast udgift" : "faste udgifter"}`,
   subscriptions: "Faste udgifter",
-  fixedPayments: "Faste betalinger",
-  unitsHeading: {
-    day: "Dage",
-    week: "Uger",
-    month: "Måneder",
-    quarter: "Kvartaler",
-    year: "År",
-  } satisfies Record<Grouping, string>,
   subscriptionsIn: (name: string) => `Faste udgifter i ${name}`,
   perYear: (value: string) => `${value} om året`,
   objectGroupSums: (title: string) => `${title} om året`,

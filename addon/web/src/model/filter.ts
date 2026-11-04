@@ -1,6 +1,4 @@
-import { type ClassifiedPosting, type Posting, within } from "@ha-spending/shared";
-import type { AmountRange } from "../state/view";
-import type { ViewContext } from "./context";
+import type { ClassifiedPosting, Posting } from "@ha-spending/shared";
 
 const SUGGESTIONS = 8;
 
@@ -8,6 +6,7 @@ export interface ShopSuggestion {
   name: string;
   /** The net sum in øre, refunds subtracted. */
   sum: number;
+  count: number;
 }
 
 export function fold(text: string): string {
@@ -30,41 +29,20 @@ export function textOnlyHit(p: Posting, search: string): boolean {
 export function shopSuggestions(base: Posting[], search: string): ShopSuggestion[] {
   const query = fold(search);
   if (query === "") return [];
-  const sums = new Map<string, number>();
+  const totals = new Map<string, { sum: number; count: number }>();
   for (const p of base) {
-    if (p.shop !== null && fold(p.shop).includes(query)) sums.set(p.shop, (sums.get(p.shop) ?? 0) + p.amount);
+    if (p.shop === null || !fold(p.shop).includes(query)) continue;
+    const total = totals.get(p.shop) ?? { sum: 0, count: 0 };
+    totals.set(p.shop, { sum: total.sum + p.amount, count: total.count + 1 });
   }
   const rank = (name: string) => (fold(name).startsWith(query) ? 0 : 1);
-  return [...sums]
-    .map(([name, sum]) => ({ name, sum }))
+  return [...totals]
+    .map(([name, { sum, count }]) => ({ name, sum, count }))
     .sort((a, b) => rank(a.name) - rank(b.name) || b.sum - a.sum || a.name.localeCompare(b.name, "da"))
     .slice(0, SUGGESTIONS);
-}
-
-export function inAmount(p: ClassifiedPosting, range: AmountRange | null): boolean {
-  if (range === null) return true;
-  if (range.min !== null && p.amount < range.min) return false;
-  return range.max === null || p.amount <= range.max;
 }
 
 /** Oldest first, and by id within a day, so the order is stable. */
 export function byDate(a: ClassifiedPosting, b: ClassifiedPosting): number {
   return a.date.localeCompare(b.date) || a.id.localeCompare(b.id);
-}
-
-/** Alle posteringer's postings before the object group, the search and the chosen shop. */
-export function objectGroupBase(ctx: ViewContext): ClassifiedPosting[] {
-  return within(ctx.shown, ctx.chosen ?? ctx.timeline.period).filter((p) => inAmount(p, ctx.state.amount));
-}
-
-/** Alle posteringer's postings before the search and the chosen shop. */
-export function searchBase(ctx: ViewContext): ClassifiedPosting[] {
-  const group = ctx.state.objectGroup;
-  const base = objectGroupBase(ctx);
-  return group === null ? base : base.filter((p) => p.subscription?.objectGroup === group);
-}
-
-export function filteredPostings(ctx: ViewContext): ClassifiedPosting[] {
-  const { search, shop } = ctx.state;
-  return searchBase(ctx).filter((p) => matches(p, search, shop));
 }

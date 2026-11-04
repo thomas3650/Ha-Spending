@@ -55,7 +55,7 @@ export class Shops extends LitElement {
       <button
         type="button"
         class="shop-name"
-        aria-label=${da.shopOption(r.name, kr(r.sum))}
+        aria-label=${da.shopRowName(r.name, kr(r.sum))}
         aria-pressed=${String(r.name === this.chosen)}
         @click=${() => fire(this, "shop-open", r.name)}
       >

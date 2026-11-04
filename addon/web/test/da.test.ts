@@ -17,11 +17,6 @@ describe("da", () => {
     expect(da.allAccountsCount(2)).toBe("Alle konti (2)");
     expect(da.someAccounts(4, 5)).toBe("4 af 5 konti");
   });
-  it("words the amount chip", () => {
-    expect(da.amountChip("100", "500")).toBe("Beløb: 100–500 kr.");
-    expect(da.amountChip("100", null)).toBe("Beløb: fra 100 kr.");
-    expect(da.amountChip(null, "500")).toBe("Beløb: til 500 kr.");
-  });
   it("words a subscription's repeat", () => {
     expect(da.repeatText("weekly", 0)).toBe("pr. uge");
     expect(da.repeatText("monthly", 0)).toBe("pr. måned");

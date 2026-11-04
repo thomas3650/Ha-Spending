@@ -1,6 +1,6 @@
 import { type Period, type Posting, type Subscription, unitAt } from "@ha-spending/shared";
 import { fireEvent, getAllByRole, getByRole, getByText, queryAllByRole, queryByRole, queryByText } from "@testing-library/dom";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import type { SpendingApp } from "../src/app";
 import { count, kr, unitName } from "../src/format";
@@ -27,15 +27,35 @@ function postingsLink(root: HTMLElement): HTMLElement {
   return getByRole(root, "link", { name: /posteringe?r? →$/ });
 }
 
-function params(href: string): URLSearchParams {
-  return new URLSearchParams(href.slice(href.indexOf("#") + 1));
+/** A press on the link; the app handles it, so a press that only followed the href would miss the history marks. */
+async function follow(app: SpendingApp, link: HTMLElement): Promise<void> {
+  fireEvent.click(link);
+  await settle(app);
 }
 
-/** What a browser does when the link is followed: the hash changes and the app hears it. */
-async function follow(app: SpendingApp, link: HTMLElement): Promise<void> {
-  location.hash = link.getAttribute("href") ?? "";
-  window.dispatchEvent(new HashChangeEvent("hashchange"));
+async function hashBecomes(app: SpendingApp, hash: string): Promise<void> {
+  await vi.waitFor(() => expect(location.hash).toBe(hash));
   await settle(app);
+}
+
+function fullScreenButton(root: HTMLElement): HTMLElement {
+  return getByRole(root, "button", { name: da.fullScreen });
+}
+
+function isFullScreen(root: HTMLElement): boolean {
+  return fullScreenButton(root).getAttribute("aria-pressed") === "true";
+}
+
+function trailText(root: HTMLElement): string {
+  return (getByRole(root, "navigation", { name: da.trail }).textContent ?? "").replace(/\s+/g, " ").trim();
+}
+
+function searchValue(root: HTMLElement): string {
+  return (getByRole(root, "combobox", { name: da.searchLabel }) as HTMLInputElement).value;
+}
+
+function subscriptionsLink(root: HTMLElement, label: string): HTMLElement {
+  return getByRole(objectCard(root, label), "link", { name: da.showSubscriptions });
 }
 
 function linking(links: (p: Posting) => Link, today = "2026-10-30", subscriptions: Subscription[] = SUBSCRIPTIONS) {
@@ -70,9 +90,9 @@ function card(root: HTMLElement, label: string): HTMLElement {
   return getByRole(root, "group", { name: label });
 }
 
-/** The card's label, value and sub-line, without its postings line. */
+/** The card's label, value and sub-line, without its link line. */
 function name(root: HTMLElement, label: string): string {
-  const postings = new RegExp(` [\\d.]+ (${da.postingMany}|${da.postingOne})( →)?`);
+  const postings = new RegExp(` ([\\d.]+ (${da.postingMany}|${da.postingOne})|${da.showSubscriptions})( →)?`);
   return (card(root, label).textContent ?? "").replace(/\s+/g, " ").replace(postings, "").trim();
 }
 
@@ -89,8 +109,8 @@ describe("a one-unit period has no comparison", () => {
   });
 });
 
-describe("the first key number's link to Alle posteringer", () => {
-  it("the first key number links to Alle posteringer with its count", async () => {
+describe("the first key number's link to Posteringer in full screen", () => {
+  it("the first key number links with its count", async () => {
     const { root } = await mount("");
     const first = getByRole(root, "group", { name: da.spendingInPeriod });
     const link = getByRole(first, "link", { name: linkLine(28) });
@@ -107,26 +127,159 @@ describe("the first key number's link to Alle posteringer", () => {
     getByRole(getByRole(root, "group", { name: da.spendingInPeriod }), "link", { name: "1 postering →" });
   });
 
-  it("the link opens Alle posteringer with the level, the accounts, the period and the unit, and no search or shop", async () => {
-    const { app, root } = await mount(
-      "period=lastYear&accounts=1&group=Mad&unit=2025-12-01&card=postings&q=roma&shop=Pizzeria+Roma",
+  it("its href is full-screen Posteringer with the top filter and no quick filter", async () => {
+    const { root } = await mount(
+      "period=lastYear&accounts=1&group=Mad&unit=2025-12-01&q=roma&shop=Pizzeria+Roma&min=5",
     );
-    const link = postingsLink(root);
-    const p = params(link.getAttribute("href") ?? "");
-    expect(p.get("view")).toBe("all-postings");
-    expect(p.get("period")).toBe("lastYear");
-    expect(p.get("accounts")).toBe("1");
-    expect(p.get("group")).toBe("Mad");
-    expect(p.get("unit")).toBe("2025-12-01");
-    expect(p.has("q")).toBe(false);
-    expect(p.has("shop")).toBe(false);
-    expect(p.has("sort")).toBe(false);
+    expect(postingsLink(root).getAttribute("href")).toBe(
+      "#period=lastYear&accounts=1&group=Mad&unit=2025-12-01&card=postings&view=full",
+    );
+  });
 
-    await follow(app, link);
-    getByRole(root, "heading", { level: 1, name: da.allPostings });
-    expect(params(location.hash).has("shop")).toBe(false);
-    expect(params(location.hash).has("q")).toBe(false);
-    expect((getByRole(root, "combobox", { name: da.searchLabel }) as HTMLInputElement).value).toBe("");
+  it("opens Posteringer in full screen in one entry, the trail unchanged and the quick filter empty", async () => {
+    const { app, root } = await mount(
+      "period=lastYear&accounts=1&group=Mad&unit=2025-12-01&q=roma&shop=Pizzeria+Roma",
+    );
+    const trail = trailText(root);
+    const length = history.length;
+    await follow(app, postingsLink(root));
+    expect(location.hash).toBe("#period=lastYear&accounts=1&group=Mad&unit=2025-12-01&card=postings&view=full");
+    expect(history.length).toBe(length + 1);
+    expect(isFullScreen(root)).toBe(true);
+    expect(trailText(root)).toBe(trail);
+    getByRole(root, "region", { name: da.postingsOf("Mad") });
+    expect(searchValue(root)).toBe("");
+    expect(queryByRole(root, "button", { name: da.remove(da.shopChip("Pizzeria Roma")) })).toBeNull();
+
+    history.back();
+    await hashBecomes(app, "#period=lastYear&accounts=1&group=Mad&unit=2025-12-01&q=roma&shop=Pizzeria+Roma");
+    expect(isFullScreen(root)).toBe(false);
+  });
+
+  it("closes an open detail", async () => {
+    const { app, root } = await mount("card=postings&detail=p%3Ap26");
+    getByRole(root, "group", { name: "Café Søde" });
+    await follow(app, postingsLink(root));
+    expect(location.hash).toBe("#card=postings&view=full");
+    expect(queryByRole(root, "group", { name: "Café Søde" })).toBeNull();
+  });
+
+  /** Mounts on the overview and pushes Posteringer, so the entry before the link is a known one. */
+  async function linkFromPostings(): Promise<{ app: SpendingApp; root: HTMLElement }> {
+    const { app, root } = await mount("");
+    fireEvent.click(getByRole(getByRole(root, "group", { name: da.view }), "button", { name: da.postings }));
+    await settle(app);
+    expect(location.hash).toBe("#card=postings");
+    await follow(app, postingsLink(root));
+    expect(location.hash).toBe("#card=postings&view=full");
+    return { app, root };
+  }
+
+  async function openRow(app: SpendingApp, root: HTMLElement): Promise<void> {
+    fireEvent.click(getAllByRole(root, "button", { name: "Café Søde" })[0]);
+    await settle(app);
+    getByRole(root, "group", { name: "Café Søde" });
+  }
+
+  /** Lands on the entry before the link, which the next Back leaves for the page's first entry. */
+  async function expectLandedBeforeLink(app: SpendingApp, root: HTMLElement): Promise<void> {
+    await hashBecomes(app, "#card=postings");
+    expect(isFullScreen(root)).toBe(false);
+    history.back();
+    await hashBecomes(app, "");
+    expect(isFullScreen(root)).toBe(false);
+  }
+
+  it("⤡ after the link goes back to the entry before it, so Back does not open full screen again", async () => {
+    const { app, root } = await linkFromPostings();
+    fireEvent.click(fullScreenButton(root));
+    await hashBecomes(app, "#card=postings");
+    history.forward();
+    await hashBecomes(app, "#card=postings&view=full");
+    history.back();
+    await expectLandedBeforeLink(app, root);
+  });
+
+  it("⤡ after the link and a row leaves full screen, and Back does not open it again", async () => {
+    const { app, root } = await linkFromPostings();
+    await openRow(app, root);
+    fireEvent.click(fullScreenButton(root));
+    await expectLandedBeforeLink(app, root);
+  });
+
+  it("Escape after the link goes back to the entry before it, so Back does not open full screen again", async () => {
+    const { app, root } = await linkFromPostings();
+    fireEvent.keyDown(window, { key: "Escape" });
+    await hashBecomes(app, "#card=postings");
+    history.forward();
+    await hashBecomes(app, "#card=postings&view=full");
+    history.back();
+    await expectLandedBeforeLink(app, root);
+  });
+
+  it("after the link and a row, the first Escape closes the detail and the second leaves full screen for good", async () => {
+    const { app, root } = await linkFromPostings();
+    await openRow(app, root);
+    fireEvent.keyDown(window, { key: "Escape" });
+    await hashBecomes(app, "#card=postings&view=full");
+    expect(queryByRole(root, "group", { name: "Café Søde" })).toBeNull();
+    expect(isFullScreen(root)).toBe(true);
+    fireEvent.keyDown(window, { key: "Escape" });
+    await expectLandedBeforeLink(app, root);
+  });
+
+  it("⤡ after the link brings back the search from before it", async () => {
+    const { app, root } = await mount("card=postings&q=Netto");
+    await follow(app, postingsLink(root));
+    expect(searchValue(root)).toBe("");
+    fireEvent.click(fullScreenButton(root));
+    await hashBecomes(app, "#card=postings&q=Netto");
+    expect(isFullScreen(root)).toBe(false);
+    expect(searchValue(root)).toBe("Netto");
+  });
+
+  it("clears the amount, and ⤡ brings it back", async () => {
+    const under = da.amountName({ kind: "under", value: 450_000 });
+    const { app, root } = await mount("card=postings&under=4500");
+    getByRole(root, "group", { name: under });
+    await follow(app, postingsLink(root));
+    expect(location.hash).toBe("#card=postings&view=full");
+    expect(queryByRole(root, "group", { name: under })).toBeNull();
+    fireEvent.click(fullScreenButton(root));
+    await hashBecomes(app, "#card=postings&under=4500");
+    expect(isFullScreen(root)).toBe(false);
+    getByRole(root, "group", { name: under });
+  });
+
+  it("⤡ after the link keeps an amount set in full screen", async () => {
+    const { app, root } = await mount("card=postings&under=4500");
+    await follow(app, postingsLink(root));
+    const pill = getAllByRole(root, "button", { name: da.amountEmpty }).find((b) => b.hasAttribute("aria-haspopup"));
+    fireEvent.click(pill as HTMLElement);
+    await settle(app);
+    const kinds = getByRole(root, "group", { name: da.amountKindsLabel });
+    fireEvent.click(getByRole(kinds, "button", { name: da.amountKinds.over }));
+    await settle(app);
+    const input = getByRole(root, "textbox", { name: da.amountKinds.over });
+    fireEvent.input(input, { target: { value: "500" } });
+    fireEvent.keyDown(input, { key: "Enter" });
+    await settle(app);
+    expect(location.hash).toBe("#card=postings&view=full&over=500");
+    fireEvent.click(fullScreenButton(root));
+    await hashBecomes(app, "#card=postings&over=500");
+    getByRole(root, "group", { name: da.amountName({ kind: "over", value: 50_000 }) });
+  });
+
+  it("⤡ after the link, a row and a search keeps the search typed in full screen", async () => {
+    const { app, root } = await mount("card=postings&q=Netto");
+    await follow(app, postingsLink(root));
+    fireEvent.click(getAllByRole(root, "button", { name: "Café Søde" })[0]);
+    await settle(app);
+    fireEvent.input(getByRole(root, "combobox", { name: da.searchLabel }), { target: { value: "Café" } });
+    await settle(app);
+    fireEvent.click(fullScreenButton(root));
+    await hashBecomes(app, "#card=postings&q=Caf%C3%A9");
+    expect(searchValue(root)).toBe("Café");
   });
 
   it("a main group's and a category's counts are that level's", async () => {
@@ -152,7 +305,7 @@ describe("the first key number's link to Alle posteringer", () => {
     expect(queryByRole(first, "link")).toBeNull();
   });
 
-  it("the count matches Alle posteringer's summary after a search", async () => {
+  it("the count matches the list's summary after a search", async () => {
     const { app, root } = await mount("group=Mad&card=postings&q=roma");
     const link = getByRole(root, "link", { name: linkLine(14) });
     await follow(app, link);
@@ -277,32 +430,41 @@ describe("the key numbers of the object groups", () => {
 });
 
 describe("the link on each object group's key number", () => {
-  it("each object group's key number links to its postings with its count", async () => {
+  it("each object group's key number links to Faste udgifter", async () => {
     const { root } = await mount("", { answer: BILLS });
-    expect(getByRole(objectCard(root, FIXED), "link").textContent?.trim()).toBe(linkLine(11));
-    expect(getByRole(objectCard(root, SUBS), "link").textContent?.trim()).toBe("1 postering →");
+    for (const label of [FIXED, SUBS]) {
+      const link = subscriptionsLink(root, label);
+      expect(link.textContent?.replace(/\s+/g, " ").trim()).toBe(`${da.showSubscriptions} →`);
+      expect(link.getAttribute("href")).toBe("#card=subscriptions");
+    }
   });
 
-  it("the count follows the period, the level, a category, one account and the chosen unit", async () => {
-    const counts = async (hash: string, label: string, n: number) => {
-      const { root } = await mount(hash, { answer: BILLS });
-      getByRole(objectCard(root, label), "link", { name: linkLine(n) });
-      unmount();
-    };
-    await counts("period=lastMonth", FIXED, 1);
-    await counts("period=lastMonth", SUBS, 1);
-    await counts("group=Bolig", FIXED, 10);
-    await counts("group=Bil&category=Br%C3%A6ndstof", FIXED, 1);
-    await counts("accounts=2", FIXED, 1);
-    await counts("unit=2026-07-01", JULY_FIXED, 2);
-    await counts("unit=2026-09-01", da.levelInUnit("Abonnementer", unitName(unitAt("2026-09-01", "month", "2026-10-30"), "month")), 1);
+  it("shows the Faste udgifter tab in the normal card in one entry, and Back returns to the card before", async () => {
+    const { app, root } = await mount("card=postings&q=Netto", { answer: BILLS });
+    const length = history.length;
+    await follow(app, subscriptionsLink(root, FIXED));
+    expect(location.hash).toBe("#card=subscriptions&q=Netto");
+    expect(history.length).toBe(length + 1);
+    getByRole(root, "region", { name: da.subscriptions });
+    const tab = getByRole(getByRole(root, "group", { name: da.view }), "button", { name: da.subscriptions });
+    expect(tab.getAttribute("aria-pressed")).toBe("true");
+    expect(isFullScreen(root)).toBe(false);
+    history.back();
+    await hashBecomes(app, "#card=postings&q=Netto");
+    getByRole(root, "region", { name: da.postingsTitle });
   });
 
-  it("no posting, no link", async () => {
+  it("closes an open detail on another card", async () => {
+    const { app, root } = await mount("card=postings&detail=p%3Ap26", { answer: BILLS });
+    await follow(app, subscriptionsLink(root, FIXED));
+    expect(location.hash).toBe("#card=subscriptions");
+    expect(queryByRole(root, "group", { name: "Café Søde" })).toBeNull();
+  });
+
+  it("links also when the group has no payment in the period", async () => {
     const { root } = await mount("group=Bolig", { answer: BILLS });
-    const subs = objectCard(root, SUBS);
-    getByText(subs, count(0));
-    expect(queryByRole(subs, "link")).toBeNull();
+    getByText(objectCard(root, SUBS), da.noPayments);
+    subscriptionsLink(root, SUBS);
   });
 
   it("no key-number card holds a button, and a click on a label changes nothing", async () => {
@@ -317,30 +479,9 @@ describe("the link on each object group's key number", () => {
     expect(name(root, FIXED)).toBe(`${FIXED} ${kr(8090000)} ${line(812700, 2)}`);
   });
 
-  it("a plain card has the link too, in exactly one group with its name", async () => {
+  it("a plain card has no link, as there is no Faste udgifter tab", async () => {
     const { root } = await mount("");
     expect(getAllByRole(root, "group", { name: SUBS })).toHaveLength(1);
-    getByRole(objectCard(root, SUBS), "link", { name: "1 postering →" });
-  });
-
-  it("following the link shows the chips and a summary count equal to the link's, after a search, a shop and a unit", async () => {
-    const { app, root } = await mount("unit=2026-07-01&q=Netto&shop=Q8", { answer: BILLS });
-    const link = getByRole(objectCard(root, JULY_FIXED), "link", { name: linkLine(2) });
-    await follow(app, link);
-    getByRole(root, "heading", { level: 1, name: da.allPostings });
-    getByRole(root, "button", { name: da.remove("Faste udgifter") });
-    getByRole(root, "button", { name: da.remove(JULY) });
-    getByText(root, da.summary(count(2), kr(890000)));
-    expect((getByRole(root, "combobox", { name: da.searchLabel }) as HTMLInputElement).value).toBe("");
-  });
-
-  it("the link's hash has og and the unit, and no q or shop", async () => {
-    const { root } = await mount("unit=2026-09-01&q=Netto&shop=Q8", { answer: BILLS });
-    const label = da.levelInUnit("Abonnementer", unitName(unitAt("2026-09-01", "month", "2026-10-30"), "month"));
-    const p = params(getByRole(objectCard(root, label), "link").getAttribute("href") ?? "");
-    expect(p.get("view")).toBe("all-postings");
-    expect(p.get("og")).toBe("Abonnementer");
-    expect(p.get("unit")).toBe("2026-09-01");
-    for (const key of ["q", "shop", "card", "sort", "min", "max"]) expect(p.has(key)).toBe(false);
+    expect(queryByRole(objectCard(root, SUBS), "link")).toBeNull();
   });
 });
