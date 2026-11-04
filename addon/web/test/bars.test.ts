@@ -164,9 +164,29 @@ describe("the bars", () => {
     expect(charts[0].calls.downplay).toEqual([2]);
   });
 
-  it("hides the tooltip when the mouse leaves the bars", async () => {
+  it("hides the tooltip before a redraw while the pointer is away from the bars", async () => {
     const el = await render();
-    fireEvent.mouseLeave(el);
+    fireEvent.pointerEnter(el, { pointerType: "mouse" });
+    fireEvent.pointerLeave(el, { pointerType: "mouse" });
+    charts[0].order.length = 0;
+    el.items = itemsOf({ start: "2026-01-01", end: "2026-06-30" });
+    await el.updateComplete;
+    expect(charts[0].order).toEqual(["hideTip", "setOption"]);
+  });
+
+  it("keeps the tooltip on a redraw while the pointer is over the bars", async () => {
+    const el = await render();
+    fireEvent.pointerEnter(el, { pointerType: "mouse" });
+    charts[0].order.length = 0;
+    el.items = itemsOf({ start: "2026-01-01", end: "2026-06-30" });
+    await el.updateComplete;
+    expect(charts[0].order).toEqual(["setOption"]);
+  });
+
+  it("hides the tooltip when the window loses focus", async () => {
+    const el = await render();
+    fireEvent.pointerEnter(el, { pointerType: "mouse" });
+    fireEvent.blur(window);
     expect(charts[0].calls.hideTip).toBe(1);
   });
 

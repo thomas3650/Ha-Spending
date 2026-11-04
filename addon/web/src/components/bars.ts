@@ -93,6 +93,15 @@ export class Bars extends LitElement {
   /** Set after a chart click, so the chosen bar comes from the properties whatever ECharts did. */
   private chartStale = false;
   private readonly chartEl = createRef<HTMLDivElement>();
+  /**
+   * ECharts shows its tooltip again at the last point after every redraw and resize until it sees the mouse leave, and
+   * it can miss that leave. So a redraw with the mouse away hides the tooltip first.
+   */
+  private pointerAway = false;
+  private readonly onWindowBlur = () => {
+    this.pointerAway = true;
+    this.chart?.hideTip();
+  };
 
   constructor() {
     super();
@@ -100,8 +109,13 @@ export class Bars extends LitElement {
     this.colour = "";
     this.average = null;
     this.chosen = null;
-    // ECharts hides the tooltip only on a pointerout that reaches its own drawing; a leave it misses left the tip up.
-    this.addEventListener("mouseleave", () => this.chart?.hideTip());
+    this.addEventListener("pointerenter", () => {
+      this.pointerAway = false;
+    });
+    // Only a mouse: a finger always leaves on lift, and its tooltip stays until the next tap.
+    this.addEventListener("pointerleave", (e) => {
+      if (e.pointerType === "mouse") this.pointerAway = true;
+    });
   }
 
   protected override createRenderRoot(): HTMLElement {
@@ -110,10 +124,12 @@ export class Bars extends LitElement {
 
   override connectedCallback(): void {
     super.connectedCallback();
+    window.addEventListener("blur", this.onWindowBlur);
     if (this.hasUpdated && this.chart === null) this.requestUpdate();
   }
 
   override disconnectedCallback(): void {
+    window.removeEventListener("blur", this.onWindowBlur);
     this.chart?.dispose();
     this.chart = null;
     super.disconnectedCallback();
@@ -140,7 +156,7 @@ export class Bars extends LitElement {
     let fresh = false;
     if (this.chart === null) {
       fresh = true;
-      this.chart = createChart(el);
+      this.chart = createChart(el, { pointerAway: () => this.pointerAway });
       this.chart.on("click", (p) => {
         this.fire(this.items[p.dataIndex]);
         this.chartStale = true;
@@ -156,6 +172,7 @@ export class Bars extends LitElement {
       changed.has("chosen")
     ) {
       this.chartStale = false;
+      if (!fresh && this.pointerAway) this.chart.hideTip();
       this.chart.setOption(this.option(), { notMerge: true });
     }
   }
