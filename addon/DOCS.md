@@ -44,10 +44,13 @@ key.
 
 The page is in Danish and has a light theme. It is made for a computer's screen; on a phone it opens, but it has no
 layout of its own there, and a table can scroll sideways. Click a bar to choose a unit, a main group to see its
-categories and a category to see its postings. The trail at the top of the page names what is chosen, in the order unit,
-main group, category, and each step has a cross that removes it; the cross on a main group removes its category too.
-"Alt forbrug" in the trail clears all three and keeps the search and the shop. While the page loads, the trail leaves
-out the unit. If the rule group in `main_group_rule_group` does not exist, the page says so.
+categories and a category to see its postings. The trail at the top of the page is the filter for the whole overview.
+It names what is chosen, in the order period, unit, main group, category. The period is always there: press it to
+change it. A unit, a main group and a category each have a cross that removes it; the cross on a main group removes its
+category too. A main group or a category is also a button: press it to switch to another one at the same level. The
+dashed button at the end of the trail offers the next level, so it is the way to choose a main group in full screen,
+where there is no circle. "Alt forbrug" in the trail clears the unit, the main group and the category and keeps the
+period, the accounts and the quick filter (see below). While the page loads, the trail leaves out the unit. If the rule group in `main_group_rule_group` does not exist, the page says so.
 
 A click on a fixed expense or on a posting shows its detail: the sums, the bars and the postings. When
 `firefly_link_url` is set, the detail has the link "Åbn i Firefly III", each posting's date links to it in Firefly III,
@@ -63,22 +66,27 @@ subscriptions are left out, as are those last paid from a liability or into a ma
 The card shows only the subscriptions that are in an object group in Firefly III; one with no object group is left
 out. Each row carries its object group's title, and the card shows the cost per year of each object group. A posting
 that is linked to a subscription carries the same mark, with the subscription's name as its tooltip, in the postings
-card and on the page with all postings.
+card.
 
-The period menu has the presets, among them "Alt" from your earliest posting to today, and a calendar. Click a start
-day and an end day, or type them in Fra and Til as `3.1.2024`, and press Vis.
+The period step in the trail opens a menu with the presets, among them "Alt" from your earliest posting to today, and a
+calendar. Click a start day and an end day, or type them in Fra and Til as `3.1.2024`, and press Vis. The page picks the
+grouping from the period: a period of up to 24 months shows a bar for each month, and a longer one a bar for each year.
 
 Click a column header to sort a table by it; click it again to reverse it. Sorted by date, the postings keep their
 groups; sorted by another column they are one list. The first key number shows how many postings it covers, and
-a click on that count opens the page with all postings.
+a click on that count opens the Posteringer card in full screen, with no quick filter.
 
 The key number for an object group shows the payments of that group in the period, with the sum per month and the
 number of subscriptions paid. With a unit chosen it shows the payments in that unit, as "<group> i <unit>", with the
 number of subscriptions paid and no sum per month. The key numbers are not buttons; the Faste udgifter choice in the
-right card shows that view. Under it, a link such as "58 posteringer →" opens the page with all postings, filtered to
-that object group and to the chosen unit; each filter shows as a chip that you remove with its cross. The link clears
-any search and shop. "+ Filter" can also choose a unit and an object group. Its Beløb fields take Danish
-numbers such as `1000`, `1.000`, `1000,50`, `1.000,50` and `0,5`.
+right card shows that view. Under each one, the link "Vis faste udgifter →" opens that card.
+
+On the Posteringer card the quick filter sits over the list: a search field and the Beløb pill. The search matches the
+text or a shop; the suggestions show each shop's count and sum. The Beløb pill offers four kinds: Omkring (the amount
+plus or minus 20 %), Under, Over and Mellem (two amounts). Under and Over leave out the amount itself. The pill takes
+Danish numbers such as `1000`, `1.000`, `1000,50`, `1.000,50` and `0,5`, and applies them on Enter or when you leave
+it. The quick filter narrows the list only; the key numbers, the circle and the bars do not change. When it is set, the
+line over the list says what it filters, and "Ryd" clears it.
 
 The right card's choice "Butikker" lists the shops with the most spending, for what is chosen on the left: all
 spending, a main group or a category. It shows the ten biggest, with "Vis alle" for the rest; a click on a shop's name
@@ -87,7 +95,8 @@ the hidden shops again. Hiding changes nothing else on the page, and nothing in 
 hidden shops in a file in its `/data`, so they are the same on every device and are in Home Assistant's backups.
 
 The button "Fuld skærm" in the right card's title gives that card the page's whole width; the same button or Escape
-brings the circle and the key numbers back.
+brings the circle and the key numbers back. Full screen is a step in the browser's history, so Back leaves it. With a
+posting open in full screen the list hides its Konto column, since the detail shows the account.
 
 ## The sorter's endpoint
 
