@@ -28,7 +28,7 @@ export interface LeftOverTable {
 }
 
 const COLUMNS: readonly Column[] = ["paidIn", "back", "spending", "leftOver", "credit", "savings", "other", "change"];
-const MINUS = "−";
+export const MINUS = "−";
 
 /** Whole kroner, halves away from zero, as `kr()` rounds; never −0. */
 export function roundKroner(ore: number): number {

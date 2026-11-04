@@ -3,6 +3,7 @@ import {
   fetchRange,
   groupingFor,
   type HiddenShopChange,
+  type LeftOverData,
   localToday,
   type Period,
   type SpendingData,
@@ -29,7 +30,7 @@ import { shopsStyles } from "./components/shops";
 import { subscriptionsStyles } from "./components/subscriptions";
 import { type CategoryChoice, type LevelLists, topCardStyles } from "./components/top-card";
 import { type UnitStep, unitMenuStyles } from "./components/unit-menu";
-import { LoadError, type LoadErrorCode, loadData, loadHiddenShops, setHiddenShop } from "./data/api";
+import { LoadError, type LoadErrorCode, loadData, loadHiddenShops, loadLeftOver, setHiddenShop } from "./data/api";
 import { unitName } from "./format";
 import { da } from "./i18n/da";
 import type { AmountFilter } from "./model/amount";
@@ -37,7 +38,14 @@ import { levelRows, unitRows } from "./model/circle";
 import { finerUnits, type ViewContext, viewContext } from "./model/context";
 import { type FixedView, fixedUnits, fixedView, objectGroupStep } from "./model/fixed";
 import { fixedList } from "./model/fixed-list";
-import { keyCards, type KeyLink, objectGroupCards } from "./model/key-numbers";
+import {
+  type KeyCard,
+  keyCards,
+  type KeyLink,
+  leftOverKeyCard,
+  objectGroupCards,
+  showsLeftOver,
+} from "./model/key-numbers";
 import { shownColumns, shownPostingSort } from "./model/postings";
 import type { HiddenState } from "./model/shops";
 import { DEFAULT_SUBSCRIPTION_SORT, shownSubscriptionSort, subscriptionFirstDescending } from "./model/subscriptions";
@@ -58,6 +66,7 @@ import {
   chooseFixedUnit,
   leaveFixed,
   openFixed,
+  openLeftOver,
   openPostingsFull,
   openShop,
   setObjectGroup,
@@ -101,6 +110,9 @@ type Load =
   | { kind: "ready"; data: SpendingData }
   | { kind: "error"; code: LoadErrorCode };
 
+/** The Til overs answer; its error is never shown, as the card is left out (spec §2.1). */
+type LeftOverLoad = { kind: "loading" } | { kind: "ready"; data: LeftOverData } | { kind: "error" };
+
 /** Marks the history entry that opening a detail pushed, so closing knows it may go back (spec §5). */
 const DETAIL_ENTRY = { detail: true };
 /** Marks the entry that opening full screen pushed; a detail pushed right over it says so (top-filter spec §3.2). */
@@ -108,12 +120,15 @@ const FULL_ENTRY = { full: true };
 const DETAIL_OVER_FULL = { detail: true, overFull: true };
 /** Marks the entry that opening the fixed-expenses view pushed, so leaving it may go back (spec §2). */
 const FIXED_ENTRY = { fixed: true };
+/** Marks the entry that opening the Til overs view pushed, as FIXED_ENTRY does (spec §2.2). */
+const LEFT_OVER_ENTRY = { leftOver: true };
 
 interface Marks {
   detail?: unknown;
   full?: unknown;
   overFull?: unknown;
   fixed?: unknown;
+  leftOver?: unknown;
   /** The full-screen open's quick filter, so a close can tell whether it changed in full screen. */
   quick?: unknown;
 }
@@ -150,6 +165,7 @@ export class SpendingApp extends LitElement {
     state: { state: true },
     today: { state: true },
     load: { state: true },
+    leftOverLoad: { state: true },
     accounts: { state: true },
     earliest: { state: true },
     postingsSort: { state: true },
@@ -277,6 +293,7 @@ export class SpendingApp extends LitElement {
   declare state: ViewState;
   declare today: string;
   declare load: Load;
+  declare leftOverLoad: LeftOverLoad;
   /** The last answer's accounts; null until the first answer. */
   declare accounts: Account[] | null;
   /** The last answer's earliest posting date; undefined until the first answer. */
@@ -296,6 +313,10 @@ export class SpendingApp extends LitElement {
   private boxes = 2;
   private request = 0;
   private controller: AbortController | null = null;
+  /** The trail's period the Til overs answer was asked for; a unit's choice needs no new answer. */
+  private leftOverAsked: Period | null = null;
+  private leftOverRequest = 0;
+  private leftOverController: AbortController | null = null;
   private hiddenAsked = false;
   private writes: Promise<void> = Promise.resolve();
   /** The detail a close or Back just closed, whose row gets the focus back after the render. */
@@ -319,6 +340,7 @@ export class SpendingApp extends LitElement {
     this.state = parseHash("");
     this.today = localToday(new Date());
     this.load = { kind: "idle" };
+    this.leftOverLoad = { kind: "loading" };
     this.accounts = null;
     this.earliest = undefined;
     this.postingsSort = DEFAULT_POSTING_SORT;
@@ -459,6 +481,18 @@ export class SpendingApp extends LitElement {
     this.change(next);
   }
 
+  /** "Vis måneder →". Like openFixed, a push waits for a pending Back to land. */
+  private openLeftOver(): void {
+    if (this.backPending) {
+      this.afterBack = () => this.openLeftOver();
+      return;
+    }
+    if (this.state.leftOver) return;
+    const next = openLeftOver(this.state);
+    history.pushState(LEFT_OVER_ENTRY, "", `#${toHash(next)}`);
+    this.change(next);
+  }
+
   /**
    * ← and Escape go back past the open when the entry is the one the open pushed, so Back does not reopen the view;
    * after any push in the view they replace (spec §2). The state is set at once, as closeFullScreen does.
@@ -552,6 +586,10 @@ export class SpendingApp extends LitElement {
     this.controller?.abort();
     this.controller = null;
     this.asked = null;
+    this.leftOverRequest += 1;
+    this.leftOverController?.abort();
+    this.leftOverController = null;
+    this.leftOverAsked = null;
     super.disconnectedCallback();
   }
 
@@ -628,6 +666,7 @@ export class SpendingApp extends LitElement {
     this.state = next;
     this.ensureData();
     this.normaliseState();
+    this.ensureLeftOver();
   }
 
   private wantedRange(): Period {
@@ -676,6 +715,36 @@ export class SpendingApp extends LitElement {
     }
     this.load = { kind: "ready", data };
     this.normaliseState();
+    this.ensureLeftOver();
+  }
+
+  /**
+   * Asked for only once the data's answer says the household is set up, and only while the card or the view shows.
+   * Unlike the data, a failure is asked again only for a new period: a retry on every choice would put the busy card
+   * back and take it out again, moving the cards beside it (spec §2.1).
+   */
+  private ensureLeftOver(): void {
+    if (this.load.kind !== "ready" || !this.load.data.leftOver) return;
+    const s = this.state;
+    if (!s.leftOver && (s.fullScreen || s.fixed || !showsLeftOver(s))) return;
+    const period = periodOf(s.period, this.today, this.load.data.earliestPostingDate);
+    const asked = this.leftOverAsked;
+    if (asked !== null && sameRange(asked, period)) return;
+    this.leftOverController?.abort();
+    const controller = new AbortController();
+    this.leftOverController = controller;
+    const id = ++this.leftOverRequest;
+    this.leftOverAsked = period;
+    this.leftOverLoad = { kind: "loading" };
+    loadLeftOver(period, controller.signal).then(
+      (data) => {
+        if (id === this.leftOverRequest) this.leftOverLoad = { kind: "ready", data };
+      },
+      () => {
+        if (id !== this.leftOverRequest || controller.signal.aborted) return;
+        this.leftOverLoad = { kind: "error" };
+      },
+    );
   }
 
   private normaliseState(): void {
@@ -733,12 +802,31 @@ export class SpendingApp extends LitElement {
 
   private onKeyLink(event: CustomEvent<KeyLink>): void {
     const link = event.detail;
-    if (link.kind === "postings") this.openFullScreen(openPostingsFull);
-    else this.openFixed(link.objectGroup);
+    switch (link.kind) {
+      case "postings":
+        return this.openFullScreen(openPostingsFull);
+      case "subscriptions":
+        return this.openFixed(link.objectGroup);
+      case "leftOver":
+        return this.openLeftOver();
+    }
+  }
+
+  private leftOverCards(ctx: ViewContext): KeyCard[] {
+    if (!ctx.data.leftOver || !showsLeftOver(this.state)) return [];
+    const href = `#${toHash(openLeftOver(this.state))}`;
+    switch (this.leftOverLoad.kind) {
+      case "error":
+        return [];
+      case "loading":
+        return [leftOverKeyCard(ctx, null, href)];
+      case "ready":
+        return [leftOverKeyCard(ctx, this.leftOverLoad.data, href)];
+    }
   }
 
   private keyNumbers(ctx: ViewContext) {
-    const cards = keyCards(ctx, `#${toHash(openPostingsFull(this.state))}`);
+    const cards = [...keyCards(ctx, `#${toHash(openPostingsFull(this.state))}`), ...this.leftOverCards(ctx)];
     const objectGroups = objectGroupCards(ctx, (group) => `#${toHash(openFixed(this.state, group))}`);
     this.boxes = cards.length + objectGroups.length;
     return html`<hs-key-numbers
