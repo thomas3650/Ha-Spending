@@ -51,19 +51,15 @@ too, "synligt det er et estimat", and with "I år" what was paid so far, what re
 
 ### 3.1 The trail
 
-The view's trail adds one step, the object group. Its steps, in this fixed order: "Alt forbrug", the main group, the
-category, the object group, the period, the chosen unit. The dashed button comes last, after the last step, as on the
-overview:
+The view's trail adds one step, the object group, right after "Alt forbrug". The other steps follow D59's order:
 
 - `← Alt forbrug › Faste udgifter ▾ › I år ▾ [Hovedgruppe]`
 - `← Alt forbrug › Faste udgifter ▾ › I år ▾ › August 2026 × [Hovedgruppe]`
-- `← Alt forbrug › Bolig ▾ × › Alle faste udgifter ▾ › I år ▾ [Kategori]`
-- `← Alt forbrug › Bolig ▾ × › Forsikring ▾ × › Faste udgifter ▾ › I år ▾`
+- `← Alt forbrug › Alle faste udgifter ▾ › I år ▾ › Bolig ▾ × [Kategori]`
 
-Thomas chose the main group first, as in the mockup ("bolig først"), and the month after "I år", as on the overview.
-So in the view the level comes before the period, unlike D59's "the period is the trail's first chosen step". The
-dashed button's place at the end is Claude's call. The period step, the unit step, the main group and category steps
-and the dashed button work as on the overview (top filter spec §2), with these differences:
+Thomas chose the object group first, over the mockup's main group first, so the rest reads as on the overview ("vi
+holder os til det er ens"), with the month after "I år". The period step, the unit step, the main group and category steps and the dashed button
+work as on the overview (top filter spec §2), with these differences:
 
 - The main group and category lists list the pieces of the overview's circle at that level, as on the overview, though
   the view has no circle.
@@ -271,8 +267,8 @@ Made-up data only. Hard rule 5: behaviour through roles, accessible names and re
   same period and level, and `view=fixed` and `og` in the hash; `history.back()` returns to the overview's tab. ← and
   Escape right after the open go back, and a following Back does not reopen the view. ← after choosing another object
   group leaves the view by a replace. The Faste udgifter tab's ⤢ still opens its table in full screen.
-- §3: the "Sti" text reads "Alt forbrug › Faste udgifter › I år Hovedgruppe", and in Bolig "Alt forbrug › Bolig ›
-  Faste udgifter › I år Kategori". "Skift objektgruppe: Faste udgifter" opens the groups and Alle with their counts
+- §3: the "Sti" text reads "Alt forbrug › Faste udgifter › I år Hovedgruppe", and in Bolig "Alt forbrug › Faste udgifter ›
+  I år › Bolig Kategori". "Skift objektgruppe: Faste udgifter" opens the groups and Alle with their counts
   and sums; choosing Alle shows "Alle faste udgifter" and removes a chosen unit; with one object group there is no
   list.
 - §4: with "I år" on 4 November, the four cards' values match the fake data: "Betalt i år" equals the overview's
@@ -320,8 +316,8 @@ Changed in the same PR:
 - **Date:** 2026-11-04 · **Status:** active
 - **Decision:**
   - "Vis faste udgifter →" opens a view with the fixed expenses as bars per unit and the payments under them. A trail
-    step after the level chooses an object group or all of them; the trail reads "Alt forbrug", the main group, the
-    category, the object group, the period, the unit. The view is `view=fixed` with `og` in the hash.
+    step right after "Alt forbrug" chooses an object group or all of them; the view is `view=fixed` with `og` in the
+    hash.
   - Paid is solid. The due dates on and after today, and a due one, are hatched estimates of `amountPerPayment`. "I
     år", "Denne måned" and "Alt" run on past today to their own end; the units after today hold estimates, and a
     chosen unit is resolved against the view's units.
@@ -336,5 +332,4 @@ Changed in the same PR:
 | --- | --- |
 | D20 | active; key list superseded by D35, D42, D44, D60, D61 and D66 |
 | D23 | active; "a unit after today is empty" superseded in the fixed-expenses view by D66 |
-| D59 | active; "the period is the trail's first chosen step" superseded in the fixed-expenses view by D66 |
 | D62 | active; "opens the Faste udgifter tab in the normal card" superseded by D66 |
