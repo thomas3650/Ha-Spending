@@ -473,6 +473,20 @@ describe("a payment that is due", () => {
     ]);
   });
 
+  it("flags the row as due, still expected, and keeps its place among the Forventes rows by date", () => {
+    const subscriptions = [
+      monthly("d3", "Fitness", "2026-09-28"),
+      monthly("d4", "Avis", "2026-09-30"),
+      monthly("d5", "Bredbånd", "2026-09-29"),
+    ];
+    const data = withSubscriptions(answerFor({ start: "2025-12-01", end: "2026-10-30" }), subscriptions);
+    const rows = subscriptionRows(viewContext(data, DEFAULT_STATE, "2026-10-30"));
+    const status = (name: string) => rows.find((r) => r.name.startsWith(name))?.status;
+    expect(status("Fitness")).toEqual({ kind: "expected", due: true, text: da.status.due("28. okt") });
+    expect(status("Avis")).toMatchObject({ kind: "expected", due: false });
+    expect(rows.map((r) => r.name.split(" ")[0])).toEqual(["Fitness", "Bredbånd", "Avis"]);
+  });
+
   it("says Forventes with its date and the next date, when the date is today", async () => {
     const { root } = await mountWith("card=subscriptions", [monthly("d2", "Fitness", "2026-09-30")]);
     expect(cells(card(root, "Faste udgifter"), "Fitness")).toEqual([
