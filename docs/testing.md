@@ -88,11 +88,11 @@ The page's list. Every screenshot is at 1440×960 with the console free of error
 3. `03-focus-piece`, `04-focus-bar`: Tab to a circle name, then to a bar. Each shows the highlight from the keyboard.
 4. Clicks, each with a screenshot after it: `05-click-piece` (on a piece), `06-click-label` (on an ECharts label) and
    `07-click-bar` (on a bar). Each does what its button does.
-5. `08-periode`, `09-gruppering`, `10-konti`: the three dropdowns open; the period menu holds the presets with "Alt" and
-   the calendar with two months. Compare `1-alt-forbrug-grain.png` and `1-alt-forbrug-konti.png`; the period menu has no
-   mockup file, its design is the lists spec §1.2. Load the page once with `#by=week` and check that the Gruppér pr.
-   select shows Uge on the first render.
-6. `11-uge`: Gruppér pr. Uge. The first bar is clipped and the last is light, with "i gang".
+5. `08-periode`, `10-konti`: the period step in the trail and Konti open; the period panel under its step holds the
+   presets with "Alt" and the calendar with two months. Compare `1-alt-forbrug-konti.png`; the period panel has no
+   mockup file, its design is the lists spec §1.2 and the [top filter spec](superpowers/specs/2026-11-04-top-filter.md)
+   §2.2. Load the page once with `#by=week` and check that it opens on months, with no Gruppér pr. field.
+6. `11-uge`: a custom period of a few months. The first bar is clipped and the last is light, with "i gang".
 7. `12-denne-maaned`: Denne måned. The average reads "gns. … før".
 8. `13-posteringer`: screen 1 on Posteringer.
 9. `14-link`: a click on a posting opens a new tab at the fake's `/transactions/show/<id>`. `addon/dev/options.json`
@@ -100,10 +100,10 @@ The page's list. Every screenshot is at 1440×960 with the console free of error
 10. `15-hovedgruppe`, `16-kategori-soejler`, `17-kategori-posteringer`: Mad, then a category with bars, then with
     postings. Compare `2-hovedgruppe*.png`.
 11. `18-uden-hovedgruppe`: Uden hovedgruppe as a screen, with its categories and Uden kategori.
-12. `19-alle-posteringer`, `20-stoerste-foerst` (a click on the Beløb header), `21-filter`, `22-ingen-match`: screen 3
-    with chips; sorted by size as a flat list, the Beløb header with ▲ and aria-sort ascending after the first click
-    (largest spending first) and the other columns sorting by a click; the "+ Filter" panel open; a search nothing
-    matches (`da.noMatch`). Compare `3-posteringer.png`.
+12. `19-posteringer-fuld-skaerm`, `20-stoerste-foerst` (a click on the Beløb header), `21-beloeb`, `22-ingen-match`:
+    Posteringer in full screen, from "N posteringer →"; sorted by size as a flat list, the Beløb header with ▲ and
+    aria-sort ascending after the first click (largest spending first) and the other columns sorting by a click; the
+    Beløb pill open; a search nothing matches (`da.noMatch`). Compare `3-posteringer.png`.
 13. `23-soejle`, `24-soejle-kategori`: a click on a bar opens Posteringer for that month. A chosen month at all
     spending, then in Mad with a category chosen, with the trail "Alt forbrug › <month> › Mad › <category>". With the
     month chosen, the key numbers are the month's sum and the two object groups, with no ▲, ▼ or red. Compare
@@ -130,7 +130,7 @@ The page's list. Every screenshot is at 1440×960 with the console free of error
     each row shows its sum; a mouse-over shows the bank text. Also at 1728 px.
 23. `38-butik-valgt`: a shop chosen from the suggestions. The chip "Butik: …" sits on its own row under the search
     field; the field keeps the row's whole width and the focus. Only that shop's rows show, and the count and the sum
-    are its own. The ✕ and Back undo it. The same on Alle posteringer.
+    are its own. The ✕ and Back undo it. The same in full screen.
 24. `39-fuld-skaerm`: screen 1 on Posteringer with "Fuld skærm" pressed. The right card alone, the full width; the
     button sits on the title's row at every width. The view switch moves under the title when the card is under 700 px
     wide. Escape and the button bring the circle and the key numbers back. Also on Søjler and Faste udgifter, at 1440
@@ -140,7 +140,7 @@ The page's list. Every screenshot is at 1440×960 with the console free of error
 26. `41-objektgrupper`: Faste udgifter at Alt forbrug and at the main group Abonnementer. Each row carries the pill with
     its object group's title, and the boxes under the head show one yearly sum per object group. Also at 1440 and 1728
     px.
-27. `42-posteringer-maerke`: Posteringer and Alle posteringer with marked rows. A posting linked to a bill carries the
+27. `42-posteringer-maerke`: Posteringer, normal and in full screen, with marked rows. A posting linked to a bill carries the
     pill, and its tooltip gives the bill's name. Also at 1440 and 1728 px.
 28. `43-kalender`: the period menu with the calendar. Pick two days by mouse, then press Vis; the period reads "Valgt
     periode" with those days. Repeat with the keyboard: Tab to a day, Enter or Space picks it, and the picked start and
@@ -149,19 +149,18 @@ The page's list. Every screenshot is at 1440×960 with the console free of error
     year list's floor. Type `3.1.2024` in Fra and Til: the calendar moves there. Also "Alt": the closed field reads
     "Alt" with the dates. The open menu stays inside the frame at 1440, 1728, 1024 and 900 px. Do this in Safari as well
     as Chrome; Safari is where the typed year failed.
-29. `44-sorter`: Posteringer and Alle posteringer sorted by each column: one click and a second click; the sorted header
+29. `44-sorter`: Posteringer, normal and in full screen, sorted by each column: one click and a second click; the sorted header
     is bold with its arrow; sorted by the date the groups return. Faste udgifter sorts inside each group, with Status
     ascending at the start. The card's sort survives a switch to Søjler and back, and is gone after a reload.
 30. `45-noegletal`: the first key number with "N posteringer →" at Alt forbrug, a main group, a category and a chosen
-    unit; a click opens Alle posteringer with no search or shop. The object group key numbers show the sum, the sum per
+    unit; a click opens Posteringer in full screen with no search, shop or amount. The object group key numbers show the sum, the sum per
     month and the count; a click on the card does nothing, only the link clicks. With a chosen unit they show that
     unit's sum and "N stk." as "<group> i <unit>". Also at 1440, 1728, 1024 and 900 px, with no comparison card at any
     of them. At 1440 and 1728 px the cards are a fifth of the row wide and the end of the row is empty, with and without
     a chosen unit.
 31. `46-objektgruppe-link`: the two object group key numbers with their "N posteringer →" links at Alt forbrug and at a
-    main group; a click on each opens Alle posteringer with that object group's chip and only its postings, the count
-    equal to the link's. With a chosen unit the link brings the unit's chip too. Then the chips' ✕ and the "Faste
-    betalinger" group in "+ Filter". At 1440 px.
+    main group; the link "Vis faste udgifter →" under each opens the Faste udgifter tab in the normal card, and Back
+    returns to the card before. At 1440 px.
 32. `47-butikker`: the Butikker card at Alt forbrug, at a main group and at a category (the title "Butikker i Mad"), and
     with a chosen unit as a step in the trail. The rows run biggest first, with place, bar, sum and share; "Uden butik"
     sits under the list. A click on a name opens Posteringer with the shop's chip, and Back returns. Also this card's
@@ -170,8 +169,8 @@ The page's list. Every screenshot is at 1440×960 with the console free of error
     grey with "Vis"; "Vis" brings it back. After a reload the hidden shops are as they were, and the circle and the
     shares are unchanged. Stop the server for a moment to see "Kunne ikke gemme. Prøv igen." on a write and "Skjulte
     butikker kunne ikke hentes." on a start.
-34. `49-detalje`: the detail of a fixed expense, a subscription and a shop (a row on Posteringer, Faste udgifter and
-    Alle posteringer), on the normal page, in full screen and on Alle posteringer. At 1440, 1728 and 1000 px. Tab to a
+34. `49-detalje`: the detail of a fixed expense, a subscription and a shop (a row on Posteringer and Faste udgifter),
+    on the normal page and in full screen. At 1440, 1728 and 1000 px. Tab to a
     row's name and press Enter: the detail opens and the focus is on its heading; "Luk" and Escape close it and the
     focus is back on the row. The amounts in the detail's rows have the same sign as the list beside it (spending minus,
     a refund plus). A click on a row, or on its date, opens that posting in Firefly III in one new tab, also on a double
@@ -181,26 +180,24 @@ The page's list. Every screenshot is at 1440×960 with the console free of error
 36. `51-hoved-raekke`: the right card's head row stays on one line at 1440 and 1728 px, on the normal page and in full
     screen, with nothing chosen, a category, a unit, and both. No button moves between those states, since the tabs no
     longer change.
-37. `52-detalje-staar`: in full screen and on Alle posteringer at 1440 px the detail stays in view while the list
+37. `52-detalje-staar`: in full screen at 1440 px the detail stays in view while the list
     scrolls, a click on a row does not scroll the page, and closing the detail (Escape or "Luk") does not scroll the
     page. Below 1024 px the focus still lands on the detail's heading (spec §2.1).
 38. `53-detalje-bokse`: the detail's three boxes each fit on one line at 1440 and 1728 px (spec §2.2).
 39. `54-banktekst`: a search that hits the bank's text shows that text in grey under the shop (spec §3.1).
 40. `55-beloeb-dato-beskeder`: the Beløb and date messages appear on blur or Enter, not while typing; the period
     picker's dash stays aligned when a message shows (spec §3.2, §3.3).
-41. `56-filter-soeg`: the "+ Filter" menu has a search, and its sections are in the order of spec §3.4, with the
-    period's units first when it has from 2 to 62.
+41. `56-filter-soeg`: the quick filter's search over the Posteringer list, in both widths: typing filters the list, and
+    the suggestions offer shops with their count and sum.
 42. `57-soejle-under-nul`: a bar below zero: the axis goes only a little below it, with no odd bottom label (spec §5.7).
 43. `58-maanedens-dage`: "Sidste måned" and "Denne måned" at Alt forbrug and Mad, at 1440 and 1728 px, normal and full
     screen ([month days spec](superpowers/specs/2026-11-03-month-days.md)). One bar per day, readable axis labels, today
     lighter with "i gang", the days after today empty, no average line, the tooltip on a day, and a day below zero (if
     the example data has one) with a "+" in its tooltip. A click on a day chooses the month: its step shows in the
     trail, no bar fades, and a second click removes it.
-44. `59-filter-kategorier`: at 1440 and 1728 px, "+ Filter" open and scrolled to the middle of Kategorier: each category
-    stands under its main group, and a main group's heading can be told from a part heading ([filter categories
-    spec](superpowers/specs/2026-11-03-filter-categories.md)). A search for "caf" keeps only the main groups with a
-    category that fits. "Uden hovedgruppe" is the last main group, and "Uden kategori" follows outside every group. Tab
-    reaches every category in order.
+44. `59-kategori-liste`: at 1440 and 1728 px, the list under the trail's main group and category steps, and under the
+    dashed button: the rows are the circle's pieces in its order, each with its colour dot and sum, and the chosen one is
+    marked. "Uden hovedgruppe" and "Uden kategori" show when they have a piece. Tab reaches every row in order.
 45. `60-gennemgang-rettelser`: the fixes from the 0.11.0 walkthrough ([walkthrough fixes
     spec](superpowers/specs/2026-11-03-walkthrough-fixes.md)), at 1440 and 1728 px, on the normal page and in full
     screen. The full-screen button sits on the title's row on Søjler, Posteringer and Faste udgifter. The title still
@@ -210,17 +207,16 @@ The page's list. Every screenshot is at 1440×960 with the console free of error
     Shift+Tab chooses nothing. A day bar's tooltip names its date once: two lines for a day, three for a whole month.
     The running bar is drawn faded on the bars and in the detail.
 46. `61-finere-soejler`: at 1440 and 1728 px, normal and full screen ([finer bars
-    spec](superpowers/specs/2026-11-03-finer-bars.md)): a custom one-week period by Uge, a custom one-quarter period by
-    Kvartal, "I år" and "Sidste år" by År, "Sidste måned" by Kvartal (days), "Denne måned" by Uge and by Kvartal, and
-    the detail of a fixed expense on "Sidste måned". The finer bars, their titles, no average line, the running unit
-    lighter, the detail's names thinned and readable, and a click choosing the whole period. A day below zero (if the
+    spec](superpowers/specs/2026-11-03-finer-bars.md)): a custom one-week period, a custom one-month period, "I år" in January, "Sidste måned" and
+    "Denne måned", and the detail of a fixed expense on "Sidste måned". The finer bars, their titles, no average line,
+    the running unit lighter, the detail's names thinned and readable, and no click on a bar, since the period is the
+    one unit. A day below zero (if the
     example data has one): its tooltip says "+… kr. retur", and the axis under zero has no minus.
 47. `62-et-filter`: the trail as the overview's filter ([one filter spec](superpowers/specs/2026-11-04-one-filter.md)),
     at 1440 and 1728 px, normal and full screen. The trail with its × in the thin light-grey look (B1), the × in a 24 px
     round hit area, hover and focus giving it a light background. Each × removes its step and puts the focus on the
     heading; Back brings the step back. The key numbers with and without a unit; the full-screen button level with the
-    tabs in both widths; the bar tooltip hiding when the mouse leaves the chart, and on a window blur; the unit section
-    in "+ Filter" on Alle posteringer, and its trail "Alt forbrug › Alle posteringer" with no ×. In full screen
+    tabs in both widths; the bar tooltip hiding when the mouse leaves the chart, and on a window blur; In full screen
     Posteringer the Kategori column shows from 600 px up. The y-axis of the bars writes its ticks with `axisTickKr`; no
     test guards that ([#132](https://github.com/thomas3650/Ha-Spending/issues/132)).
 48. `63-smaa-rettelser`: the small fixes from the walkthrough ([small walkthrough fixes
@@ -230,3 +226,9 @@ The page's list. Every screenshot is at 1440×960 with the console free of error
     måned") sits on its own line in every row. Every group header keeps its name and count on one line. The circle's
     small labels are apart, and each leader line runs to its piece. Butikker: every track starts and ends at the same
     place in the shown list and in the hidden one ("Vis"). A shop with a share above zero but under 1 % reads "< 1 %".
+49. `64-oeverste-filter`: the top filter, the quick filter and the one full-screen list ([top filter
+    spec](superpowers/specs/2026-11-04-top-filter.md) §8), at 1440 and 1728 px, normal and full screen. The trail with
+    its dropdown steps and the dashed button, and no Periode or Gruppér pr. field. The period panel under its step. The
+    Beløb pill empty, open and filled, in all four kinds, and the search and the pill the same height. The sentence
+    over the list and "Ryd". The full-screen list with a detail open: no wrapped cells and no Konto column. Back and ⤡
+    out of full screen.
