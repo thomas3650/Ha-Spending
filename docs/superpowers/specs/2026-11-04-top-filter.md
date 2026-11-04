@@ -46,8 +46,9 @@ The page has one screen after this change: the overview. "Alle posteringer" beco
 - The ▾ and the × are SVGs with no text node, as the × is today. So the "Sti" navigation's text reads the steps, the
   separators and the dashed button's text: "Alt forbrug › I år Hovedgruppe".
 - **The heading:** the last step is the `h1` (`tabindex="-1"`), as today. When that step is a button (the period, a
-  main group or a category), the `h1` wraps the button, and the heading's text is the button's text. The dashed button
-  is outside the `h1`. Claude's call.
+  main group or a category), the `h1` wraps the button, and the heading's text is the button's text. Its accessible
+  name is then the button's name (below), so tests check the heading's text, not its name. The dashed button is outside
+  the `h1`. Claude's call.
 - **"Alt forbrug"** is a link when a unit, a main group or a category is chosen, and plain text otherwise (D55). The
   link removes the unit, the main group and the category, and keeps the period, the accounts and the quick filter.
 - The trail stays the navigation landmark "Sti".
@@ -94,11 +95,12 @@ years).
   would only repeat the period in the trail (`Denne måned ▾ › November 2026 ×`). The finer bars keep their tooltip and
   lose their hidden buttons (D19) and their click. Claude's call. A one-unit period never has a chosen unit; a `unit` in
   the hash is dropped there (§6).
-- Changing the period keeps the unit only if the new period has it, as today.
+- Changing the period drops the unit, as today (`setPeriod`).
 
 ### 2.5 The main group and category steps
 
-- A chosen main group or category is a button with ▾ and its × (`Bolig ▾ ×`). The × works as today: on the main group it
+- A chosen main group or category is a button with ▾ and its × (`Bolig ▾ ×`). Its accessible name is "Skift
+  hovedgruppe: Bolig" or "Skift kategori: Husleje", with `aria-haspopup`. The × works as today: on the main group it
   removes the main group and its category (D21, D55).
 - A press opens a list to switch sideways. **Its rows are the circle's pieces** at that level: the main groups with a
   piece at "Alt forbrug", or the chosen main group's categories with a piece. That includes "Uden hovedgruppe" and
@@ -141,11 +143,16 @@ Thomas, 2026-11-04: full screen goes into the address, so Back and a reload work
 - Opening it (the ⤢ button, or "N posteringer →") pushes a history entry and marks it as the full-screen open, so Back
   leaves full screen and a reload keeps it.
 - ⤢ keeps an open detail, as today. "N posteringer →" closes it (§3.1).
-- **Closing** (the ⤡ button, or Escape when no dropdown or suggestion list uses it first, as today): the page goes back
-  to the entry before the full-screen open when that open was pushed in this page load and the only entries pushed
-  since are one detail open (so it goes back one or two entries). Otherwise it replaces the current entry with full
-  screen off and the detail closed. Either way Back does not reopen what was just closed. Claude's call, built on
+- **Closing** (the ⤡ button, or Escape): the page goes back to the entry before the full-screen open when that open
+  was pushed in this page load and the only entries pushed since are one detail open (so it goes back one or two
+  entries). Otherwise it replaces the current entry with full screen off and the detail closed. Claude's call, built on
   D44's rule.
+  - In the go-back case Back does not reopen what was just closed. In the replace case it can: after ⤢ and a press on
+    Søjler, ⤡ replaces the Søjler entry, and Back lands on the ⤢ entry in full screen. Accepted, as D44 accepts the same
+    for the detail.
+  - **Escape's order is as today:** a dropdown or suggestion list that is open takes Escape first; then an open detail
+    closes, alone; then full screen closes. So with a detail open, the first Escape closes only the detail, and the
+    second leaves full screen.
 - A view still cannot be shared or bookmarked: Home Assistant passes no hash into the frame (D10).
 
 ### 3.3 With a posting open
@@ -279,7 +286,7 @@ back. The keys after this change, in this order:
 Made-up data only. Hard rule 5: behaviour through roles, accessible names and rendered text.
 
 - §2.1: the top card has no "Periode" or "Gruppér pr." control; on an empty hash the "Sti" text reads "Alt forbrug ›
-  I år Hovedgruppe", "Alt forbrug" is not a link, and the heading is "I år". With a main group chosen, "Alt forbrug"
+  I år Hovedgruppe", "Alt forbrug" is not a link, and the heading's text is "I år". With a main group chosen, "Alt forbrug"
   is a link that removes it and keeps the period and the quick filter.
 - §2.2: the period step's name is "Periode: I år, …"; pressing it opens the panel; choosing "Sidste år" changes the
   trail and the bars; a custom period shows its dates in the step. On an error the period step and Konti still work.
@@ -288,13 +295,14 @@ Made-up data only. Hard rule 5: behaviour through roles, accessible names and re
   key number names the grouping.
 - §2.4: a bar's button chooses its unit, and the trail shows it after the period; its × and a second press remove it.
   In a one-unit period there are no bar buttons, and a `unit` in the hash shows no unit step.
-- §2.5: with a main group chosen, its step opens a list of the circle's main groups with their sums and the chosen one
+- §2.5: with a main group chosen, its step ("Skift hovedgruppe: …") opens a list of the circle's main groups with their sums and the chosen one
   current; choosing another switches and drops the category; a category step switches sideways and keeps the main
   group. The dashed button's names are "Vælg hovedgruppe" and "Vælg kategori"; in full screen it chooses a main group;
   it is disabled while loading and on an error.
 - §3: "N posteringer →" shows the Posteringer tab in full screen with the trail unchanged, an empty quick filter and an
   open detail closed; the hash has `view=full`; `history.back()` leaves full screen. ⤡ and Escape after the link leave
-  full screen, and a following Back does not reopen it, also after a detail was opened in full screen. There is no
+  full screen, and a following Back does not reopen it, also after a detail was opened in full screen. With a detail
+  open in full screen, the first Escape closes only the detail and the second leaves full screen. There is no
   Alle posteringer screen. With a detail open in full screen, the table has no Konto column.
 - §4: the search and the pill are on the Posteringer tab in both widths; a shop suggestion's name includes its count.
   The pill: empty name "Beløb"; the symbol button "Vælg beløbstype" opens the four kinds and keeps the number; each kind
@@ -344,7 +352,7 @@ The statuses they set, in the decision log's format:
 
 | Decision | Status after this change |
 | --- | --- |
-| D19 | active; "one button per bar" for a one-unit period's finer bars superseded by D59 |
+| D19 | active; the chunk-size limit superseded by D39, the Forskel table by D57, "one button per bar" for a one-unit period's finer bars by D59 |
 | D20 | active; key list superseded by D35, D42, D44, D60 and D61 |
 | D21 | active; its Alle posteringer chip and "+ Filter" parts superseded by D60 |
 | D31 | active; the way into Alle posteringer superseded by D57, leaving it through the trail by D60 |
