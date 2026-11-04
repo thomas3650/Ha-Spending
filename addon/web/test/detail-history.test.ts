@@ -133,6 +133,40 @@ describe("the detail in the history", () => {
     expect(queryByRole(root, "heading", { level: 3 })).toBeNull();
   });
 
+  it("⤡ then ⤢ before ⤡'s Back lands opens full screen from the landed entry", async () => {
+    const { app, root } = await toPostings();
+    const length = history.length;
+    const back = history.back.bind(history);
+    vi.spyOn(history, "back").mockImplementation(() => void setTimeout(back));
+    await toggleFullScreen(app, root);
+    fireEvent.click(fullScreen(root));
+    fireEvent.click(fullScreen(root));
+    await hashBecomes(app, "#card=postings&view=full");
+    await settle(app, 10);
+    expect(location.hash).toBe("#card=postings&view=full");
+    expect(pressed(root)).toBe("true");
+    expect(history.length).toBe(length + 1);
+    history.back();
+    await hashBecomes(app, "#card=postings");
+    expect(pressed(root)).toBe("false");
+  });
+
+  it("a row, ⤢, typing, ⤡ with the Back on its way, then Escape: the detail closes and the search stays", async () => {
+    const { app, root } = await toPostings();
+    await open(app, CAFE);
+    await toggleFullScreen(app, root);
+    fireEvent.input(getByRole(root, "combobox", { name: da.searchLabel }), { target: { value: "n" } });
+    await settle(app);
+    const back = history.back.bind(history);
+    vi.spyOn(history, "back").mockImplementation(() => void setTimeout(back));
+    fireEvent.click(fullScreen(root));
+    fireEvent.keyDown(window, { key: "Escape" });
+    await hashBecomes(app, "#card=postings&q=n");
+    await settle(app, 10);
+    expect(location.hash).toBe("#card=postings&q=n");
+    expect(queryByRole(root, "heading", { level: 3 })).toBeNull();
+  });
+
   const bars = (root: HTMLElement) =>
     getByRole(getByRole(root, "group", { name: da.view }), "button", { name: da.bars });
 
@@ -289,6 +323,20 @@ describe("full screen and the detail in the history", () => {
     history.back();
     await hashBecomes(app, "");
     expect(pressed(root)).toBe("false");
+  });
+
+  it("a row, ⤢, typing, ⤡, then Escape: the detail closes and the search stays", async () => {
+    const { app, root } = await toPostings();
+    await open(app, CAFE);
+    await toggleFullScreen(app, root);
+    fireEvent.input(getByRole(root, "combobox", { name: da.searchLabel }), { target: { value: "n" } });
+    await settle(app);
+    await toggleFullScreen(app, root);
+    await hashBecomes(app, "#card=postings&q=n&detail=p%3Ap23");
+    expect(pressed(root)).toBe("false");
+    await escape(app);
+    expect(location.hash).toBe("#card=postings&q=n");
+    expect(queryByRole(root, "heading", { level: 3 })).toBeNull();
   });
 
   it("a row, then ⤢, keeps the detail, and ⤡ goes back to it", async () => {

@@ -259,7 +259,7 @@ export class SpendingApp extends LitElement {
   private openedByRow = false;
   /** Back is async: until its popstate, history.state still shows the entry being left. */
   private backPending = false;
-  /** A close asked for while a Back was pending, run once that Back has landed. */
+  /** An open or a close asked for while a Back was pending, run once that Back has landed. */
   private afterBack: (() => void) | null = null;
   /** The quick filter a full-screen close had, put back on the entry its Back lands on, so none of it is lost. */
   private quickOnLanding: QuickFilter | null = null;
@@ -309,6 +309,10 @@ export class SpendingApp extends LitElement {
   private readonly onDetailOpen = (event: Event): void => {
     const next = openDetail(this.state, (event as CustomEvent<DetailKey>).detail);
     if (this.load.kind !== "ready" || !detailResolves(next, this.load.data, this.today)) return;
+    if (this.backPending) {
+      this.afterBack = () => this.onDetailOpen(event);
+      return;
+    }
     const hash = `#${toHash(next)}`;
     const pushed = marks().full === true ? DETAIL_OVER_FULL : DETAIL_ENTRY;
     if (this.state.detail === null) history.pushState(pushed, "", hash);
@@ -342,15 +346,22 @@ export class SpendingApp extends LitElement {
     this.change(next);
   }
 
+  /** A push before a pending Back lands would go onto the entry being left, so it waits for the landing. */
   private openFullScreen(): void {
+    if (this.backPending) {
+      this.afterBack = () => this.openFullScreen();
+      return;
+    }
+    if (this.state.fullScreen) return;
     const next = setFullScreen(this.state, true);
     history.pushState(FULL_ENTRY, "", `#${toHash(next)}`);
     this.change(next);
   }
 
   /**
-   * Goes back past the open when this page load pushed it and at most one detail open came after it, so Back does not
-   * reopen it; otherwise replaces (top-filter spec §3.2). The state is set at once, as closeDetail does.
+   * Goes back past the open when the entry's marks say it is the full-screen open, or one detail open pushed right
+   * over it, so Back does not reopen it; otherwise replaces (top-filter spec §3.2). The marks live in history.state, so
+   * an open from before a reload counts too. The state is set at once, as closeDetail does.
    */
   private closeFullScreen(): void {
     if (!this.state.fullScreen) return;
@@ -376,7 +387,7 @@ export class SpendingApp extends LitElement {
     const next = { ...this.state, ...quick };
     const hash = toHash(next);
     if (hash === toHash(this.state)) return;
-    replaceKeepingMarks(`#${hash}`, "keep");
+    replaceKeepingMarks(`#${hash}`, "drop");
     this.change(next);
   }
 
