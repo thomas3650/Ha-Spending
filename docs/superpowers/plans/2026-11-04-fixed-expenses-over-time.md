@@ -42,10 +42,15 @@ Every task reads its sections there; the plan does not repeat them.
    unit, so the overview shows no unit step (Task 6 test).
 3. **A unit below zero in the trail's list.** A month whose refunds exceed its spending reads "+… kr. retur" in the
    overview's unit list, as on its bar (Task 3 test).
-4. **Back after a choice in the view.** Open the view, choose another object group, press ←: it replaces, and a
-   following Back shows the overview's entry from before the open, not the view (Task 6 test).
+4. **← after a choice in the view.** Open the view, choose another object group, press ←: the overview shows and
+   the hash has no `view` or `og`. A following Back lands on the first view entry, which spec §2 accepts as top filter
+   spec §3.2 does for full screen (Task 6 test).
 5. **An object group found only on postings.** Its card's "Vis faste udgifter →" opens the view on that group, whose
    row reads "0 stk." (Task 6 test).
+6. **A due date at the edges.** One due today and a Forfalden one are estimates; the not-seen date is a row with no
+   amount; a later miss before today and a date before the span's start show nowhere (Task 5 test).
+7. **← or Escape while a Back is pending.** They wait for the landing, as `closeFullScreen` does with `backPending` and
+   `afterBack` (Task 6 test).
 
 ---
 
@@ -84,12 +89,13 @@ tests in `addon/web/test/format.test.ts` and `trail.test.ts`, and every test tha
 
 **Interfaces:**
 - Produces: `unitName(unit: Unit, g: Grouping, withYear: boolean): string` (no default, so every caller decides):
-  without the year a month reads "August", a day "4. november"; with it, as today. A year always reads "2026".
+  without the year a month reads "August", a day "4. november"; with it a month reads "August 2026" (as today) and a
+  day "4. november 2025". A year always reads "2026".
   `withYear(units: Unit[]): boolean` in `format.ts`: true when the units' `fullStart`s span more than one calendar
   year. `ViewContext.unitYear: boolean` = `withYear` of the bars' units (`finerUnits(ctx)?.units ?? units`).
   The detail passes `withYear` of its own units.
 
-- [ ] Write the failing tests: `unitName` both ways for a month, a day and a year; `withYear` for Jan–Dec 2026
+- [ ] Write the failing tests: `unitName` both ways for a month, a day ("4. november", "4. november 2025") and a year; `withYear` for Jan–Dec 2026
       (false) and Nov 2025–Oct 2026 (true). Page: with "I år" and a chosen August the trail's step, the bar's button
       and the Posteringer group line read "August"; with "Sidste 12 måneder" in November, "August 2026"; with "Alt"
       over three years (override `earliestPostingDate`), "2025"; the key-number label reads "Faste udgifter i August".
@@ -181,13 +187,20 @@ move it to `model/fixed.ts` and import it back), `addon/web/src/i18n/da.ts`; tes
   - `type Kind = "paid" | "estimate" | "notSeen"`; `interface FixedPayment { date: string; name: string; objectGroup:
     string; category: string | null; part: string | null; kind: Kind; amount: number; due: boolean }` (`amount` 0 for
     not seen; `due` for a Forfalden estimate).
-  - `interface FixedView { units: Unit[]; buttons: boolean; payments: FixedPayment[]; parts: { key: string | null;
-    name: string; colour: string }[]; cards: KeyCard[]; groups: string[] }` and `fixedView(ctx: ViewContext):
-    FixedView`, where `groups` are the object-group step's rows (Task 6 renders them).
+  - `interface FixedBar { unit: Unit; name: string; paid: Map<string | null, number>; estimate: Map<string | null,
+    number>; paidSum: number; estimateSum: number; label: string; running: boolean }`: per unit, the sums by part and
+    §5.4's button name as `label`.
+  - `interface ObjectGroupRow { name: string | null; count: number; sum: number; current: boolean }`, null for Alle.
+  - `interface FixedView { units: Unit[]; buttons: boolean; unitYear: boolean; payments: FixedPayment[]; parts: { key:
+    string | null; name: string; colour: string }[]; bars: FixedBar[]; cards: KeyCard[]; groups: ObjectGroupRow[];
+    unitStep: UnitStep | null }` and `fixedView(ctx: ViewContext): FixedView`. `unitYear` is
+    `withYear(fixedUnits(...).units)`; every name in the view (bars, list, unit step, the list's title) uses it.
+    `unitStep` is null when not `buttons`; its rows are the view's units with §6.1's sum ("9.799 kr. + ca. 1.074
+    kr."). The components only render these.
   - `fixedColours(ctx: ViewContext, parts: { key: string | null; size: number }[]): Map<string | null, string>`:
     §5.2's rule.
   - `KeyCard` (in `model/key-numbers.ts`) gains `estimate?: boolean`; the component writes "ca." before such a value.
-  - The list: `fixedList(view: FixedView, chosen: Unit | null, unitYear: boolean): FixedList` with group lines and
+  - The list: `fixedList(view: FixedView, chosen: Unit | null): FixedList` (names by `view.unitYear`) with group lines and
     rows as §6 says, the year rows as §6.3 says.
   - da: every text in §4, §5.4 and §6 (the card labels and subs, "Skraveret: estimat efter i dag", the bar names,
     "Poster i perioden", the sum line, "betalinger", the status texts "Betalt {d}", "Estimat · forventes {d}",
@@ -202,7 +215,8 @@ move it to `model/fixed.ts` and import it back), `addon/web/src/i18n/da.ts`; tes
       and one due today are estimates; an "Ikke set" one is one not-seen row with amount 0 and is not counted;
       a due date before the span is left out; "Sidste år" has no estimate; "Denne måned" gives days and no buttons;
       "Alt" by År runs to 31 Dec. The four "I år" cards' values; "Betalt i år" equals `objectGroupCards`'s value for the
-      same group. Colours: a main group keeps `partColours`'s colour, a grey or missing one takes the first free
+      same group. The bars' labels as §5.4's examples; the unit step's rows and their sums; the object-group rows: counts,
+      sums, a "0 stk." group found only on postings, Alle's sums, `current`. Colours: a main group keeps `partColours`'s colour, a grey or missing one takes the first free
       `PALETTE` colour, largest first. The list: groups newest first, rows by date, a chosen unit's rows only, the
       year rows' text, the Kategori column flag off in a category. normalise: a December `unit` with "I år" in January
       is kept with `fixed`, dropped by `leaveFixed` + normalise, and a day's `unit` with "Denne måned" is dropped.
@@ -222,12 +236,15 @@ test in `addon/web/test/fixed-view.test.ts`, and `key-numbers.test.ts` for the l
 **Spec:** §2, §3.1, §3.4, §5.4, §6, §8.
 
 **Interfaces:**
-- Produces: `KeyLink`'s subscriptions kind carries `objectGroup: string`; its `href` is `openFixed`'s hash. The app
-  pushes it with a `{ fixed: true }` history mark. ← (`da.backToOverview` = "Tilbage til overblikket") and Escape go
+- Produces: `KeyLink`'s subscriptions kind carries `objectGroup: string`; `objectGroupCards` builds one href per card,
+  `openFixed`'s hash for that group, so it takes `(ctx, hrefFor: (group: string) => string)`. The `key-link` event's
+  detail becomes the `KeyLink` itself, so `onKeyLink` learns the group. The app pushes the open with a `{ fixed: true }`
+  history mark, which like full screen's survives a reload (the same accepted reading of "this page load"). ← (`da.backToOverview` = "Tilbage til overblikket") and Escape go
   back one entry when `history.state` has that mark, otherwise replace with `leaveFixed`; a push inside the view adds an
   entry without the mark, so ← replaces after it.
-  The top card in the view: the ← button before the "Sti" nav, and an object-group step right after "Alt forbrug"
-  (an `hs-level-menu`-like dropdown; create `components/object-group-menu.ts` if it does not fit), with
+  The top card in the view: properties `fixed: boolean` and `objectGroups: ObjectGroupRow[] | null`; events `back`
+  (the ← button before the "Sti" nav) and `set-object-group` (`string | null`). The object-group step right after
+  "Alt forbrug" is a new `components/object-group-menu.ts` (extends `Dropdown`, as `LevelMenu`), with
   `da.switchObjectGroup(name)` = "Skift objektgruppe: <name>", `da.allFixed` = "Alle faste udgifter",
   `da.all` = "Alle", `da.billsInPeriod(n, sum)` = "<n> stk. · <sum> i perioden". Plain text with one object group.
   `hs-fixed-bars`: stacked bars by part, the estimate series with ECharts `decal`, the "i dag" mark line, a DOM legend,
@@ -236,7 +253,7 @@ test in `addon/web/test/fixed-view.test.ts`, and `key-numbers.test.ts` for the l
 - Consumes: Tasks 3 to 5.
 
 - [ ] Write the failing tests (spec §9's §2, §3.1, §3.4, §5.1, §5.2's legend, §5.4, §6 and §7 lines), and the review
-      focus 2, 4 and 5 tests.
+      focus 2, 4, 5 and 7 tests.
 - [ ] Run them and see them fail.
 - [ ] Implement.
 - [ ] Run the tests and the gates; commit `feat: the fixed-expenses view`.
