@@ -39,6 +39,29 @@ describe("amountPerPayment", () => {
   });
 });
 
+describe("a rise", () => {
+  const today = "2026-10-20";
+  const withPaid = (amount: number) => subscription({ lastPayment: paid("2026-10-01", amount) });
+
+  it("counts only from 1 kr. above the max", () => {
+    expect(subscriptionStatus(withPaid(12950), today).kind).toBe("paid");
+    expect(subscriptionStatus(withPaid(12999), today).kind).toBe("paid");
+    expect(subscriptionStatus(withPaid(13000), today)).toEqual({ kind: "risen", max: 12900, paid: 13000 });
+  });
+
+  it("makes the amount per payment what was paid, and the year follows", () => {
+    expect(amountPerPayment(withPaid(13000))).toBe(13000);
+    expect(amountPerPayment(withPaid(12999))).toBe(11400);
+    expect(amountPerYear(withPaid(13000))).toBe(156000);
+  });
+
+  it("holds when the status is notSeen", () => {
+    const s = subscription({ lastPayment: paid("2026-09-01", 20000) });
+    expect(subscriptionStatus(s, "2026-10-30").kind).toBe("notSeen");
+    expect(amountPerPayment(s)).toBe(20000);
+  });
+});
+
 describe("amountPerYear", () => {
   it("multiplies by the payments per year", () => {
     expect(amountPerYear(subscription())).toBe(136800);

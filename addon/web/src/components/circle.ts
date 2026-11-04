@@ -25,13 +25,32 @@ const LABEL_ROOM = 150;
 /** Below this chart width the labels lack room beside the ring, so the parts are listed under it instead. */
 const NARROW_CHART = 400;
 
+const SHORT_LINE = { length: 6, length2: 8 };
+const LONG_LINE = { length: 16, length2: 10 };
+const LONG_LINE_EXTRA = LONG_LINE.length + LONG_LINE.length2 - SHORT_LINE.length - SHORT_LINE.length2;
+const RING_MIN = 0.46;
+const RING_MAX = 0.62;
+
 /**
- * The ring's inner and outer radius in px: as big as the labels' room beside it allows, between 46 % and 62 % of half
- * the chart's shorter side.
+ * Long lines let the small pieces' lines bend gently, but they take room from the labels, so only where the smallest
+ * ring still leaves the labels their whole room; else a name would break inside a word.
+ */
+function longLines(width: number, height: number): boolean {
+  return width / 2 - (RING_MIN * Math.min(width, height)) / 2 >= LABEL_ROOM + LONG_LINE_EXTRA;
+}
+
+export function leaderLine(width: number, height: number): { length: number; length2: number } {
+  return longLines(width, height) ? LONG_LINE : SHORT_LINE;
+}
+
+/**
+ * The ring's inner and outer radius in px: as big as the labels' room beside it allows, their lines included, between
+ * 46 % and 62 % of half the chart's shorter side.
  */
 export function ringRadius(width: number, height: number): [number, number] {
   const half = Math.min(width, height) / 2;
-  const outer = Math.max(0.46 * half, Math.min(0.62 * half, width / 2 - LABEL_ROOM));
+  const room = LABEL_ROOM + (longLines(width, height) ? LONG_LINE_EXTRA : 0);
+  const outer = Math.max(RING_MIN * half, Math.min(RING_MAX * half, width / 2 - room));
   return [Math.round(outer * 0.74), Math.round(outer)];
 }
 
@@ -165,11 +184,9 @@ export class Circle extends LitElement {
     const anyChosen = this.selected !== null;
     const el = this.chartEl.value;
     this.ringSize = el ? `${el.clientWidth}x${el.clientHeight}` : "";
-    const radius = this.narrow
-      ? ["62%", "86%"]
-      : el && el.clientWidth > 0
-        ? ringRadius(el.clientWidth, el.clientHeight)
-        : ["34%", "46%"];
+    const ring = !this.narrow && el && el.clientWidth > 0 ? ringRadius(el.clientWidth, el.clientHeight) : null;
+    const radius = this.narrow ? ["62%", "86%"] : (ring ?? ["34%", "46%"]);
+    const line = ring === null || !el ? SHORT_LINE : leaderLine(el.clientWidth, el.clientHeight);
     const labelled = !this.narrow;
     return {
       textStyle: { fontFamily: token("--hs-font") },
@@ -192,9 +209,14 @@ export class Circle extends LitElement {
             borderRadius: 4,
             overflow: "break",
             // Room for a chosen piece's label, which moves out with its piece after the labels are spread.
-            minMargin: 8,
+            minMargin: 12,
           },
-          labelLine: { show: labelled, length: 6, length2: 8, lineStyle: { color: token("--hs-leader") } },
+          labelLine: {
+            show: labelled,
+            ...line,
+            maxSurfaceAngle: 80,
+            lineStyle: { color: token("--hs-leader") },
+          },
           emphasis: {
             scale: true,
             scaleSize: 6,

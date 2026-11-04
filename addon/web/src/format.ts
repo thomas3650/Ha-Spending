@@ -100,8 +100,10 @@ export function detailKr(ore: number): string {
   return `${ore < 0 && !isZero(text) ? "-" : ""}${text} ${da.kr}`;
 }
 
+/** A share above zero never reads "0 %": what Intl rounds to nothing reads "< 1 %". */
 export function percent(fraction: number): string {
-  return percentFormat.format(Math.abs(fraction));
+  const text = percentFormat.format(Math.abs(fraction));
+  return fraction !== 0 && isZero(text) ? `<\u00A0${percentFormat.format(0.01)}` : text;
 }
 
 export function axisKr(ore: number): string {
@@ -197,8 +199,7 @@ export function shortDate(date: string, today: string): string {
   return year === parts(today).year ? text : `${text} ${year}`;
 }
 
-/** Whole kroner like the Beløb column, or both with øre when whole kroner would make the two read the same. */
+/** Both amounts in whole kroner like the Beløb column; a rise is at least 1 kr., so the two never read the same. */
 export function stepAmounts(max: number, paid: number): [string, string] {
-  const wholes: [string, string] = [whole.format(max / 100), whole.format(paid / 100)];
-  return wholes[0] === wholes[1] ? [cents.format(max / 100), cents.format(paid / 100)] : wholes;
+  return [whole.format(max / 100), whole.format(paid / 100)];
 }

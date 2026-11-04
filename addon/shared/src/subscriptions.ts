@@ -33,7 +33,15 @@ export function gapMonths(repeat: Repeat, skip: number): number {
   return MONTHS_PER_PERIOD[repeat] * (skip + 1);
 }
 
+/** øre: a last payment at least this far above the range's max counts as a rise. */
+const RISE_THRESHOLD = 100;
+
+function risen(s: Subscription): s is Subscription & { lastPayment: NonNullable<Subscription["lastPayment"]> } {
+  return s.lastPayment !== null && s.lastPayment.amount >= s.amountMax + RISE_THRESHOLD;
+}
+
 export function amountPerPayment(s: Subscription): number {
+  if (risen(s)) return s.lastPayment.amount;
   return Math.round((s.amountMin + s.amountMax) / 2);
 }
 
@@ -74,7 +82,7 @@ export function subscriptionStatus(s: Subscription, today: string): Subscription
   const next = nextDate(s, today);
   const last = s.lastPayment;
   if (next !== null && addDays(next, late) < today) return { kind: "notSeen", expected: next };
-  if (last && last.amount > s.amountMax) return { kind: "risen", max: s.amountMax, paid: last.amount };
+  if (risen(s)) return { kind: "risen", max: s.amountMax, paid: s.lastPayment.amount };
   if (!last || (next !== null && next <= addDays(today, ahead))) return { kind: "expected", date: next };
   return { kind: "paid", date: last.date };
 }

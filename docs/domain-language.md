@@ -26,9 +26,9 @@ its name in code, so the same thing has one name everywhere. The Danish word is 
 | Due date | forfaldsdato | a date a subscription is expected to be paid: the start date, then every `skip + 1` periods |
 | Next date | næste dato | the due date the last payment does not cover, or none past the end date; the rules are in [the spec](superpowers/specs/2026-11-01-subscriptions.md#22-the-due-dates-and-the-next-date) |
 | Last payment | seneste betaling | `lastPayment`: the latest posting linked to a subscription on or before today |
-| Amount per payment | beløb | the middle of the subscription's amount range |
+| Amount per payment | beløb | the middle of the subscription's amount range, or the latest payment when it has risen ([D63](decisions.md)) |
 | Amount per year | om året | the cost of a subscription over a year; the rule is in [the spec](superpowers/specs/2026-11-01-subscriptions.md#21-amount-per-payment-and-per-year) |
-| Subscription status | status | Ikke set, Steget, Forventes or Betalt; the rules are in [the spec](superpowers/specs/2026-11-01-subscriptions.md#23-the-status) |
+| Subscription status | status | Ikke set, Steget, Forventes or Betalt, and a Forventes past its date reads Forfalden ([D64](decisions.md)); the rules are in [the spec](superpowers/specs/2026-11-01-subscriptions.md#23-the-status) |
 | Object group | objektgruppe | `objectGroup`: the title of the group Firefly III puts a bill in; the page shows it as the pill on a row, as a sum per group and as a key number for the period, and as a filter of Alle posteringer ([D38](decisions.md), [D41](decisions.md), [D42](decisions.md)) |
 | Posting's subscription | — | `Posting.subscription`: the bill a posting is linked to, with its id, name and object group, or `null` |
 | Detail | detalje | `detail` in the view state (`DetailKey`): the open detail of a fixed expense (`s:<id>`) or a posting (`p:<id>`), kept in the hash ([D44](decisions.md)) |

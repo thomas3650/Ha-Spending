@@ -94,6 +94,12 @@ describe("money", () => {
 describe("percent", () => {
   it("rounds to whole per cents with a no-break space", () => {
     expect(percent(0.6917)).toBe(`69${nbsp}%`);
+    expect(percent(0.005)).toBe(`1${nbsp}%`);
+  });
+  it("reads a share above zero that rounds to 0 as under 1 %, and exactly 0 as 0 %", () => {
+    expect(percent(0.001)).toBe(`<${nbsp}1${nbsp}%`);
+    expect(percent(-0.001)).toBe(`<${nbsp}1${nbsp}%`);
+    expect(percent(0)).toBe(`0${nbsp}%`);
   });
 });
 
@@ -158,11 +164,10 @@ describe("subscriptions", () => {
     expect(shortDate("2026-11-01", "2026-10-30")).toBe("1. nov");
     expect(shortDate("2027-01-01", "2026-10-30")).toBe("1. jan 2027");
   });
-  it("writes a rise in whole kroner, or both with øre", () => {
+  it("writes a rise in whole kroner", () => {
     expect(stepAmounts(14900, 16900)).toEqual(["149", "169"]);
     expect(stepAmounts(40000, 45050)).toEqual(["400", "451"]);
-    expect(stepAmounts(14970, 15020)).toEqual(["149,70", "150,20"]);
-    expect(stepAmounts(14950, 14975)).toEqual(["149,50", "149,75"]);
-    expect(stepAmounts(14900, 14975)).toEqual(["149", "150"]);
+    expect(stepAmounts(9900, 10060)).toEqual(["99", "101"]);
+    expect(stepAmounts(14970, 15070)).toEqual(["150", "151"]);
   });
 });

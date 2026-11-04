@@ -1,11 +1,11 @@
-import { type ClassifiedPosting, total } from "@ha-spending/shared";
+import { type ClassifiedPosting, share, total } from "@ha-spending/shared";
 
 export interface ShopRow {
   name: string;
   /** The net sum in øre, refunds subtracted. */
   sum: number;
-  /** Whole per cent of the whole base. */
-  share: number;
+  /** A fraction of the whole base, or null when the base's total is not above zero. */
+  share: number | null;
 }
 
 export interface ShopList {
@@ -34,7 +34,7 @@ export function shopList(base: ClassifiedPosting[], hidden: ReadonlySet<string>)
   const whole = total(base);
   const rows = [...sums]
     .filter(([, sum]) => sum > 0)
-    .map(([name, sum]) => ({ name, sum, share: whole > 0 ? Math.round((sum / whole) * 100) : 0 }))
+    .map(([name, sum]) => ({ name, sum, share: share(sum, whole) }))
     .sort((a, b) => b.sum - a.sum || a.name.localeCompare(b.name, "da"));
   const hiddenRows = rows.filter((r) => hidden.has(r.name));
   return {

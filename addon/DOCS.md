@@ -56,9 +56,9 @@ and a click on a posting's row opens it; without it the detail has no link.
 The overview also shows your Firefly III subscriptions, which the page calls "Faste udgifter": a key number for each
 object group with its payments in the period, and a card with each subscription's amount, its cost per year and a
 status, grouped by main group with its category. The card needs subscriptions in Firefly III with their postings linked
-to them, for example by Firefly III's rules. A subscription without a payment reads "Forventes" for a few days after a
-due date, and always when its start is in the future; after that it reads "Ikke set". Inactive and ended subscriptions
-are left out, as are those last paid from a liability or into a main group in `excluded_main_groups`.
+to them, for example by Firefly III's rules. A subscription without a payment reads "Forfalden" for a few days after a
+due date and "Ikke set" after that; it reads "Forventes" while its start is in the future. Inactive and ended
+subscriptions are left out, as are those last paid from a liability or into a main group in `excluded_main_groups`.
 
 The card shows only the subscriptions that are in an object group in Firefly III; one with no object group is left
 out. Each row carries its object group's title, and the card shows the cost per year of each object group. A posting

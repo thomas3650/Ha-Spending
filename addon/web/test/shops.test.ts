@@ -14,7 +14,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import "../src/components/shops";
 import type { Shops } from "../src/components/shops";
-import { kr } from "../src/format";
+import { kr, percent } from "../src/format";
 import { da } from "../src/i18n/da";
 import { barScale, type ShopList, shopList } from "../src/model/shops";
 import { answerFor } from "./fixture";
@@ -44,6 +44,10 @@ function text(el: Element): string {
   return (el.textContent ?? "").replace(/\s+/g, " ").trim();
 }
 
+function pct(fraction: number): string {
+  return percent(fraction).replace(/\s/g, " ");
+}
+
 describe("the shop list", () => {
   it("rows are net, by sum then name, zero and below left out", () => {
     const list = shopList(
@@ -71,9 +75,9 @@ describe("the shop list", () => {
       [posting("Netto", 30000), posting("Rema", 10000), posting(null, 60000), posting("Udlejer", 100)],
       new Set(["Udlejer"]),
     );
-    expect(list.visible.map((r) => r.share)).toEqual([30, 10]);
-    expect(list.hidden.map((r) => r.share)).toEqual([0]);
-    expect(shopList([posting("Netto", 100), posting(null, -500)], new Set()).visible[0]?.share).toBe(0);
+    expect(list.visible.map((r) => r.share)).toEqual([30000 / 100100, 10000 / 100100]);
+    expect(list.hidden.map((r) => r.share)).toEqual([100 / 100100]);
+    expect(shopList([posting("Netto", 100), posting(null, -500)], new Set()).visible[0]?.share).toBeNull();
   });
 
   it("noShop sums postings with no shop", () => {
@@ -83,11 +87,11 @@ describe("the shop list", () => {
 
   it("the bar scale is the biggest sum among the rows shown, shown hidden rows included", () => {
     const visible = [
-      { name: "Rema", sum: 10000, share: 10 },
-      { name: "Føtex", sum: 4000, share: 4 },
+      { name: "Rema", sum: 10000, share: 0.1 },
+      { name: "Føtex", sum: 4000, share: 0.04 },
     ];
     expect(barScale(visible)).toBe(10000);
-    expect(barScale([...visible, { name: "Udlejer", sum: 50000, share: 50 }])).toBe(50000);
+    expect(barScale([...visible, { name: "Udlejer", sum: 50000, share: 0.5 }])).toBe(50000);
     expect(barScale([])).toBe(0);
   });
 
@@ -109,12 +113,12 @@ interface Fired {
 
 const LIST: ShopList = {
   visible: [
-    { name: "Netto", sum: 30000, share: 30 },
-    { name: "Rema", sum: 10000, share: 10 },
+    { name: "Netto", sum: 30000, share: 0.3 },
+    { name: "Rema", sum: 10000, share: 0.1 },
   ],
   hidden: [
-    { name: "Udlejer", sum: 50000, share: 50 },
-    { name: "Kommunen", sum: 5000, share: 5 },
+    { name: "Udlejer", sum: 50000, share: 0.5 },
+    { name: "Kommunen", sum: 5000, share: 0.05 },
   ],
   hiddenSum: 55000,
   noShop: 0,
@@ -139,8 +143,8 @@ describe("the Butikker list", () => {
     const { el } = await render();
     const rows = getAllByRole(getAllByRole(el, "list")[0] as HTMLElement, "listitem");
     expect(rows.map(text)).toEqual([
-      `1 Netto ${kr(30000).replace(/\s/g, " ")} ${da.share(30)} ${da.hide}`,
-      `2 Rema ${kr(10000).replace(/\s/g, " ")} ${da.share(10)} ${da.hide}`,
+      `1 Netto ${kr(30000).replace(/\s/g, " ")} ${pct(0.3)} ${da.hide}`,
+      `2 Rema ${kr(10000).replace(/\s/g, " ")} ${pct(0.1)} ${da.hide}`,
     ]);
     getByRole(el, "button", { name: da.hideShop("Netto") });
     expect(queryByRole(el, "button", { name: da.showShop("Udlejer") })).toBeNull();
@@ -164,8 +168,8 @@ describe("the Butikker list", () => {
     expect(lists).toHaveLength(2);
     const hidden = getAllByRole(lists[1] as HTMLElement, "listitem");
     expect(hidden.map(text)).toEqual([
-      `Udlejer ${kr(50000).replace(/\s/g, " ")} ${da.share(50)} ${da.show}`,
-      `Kommunen ${kr(5000).replace(/\s/g, " ")} ${da.share(5)} ${da.show}`,
+      `Udlejer ${kr(50000).replace(/\s/g, " ")} ${pct(0.5)} ${da.show}`,
+      `Kommunen ${kr(5000).replace(/\s/g, " ")} ${pct(0.05)} ${da.show}`,
     ]);
     fireEvent.click(getByRole(el, "button", { name: da.showShop("Kommunen") }));
     fireEvent.click(getByRole(el, "button", { name: da.shopOption("Udlejer", kr(50000)) }));
@@ -188,6 +192,17 @@ describe("the Butikker list", () => {
     const { el } = await render({ chosen: "Rema" });
     expect(getAllByRole(el, "button", { pressed: true }).map(text)).toEqual(["Rema"]);
     getByRole(el, "button", { name: da.shopOption("Netto", kr(30000)), pressed: false });
+  });
+
+  it("shows < 1 % for a shop with a tiny share and no share when the base has none", async () => {
+    const tiny = { name: "Kiosk", sum: 20000, share: 20000 / 12000000 };
+    const none = { name: "Bod", sum: 100, share: null };
+    const { el } = await render({ list: { ...LIST, visible: [tiny, none] } });
+    const rows = getAllByRole(getAllByRole(el, "list")[0] as HTMLElement, "listitem");
+    expect(rows.map(text)).toEqual([
+      `1 Kiosk ${kr(20000).replace(/\s/g, " ")} < 1 % ${da.hide}`,
+      `2 Bod ${kr(100).replace(/\s/g, " ")} ${da.hide}`,
+    ]);
   });
 
   it("has no Uden butik when the postings with no shop net to zero or below", async () => {

@@ -60,7 +60,10 @@ export class Subscriptions extends LitElement {
         ${r.next === null ? nothing : html`<span class="subscription-next">${da.nextOn(r.next)}</span>`}
       </td>
       ${showCategory ? html`<td>${r.category}</td>` : nothing}
-      <td class="subscription-amount">${r.amount}</td>
+      <td class="subscription-amount">
+        <span class="subscription-payment">${r.amount}</span>
+        <span class="subscription-repeat">${r.repeat}</span>
+      </td>
       <td class="subscription-amount subscription-nowrap">${r.perYear}</td>
       <td><span class="subscription-status status-${r.status.kind}">${r.status.text}</span></td>
     </tr>`;
@@ -69,13 +72,11 @@ export class Subscriptions extends LitElement {
   private group(g: SubscriptionGroup, showCategory: boolean) {
     return html`<tbody>
       <tr class="subscription-group">
-        <th scope="rowgroup">
+        <th scope="rowgroup" colspan=${showCategory ? 3 : 2}>
           <span class="subscription-dot" aria-hidden="true" style=${styleMap({ background: g.colour })}></span>
           <span class="subscription-group-name">${g.name}</span>
           <span class="subscription-group-count">${g.count}</span>
         </th>
-        ${showCategory ? html`<td></td>` : nothing}
-        <td></td>
         <td class="subscription-amount subscription-nowrap">${g.perYear}</td>
         <td></td>
       </tr>
@@ -182,10 +183,13 @@ export const subscriptionsStyles = css`
     white-space: nowrap;
   }
   .subscriptions .subscription-name,
-  .subscriptions .subscription-next {
+  .subscriptions .subscription-next,
+  .subscriptions .subscription-payment,
+  .subscriptions .subscription-repeat {
     display: block;
   }
-  .subscriptions .subscription-next {
+  .subscriptions .subscription-next,
+  .subscriptions .subscription-repeat {
     color: var(--hs-muted);
     font-size: 12px;
   }
