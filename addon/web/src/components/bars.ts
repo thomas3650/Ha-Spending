@@ -13,8 +13,8 @@ export interface BarItem {
   amount: number;
   /** Runs on today; a unit after today is an empty slot. */
   running: boolean;
-  /** The fullStart of the unit a click chooses: a finer bar chooses the period's one unit. */
-  choose: string;
+  /** The fullStart of the unit a click chooses; null for a one-unit period's finer bars, which choose nothing. */
+  choose: string | null;
 }
 
 /** A day's name already is its date, so only the other units add their range. */
@@ -67,14 +67,14 @@ function escapeHtml(text: string): string {
   return text.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
 }
 
-function buttonName(item: BarItem): string {
+function barName(item: BarItem): string {
   const name = item.running ? `${item.name} (${da.inProgress})` : item.name;
   return `${name}, ${barKr(item.amount)}`;
 }
 
 /**
- * One bar per unit, drawn by ECharts and named by a hidden button per bar (D19). An empty unit keeps its slot (UI
- * spec §3.3). Fires `unit-click` with the bar's `choose`.
+ * One bar per unit, drawn by ECharts and named by a hidden button per bar (D19), or by a plain list item when the bar
+ * chooses nothing. An empty unit keeps its slot (UI spec §3.3). Fires `unit-click` with the bar's `choose`.
  */
 export class Bars extends LitElement {
   static override properties = {
@@ -136,11 +136,11 @@ export class Bars extends LitElement {
   }
 
   private isChosen(item: BarItem): boolean {
-    return item.choose === this.chosen;
+    return item.choose !== null && item.choose === this.chosen;
   }
 
   private fire(item: BarItem | undefined): void {
-    if (!item) return;
+    if (!item || item.choose === null) return;
     this.dispatchEvent(
       new CustomEvent<UnitSelection>("unit-click", {
         detail: { fullStart: item.choose },
@@ -248,6 +248,7 @@ export class Bars extends LitElement {
         {
           type: "bar",
           barCategoryGap: "35%",
+          cursor: items.some((i) => i.choose !== null) ? "pointer" : "default",
           // A focused or hovered bar is marked by itself; the other bars keep their look.
           emphasis: {
             focus: "none",
@@ -287,19 +288,20 @@ export class Bars extends LitElement {
       <div class="chart" aria-hidden="true" ${ref(this.chartEl)}></div>
       <div class="visually-hidden">
         <ul>
-          ${this.items.map(
-            (item, i) =>
-              html`<li>
-                <button
-                  type="button"
-                  aria-pressed=${String(this.isChosen(item))}
-                  @click=${() => this.fire(item)}
-                  @focus=${() => this.chart?.highlight(i)}
-                  @blur=${() => this.chart?.downplay(i)}
-                >
-                  ${buttonName(item)}
-                </button>
-              </li>`,
+          ${this.items.map((item, i) =>
+            item.choose === null
+              ? html`<li>${barName(item)}</li>`
+              : html`<li>
+                  <button
+                    type="button"
+                    aria-pressed=${String(this.isChosen(item))}
+                    @click=${() => this.fire(item)}
+                    @focus=${() => this.chart?.highlight(i)}
+                    @blur=${() => this.chart?.downplay(i)}
+                  >
+                    ${barName(item)}
+                  </button>
+                </li>`,
           )}
         </ul>
         ${this.average === null ? nothing : html`<p>${this.average.label}</p>`}

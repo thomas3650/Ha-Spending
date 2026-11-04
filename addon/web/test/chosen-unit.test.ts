@@ -138,16 +138,6 @@ describe("screen 4, a chosen unit", () => {
     expect(queryByRole(card, "button", { expanded: false })).toBeNull();
     expect(groups[0]).toBe(getByRole(card, "button", { name: new RegExp(`^${julyName()},`) }));
   });
-
-  it("drops a unit the new grouping does not have", async () => {
-    const { app, root } = await mount(CHOSEN);
-    const select = getByRole(root, "combobox", { name: da.groupBy }) as HTMLSelectElement;
-    select.value = "week";
-    fireEvent.change(select);
-    await settle(app);
-    expect(queryByRole(root, "button", { name: da.remove(julyName()) })).toBeNull();
-    expect(new URLSearchParams(location.hash.slice(1)).has("unit")).toBe(false);
-  });
 });
 
 describe("the object group cards in a chosen unit", () => {

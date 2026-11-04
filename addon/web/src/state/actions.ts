@@ -1,4 +1,4 @@
-import { type Grouping, type Level, type SpendingData, unitsOf } from "@ha-spending/shared";
+import { groupingFor, type Level, type SpendingData, unitsOf } from "@ha-spending/shared";
 import {
   type AmountRange,
   type Card,
@@ -18,10 +18,6 @@ function withoutUnit(s: ViewState): ViewState {
 
 export function setPeriod(s: ViewState, period: PeriodChoice): ViewState {
   return withoutUnit({ ...s, period });
-}
-
-export function setGrouping(s: ViewState, grouping: Grouping): ViewState {
-  return withoutUnit({ ...s, grouping });
 }
 
 /** Every id ticked is all accounts, so an account added later shows by itself (D20). */
@@ -175,8 +171,10 @@ export function hasShops(data: SpendingData): boolean {
 /** Drops what the answer does not know. */
 export function normalise(s: ViewState, data: SpendingData, today: string): ViewState {
   const accounts = s.accounts && s.accounts.filter((id) => data.accounts.some((a) => a.id === id));
-  const units = unitsOf(periodOf(s.period, today, data.earliestPostingDate), s.grouping, today);
-  const unit = s.unit !== null && units.some((u) => u.fullStart === s.unit) ? s.unit : null;
+  const period = periodOf(s.period, today, data.earliestPostingDate);
+  const units = unitsOf(period, groupingFor(period), today);
+  // A one-unit period's finer bars choose nothing, so its one unit would only repeat the period (D59).
+  const unit = units.length > 1 && units.some((u) => u.fullStart === s.unit) ? s.unit : null;
   const card =
     (s.card === "subscriptions" && data.subscriptions.length === 0) ||
     (s.card === "shops" && !hasShops(data))

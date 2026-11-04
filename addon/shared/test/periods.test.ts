@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { PRESETS, presetPeriod } from "../src/periods";
+import { groupingFor, PRESETS, presetPeriod } from "../src/periods";
 
 describe("presetPeriod", () => {
   it("turns each preset into a period", () => {
@@ -30,5 +30,19 @@ describe("presetPeriod", () => {
 
   it("lists the presets in the menu's order", () => {
     expect(PRESETS).toEqual(["thisMonth", "lastMonth", "last3Months", "last12Months", "thisYear", "lastYear", "all"]);
+  });
+});
+
+describe("groupingFor", () => {
+  it("groups a period of at most 12 months by month", () => {
+    expect(groupingFor({ start: "2026-01-01", end: "2026-11-04" })).toBe("month");
+    expect(groupingFor({ start: "2025-12-01", end: "2026-02-28" })).toBe("month");
+    expect(groupingFor({ start: "2025-11-01", end: "2026-10-31" })).toBe("month");
+    expect(groupingFor({ start: "2025-01-01", end: "2025-12-31" })).toBe("month");
+  });
+
+  it("groups a longer period by year", () => {
+    expect(groupingFor({ start: "2025-01-01", end: "2026-01-01" })).toBe("year");
+    expect(groupingFor({ start: "2024-03-01", end: "2026-11-04" })).toBe("year");
   });
 });

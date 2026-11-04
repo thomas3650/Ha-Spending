@@ -23,7 +23,6 @@ describe("the view state's hash", () => {
   it("round-trips every field", () => {
     const s: ViewState = {
       period: { preset: "custom", start: "2026-02-01", end: "2026-03-31" },
-      grouping: "week",
       accounts: ["1"],
       level: { kind: "category", mainGroup: "Mad", category: "Café" },
       unit: "2026-02-02",
@@ -37,6 +36,12 @@ describe("the view state's hash", () => {
       detail: { kind: "posting", id: "p1" },
     };
     expect(parseHash("#" + toHash(s))).toEqual(s);
+  });
+
+  it("ignores an old link's grouping and never writes one", () => {
+    expect(parseHash("#by=week")).toEqual(DEFAULT_STATE);
+    expect(parseHash("#by=year&period=lastYear")).toEqual({ ...DEFAULT_STATE, period: { preset: "lastYear" } });
+    expect(toHash(parseHash("#by=quarter&period=all&unit=2026-04-01"))).toBe("period=all&unit=2026-04-01");
   });
 
   it("detail round-trips and is written last", () => {
@@ -95,8 +100,8 @@ describe("the view state's hash", () => {
   });
 
   it("writes equal states as equal hashes", () => {
-    const a: ViewState = { ...DEFAULT_STATE, grouping: "day", card: "postings", unit: "2026-07-01" };
-    const b: ViewState = { ...DEFAULT_STATE, unit: "2026-07-01", card: "postings", grouping: "day" };
+    const a: ViewState = { ...DEFAULT_STATE, accounts: ["1"], card: "postings", unit: "2026-07-01" };
+    const b: ViewState = { ...DEFAULT_STATE, unit: "2026-07-01", card: "postings", accounts: ["1"] };
     expect(toHash(a)).toBe(toHash(b));
   });
 
@@ -110,7 +115,6 @@ describe("the view state's hash", () => {
   it("falls back on what does not parse", () => {
     const bad = parseHash("period=someday&by=hour&from=2026-02-30");
     expect(bad.period).toEqual(DEFAULT_STATE.period);
-    expect(bad.grouping).toBe(DEFAULT_STATE.grouping);
     expect(parseHash("period=custom&from=2026-03-01&to=2026-02-01").period).toEqual(DEFAULT_STATE.period);
     expect(parseHash("period=custom&from=2026-02-30&to=2026-03-01").period).toEqual(DEFAULT_STATE.period);
     expect(parseHash("period=custom&from=2026-02-01").period).toEqual(DEFAULT_STATE.period);

@@ -22,7 +22,6 @@ import {
   setAmount,
   setCard,
   setCategory,
-  setGrouping,
   setMainGroup,
   setObjectGroup,
   setPeriod,
@@ -87,11 +86,7 @@ describe("the actions", () => {
     expect(s.card).toBe("postings");
   });
 
-  it("drops the chosen unit with a new grouping or period", () => {
-    const g = setGrouping(chosen, "week");
-    expect(g.grouping).toBe("week");
-    expect(g.unit).toBeNull();
-    expect(g.card).toBe("bars");
+  it("drops the chosen unit with a new period", () => {
     const p = setPeriod({ ...chosen, card: "postings" }, { preset: "lastMonth" });
     expect(p.period).toEqual({ preset: "lastMonth" });
     expect(p.unit).toBeNull();
@@ -216,7 +211,6 @@ describe("the actions", () => {
     expect(openPart(s, "Mad").search).toBe("rema");
     expect(setCard(s, "bars").search).toBe("rema");
     expect(setPeriod(s, { preset: "lastMonth" }).search).toBe("rema");
-    expect(setGrouping(s, "week").search).toBe("rema");
     expect(removeUnit(s).search).toBe("rema");
   });
 
@@ -264,9 +258,8 @@ describe("the actions", () => {
 describe("the subscriptions card", () => {
   const subs: ViewState = { ...DEFAULT_STATE, card: "subscriptions" };
 
-  it("survives the period, the grouping, the accounts and the level", () => {
+  it("survives the period, the accounts and the level", () => {
     expect(setPeriod(subs, { preset: "lastMonth" }).card).toBe("subscriptions");
-    expect(setGrouping(subs, "week").card).toBe("subscriptions");
     expect(setAccounts(subs, ["1"], ["1", "2"]).card).toBe("subscriptions");
     expect(openPart(subs, "Mad").card).toBe("subscriptions");
     expect(clearChoices(at(cafe)).card).toBe("bars");
@@ -301,7 +294,6 @@ describe("the chosen shop", () => {
       openPart(netto, "Mad"),
       setCard(netto, "postings"),
       setPeriod(netto, { preset: "lastYear" }),
-      setGrouping(netto, "week"),
       removeUnit({ ...netto, unit: "2026-07-01" }),
     ];
     for (const s of kept) expect(s.shop).toBe("Netto");
@@ -381,6 +373,22 @@ describe("normalise", () => {
     expect(s.card).toBe("postings");
     expect(norm({ unit: "2025-07-01" }).unit).toBeNull();
     expect(norm({ unit: "2026-07-01", card: "postings" }).unit).toBe("2026-07-01");
+  });
+
+  it("keeps a unit the period's grouping starts on, and drops a week that starts mid-month", () => {
+    expect(norm({ unit: "2026-04-01" }).unit).toBe("2026-04-01");
+    expect(norm({ unit: "2026-03-09" }).unit).toBeNull();
+    const all = { ...data, earliestPostingDate: "2024-03-01" };
+    expect(normalise({ ...DEFAULT_STATE, period: { preset: "all" }, unit: "2025-01-01" }, all, today).unit).toBe(
+      "2025-01-01",
+    );
+    expect(normalise({ ...DEFAULT_STATE, period: { preset: "all" }, unit: "2025-03-01" }, all, today).unit).toBeNull();
+  });
+
+  it("drops the unit in a one-unit period", () => {
+    expect(norm({ period: { preset: "thisMonth" }, unit: "2026-10-01" }).unit).toBeNull();
+    expect(norm({ period: { preset: "lastMonth" }, unit: "2026-09-01" }).unit).toBeNull();
+    expect(normalise({ ...DEFAULT_STATE, unit: "2026-01-01" }, data, "2026-01-20").unit).toBeNull();
   });
 
   describe("the subscriptions card", () => {
@@ -481,7 +489,6 @@ describe("the detail", () => {
     const all = state({ screen: "allPostings", detail: posting("p23") });
     const nexts = [
       setPeriod(s, { preset: "lastYear" }),
-      setGrouping(s, "week"),
       setAccounts(s, ["1"], ["1", "2"]),
       openPart(s, "Mad"),
       chooseUnit(s, "2026-07-01"),

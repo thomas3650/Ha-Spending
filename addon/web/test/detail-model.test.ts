@@ -188,12 +188,14 @@ describe("a detail's bars", () => {
     expect(months.bars[0]).toMatchObject({ amount: 0, label: "Januar 2026: 0 kr.", running: false });
     expect(months.bars[9]).toMatchObject({ running: true, label: `Oktober 2026: 0 kr. (${da.inProgress})` });
 
-    const weeks = shown(posting(PIZZA_PAID), answerFor(FETCHED), { grouping: "week" });
-    expect(weeks.per).toBe(da.detailPer("week"));
-    expect(weeks.bars).toHaveLength(viewContext(answerFor(FETCHED), { ...DEFAULT_STATE, grouping: "week" }, TODAY).units.length);
-    expect(weeks.bars.filter((b) => b.amount !== 0).map((b) => [b.amount, b.label])).toEqual([
-      [70000, "Uge 38 2026: 700 kr."],
-      [-20000, "Uge 39 2026: -200 kr."],
+    const years = shown(posting(PIZZA_PAID), { ...answerFor(FETCHED), earliestPostingDate: "2024-03-01" }, {
+      period: { preset: "all" },
+    });
+    expect(years.per).toBe(da.detailPer("year"));
+    expect(years.bars.map((b) => [b.amount, b.label])).toEqual([
+      [0, "2024: 0 kr."],
+      [0, "2025: 0 kr."],
+      [50000, `2026: 500 kr. (${da.inProgress})`],
     ]);
   });
 });

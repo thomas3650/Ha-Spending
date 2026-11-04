@@ -113,17 +113,6 @@ describe("screen 1, all spending", () => {
     const names = getAllByRole(viewSwitch(root), "button").map((b) => b.textContent?.trim());
     expect(names).toEqual([da.bars, da.postings, da.shops]);
   });
-
-  it("keeps the grouping on the bars", async () => {
-    const { app, root } = await mount("");
-    const select = getByRole(root, "combobox", { name: da.groupBy }) as HTMLSelectElement;
-    select.value = "week";
-    fireEvent.change(select);
-    await settle(app);
-    const card = getByRole(root, "region", { name: da.per("week") });
-    getByRole(card, "heading", { name: da.per("week") });
-    expect(barButtons(card)).toHaveLength(44);
-  });
 });
 
 describe("the search on Posteringer", () => {
@@ -299,7 +288,7 @@ describe("the search on Posteringer", () => {
   });
 
   it("starts the postings list afresh on a new search", async () => {
-    const { app, root } = await mount("by=week&card=postings");
+    const { app, root } = await mount("card=postings");
     const card = () => getByRole(root, "region", { name: da.postingsTitle });
     const groupLines = () => getAllByRole(card(), "button").filter((b) => b.hasAttribute("aria-expanded"));
     const states = () => groupLines().slice(0, 2).map((b) => b.getAttribute("aria-expanded"));

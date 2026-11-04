@@ -1,30 +1,35 @@
-import { type Posting, unitAt, unitsOf } from "@ha-spending/shared";
-import { fireEvent, getAllByRole, getByRole, queryByRole, queryByText } from "@testing-library/dom";
+import { type Posting, unitAt } from "@ha-spending/shared";
+import { getAllByRole, getByRole, queryAllByRole, queryByRole, queryByText } from "@testing-library/dom";
 import { afterEach, describe, expect, it } from "vitest";
 
 import { kr, unitName } from "../src/format";
 import { da } from "../src/i18n/da";
-import { barsList, names, pressed } from "./bars-helpers";
+import { barsList, names } from "./bars-helpers";
+import { barChart, forgetCharts } from "./chart-mock";
 import { answerFor, OBJECT_GROUP } from "./fixture";
 import { json, mount, settle, unmount } from "./mount";
 import { cardNames } from "./text";
 
-afterEach(unmount);
+afterEach(() => {
+  unmount();
+  forgetCharts();
+});
 
 const TODAY = "2026-10-30";
 const SEPTEMBER = unitName(unitAt("2026-09-01", "month", TODAY), "month");
 
-function dayButtons(root: HTMLElement, name = da.per("day")): HTMLElement[] {
-  return getAllByRole(barsList(root, name), "button");
+/** A one-unit period's day bars choose nothing, so they are named by list items, not buttons. */
+function dayItems(root: HTMLElement): HTMLElement[] {
+  return getAllByRole(barsList(root, da.per("day")), "listitem");
 }
 
 describe("a one-month period draws its days", () => {
   it("Sidste måned draws a bar per day of September", async () => {
     const { root } = await mount("period=lastMonth");
-    const buttons = dayButtons(root);
-    expect(buttons).toHaveLength(30);
-    expect(buttons[0]).toBe(getByRole(root, "button", { name: `1.9.2026, ${kr(800000)}` }));
-    expect(buttons[29]).toBe(getByRole(root, "button", { name: `30.9.2026, ${kr(0)}` }));
+    const shown = names(dayItems(root));
+    expect(shown).toHaveLength(30);
+    expect(shown[0]).toBe(`1.9.2026, ${kr(800000)}`);
+    expect(shown[29]).toBe(`30.9.2026, ${kr(0)}`);
     expect(queryByRole(root, "region", { name: da.per("month") })).toBeNull();
   });
 
@@ -47,47 +52,41 @@ describe("a one-month period draws its days", () => {
       return json({ ...data, postings });
     };
     const { root } = await mount("period=lastMonth", { answer });
-    getByRole(barsList(root, da.per("day")), "button", { name: `20.9.2026, ${kr(85000)}` });
+    expect(names(dayItems(root))).toContain(`20.9.2026, ${kr(85000)}`);
   });
 
   it("a refund-only day is named with a plus", async () => {
     const { root } = await mount("period=lastMonth");
-    getByRole(barsList(root, da.per("day")), "button", { name: `22.9.2026, +${kr(20000)} ${da.refundMark}` });
+    expect(names(dayItems(root))).toContain(`22.9.2026, +${kr(20000)} ${da.refundMark}`);
   });
 
   it("Denne måned draws the whole month", async () => {
     const { root } = await mount("period=thisMonth");
-    const buttons = dayButtons(root);
-    expect(buttons).toHaveLength(31);
-    expect(names(buttons).map((n) => n.includes(da.inProgress))).toEqual(Array.from({ length: 31 }, (_, i) => i === 29));
+    const items = dayItems(root);
+    expect(items).toHaveLength(31);
+    expect(names(items).map((n) => n.includes(da.inProgress))).toEqual(Array.from({ length: 31 }, (_, i) => i === 29));
   });
 
   it("Denne måned on the 1st draws the whole month, not one bar", async () => {
     const answer = (range: { start: string; end: string }) => json(answerFor(range, "2026-10-01"));
     const { root } = await mount("period=thisMonth", { now: "2026-10-01T10:00:00Z", answer });
     getByRole(root, "region", { name: da.per("day") });
-    const buttons = dayButtons(root);
-    expect(buttons).toHaveLength(31);
-    expect(names(buttons).map((n) => n.includes(da.inProgress))).toEqual(Array.from({ length: 31 }, (_, i) => i === 0));
+    const items = dayItems(root);
+    expect(items).toHaveLength(31);
+    expect(names(items).map((n) => n.includes(da.inProgress))).toEqual(Array.from({ length: 31 }, (_, i) => i === 0));
   });
 
   it("a custom period inside a month draws its own days", async () => {
     const { root } = await mount("period=custom&from=2026-10-05&to=2026-10-20");
-    expect(dayButtons(root)).toHaveLength(16);
+    expect(dayItems(root)).toHaveLength(16);
     unmount();
     const ending = await mount("period=custom&from=2026-10-20&to=2026-10-30");
-    expect(dayButtons(ending.root)).toHaveLength(11);
+    expect(dayItems(ending.root)).toHaveLength(11);
   });
 
-  it("two months by Måned, or a month by Uge, draw as today", async () => {
+  it("two months draw a bar per month, as today", async () => {
     const { root } = await mount("period=custom&from=2026-09-15&to=2026-10-14");
     expect(getAllByRole(barsList(root, da.per("month")), "button")).toHaveLength(2);
-    unmount();
-    const weeks = await mount("period=lastMonth&by=week");
-    const period = { start: "2026-09-01", end: "2026-09-30" };
-    const expected = unitsOf(period, "week", TODAY).map((u) => unitName(u, "week"));
-    const shown = names(getAllByRole(barsList(weeks.root, da.per("week")), "button")).map((n) => n.split(",")[0]);
-    expect(shown).toEqual(expected);
   });
 
   it("the title names the main group per day", async () => {
@@ -107,7 +106,6 @@ describe("a one-month period draws its days", () => {
   it("the month stays the month", async () => {
     const { root } = await mount("period=lastMonth");
     expect(location.hash).toBe("#period=lastMonth");
-    expect((getByRole(root, "combobox", { name: da.groupBy }) as HTMLSelectElement).value).toBe("month");
     expect(cardNames(root, [OBJECT_GROUP])).toEqual([da.spendingInPeriod, da.averagePer("month")]);
     unmount();
     const postings = await mount("period=lastMonth&card=postings");
@@ -118,21 +116,13 @@ describe("a one-month period draws its days", () => {
   });
 });
 
-describe("a click on a day bar", () => {
-  it("chooses the month", async () => {
+describe("a day bar", () => {
+  it("chooses nothing", async () => {
     const { app, root } = await mount("period=lastMonth");
-    fireEvent.click(getByRole(barsList(root, da.per("day")), "button", { name: /^12\.9\.2026,/ }));
-    await settle(app);
-    expect(location.hash).toBe("#period=lastMonth&unit=2026-09-01&card=postings");
-    getByRole(root, "button", { name: da.remove(SEPTEMBER) });
-  });
-
-  it("the chosen month presses every day", async () => {
-    const { app, root } = await mount("period=lastMonth&unit=2026-09-01");
-    expect(pressed(dayButtons(root))).toEqual(Array.from({ length: 30 }, () => "true"));
-    fireEvent.click(getByRole(barsList(root, da.per("day")), "button", { name: /^5\.9\.2026,/ }));
+    expect(queryAllByRole(barsList(root, da.per("day")), "button")).toHaveLength(0);
+    for (const handler of barChart().clickHandlers) handler({ dataIndex: 11 });
     await settle(app);
     expect(location.hash).toBe("#period=lastMonth");
-    expect(pressed(dayButtons(root))).toEqual(Array.from({ length: 30 }, () => "false"));
+    expect(queryByRole(root, "button", { name: da.remove(SEPTEMBER) })).toBeNull();
   });
 });

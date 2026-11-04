@@ -1,7 +1,7 @@
 import {
   type Account,
   fetchRange,
-  type Grouping,
+  groupingFor,
   type HiddenShopChange,
   localToday,
   type Period,
@@ -53,7 +53,6 @@ import {
   setAmount,
   setCard,
   setCategory,
-  setGrouping,
   setMainGroup,
   setObjectGroup,
   setPeriod,
@@ -408,7 +407,8 @@ export class SpendingApp extends LitElement {
   }
 
   private wantedRange(): Period {
-    return fetchRange(periodOf(this.state.period, this.today, this.earliest ?? null), this.state.grouping, this.today);
+    const period = periodOf(this.state.period, this.today, this.earliest ?? null);
+    return fetchRange(period, groupingFor(period), this.today);
   }
 
   private ensureData(): void {
@@ -462,10 +462,6 @@ export class SpendingApp extends LitElement {
 
   private onPeriod(event: CustomEvent<PeriodChoice>): void {
     this.apply(setPeriod(this.state, event.detail), "push");
-  }
-
-  private onGrouping(event: CustomEvent<Grouping>): void {
-    this.apply(setGrouping(this.state, event.detail), "push");
   }
 
   private onAccounts(event: CustomEvent<string[]>): void {
@@ -600,7 +596,6 @@ export class SpendingApp extends LitElement {
         .earliest=${this.earliest}
         .unitName=${ctx?.chosen ? unitName(ctx.chosen, ctx.timeline.grouping) : null}
         @hs-period=${this.onPeriod}
-        @hs-grouping=${this.onGrouping}
         @hs-accounts=${this.onAccounts}
         @remove-unit=${() => this.removeFromTrail(removeUnit(this.state))}
         @remove-main-group=${() => this.removeFromTrail(removeMainGroup(this.state))}

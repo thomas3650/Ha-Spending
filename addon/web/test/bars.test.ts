@@ -1,12 +1,12 @@
 import { classify, isRunning, unitsOf, unitTotals } from "@ha-spending/shared";
-import { fireEvent, getAllByRole, getByRole, getByText, queryByText } from "@testing-library/dom";
+import { fireEvent, getAllByRole, getByRole, getByText, queryAllByRole, queryByText } from "@testing-library/dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import "../src/components/bars";
 import { axisLabelShown, type BarItem, type Bars, barTooltip } from "../src/components/bars";
 import { barKr, kr, rangeText, unitAxis, unitName } from "../src/format";
 import { da } from "../src/i18n/da";
-import { charts, forgetCharts } from "./chart-mock";
+import { barTooltipAt, charts, forgetCharts } from "./chart-mock";
 import { answerFor } from "./fixture";
 
 const THIS_YEAR = { start: "2026-01-01", end: "2026-10-30" };
@@ -26,15 +26,15 @@ function itemsOf(period: { start: string; end: string }): BarItem[] {
   }));
 }
 
-/** Three days of September whose click chooses the month. */
-function daysChoosingSeptember(): BarItem[] {
+/** Three days of a one-month period, which choose nothing. */
+function daysChoosingNothing(): BarItem[] {
   return unitsOf({ start: "2026-09-01", end: "2026-09-03" }, "day", TODAY).map((unit) => ({
     unit,
     axis: unitAxis(unit, "day"),
     name: unitName(unit, "day"),
     amount: 0,
     running: false,
-    choose: "2026-09-01",
+    choose: null,
   }));
 }
 
@@ -122,28 +122,23 @@ describe("the bars", () => {
     expect(heard).toHaveBeenCalledWith({ fullStart: "2026-07-01" });
   });
 
-  it("a click fires the bar's choose", async () => {
-    const items = daysChoosingSeptember();
+  it("names bars that choose nothing in a list without buttons", async () => {
+    const items = daysChoosingNothing();
+    const el = await render({ items });
+    expect(queryAllByRole(el, "button")).toHaveLength(0);
+    expect(getAllByRole(el, "listitem").map((li) => li.textContent?.trim())).toEqual(
+      items.map((i) => `${i.name}, ${kr(0)}`),
+    );
+  });
+
+  it("ignores a chart click on a bar that chooses nothing, and keeps its tooltip", async () => {
+    const items = daysChoosingNothing();
     const el = await render({ items });
     const heard = vi.fn();
     el.addEventListener("unit-click", (e) => heard((e as CustomEvent).detail));
-    fireEvent.click(getByRole(el, "button", { name: `${items[1].name}, ${kr(0)}` }));
-    expect(heard).toHaveBeenLastCalledWith({ fullStart: "2026-09-01" });
-    for (const handler of charts[0].clickHandlers) handler({ dataIndex: 2 });
-    expect(heard).toHaveBeenCalledTimes(2);
-    expect(heard).toHaveBeenLastCalledWith({ fullStart: "2026-09-01" });
-  });
-
-  it("presses every bar that chooses the chosen unit", async () => {
-    const chosen = await render({ items: daysChoosingSeptember(), chosen: "2026-09-01" });
-    expect(getAllByRole(chosen, "button").map((b) => b.getAttribute("aria-pressed"))).toEqual(["true", "true", "true"]);
-    document.body.replaceChildren();
-    const none = await render({ items: daysChoosingSeptember(), chosen: null });
-    expect(getAllByRole(none, "button").map((b) => b.getAttribute("aria-pressed"))).toEqual([
-      "false",
-      "false",
-      "false",
-    ]);
+    for (const handler of charts[0].clickHandlers) handler({ dataIndex: 1 });
+    expect(heard).not.toHaveBeenCalled();
+    expect(barTooltipAt(1)).toBe(barTooltip(items[1]));
   });
 
   it("redraws after a bar click, so the chosen bar comes from its properties", async () => {

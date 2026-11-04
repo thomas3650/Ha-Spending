@@ -1,6 +1,5 @@
-import type { Account, Grouping } from "@ha-spending/shared";
+import type { Account } from "@ha-spending/shared";
 import { css, html, LitElement, nothing } from "lit";
-import { live } from "lit/directives/live.js";
 import { da } from "../i18n/da";
 import { partName } from "../model/context";
 import { backToOverview, clearChoices, keepDetail } from "../state/actions";
@@ -8,8 +7,6 @@ import { toHash, type ViewState } from "../state/view";
 import { fire } from "./chip";
 import "./accounts-picker";
 import "./period-picker";
-
-const GROUPINGS: readonly Grouping[] = ["day", "week", "month", "quarter", "year"];
 
 interface Step {
   name: string;
@@ -32,7 +29,7 @@ const X = html`<svg viewBox="0 0 10 10" width="10" height="10" aria-hidden="true
 </svg>`;
 
 /**
- * The trail and the three dropdowns. Fires `hs-period`, `hs-grouping`, `hs-accounts`, and from the trail's ×
+ * The trail and the two dropdowns. Fires `hs-period`, `hs-accounts`, and from the trail's ×
  * `remove-unit`, `remove-main-group` and `remove-category`.
  */
 export class TopCard extends LitElement {
@@ -59,11 +56,6 @@ export class TopCard extends LitElement {
 
   protected override createRenderRoot(): HTMLElement {
     return this;
-  }
-
-  private onGrouping(event: Event): void {
-    const grouping = (event.target as HTMLSelectElement).value as Grouping;
-    this.dispatchEvent(new CustomEvent<Grouping>("hs-grouping", { detail: grouping, bubbles: true }));
   }
 
   private trail() {
@@ -100,14 +92,6 @@ export class TopCard extends LitElement {
       <nav class="top-trail" aria-label=${da.trail}>${this.trail()}</nav>
       <div class="top-filters">
         <hs-period-picker .choice=${this.state.period} .today=${this.today} .earliest=${this.earliest}></hs-period-picker>
-        <label class="field">
-          <small>${da.groupBy}</small>
-          <select .value=${live(this.state.grouping)} @change=${(e: Event) => this.onGrouping(e)}>
-            ${GROUPINGS.map(
-              (g) => html`<option value=${g} ?selected=${g === this.state.grouping}>${da.groupings[g].label}</option>`,
-            )}
-          </select>
-        </label>
         <hs-accounts-picker .accounts=${this.accounts} .chosen=${this.state.accounts}></hs-accounts-picker>
       </div>
     </div>`;

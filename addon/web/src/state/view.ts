@@ -1,5 +1,4 @@
 import {
-  type Grouping,
   isDate,
   type Level,
   type Period,
@@ -30,7 +29,6 @@ export interface AmountRange {
 
 export interface ViewState {
   period: PeriodChoice;
-  grouping: Grouping;
   /** null is all accounts, also those that appear later. */
   accounts: string[] | null;
   level: Level;
@@ -51,7 +49,6 @@ export interface ViewState {
 
 export const DEFAULT_STATE: ViewState = {
   period: { preset: "thisYear" },
-  grouping: "month",
   accounts: null,
   level: { kind: "all" },
   unit: null,
@@ -65,7 +62,6 @@ export const DEFAULT_STATE: ViewState = {
   detail: null,
 };
 
-const GROUPINGS: readonly Grouping[] = ["day", "week", "month", "quarter", "year"];
 const CARDS: readonly Card[] = ["bars", "postings", "subscriptions", "shops"];
 /** The four first names keep old links working; the text columns name their direction. */
 const SORT_NAMES: readonly [string, Sort][] = [
@@ -162,7 +158,6 @@ export function parseHash(hash: string): ViewState {
   const allPostings = p.get("view") === ALL_POSTINGS;
   return {
     period: parsePeriod(p),
-    grouping: oneOf(GROUPINGS, p.get("by"), DEFAULT_STATE.grouping),
     accounts: accounts === null ? null : accounts.split(",").filter((id) => id !== ""),
     level: parseLevel(p),
     unit: isDate(unit) ? unit : null,
@@ -190,7 +185,6 @@ export function toHash(s: ViewState): string {
   } else if (s.period.preset !== DEFAULT_STATE.period.preset) {
     p.set("period", s.period.preset);
   }
-  if (s.grouping !== DEFAULT_STATE.grouping) p.set("by", s.grouping);
   if (s.accounts !== null) p.set("accounts", s.accounts.join(","));
   if (s.level.kind !== "all") p.set("group", s.level.mainGroup ?? "");
   if (s.level.kind === "category") p.set("category", s.level.category ?? "");

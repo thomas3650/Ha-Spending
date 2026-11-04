@@ -74,7 +74,6 @@ export const da = {
     week: "Ugedage",
     dates: "Dage",
   },
-  groupBy: "Gruppér pr.",
   accounts: "Konti",
   allAccounts: "Alle konti",
   allAccountsCount: (n: number) => `Alle konti (${n})`,

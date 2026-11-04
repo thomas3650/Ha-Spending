@@ -80,6 +80,6 @@ export function barItems(ctx: ViewContext): BarItem[] {
     name: unitName(unit, g),
     amount: totals[i],
     running: isRunning(unit, ctx.today),
-    choose: finer === null ? unit.fullStart : ctx.units[0].fullStart,
+    choose: finer === null ? unit.fullStart : null,
   }));
 }

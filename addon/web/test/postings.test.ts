@@ -1,4 +1,4 @@
-import type { SpendingData } from "@ha-spending/shared";
+import { type Grouping, type Period, type SpendingData, unitsOf } from "@ha-spending/shared";
 import { fireEvent, getAllByRole, getByRole, queryAllByRole, queryByRole } from "@testing-library/dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
@@ -10,7 +10,7 @@ import { groupedPostings, linkBase, type PostingList, postingHref } from "../src
 import { DEFAULT_STATE, type ViewState } from "../src/state/view";
 import type { SpendingApp } from "../src/app";
 import { answerFor, LINK } from "./fixture";
-import { mount, settle, unmount } from "./mount";
+import { json, mount, settle, unmount } from "./mount";
 
 const THIS_YEAR = { start: "2026-01-01", end: "2026-10-30" };
 const TODAY = "2026-10-30";
@@ -24,7 +24,14 @@ function listOf(state: Partial<ViewState> = {}, data: SpendingData = answerFor(T
   return groupedPostings(ctx.shown, ctx.units, ctx, true, COLOURS);
 }
 
-async function render(list: PostingList, opts: { showCategory?: boolean; grouping?: ViewState["grouping"] } = {}) {
+/** Weeks give more groups than the list shows at once; the page itself never groups by week. */
+function weekList(newestFirst = true): PostingList {
+  const base = viewContext(answerFor(THIS_YEAR), DEFAULT_STATE, TODAY);
+  const ctx = { ...base, timeline: { ...base.timeline, grouping: "week" as const }, units: unitsOf(THIS_YEAR, "week", TODAY) };
+  return groupedPostings(ctx.shown, ctx.units, ctx, newestFirst, COLOURS);
+}
+
+async function render(list: PostingList, opts: { showCategory?: boolean; grouping?: Grouping } = {}) {
   const el = document.createElement("hs-postings");
   el.list = list;
   el.showCategory = opts.showCategory ?? false;
@@ -97,7 +104,7 @@ describe("the postings list", () => {
   });
 
   it("shows older groups", async () => {
-    const el = await render(listOf({ grouping: "week" }), { grouping: "week" });
+    const el = await render(weekList(), { grouping: "week" });
     expect(groupButtons(el)).toHaveLength(12);
     fireEvent.click(getByRole(el, "button", { name: da.showOlder }));
     await el.updateComplete;
@@ -105,9 +112,7 @@ describe("the postings list", () => {
   });
 
   it("shows newer groups when oldest first", async () => {
-    const ctx = viewContext(answerFor(THIS_YEAR), { ...DEFAULT_STATE, grouping: "week" }, TODAY);
-    const list = groupedPostings(ctx.shown, ctx.units, ctx, false, COLOURS);
-    const el = await render(list, { grouping: "week" });
+    const el = await render(weekList(false), { grouping: "week" });
     expect(groupButtons(el)).toHaveLength(12);
     expect(queryByRole(el, "button", { name: da.showOlder })).toBeNull();
     fireEvent.click(getByRole(el, "button", { name: da.showNewer }));
@@ -116,7 +121,7 @@ describe("the postings list", () => {
   });
 
   it("shows 100 rows of a flat list, then more", async () => {
-    const grouped = listOf({ grouping: "day" });
+    const grouped = listOf();
     if (grouped.kind !== "grouped") throw new Error("grouped expected");
     const rows = grouped.groups.flatMap((g) => g.rows);
     const many = Array.from({ length: 5 }, () => rows).flat();
@@ -193,7 +198,7 @@ describe("the postings list", () => {
   });
 
   it("starts over when the search changes", async () => {
-    const full = listOf({ grouping: "week" });
+    const full = weekList();
     if (full.kind !== "grouped") throw new Error("expected a grouped list");
     const first = { ...full, groups: full.groups.slice(0, 14) };
     const second = { ...full, groups: [full.groups[0], ...full.groups.slice(2, 15)] };
@@ -214,7 +219,7 @@ describe("the postings list", () => {
   });
 
   it("starts over when the shop changes", async () => {
-    const full = listOf({ grouping: "week" });
+    const full = weekList();
     if (full.kind !== "grouped") throw new Error("expected a grouped list");
     const first = { ...full, groups: full.groups.slice(0, 14) };
     const second = { ...full, groups: [full.groups[0], ...full.groups.slice(2, 15)] };
@@ -272,12 +277,13 @@ describe("the postings list", () => {
     });
 
     it("marks it at another grouping", async () => {
-      const { root } = await mount("period=custom&from=2026-09-14&to=2026-09-27&by=week&card=postings");
+      const answer = (range: Period) => json({ ...answerFor(range), earliestPostingDate: "2024-03-01" });
+      const { root } = await mount("period=all&card=postings", { answer });
       try {
         const card = getByRole(root, "region", { name: da.postingsTitle });
         const groups = groupButtons(card).map((b) => b.textContent?.trim() ?? "");
         expect(groups.length).toBeGreaterThan(0);
-        for (const group of groups) expect(group).toMatch(/^Uge /);
+        for (const group of groups) expect(group).toMatch(/^\d{4}\s/);
         expect(rowOf(card, sep20).textContent).toContain("Abonnementer");
       } finally {
         unmount();

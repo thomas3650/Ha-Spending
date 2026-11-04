@@ -1,4 +1,4 @@
-import { addDays, firstOfMonth } from "./dates";
+import { addDays, addMonths, firstOfMonth } from "./dates";
 import type { Period } from "./types";
 
 export type Preset = "thisMonth" | "lastMonth" | "last3Months" | "last12Months" | "thisYear" | "lastYear" | "all";
@@ -40,4 +40,9 @@ export function presetPeriod(preset: Preset, today: string, earliest: string | n
     case "lastYear":
       return { start: firstOfMonth(year - 1, 1), end: addDays(firstOfMonth(year, 1), -1) };
   }
+}
+
+/** At most 12 months is grouped by month, longer by year, so a period across a new year still gets months. */
+export function groupingFor(period: Period): "month" | "year" {
+  return period.end < addMonths(period.start, 12) ? "month" : "year";
 }

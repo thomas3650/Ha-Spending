@@ -95,7 +95,6 @@ describe("the frame", () => {
     expect(fetch).toHaveBeenCalledWith("api/data?start=2026-01-01&end=2026-10-30", expect.anything());
     expect(getByRole(root, "heading", { level: 1, name: da.allSpending })).toBeTruthy();
     getByRole(root, "button", { name: new RegExp(`${da.period}.*${da.presets.thisYear}`) });
-    expect((getByRole(root, "combobox", { name: da.groupBy }) as HTMLSelectElement).value).toBe("month");
     await findByRole(root, "button", { name: escaped(da.allAccountsCount(2)) });
   });
 
@@ -221,11 +220,10 @@ describe("the frame", () => {
     expect(push).toHaveBeenCalledTimes(1);
     expect(push).toHaveBeenCalledWith(null, "", "#period=lastYear");
 
-    history.replaceState(null, "", "#by=week");
+    history.replaceState(null, "", "#period=lastMonth");
     window.dispatchEvent(new PopStateEvent("popstate"));
     await settle(app);
-    expect((getByRole(root, "combobox", { name: da.groupBy }) as HTMLSelectElement).value).toBe("week");
-    getByRole(root, "button", { name: new RegExp(`${da.period}.*${da.presets.thisYear}`) });
+    getByRole(root, "button", { name: new RegExp(`${da.period}.*${da.presets.lastMonth}`) });
   });
 
   it("shows Firefly III refusing the key, and no numbers", async () => {
@@ -342,10 +340,10 @@ describe("the frame", () => {
   });
 
   it("Alt keeps a unit from an earlier year", async () => {
-    const { app, fetch } = await mount("period=all&unit=2024-03-01", { answer: earliestAnswer });
+    const { app, fetch } = await mount("period=all&unit=2024-01-01", { answer: earliestAnswer });
     await settle(app);
     expect(fetch.mock.calls[1][0]).toBe(`api/data?start=2023-01-01&end=${TODAY}`);
-    expect(location.hash).toContain("unit=2024-03-01");
+    expect(location.hash).toContain("unit=2024-01-01");
   });
 
   it("a later change of the period makes one request", async () => {

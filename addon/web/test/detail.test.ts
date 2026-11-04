@@ -224,16 +224,16 @@ describe("the detail on the normal page", () => {
     });
 
     it("a year draws its 12 months, every name shown", async () => {
-      const { root } = await mountLinked("period=thisYear&by=year&card=subscriptions&detail=s%3Ab1");
+      const { root } = await mountLinked("period=lastYear&card=subscriptions&detail=s%3Ab1");
       const items = getAllByRole(getByRole(detail(root, "Husleje"), "list", { name: da.detailPer("month") }), "listitem");
       expect(items).toHaveLength(12);
-      within(items[0]).getByText(/^Januar 2026: /);
+      within(items[0]).getByText(/^Januar 2025: /);
       items.forEach((item, i) => within(item).getByText(da.months[i]));
     });
 
     it("a week with no posting keeps its 7 days at 0 kr., every name shown", async () => {
       const { root } = await mountLinked(
-        "period=custom&from=2026-10-19&to=2026-10-25&by=week&card=subscriptions&detail=s%3Ab1",
+        "period=custom&from=2026-10-19&to=2026-10-25&card=subscriptions&detail=s%3Ab1",
       );
       const items = getAllByRole(getByRole(detail(root, "Husleje"), "list", { name: da.detailPer("day") }), "listitem");
       expect(items).toHaveLength(7);

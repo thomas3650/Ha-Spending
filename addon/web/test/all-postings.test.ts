@@ -116,12 +116,9 @@ describe("screen 3, all postings", () => {
     ]);
   });
 
-  it("there is no Sortér dropdown: Gruppér pr. and the search field are the only comboboxes", async () => {
+  it("there is no Sortér dropdown: the search field is the only combobox", async () => {
     const { root } = await mount(CAFE);
-    expect(getAllByRole(root, "combobox")).toEqual([
-      getByRole(root, "combobox", { name: da.groupBy }),
-      getByRole(root, "combobox", { name: da.searchLabel }),
-    ]);
+    expect(getAllByRole(root, "combobox")).toEqual([getByRole(root, "combobox", { name: da.searchLabel })]);
   });
 
   it("a header click puts the sort in the hash", async () => {
@@ -169,14 +166,9 @@ describe("screen 3, all postings", () => {
   });
 
   it("sorts oldest first in groups", async () => {
-    const first = await mount(`${CAFE}&sort=oldest`);
+    const { root } = await mount(`${CAFE}&sort=oldest`);
     const jul = unitAt("2026-07-01", "month", TODAY);
-    expect(groupButtons(first.root)[0].getAttribute("aria-label")).toMatch(new RegExp(`^${unitName(jul, "month")},`));
-    unmount();
-
-    const { root } = await mount("view=all-postings&sort=oldest&by=day");
-    expect(groupButtons(root)).toHaveLength(12);
-    getByRole(root, "button", { name: da.showNewer });
+    expect(groupButtons(root)[0].getAttribute("aria-label")).toMatch(new RegExp(`^${unitName(jul, "month")},`));
   });
 
   it("removes the main group and its category (D21)", async () => {
@@ -680,7 +672,7 @@ describe("the filter rules", () => {
   });
 
   it("marks a linked posting on Alle posteringer", async () => {
-    const { root } = await mount(`${CAFE}&by=month`);
+    const { root } = await mount(CAFE);
     const row = getAllByRole(root, "row").find((r) => r.textContent?.includes("Pizzaabonnement"));
     expect(row?.textContent).toContain("Abonnementer");
     expect(getAllByRole(root, "row").filter((r) => r.textContent?.includes("Abonnementer"))).toHaveLength(1);
@@ -784,14 +776,10 @@ describe("the units in + Filter", () => {
     expect(queryByText(root, da.noFilterHits)).toBeNull();
   });
 
-  it("has no units group for one unit or for more than 62", async () => {
+  it("has no units group for one unit", async () => {
     const one = await mount("view=all-postings&period=thisMonth");
     await openFilter(one.app, one.root);
     expect(queryByRole(one.root, "group", { name: da.unitsHeading.month })).toBeNull();
-    unmount();
-    const many = await mount("view=all-postings&by=day&period=all");
-    await openFilter(many.app, many.root);
-    expect(queryByRole(many.root, "group", { name: da.unitsHeading.day })).toBeNull();
   });
 
   it("presses the unit chosen on the overview, and none once the period changes", async () => {
