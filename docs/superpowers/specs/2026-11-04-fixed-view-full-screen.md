@@ -200,8 +200,9 @@ tooltip text ("Betalt: …", "Estimat: ca. …", "I alt: ca. …").
   group, fixed expenses in a category.
 - The tooltip stays inside the chart, as now. It works the same in full screen.
 - The bars' buttons keep their accessible names (fixed expenses over time spec §5.4).
-- One exported function over the view's model gives the lines: plain text and a colour per line. The chart escapes
-  the text when it builds the tooltip's HTML, as it does now. Part names are Firefly III's data.
+- One exported function over the view's model gives the lines: plain text and a colour per line. A second exported
+  function builds the tooltip's HTML from them and escapes the text, since part names are Firefly III's data. The
+  chart's formatter only calls it.
 
 ## 5. Overdue in red
 
@@ -298,8 +299,8 @@ and the colours (§5) are checked in Chrome, not in tests.
   - A model test: a part with a due estimate and a future one in the running unit gives a due sum and an estimate sum.
 - **The Chrome check** ([`testing.md`](../../testing.md#chrome-check)), in the fast loop at 1100, 1200, 1440 and
   1728 px, at 900 px for the stacked halves, and in a window about 500 px high:
-  - the normal list fits with no sideways scroll, no badge and no cut status or sum, with one object group and with
-    "Alle";
+  - from 1200 px up, the normal list fits with no sideways scroll, no badge and no cut status or sum, with one object
+    group and with "Alle"; at 1100 px nothing is cut off or covered, and any sideways scroll stays inside the list;
   - each card's full screen, the list's badges in full screen, and the bars reaching the bottom edge, or keeping
     400 px and scrolling in the low window;
   - the tooltip on a mixed bar at Alt forbrug and in a main group;
