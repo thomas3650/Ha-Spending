@@ -70,6 +70,12 @@ steps and the dashed button work as on the overview (top filter spec §2), with 
 
 Konti stays on the right, as on the overview.
 
+**One look for every step.** Thomas: "all the filters in the topbar have a dropdown … same visual view for all".
+Every step that is chosen is a button with ▾ that opens its list, in one shared look (the period step's): the period,
+the object group, the unit, the main group and the category. A step that can be removed adds its × (the unit, the main
+group, the category). A step not yet chosen is a dashed button that opens the same list ("Måned", "Hovedgruppe",
+"Kategori"). Only "Alt forbrug" is a link or plain text, and Konti keeps its own field on the right.
+
 ### 3.2 The unit step, on both screens
 
 Thomas: "så man kan vælge måned fra toppen som de andre", and "top bjælken er den samme for hele websitet". This
