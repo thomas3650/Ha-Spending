@@ -26,7 +26,7 @@ function posting(
     kind,
     shop,
     amount: kind === "refund" ? -amount : amount,
-    subscription: linkOf(split.bill_id ?? null),
+    subscription: linkOf(split.bill_id),
   };
 }
 

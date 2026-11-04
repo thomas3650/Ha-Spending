@@ -31,9 +31,12 @@ function text(el: HTMLElement): string {
   return (el.textContent ?? "").replace(/\s+/g, " ").trim();
 }
 
-/** The name cell read without the object group's pill, which the fixture names Faste udgifter or Abonnementer. */
+/** The name cell read without the object group's pill, which follows the fixed cost's name. */
 function nameCell(r: HTMLElement): string {
-  return text(within(r).getAllByRole("cell")[0]).replace(/ (Faste udgifter|Abonnementer)/, "");
+  const cell = within(r).getAllByRole("cell")[0];
+  const name = text(getByRole(cell, "button"));
+  const rest = text(cell).slice(name.length).replace(/^ (Faste udgifter|Abonnementer)/, "");
+  return name + rest;
 }
 
 function fixedCostName(r: HTMLElement): string {
@@ -228,7 +231,7 @@ describe("the subscriptions card", () => {
 
 describe("the object groups in the card", () => {
   function sums(region: HTMLElement, title = "Faste udgifter"): string[] {
-    return getAllByRole(getByRole(region, "list", { name: title }), "listitem").map(text);
+    return getAllByRole(getByRole(region, "list", { name: da.objectGroupSums(title) }), "listitem").map(text);
   }
 
   it("marks each fixed cost with its object group", async () => {
@@ -253,7 +256,27 @@ describe("the object groups in the card", () => {
 
   it("has no single sum in the card's head", async () => {
     const { root } = await mountWith("card=subscriptions");
-    expect(within(card(root, "Faste udgifter")).queryByText("106.968 kr. om året")).toBeNull();
+    const region = card(root, "Faste udgifter");
+    const kroner = (box: string) => Number(/([\d.]+) kr\./.exec(box)![1].replace(/\./g, ""));
+    expect(sums(region).reduce((total, box) => total + kroner(box), 0)).toBe(108768);
+    expect(text(region)).not.toContain("108.768");
+  });
+
+  it("orders boxes with equal sums by name", async () => {
+    const equal = SUBSCRIPTIONS.slice(0, 2).map((s) => ({
+      ...s,
+      amountMin: 10000,
+      amountMax: 10000,
+      lastPayment: s.lastPayment && { ...s.lastPayment, account: "1" },
+    }));
+    const { root } = await mountWith("card=subscriptions", [
+      { ...equal[0], objectGroup: "Faste udgifter" },
+      { ...equal[1], objectGroup: "Abonnementer" },
+    ]);
+    expect(sums(card(root, "Faste udgifter"))).toEqual([
+      "Abonnementer 1.200 kr. om året",
+      "Faste udgifter 1.200 kr. om året",
+    ]);
   });
 
   it("shows one box at a main group with one object group", async () => {

@@ -238,9 +238,11 @@ describe("the postings list", () => {
     const sep20 = tableDate("2026-09-20");
     const sep22 = tableDate("2026-09-22");
 
-    function rowOf(el: HTMLElement, date: string): HTMLElement {
-      const row = getAllByRole(el, "row").find((r) => queryByRole(r, "cell", { name: date }));
-      if (!row) throw new Error(`no row ${date}`);
+    function rowOf(el: HTMLElement, date: string, name = "Pizzeria Roma"): HTMLElement {
+      const row = getAllByRole(el, "row").find(
+        (r) => queryByRole(r, "cell", { name: date }) && queryByRole(r, "button", { name }),
+      );
+      if (!row) throw new Error(`no row ${date} ${name}`);
       return row;
     }
 
@@ -256,7 +258,7 @@ describe("the postings list", () => {
       const row = rowOf(el, sep20);
       expect(row.textContent).toContain("Abonnementer");
       expect(row.textContent).toContain("Pizzaabonnement");
-      expect(queryByRole(row, "cell", { name: /Abonnementer\s*,\s*Pizzaabonnement/ })).not.toBeNull();
+      expect(queryByRole(row, "cell", { name: /^Pizzeria Roma\s+Abonnementer\s*,\s*Pizzaabonnement$/ })).not.toBeNull();
     });
 
     it("keeps the posting's name as its button's name", async () => {
@@ -270,9 +272,16 @@ describe("the postings list", () => {
     });
 
     it("marks it at another grouping", async () => {
-      const el = await render(listOf({ grouping: "week" }), { grouping: "week" });
-      await openAll(el);
-      expect(rowOf(el, sep20).textContent).toContain("Abonnementer");
+      const { root } = await mount("period=custom&from=2026-09-14&to=2026-09-27&by=week&card=postings");
+      try {
+        const card = getByRole(root, "region", { name: da.postingsTitle });
+        const groups = groupButtons(card).map((b) => b.textContent?.trim() ?? "");
+        expect(groups.length).toBeGreaterThan(0);
+        for (const group of groups) expect(group).toMatch(/^Uge /);
+        expect(rowOf(card, sep20).textContent).toContain("Abonnementer");
+      } finally {
+        unmount();
+      }
     });
 
     it("marks it in a search's matches", async () => {

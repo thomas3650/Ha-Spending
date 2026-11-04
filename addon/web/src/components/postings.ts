@@ -98,9 +98,9 @@ export class Postings extends LitElement {
     const mark =
       p.subscription === null
         ? nothing
-        : html` <span class="object-group-mark" title=${p.subscription.name}
-            >${p.subscription.objectGroup}<span class="visually-hidden">, ${p.subscription.name}</span></span
-          >`;
+        : html` <span class="object-group-mark" title=${p.subscription.name} aria-hidden="true"
+              >${p.subscription.objectGroup}</span
+            ><span class="visually-hidden">${p.subscription.objectGroup}, ${p.subscription.name}</span>`;
     return html`<tr
       class="posting"
       aria-current=${marked ? "true" : nothing}
