@@ -1,4 +1,5 @@
 import type { Grouping, Preset, Repeat } from "@ha-spending/shared";
+import { aboutBounds, type AmountFilter, type AmountKind, amountText } from "../model/amount";
 
 interface GroupingTexts {
   label: string;
@@ -188,6 +189,42 @@ export const da = {
     return `Beløb: til ${max ?? ""} ${da.kr}`;
   },
   amountInvalid: "Skriv et beløb som 1.000,50",
+  amountEmpty: "Beløb",
+  amountKinds: {
+    about: "Omkring",
+    under: "Under",
+    over: "Over",
+    between: "Mellem",
+  } satisfies Record<AmountKind, string>,
+  amountHints: {
+    about: "±20 %",
+    between: "to beløb",
+  } satisfies Partial<Record<AmountKind, string>>,
+  amountKindsLabel: "Beløbstyper",
+  amountKindButton: "Vælg beløbstype",
+  amountMin: "Mindste beløb",
+  amountMax: "Største beløb",
+  removeAmount: "Fjern beløb",
+  amountShort: (filter: AmountFilter): string => {
+    switch (filter.kind) {
+      case "about":
+        return `omkring ${amountText(filter.value)} ${da.kr}`;
+      case "under":
+        return `under ${amountText(filter.value)} ${da.kr}`;
+      case "over":
+        return `over ${amountText(filter.value)} ${da.kr}`;
+      case "between":
+        return `${amountText(filter.min)}–${amountText(filter.max)} ${da.kr}`;
+    }
+  },
+  /** The sentence over the list spells out Omkring's ends; the pill's name does not. */
+  amountWords: (filter: AmountFilter): string => {
+    if (filter.kind !== "about") return da.amountShort(filter);
+    const { min, max } = aboutBounds(filter.value);
+    return `${da.amountShort(filter)} (${amountText(min)}–${amountText(max)} ${da.kr})`;
+  },
+  amountName: (filter: AmountFilter | null): string =>
+    filter === null ? da.amountEmpty : `${da.amountEmpty}: ${da.amountShort(filter)}`,
   add: "Tilføj",
   summary: (count: string, sum: string) => `${count} · ${sum}`,
 
