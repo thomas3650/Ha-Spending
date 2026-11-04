@@ -76,6 +76,7 @@ describe("/api/data's subscriptions over the fake Firefly III", () => {
     const { data } = await answer();
     expect(data.subscriptions.map((s) => s.name)).toEqual([
       "Fitness",
+      "Gavekasse",
       "Husleje",
       "Indboforsikring",
       "Netflix",
@@ -117,10 +118,18 @@ describe("/api/data's subscriptions over the fake Firefly III", () => {
       return fetch(input, init);
     });
     expect((await app.request(R1, {}, ingress)).status).toBe(200);
-    const bilka = (await billsOf(fake)).find((b) => b.attributes.name === "Bilka")!;
-    const groups = bilka.attributes.paid_dates.map((p) => `/api/v1/transactions/${p.transaction_group_id}`);
+    const bills = await billsOf(fake);
+    const groupOf = (name: string) =>
+      bills.find((b) => b.attributes.name === name)!.attributes.paid_dates.map(
+        (p) => `/api/v1/transactions/${p.transaction_group_id}`,
+      );
+    const groups = groupOf("Bilka");
     expect(groups.length).toBeGreaterThan(0);
-    for (const group of groups) expect(read).not.toContain(group);
+    // Gavekasse is paid by the other split of Bilka's split group, so that group is read once, for Gavekasse.
+    const shared = groupOf("Gavekasse");
+    for (const group of groups) {
+      expect(read.filter((r) => r === group)).toHaveLength(shared.includes(group) ? 1 : 0);
+    }
   });
 
   it("takes the category and amount of the linked split in a split group", async () => {
@@ -212,7 +221,7 @@ describe("/api/data's subscriptions over the fake Firefly III", () => {
       const dates = b.attributes.paid_dates;
       return dates.length === 0 ? [] : [`/api/v1/transactions/${dates[dates.length - 1].transaction_group_id}`];
     });
-    expect(paid).toHaveLength(7);
+    expect(paid).toHaveLength(8);
     expect(read.sort()).toEqual(paid.sort());
     expect(most).toBe(5);
   });

@@ -224,6 +224,19 @@ describe("a real Firefly III", () => {
       expect(d.subscriptions.map((s) => s.name)).not.toContain("Bilka");
     });
 
+    it("gives a bill paid by one split of a split group its last payment and its link", async () => {
+      const d = await served();
+      const kontoA = d.accounts.find((a) => a.name === "Konto A")!.id;
+      const gavekasse = d.subscriptions.find((s) => s.name === "Gavekasse")!;
+      expect(gavekasse.lastPayment).toEqual({ date: "2026-01-10", amount: 15000, category: "Gaver", account: kontoA });
+      expect(d.postings.find((p) => p.text === "Bilka gave")!.subscription).toEqual({
+        id: gavekasse.id,
+        name: "Gavekasse",
+        objectGroup: "Abonnementer",
+      });
+      expect(d.postings.find((p) => p.text === "Bilka mad")!.subscription).toBeNull();
+    });
+
     it("gives the same bill links on postings as the fake does, ids apart", async () => {
       const fakeClient = createFireflyClient({
         baseUrl: "http://f",
