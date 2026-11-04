@@ -11,13 +11,13 @@ calls below to Claude.
 **Claude's calls, for Thomas to see in the PR:**
 
 - The full-screen Søjler chart fills the window down to its bottom edge, and is never shorter than today's 400 px.
-  This is D66 (§1).
+  This is D67 (§1).
 - The popups of the trail's steps and of the Beløb pill stop claiming to be menus, as the trail's period step and
   Konti already do. They do not become real menus with arrow keys (§2.1).
 - The empty Beløb pill's accessible name becomes "Filtrér på beløb" (§2.2).
 - The week, quarter and year finer steps go. The rest of the week and quarter code stays, in #159 (§2.3).
 - No test reads the chart's options to check the y-axis ticks. A unit test of `axisTickKr` and a named Chrome-check
-  step guard it. This is D67 (§3).
+  step guard it. This is D68 (§3).
 
 **Earlier specs and decisions this changes** (the specs are snapshots and are not edited; D27 gets a new status):
 
@@ -118,7 +118,7 @@ week, quarter and year steps of `FINER` in `model/context.ts`, and the loop that
 - `axisTickKr` keeps its unit test in `format.test.ts`.
 - The Chrome check names a bar below zero that the fast loop has (§6). Every past month of the fast loop's made-up
   data holds one "Retur …" deposit in a Tøj, Fritid or Mad category (`addon/dev/src/generate.ts`).
-- D67 records the rule. No test reads the options ECharts is given. Wiring that shows only inside the chart, such as
+- D68 records the rule. No test reads the options ECharts is given. Wiring that shows only inside the chart, such as
   a tick formatter, is guarded by a unit test of the function it calls and by a named Chrome-check step. It links D19
   and does not restate it.
 - #132 closes with this PR.
@@ -146,9 +146,9 @@ week, quarter and year steps of `FINER` in `model/context.ts`, and the loop that
 ## 6. Docs in the same PR
 
 - `docs/decisions.md`:
-  - D66: in full screen the Søjler chart fills the window's height, at least 400 px. The normal card keeps 400 px.
-    D27's status becomes `active; the height below 600 px superseded by D28, the bars' height in full screen by D66`.
-  - D67, as §3 says.
+  - D67: in full screen the Søjler chart fills the window's height, at least 400 px. The normal card keeps 400 px.
+    D27's status becomes `active; the height below 600 px superseded by D28, the bars' height in full screen by D67`.
+  - D68, as §3 says.
 - `docs/testing.md`:
   - A new Chrome-check step 50, `65-fuld-skaerm-soejler`:
     - The Søjler tab in full screen at 1440 and 1728 px wide: the chart reaches the window's bottom, and the page
@@ -163,6 +163,6 @@ week, quarter and year steps of `FINER` in `model/context.ts`, and the loop that
     - The accessibility tree of the trail's steps and of the Beløb pill shows no "menu", and the empty pill is named
       "Filtrér på beløb".
   - Step 42 points to step 50 for the axis below zero. Steps 43 and 46 say "a day below zero (step 50)" in place of "(if the example data has one)" and their own
-    description of it. Step 47's sentence on the y-axis and #132 points to step 50 and D67.
+    description of it. Step 47's sentence on the y-axis and #132 points to step 50 and D68.
 - `docs/README.md`: this spec and its plan in the lists, with the missing top filter and small walkthrough fixes specs
   and plans.

@@ -21,7 +21,7 @@ Every task reads its sections there; the plan does not repeat them.
   Danish only in `addon/web/src/i18n/da.ts`; comments only for why; docs change with the code.
 - The fixture (`addon/web/test/fixture.ts`) is not changed. A test that needs more postings passes them through
   `mount`'s `answer` option or builds its own data, as `finer-units.test.ts` does.
-- Tests do not read the chart's options (D19, and the new D67).
+- Tests do not read the chart's options (D19, and the new D68).
 - Single test file: `cd addon/web && npx vitest run test/<file>.test.ts`. Gates before every commit, from the repo
   root: `npm run lint --prefix addon && npm test --prefix addon && npm run build --prefix addon` and
   `node scripts/check-links.mjs`.
@@ -137,10 +137,10 @@ change, unless a test finds a bug: then stop and report it before fixing.
 Model: opus · Review: yes
 
 **Files:** modify `addon/web/src/components/bars.ts` (`barsStyles`) and `addon/web/src/app.ts` and/or
-`addon/web/src/screens/overview.ts` (the full-screen layout), `docs/decisions.md` (D66, D27's status). No unit test
+`addon/web/src/screens/overview.ts` (the full-screen layout), `docs/decisions.md` (D67, D27's status). No unit test
 (spec §1).
 
-**Spec:** §1, and §6's D66 and D27 bullets.
+**Spec:** §1, and §6's D67 and D27 bullets.
 
 - [ ] Make the chart fill full screen as §1 says: on the Søjler tab in full screen only, the chart grows so the page
   ends at the window's bottom with no scroll; at least 400 px; the normal card keeps 400 px. The approach is yours;
@@ -162,28 +162,28 @@ Model: opus · Review: yes
     full screen on Søjler: the empty text is not stretched into a tall box;
   - the height does not change by itself after it settles (watch it for a few seconds).
   Stop the loop with `scripts/develop stop`. If you have no browser, say so in the report; the controller runs these.
-- [ ] `docs/decisions.md`: add D66 in the log's format (date 2026-11-04, active; the decision as spec §6 says; why:
+- [ ] `docs/decisions.md`: add D67 in the log's format (date 2026-11-04, active; the decision as spec §6 says; why:
   at full-screen width the chart filled a third of the screen, #152; source: Thomas, 2026-11-04, the spec §1, the
   height rule Claude's call). D27's status becomes
-  `active; the height below 600 px superseded by D28, the bars' height in full screen by D66`.
+  `active; the height below 600 px superseded by D28, the bars' height in full screen by D67`.
 - [ ] Gates pass. Commit: `feat: the bars fill the height in full screen`.
 
 ## Task 5: The docs
 
 Model: haiku · Review: no
 
-**Files:** `docs/decisions.md` (D67), `docs/testing.md`, `docs/README.md`.
+**Files:** `docs/decisions.md` (D68), `docs/testing.md`, `docs/README.md`.
 
 **Spec:** §3, §6.
 
-- [ ] `docs/decisions.md`: D67 after D66, in the log's format. Decision: no test reads the options ECharts is given;
+- [ ] `docs/decisions.md`: D68 after D67, in the log's format. Decision: no test reads the options ECharts is given;
   wiring that shows only inside the chart, such as the y-axis tick formatter, is guarded by a unit test of the
   function it calls and a named Chrome-check step. It links D19 and does not restate it. Why: one line of wiring is
   not worth a kind of test later tests would copy (#132). Source: Claude, 2026-11-04, the spec §3.
 - [ ] `docs/testing.md`: step 50, `65-fuld-skaerm-soejler`, with the three checks in spec §6, word for word in
   meaning. Step 42 gains "(step 50 finds such a bar)". In step 43, the sentence that names the day below zero ends
   "…no average line, the tooltip on a day, and a day below zero (step 50)."; the sentence after it stays. Step 46's last sentence becomes "A day below zero (step 50)." Step 47's last sentence
-  becomes "The y-axis of the bars writes its ticks with `axisTickKr`: step 50 and D67."
+  becomes "The y-axis of the bars writes its ticks with `axisTickKr`: step 50 and D68."
 - [ ] `docs/README.md`: in the specs list and in the plans list, add the top filter, the small walkthrough fixes,
   and this change's spec and plan, after "one filter", with the existing link style.
-- [ ] `node scripts/check-links.mjs` passes. Commit: `docs: the full-screen bars check and D67`.
+- [ ] `node scripts/check-links.mjs` passes. Commit: `docs: the full-screen bars check and D68`.
