@@ -73,11 +73,6 @@ export function openPostingsFull(s: ViewState): ViewState {
   return { ...s, card: "postings", fullScreen: true, search: "", shop: null, amount: null, detail: null };
 }
 
-/** An object group's "Vis faste udgifter →"; the key numbers are only shown in the normal card (spec §5). */
-export function openSubscriptions(s: ViewState): ViewState {
-  return { ...s, card: "subscriptions", fullScreen: false };
-}
-
 /** The overview's "Alt forbrug": the unit, the main group and the category go; the search and the shop stay. */
 export function clearChoices(s: ViewState): ViewState {
   return { ...withoutUnit(s), level: ALL };

@@ -3,11 +3,13 @@ import { css, html, LitElement, nothing } from "lit";
 import { da } from "../i18n/da";
 import type { LevelRow } from "../model/circle";
 import { partName } from "../model/context";
+import type { ObjectGroupRow } from "../model/fixed";
 import { clearChoices, keepDetail } from "../state/actions";
 import { toHash, type ViewState } from "../state/view";
 import { fire } from "./chip";
 import "./accounts-picker";
 import "./level-menu";
+import "./object-group-menu";
 import "./period-picker";
 import type { UnitStep } from "./unit-menu";
 import "./unit-menu";
@@ -26,6 +28,10 @@ export interface LevelLists {
 
 const SEP = html` <span class="top-sep" aria-hidden="true">›</span> `;
 
+const BACK = html`<svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" focusable="false">
+  <path d="M13 8H3M7.5 3.5 3 8l4.5 4.5" />
+</svg>`;
+
 const X = html`<svg viewBox="0 0 10 10" width="10" height="10" aria-hidden="true" focusable="false">
   <path d="M1 1 9 9M9 1 1 9" />
 </svg>`;
@@ -36,7 +42,8 @@ type Last = "period" | "unit" | "mainGroup" | "category";
  * The trail and Konti. The trail is the top filter: "Alt forbrug", the period, the unit, the main group and the
  * category, then a dashed button for the next level. Fires `hs-period`, `hs-accounts`, `set-unit` with a unit's
  * `fullStart`, `set-main-group`, `set-category`, and from the trail's × `remove-unit`, `remove-main-group` and
- * `remove-category`.
+ * `remove-category`. In the fixed-expenses view the trail has the object group after "Alt forbrug" and a ← before it;
+ * they fire `set-object-group` (null is Alle) and `back`.
  */
 export class TopCard extends LitElement {
   static override properties = {
@@ -46,6 +53,8 @@ export class TopCard extends LitElement {
     earliest: { attribute: false },
     unitStep: { attribute: false },
     lists: { attribute: false },
+    fixed: { attribute: false },
+    objectGroups: { attribute: false },
   };
 
   declare state: ViewState;
@@ -55,12 +64,18 @@ export class TopCard extends LitElement {
   /** null where the bars are not buttons, so there is no unit to choose. */
   declare unitStep: UnitStep | null;
   declare lists: LevelLists | null;
+  /** The fixed-expenses view's trail. */
+  declare fixed: boolean;
+  /** The object-group step's rows, Alle last; null while the answer loads and on an error. */
+  declare objectGroups: ObjectGroupRow[] | null;
 
   constructor() {
     super();
     this.accounts = null;
     this.unitStep = null;
     this.lists = null;
+    this.fixed = false;
+    this.objectGroups = null;
   }
 
   protected override createRenderRoot(): HTMLElement {
@@ -70,7 +85,7 @@ export class TopCard extends LitElement {
   /** The heading may sit in a step's own element, so a focus after an update waits for the steps too. */
   protected override async getUpdateComplete(): Promise<boolean> {
     const done = await super.getUpdateComplete();
-    const steps = [...this.querySelectorAll<LitElement>("hs-period-picker, hs-unit-menu, hs-level-menu")];
+    const steps = [...this.querySelectorAll<LitElement>("hs-period-picker, hs-object-group-menu, hs-unit-menu, hs-level-menu")];
     await Promise.all(steps.map((step) => step.updateComplete));
     return done;
   }
@@ -102,7 +117,20 @@ export class TopCard extends LitElement {
       mainGroup === undefined ? nothing : html`${SEP}${this.levelStep("mainGroup", mainGroup, last === "mainGroup")}`;
     const categoryStep = category === undefined ? nothing : html`${SEP}${this.levelStep("category", category, true)}`;
     const next = category === undefined ? this.dashed(mainGroup === undefined ? "mainGroup" : "category") : nothing;
-    return html`${root}${SEP}${this.period(last === "period")}${unitStep}${mainGroupStep}${categoryStep} ${next}`;
+    const objectGroup = this.fixed ? html`${SEP}${this.objectGroup()}` : nothing;
+    return html`${root}${objectGroup}${SEP}${this.period(last === "period")}${unitStep}${mainGroupStep}${categoryStep}
+    ${next}`;
+  }
+
+  /** With one object group there is nothing to switch to, so the step is its title alone (spec §3.4). */
+  private objectGroup() {
+    const rows = this.objectGroups;
+    if (rows !== null && rows.length === 2) return html`<span>${rows[0].name}</span>`;
+    return html`<hs-object-group-menu
+      .rows=${rows}
+      .name=${this.state.objectGroup ?? da.allFixed}
+      @object-group-choose=${(e: CustomEvent<string | null>) => fire(this, "set-object-group", e.detail)}
+    ></hs-object-group-menu>`;
   }
 
   /** The dashed button sits right after the period, before the "›" to the main group (spec §3.2). */
@@ -157,8 +185,22 @@ export class TopCard extends LitElement {
   }
 
   override render() {
+    const nav = html`<nav class="top-trail" aria-label=${da.trail}>${this.trail()}</nav>`;
     return html`<div class="card top-card">
-      <nav class="top-trail" aria-label=${da.trail}>${this.trail()}</nav>
+      ${this.fixed
+        ? html`<div class="top-start">
+            <button
+              type="button"
+              class="top-back"
+              aria-label=${da.backToOverview}
+              title=${da.backToOverview}
+              @click=${() => fire(this, "back")}
+            >
+              ${BACK}
+            </button>
+            ${nav}
+          </div>`
+        : nav}
       <div class="top-filters">
         <hs-accounts-picker .accounts=${this.accounts} .chosen=${this.state.accounts}></hs-accounts-picker>
       </div>
@@ -173,6 +215,40 @@ export const topCardStyles = css`
     gap: 12px;
     align-items: center;
     justify-content: space-between;
+  }
+  .top-start {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+  }
+  .top-back {
+    display: inline-grid;
+    place-items: center;
+    flex: none;
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    color: var(--hs-text);
+    background: transparent;
+    cursor: pointer;
+  }
+  .top-back svg {
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.6;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+  .top-back:hover,
+  .top-back:focus-visible {
+    background: var(--hs-soft);
+  }
+  .top-back:focus-visible {
+    outline: 2px solid var(--hs-accent-text);
+    outline-offset: 1px;
   }
   .top-trail {
     display: flex;

@@ -4,7 +4,9 @@ import { da } from "../i18n/da";
 import { levelName, type ViewContext } from "./context";
 
 /** The line under a key number's value; `href` is the hash it opens, and the app handles the click itself. */
-export type KeyLink = { kind: "postings"; count: number; href: string } | { kind: "subscriptions"; href: string };
+export type KeyLink =
+  | { kind: "postings"; count: number; href: string }
+  | { kind: "subscriptions"; objectGroup: string; href: string };
 
 export interface KeyCard {
   label: string;
@@ -96,10 +98,10 @@ export function objectGroupNames(ctx: ViewContext): string[] {
 /**
  * One card per object group that a kept bill has or a shown posting in the period is linked to; empty gives the
  * period's key numbers only (spec §4). The fetched range does not count. The set of groups is the period's; with a
- * chosen unit only the payments counted narrow to it. Each links to the Faste udgifter tab, which exists only when the
- * answer has bills.
+ * chosen unit only the payments counted narrow to it. Each links to the fixed-expenses view on its own group, which
+ * exists only when the answer has bills.
  */
-export function objectGroupCards(ctx: ViewContext, href: string): KeyCard[] {
+export function objectGroupCards(ctx: ViewContext, hrefFor: (group: string) => string): KeyCard[] {
   const period = ctx.timeline.period;
   const counted = ctx.chosen ?? period;
   const unit = ctx.chosen === null ? null : unitName(ctx.chosen, ctx.timeline.grouping, ctx.unitYear);
@@ -107,7 +109,7 @@ export function objectGroupCards(ctx: ViewContext, href: string): KeyCard[] {
     p.subscription === null ? [] : [{ group: p.subscription.objectGroup, bill: p.subscription.name, amount: p.amount }],
   );
   const names = objectGroupNames(ctx);
-  const link: KeyLink | undefined = ctx.data.subscriptions.length === 0 ? undefined : { kind: "subscriptions", href };
+  const withLink = ctx.data.subscriptions.length > 0;
   return names
     .sort((a, b) => a.localeCompare(b, "da"))
     .map((name) => {
@@ -125,7 +127,7 @@ export function objectGroupCards(ctx: ViewContext, href: string): KeyCard[] {
         label: unit === null ? da.inPeriod(name) : da.levelInUnit(name, unit),
         value: kr(sum),
         sub,
-        link,
+        link: withLink ? { kind: "subscriptions", objectGroup: name, href: hrefFor(name) } : undefined,
       };
     });
 }

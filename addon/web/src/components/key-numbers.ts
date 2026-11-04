@@ -6,7 +6,7 @@ import { fire } from "./chip";
 
 /**
  * The period's key numbers, then one per object group; their placeholder while `cards` is null. A link's plain click
- * fires `key-link` with its kind, so the app can mark the history entry it pushes; the href serves any other click.
+ * fires `key-link` with the link, so the app can mark the history entry it pushes; the href serves any other click.
  */
 export class KeyNumbers extends LitElement {
   static override properties = {
@@ -30,7 +30,7 @@ export class KeyNumbers extends LitElement {
   private follow(event: MouseEvent, link: KeyLink): void {
     if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
     event.preventDefault();
-    fire(this, "key-link", link.kind);
+    fire(this, "key-link", link);
   }
 
   private linkLine(c: KeyCard) {
@@ -47,7 +47,9 @@ export class KeyNumbers extends LitElement {
   private plainCard(c: KeyCard) {
     return html`<div class="card kpi" role="group" aria-label=${c.label}>
       <div class="kpi-label">${c.label}</div>
-      <div class="kpi-value">${c.value}</div>
+      <div class="kpi-value">
+        ${c.estimate ? html`<span class="kpi-about">${da.fixed.about}</span> ` : nothing}${c.value}
+      </div>
       ${this.linkLine(c)}
       <div class="kpi-sub">${c.sub}</div>
     </div>`;
@@ -100,6 +102,10 @@ export const keyNumbersStyles = css`
     font-size: 26px;
     margin-top: 4px;
     font-variant-numeric: tabular-nums;
+  }
+  .kpi-about {
+    font-size: 16px;
+    color: var(--hs-muted);
   }
   .kpi-link {
     display: inline-block;

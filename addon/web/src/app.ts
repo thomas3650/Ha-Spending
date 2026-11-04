@@ -17,6 +17,9 @@ import { keyNumbersStyles } from "./components/key-numbers";
 import { barsStyles, type UnitSelection } from "./components/bars";
 import { type CircleSelection, circleStyles } from "./components/circle";
 import { detailStyles } from "./components/detail";
+import { fixedBarsStyles } from "./components/fixed-bars";
+import { fixedListStyles } from "./components/fixed-list";
+import { objectGroupMenuStyles } from "./components/object-group-menu";
 import { levelMenuStyles } from "./components/level-menu";
 import { calendarStyles, periodPickerStyles } from "./components/period-picker";
 import { postingsStyles } from "./components/postings";
@@ -32,10 +35,14 @@ import { da } from "./i18n/da";
 import type { AmountFilter } from "./model/amount";
 import { levelRows, unitRows } from "./model/circle";
 import { finerUnits, type ViewContext, viewContext } from "./model/context";
+import { type FixedView, fixedUnits, fixedView } from "./model/fixed";
+import { fixedList } from "./model/fixed-list";
 import { keyCards, type KeyLink, objectGroupCards } from "./model/key-numbers";
 import { shownColumns, shownPostingSort } from "./model/postings";
 import type { HiddenState } from "./model/shops";
 import { DEFAULT_SUBSCRIPTION_SORT, shownSubscriptionSort, subscriptionFirstDescending } from "./model/subscriptions";
+import "./screens/fixed";
+import { fixedStyles, objectGroupTitle } from "./screens/fixed";
 import "./screens/overview";
 import { overviewStyles } from "./screens/overview";
 import {
@@ -48,9 +55,12 @@ import {
   normalise,
   openDetail,
   openPart,
+  chooseFixedUnit,
+  leaveFixed,
+  openFixed,
   openPostingsFull,
   openShop,
-  openSubscriptions,
+  setObjectGroup,
   removeCategory,
   removeMainGroup,
   removeShop,
@@ -96,11 +106,14 @@ const DETAIL_ENTRY = { detail: true };
 /** Marks the entry that opening full screen pushed; a detail pushed right over it says so (top-filter spec §3.2). */
 const FULL_ENTRY = { full: true };
 const DETAIL_OVER_FULL = { detail: true, overFull: true };
+/** Marks the entry that opening the fixed-expenses view pushed, so leaving it may go back (spec §2). */
+const FIXED_ENTRY = { fixed: true };
 
 interface Marks {
   detail?: unknown;
   full?: unknown;
   overFull?: unknown;
+  fixed?: unknown;
   /** The full-screen open's quick filter, so a close can tell whether it changed in full screen. */
   quick?: unknown;
 }
@@ -159,6 +172,7 @@ export class SpendingApp extends LitElement {
     calendarStyles,
     topCardStyles,
     levelMenuStyles,
+    objectGroupMenuStyles,
     unitMenuStyles,
     keyNumbersStyles,
     circleStyles,
@@ -170,6 +184,9 @@ export class SpendingApp extends LitElement {
     subscriptionsStyles,
     shopsStyles,
     overviewStyles,
+    fixedBarsStyles,
+    fixedListStyles,
+    fixedStyles,
     css`
       :host {
         display: block;
@@ -283,7 +300,8 @@ export class SpendingApp extends LitElement {
   private writes: Promise<void> = Promise.resolve();
   /** The detail a close or Back just closed, whose row gets the focus back after the render. */
   private closed: DetailKey | null = null;
-  private leftFullScreen = false;
+  /** Full screen or the fixed-expenses view ended, so the focus may have lost its element. */
+  private leftScreen = false;
   private headingAfterBack = false;
   /** Set by a row's click only: a link, a reload or full screen leave the focus where it is. */
   private openedByRow = false;
@@ -325,7 +343,7 @@ export class SpendingApp extends LitElement {
     this.onHash();
     if (this.headingAfterBack) {
       this.headingAfterBack = false;
-      this.leftFullScreen = true;
+      this.leftScreen = true;
       this.requestUpdate();
     }
     const quick = this.quickOnLanding;
@@ -340,6 +358,7 @@ export class SpendingApp extends LitElement {
     if (event.key !== "Escape") return;
     if (this.state.detail !== null) this.closeDetail();
     else if (this.state.fullScreen) this.closeFullScreen();
+    else if (this.state.fixed) this.closeFixed();
   };
 
   private readonly onDetailOpen = (event: Event): void => {
@@ -426,6 +445,39 @@ export class SpendingApp extends LitElement {
     this.change(next);
   }
 
+  /** "Vis faste udgifter →". Like openFullScreen, a push waits for a pending Back to land. */
+  private openFixed(objectGroup: string): void {
+    if (this.backPending) {
+      this.afterBack = () => this.openFixed(objectGroup);
+      return;
+    }
+    if (this.state.fixed) return;
+    const next = openFixed(this.state, objectGroup);
+    history.pushState(FIXED_ENTRY, "", `#${toHash(next)}`);
+    this.change(next);
+  }
+
+  /**
+   * ← and Escape go back past the open when the entry is the one the open pushed, so Back does not reopen the view;
+   * after any push in the view they replace (spec §2). The state is set at once, as closeFullScreen does.
+   */
+  private closeFixed(): void {
+    if (!this.state.fixed) return;
+    const off = leaveFixed(this.state);
+    if (this.backPending) {
+      this.afterBack = () => this.closeFixed();
+      this.change(off);
+      return;
+    }
+    if (marks().fixed === true) {
+      this.change(off);
+      this.goBack(1);
+      return;
+    }
+    history.replaceState(null, "", `#${toHash(off)}`);
+    this.change(off);
+  }
+
   private keepQuickFilter(quick: QuickFilter): void {
     const next = { ...this.state, ...quick };
     const hash = toHash(next);
@@ -502,8 +554,8 @@ export class SpendingApp extends LitElement {
   }
 
   protected override updated(): void {
-    if (this.leftFullScreen) {
-      this.leftFullScreen = false;
+    if (this.leftScreen) {
+      this.leftScreen = false;
       void this.focusHeadingIfLost();
     }
     if (this.openedByRow) {
@@ -557,7 +609,7 @@ export class SpendingApp extends LitElement {
   }
 
   private change(next: ViewState): void {
-    if (this.state.fullScreen && !next.fullScreen) this.leftFullScreen = true;
+    if ((this.state.fullScreen && !next.fullScreen) || (this.state.fixed && !next.fixed)) this.leftScreen = true;
     this.state = next;
     this.ensureData();
     this.normaliseState();
@@ -664,14 +716,15 @@ export class SpendingApp extends LitElement {
     </div>`;
   }
 
-  private onKeyLink(event: CustomEvent<KeyLink["kind"]>): void {
-    if (event.detail === "postings") this.openFullScreen(openPostingsFull);
-    else this.push(openSubscriptions(this.state));
+  private onKeyLink(event: CustomEvent<KeyLink>): void {
+    const link = event.detail;
+    if (link.kind === "postings") this.openFullScreen(openPostingsFull);
+    else this.openFixed(link.objectGroup);
   }
 
   private keyNumbers(ctx: ViewContext) {
     const cards = keyCards(ctx, `#${toHash(openPostingsFull(this.state))}`);
-    const objectGroups = objectGroupCards(ctx, `#${toHash(keepDetail(this.state, openSubscriptions(this.state)))}`);
+    const objectGroups = objectGroupCards(ctx, (group) => `#${toHash(openFixed(this.state, group))}`);
     this.boxes = cards.length + objectGroups.length;
     return html`<hs-key-numbers
       .cards=${cards}
@@ -721,6 +774,21 @@ export class SpendingApp extends LitElement {
     `;
   }
 
+  /** The view's own cards stand where the overview's key numbers do (spec §4). */
+  private fixedScreen(ctx: ViewContext, view: FixedView) {
+    this.boxes = view.cards.length;
+    return html`
+      ${ctx.data.mainGroupsFound ? nothing : html`<p class="card line status" role="status">${da.noRuleGroup}</p>`}
+      <hs-key-numbers .cards=${view.cards} .objectGroups=${[]}></hs-key-numbers>
+      <hs-fixed
+        .view=${view}
+        .list=${fixedList(view, view.chosen)}
+        .groupTitle=${objectGroupTitle(view.groups, this.state.objectGroup)}
+        @unit-click=${(e: CustomEvent<UnitSelection>) => this.push(chooseFixedUnit(this.state, e.detail.fullStart))}
+      ></hs-fixed>
+    `;
+  }
+
   /** The trail's × moves the focus to its heading, so the keyboard does not fall back to the page's start. */
   private removeFromTrail(next: ViewState): void {
     this.push(next);
@@ -734,12 +802,13 @@ export class SpendingApp extends LitElement {
     this.renderRoot.querySelector<HTMLElement>("hs-top-card h1")?.focus();
   }
 
-  private body(ctx: ViewContext | null) {
+  private body(ctx: ViewContext | null, view: FixedView | null) {
     switch (this.load.kind) {
       case "error":
         return html`<p class="card line alert" role="alert">${da.errors[this.load.code]}</p>`;
       case "ready":
-        return ctx === null ? nothing : this.ready(ctx);
+        if (ctx === null) return nothing;
+        return view === null ? this.ready(ctx) : this.fixedScreen(ctx, view);
       default:
         return html`${this.state.fullScreen
             ? nothing
@@ -749,7 +818,12 @@ export class SpendingApp extends LitElement {
   }
 
   /** Before the answer the period alone says whether its bars are buttons: one month draws its days (D59). */
-  private unitStep(ctx: ViewContext | null): UnitStep | null {
+  private unitStep(ctx: ViewContext | null, view: FixedView | null): UnitStep | null {
+    if (view !== null) return view.unitStep;
+    if (ctx === null && this.state.fixed) {
+      const f = fixedUnits({ earliestPostingDate: this.earliest ?? null }, this.state, this.today);
+      return f.buttons ? { word: f.grouping === "year" ? "year" : "month", rows: null, chosen: null } : null;
+    }
     if (ctx === null) {
       const period = periodOf(this.state.period, this.today, this.earliest ?? null);
       const word = groupingFor(period);
@@ -765,6 +839,7 @@ export class SpendingApp extends LitElement {
 
   override render() {
     const ctx = this.load.kind === "ready" ? viewContext(this.load.data, this.state, this.today) : null;
+    const view = ctx !== null && this.state.fixed ? fixedView(ctx) : null;
     const lists: LevelLists | null =
       ctx === null ? null : { mainGroup: levelRows(ctx, "mainGroup"), category: levelRows(ctx, "category") };
     return html`<main class="page">
@@ -773,19 +848,24 @@ export class SpendingApp extends LitElement {
         .today=${this.today}
         .accounts=${this.accounts}
         .earliest=${this.earliest}
-        .unitStep=${this.unitStep(ctx)}
+        .unitStep=${this.unitStep(ctx, view)}
         .lists=${lists}
+        .fixed=${this.state.fixed}
+        .objectGroups=${view?.groups ?? null}
         @hs-period=${this.onPeriod}
         @hs-accounts=${this.onAccounts}
         @set-main-group=${(e: CustomEvent<string | null>) => this.push(setMainGroup(this.state, e.detail))}
         @set-category=${(e: CustomEvent<CategoryChoice>) =>
           this.push(setCategory(this.state, e.detail.mainGroup, e.detail.category))}
-        @set-unit=${(e: CustomEvent<string>) => this.push(chooseUnit(this.state, e.detail))}
+        @set-unit=${(e: CustomEvent<string>) =>
+          this.push((this.state.fixed ? chooseFixedUnit : chooseUnit)(this.state, e.detail))}
+        @set-object-group=${(e: CustomEvent<string | null>) => this.push(setObjectGroup(this.state, e.detail))}
+        @back=${() => this.closeFixed()}
         @remove-unit=${() => this.removeFromTrail(removeUnit(this.state))}
         @remove-main-group=${() => this.removeFromTrail(removeMainGroup(this.state))}
         @remove-category=${() => this.removeFromTrail(removeCategory(this.state))}
       ></hs-top-card>
-      ${this.body(ctx)}
+      ${this.body(ctx, view)}
     </main>`;
   }
 }

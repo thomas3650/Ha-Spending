@@ -33,6 +33,12 @@ export const da = {
   monthStep: "Måned",
   yearStep: "År",
   units: "Enheder",
+  switchObjectGroup: (name: string) => `Skift objektgruppe: ${name}`,
+  allFixed: "Alle faste udgifter",
+  all: "Alle",
+  objectGroups: "Objektgrupper",
+  billsInPeriod: (n: number, sum: string) => `${n} stk. · ${sum} i perioden`,
+  backToOverview: "Tilbage til overblikket",
 
   period: "Periode",
   presets: {

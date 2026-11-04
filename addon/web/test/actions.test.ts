@@ -22,7 +22,6 @@ import {
   setAccounts,
   setCard,
   setCategory,
-  openSubscriptions,
   setMainGroup,
   setPeriod,
   setFullScreen,
@@ -124,11 +123,6 @@ describe("the actions", () => {
       amount: null,
       detail: null,
     });
-  });
-
-  it("opens Faste udgifter in the normal card, the rest kept", () => {
-    const from: ViewState = { ...at(cafe), unit: "2026-07-01", search: "rema", shop: "Netto" };
-    expect(openSubscriptions(from)).toEqual({ ...from, card: "subscriptions", fullScreen: false });
   });
 
   it("clears the unit, the main group and the category from the overview's trail", () => {
@@ -416,13 +410,11 @@ describe("the detail", () => {
 
   it("keepDetail closes the detail when the card changes", () => {
     const onSubs = state({ card: "subscriptions", detail: bill });
-    const onPostings = state({ card: "postings", detail: posting("p23") });
     const onBars = state({ card: "bars", detail: posting("p23") });
     const onShops = state({ card: "shops", detail: posting("p23") });
     expect(keepDetail(onSubs, setCard(onSubs, "bars")).detail).toBeNull();
     expect(keepDetail(onBars, chooseUnit(onBars, "2026-07-01")).detail).toBeNull();
     expect(keepDetail(onShops, openShop(onShops, "Netto")).detail).toBeNull();
-    expect(keepDetail(onPostings, openSubscriptions(onPostings)).detail).toBeNull();
   });
 
   it("turning full screen on keeps it, and turning it off closes it", () => {

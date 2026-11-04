@@ -235,7 +235,7 @@ describe("the view's key numbers", () => {
 
   it("pays in I år what the overview's object-group card shows", () => {
     const data = linked();
-    const card = objectGroupCards(viewContext(data, DEFAULT_STATE, TODAY), "#").find(
+    const card = objectGroupCards(viewContext(data, DEFAULT_STATE, TODAY), () => "#").find(
       (c) => c.label === da.inPeriod("Faste udgifter"),
     );
     expect(viewOf(FIXED, data).cards[0].value).toBe(card?.value);

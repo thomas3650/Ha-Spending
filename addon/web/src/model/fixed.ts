@@ -52,8 +52,12 @@ function spanEnd(preset: PeriodChoice["preset"], period: Period, grouping: Group
   }
 }
 
-/** Without a context, so that `normalise` can resolve a chosen unit against the view's units. */
-export function fixedUnits(data: SpendingData, state: ViewState, today: string): FixedUnits {
+/** Without a context, so that `normalise`, and the trail before the answer, can resolve the view's units. */
+export function fixedUnits(
+  data: Pick<SpendingData, "earliestPostingDate">,
+  state: ViewState,
+  today: string,
+): FixedUnits {
   const period = periodOf(state.period, today, data.earliestPostingDate);
   const grouping = groupingFor(period);
   const span = { start: period.start, end: spanEnd(state.period.preset, period, grouping, today) };

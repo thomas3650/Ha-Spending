@@ -441,25 +441,25 @@ describe("the key numbers of the object groups", () => {
 });
 
 describe("the link on each object group's key number", () => {
-  it("each object group's key number links to Faste udgifter", async () => {
+  it("each object group's key number links to the fixed-expenses view on its own group", async () => {
     const { root } = await mount("", { answer: BILLS });
-    for (const label of [FIXED, SUBS]) {
+    for (const [label, hash] of [
+      [FIXED, "#view=fixed&og=Faste+udgifter"],
+      [SUBS, "#view=fixed&og=Abonnementer"],
+    ]) {
       const link = subscriptionsLink(root, label);
       expect(link.textContent?.replace(/\s+/g, " ").trim()).toBe(`${da.showSubscriptions} →`);
-      expect(link.getAttribute("href")).toBe("#card=subscriptions");
+      expect(link.getAttribute("href")).toBe(hash);
     }
   });
 
-  it("shows the Faste udgifter tab in the normal card in one entry, and Back returns to the card before", async () => {
+  it("opens the fixed-expenses view in one entry, and Back returns to the card before", async () => {
     const { app, root } = await mount("card=postings&q=Netto", { answer: BILLS });
     const length = history.length;
     await follow(app, subscriptionsLink(root, FIXED));
-    expect(location.hash).toBe("#card=subscriptions&q=Netto");
+    expect(location.hash).toBe("#card=postings&view=fixed&og=Faste+udgifter&q=Netto");
     expect(history.length).toBe(length + 1);
-    getByRole(root, "region", { name: da.subscriptions });
-    const tab = getByRole(getByRole(root, "group", { name: da.view }), "button", { name: da.subscriptions });
-    expect(tab.getAttribute("aria-pressed")).toBe("true");
-    expect(isFullScreen(root)).toBe(false);
+    getByRole(root, "button", { name: da.switchObjectGroup("Faste udgifter") });
     history.back();
     await hashBecomes(app, "#card=postings&q=Netto");
     getByRole(root, "region", { name: da.postingsTitle });
@@ -468,7 +468,7 @@ describe("the link on each object group's key number", () => {
   it("closes an open detail on another card", async () => {
     const { app, root } = await mount("card=postings&detail=p%3Ap26", { answer: BILLS });
     await follow(app, subscriptionsLink(root, FIXED));
-    expect(location.hash).toBe("#card=subscriptions");
+    expect(location.hash).toBe("#card=postings&view=fixed&og=Faste+udgifter");
     expect(queryByRole(root, "group", { name: "Café Søde" })).toBeNull();
   });
 
@@ -490,7 +490,7 @@ describe("the link on each object group's key number", () => {
     expect(name(root, FIXED)).toBe(`${FIXED} ${kr(8090000)} ${line(812700, 2)}`);
   });
 
-  it("a plain card has no link, as there is no Faste udgifter tab", async () => {
+  it("a plain card has no link, as there is no fixed-expenses view", async () => {
     const { root } = await mount("");
     expect(getAllByRole(root, "group", { name: SUBS })).toHaveLength(1);
     expect(queryByRole(objectCard(root, SUBS), "link")).toBeNull();
