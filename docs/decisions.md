@@ -614,3 +614,37 @@ to set their status to `superseded by D<n>`, or to name a part a later decision 
   (D24).
 - **Why:** Thomas uses the page on a computer, full screen, and phone support is not a feature the add-on offers.
 - **Source:** Thomas, 2026-11-04; it closes #49, #93 and #133.
+
+### D63: A fixed expense has risen from 1 kr., and its amount is the latest payment
+- **Date:** 2026-11-04 · **Status:** active
+- **Decision:**
+  - A payment at least 1 kr. above the range's top is a rise, "Steget". A smaller difference is no rise.
+  - Whole kroner show the rise on the page. No amount in Faste udgifter has øre.
+  - When the latest payment is a rise, it is the amount per payment. The amount per year, the group sums and the
+    detail count from it.
+  - This changes subscriptions spec §1.2, §2.1 and §2.3, and supersedes UI polish spec §5.4.
+- **Why:** A rise of a few øre showed as a whole krone, or needed øre, and the Beløb column disagreed with
+  the status.
+- **Source:** Claude, 2026-11-04, under the controller session's brief, and the
+  [small walkthrough fixes spec](superpowers/specs/2026-11-04-walkthrough-small-fixes.md) §1
+
+### D64: A due payment says Forfalden
+- **Date:** 2026-11-04 · **Status:** active
+- **Decision:**
+  - A Forventes whose date is before today reads "Forfalden {date}". On today and later it reads "Forventes {date}".
+  - Such a row shows no "næste {date}" under its name.
+  - The status keeps its kind, colour and place in the order.
+  - This changes subscriptions spec §2.3 and UI polish spec §5.5.
+- **Why:** "Forventes" with a past date read like a mistake.
+- **Source:** Claude, 2026-11-04, under the controller session's brief, and the
+  [small walkthrough fixes spec](superpowers/specs/2026-11-04-walkthrough-small-fixes.md) §5
+
+### D65: A share above zero reads < 1 %
+- **Date:** 2026-11-04 · **Status:** active
+- **Decision:**
+  - A share that rounds to 0 % while the amount is not 0 reads "< 1 %". A share of exactly 0 reads "0 %".
+  - When the base's total is not above zero, a shop shows no share.
+  - This changes top-shops spec §2.
+- **Why:** "0 %" beside a real amount read as nothing.
+- **Source:** Claude, 2026-11-04, under the controller session's brief, and the
+  [small walkthrough fixes spec](superpowers/specs/2026-11-04-walkthrough-small-fixes.md) §7

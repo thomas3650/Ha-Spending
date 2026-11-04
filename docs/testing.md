@@ -223,3 +223,11 @@ The page's list. Every screenshot is at 1440×960 with the console free of error
     in "+ Filter" on Alle posteringer, and its trail "Alt forbrug › Alle posteringer" with no ×. In full screen
     Posteringer the Kategori column shows from 600 px up. The y-axis of the bars writes its ticks with `axisTickKr`; no
     test guards that ([#132](https://github.com/thomas3650/Ha-Spending/issues/132)).
+48. `63-smaa-rettelser`: the small fixes from the walkthrough ([small walkthrough fixes
+    spec](superpowers/specs/2026-11-04-walkthrough-small-fixes.md)), at 1440 and 1728 px, normal and full screen.
+    Faste udgifter: a Steget row reads in whole kroner with no øre, and its Beløb shows the same number as the
+    latest payment. The Fitnessabonnement row reads Forfalden with no "næste" under its name. The repeat ("pr.
+    måned") sits on its own line in every row. A group's header keeps its name and count ("4 faste udgifter") on
+    one line, also with a long group name. The circle's small labels are apart, and each leader line runs to its
+    piece. Butikker: every track starts and ends at the same place in the shown list and in the hidden one ("Vis").
+    A shop with a share above zero but under 1 % reads "< 1 %"; a share of 0 reads "0 %".
