@@ -5,7 +5,7 @@
 
 **Issue:** closes #174. One branch, one PR.
 
-**Approved:** pending.
+**Approved:** by Thomas on 2026-11-04 ("Godkendt, kør til release"), after `reviewer` rated it Ready.
 
 Thomas and Claude walked through the fixed-expenses view ([D66](../../decisions.md)) on 2026-11-04. Thomas asked for
 three things, in his words: a full screen "som på det andet kort så der er mere plads til posteringer", "et bedere
