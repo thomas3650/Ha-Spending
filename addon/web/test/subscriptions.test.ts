@@ -256,7 +256,10 @@ describe("the object groups in the card", () => {
 
   it("has no single sum in the card's head", async () => {
     const { root } = await mountWith("card=subscriptions");
-    expect(text(card(root, "Faste udgifter"))).not.toContain("106.968");
+    const region = card(root, "Faste udgifter");
+    const kroner = (box: string) => Number(/([\d.]+) kr\./.exec(box)![1].replace(/\./g, ""));
+    expect(sums(region).reduce((total, box) => total + kroner(box), 0)).toBe(108768);
+    expect(text(region)).not.toContain("108.768");
   });
 
   it("orders boxes with equal sums by name", async () => {

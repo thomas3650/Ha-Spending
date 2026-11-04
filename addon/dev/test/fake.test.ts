@@ -597,6 +597,7 @@ describe("the fake Firefly III", () => {
       expect(one.data.attributes.transactions[0].bill_id).toBe(rentBill.id);
       const query = encodeURIComponent(`journal_id:${rent.attributes.transactions[0].transaction_journal_id}`);
       const found = await json<Page<Group>>(`search/transactions?query=${query}`);
+      expect(found.data.map((g) => g.id)).toEqual([rent.id]);
       expect(found.data[0].attributes.transactions[0].bill_id).toBe(rentBill.id);
     });
 

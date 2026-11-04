@@ -258,7 +258,7 @@ describe("the postings list", () => {
       const row = rowOf(el, sep20);
       expect(row.textContent).toContain("Abonnementer");
       expect(row.textContent).toContain("Pizzaabonnement");
-      expect(queryByRole(row, "cell", { name: /Abonnementer\s*,\s*Pizzaabonnement/ })).not.toBeNull();
+      expect(queryByRole(row, "cell", { name: /^Pizzeria Roma\s+Abonnementer\s*,\s*Pizzaabonnement$/ })).not.toBeNull();
     });
 
     it("keeps the posting's name as its button's name", async () => {
@@ -273,9 +273,15 @@ describe("the postings list", () => {
 
     it("marks it at another grouping", async () => {
       const { root } = await mount("period=custom&from=2026-09-14&to=2026-09-27&by=week&card=postings");
-      const card = getByRole(root, "region", { name: da.postingsTitle });
-      expect(rowOf(card, sep20).textContent).toContain("Abonnementer");
-      unmount();
+      try {
+        const card = getByRole(root, "region", { name: da.postingsTitle });
+        const groups = groupButtons(card).map((b) => b.textContent?.trim() ?? "");
+        expect(groups.length).toBeGreaterThan(0);
+        for (const group of groups) expect(group).toMatch(/^Uge /);
+        expect(rowOf(card, sep20).textContent).toContain("Abonnementer");
+      } finally {
+        unmount();
+      }
     });
 
     it("marks it in a search's matches", async () => {
