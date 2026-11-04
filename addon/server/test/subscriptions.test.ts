@@ -341,16 +341,18 @@ describe("keepSubscriptions", () => {
   const none = () => null;
   const keep = (raw: RawSubscription[], warn: (message: string) => void = () => {}) =>
     keepSubscriptions(raw, none, new Set(), today, warn);
+  const raw = (b: RawSubscription["bill"], lastPaid: RawSubscription["lastPaid"]): RawSubscription =>
+    ({ bill: b, objectGroup: "Made-up group", lastPaid, split: null });
 
   it("ignores a last payment after today", () => {
     const later = paidDate("2026-11-05", "203", "303");
-    const [kept] = keep([{ bill: bill({ paid_dates: [later] }), lastPaid: later, split: null }]);
+    const [kept] = keep([raw(bill({ paid_dates: [later] }), later)]);
     expect(kept.lastPayment).toBeNull();
   });
 
   it("leaves out an unknown repeat and warns with the id, not the name", () => {
     const warn = vi.fn();
-    expect(keep([{ bill: bill({ repeat_freq: "daily" }), lastPaid: null, split: null }], warn)).toEqual([]);
+    expect(keep([raw(bill({ repeat_freq: "daily" }), null)], warn)).toEqual([]);
     expect(warn).toHaveBeenCalledTimes(1);
     expect(warn.mock.calls[0][0]).toContain("71");
     expect(warn.mock.calls[0][0]).not.toContain("Made-up streaming");
@@ -358,7 +360,7 @@ describe("keepSubscriptions", () => {
 
   it("fails as unreachable when the payment's split is not in its group", () => {
     const paid = paidDate("2026-10-05", "202", "302");
-    expect(() => keep([{ bill: bill({ paid_dates: [paid] }), lastPaid: paid, split: null }])).toThrow(
+    expect(() => keep([raw(bill({ paid_dates: [paid] }), paid)])).toThrow(
       expect.objectContaining({ reason: "unreachable" }),
     );
   });

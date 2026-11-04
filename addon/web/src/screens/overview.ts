@@ -202,7 +202,7 @@ export class Overview extends LitElement {
       return { above: nothing, list: html`<p class="empty">${da.noSubscriptions(levelName(this.ctx.state.level))}</p>` };
     }
     return {
-      above: objectGroupSums(table, title),
+      above: objectGroupSums(table, da.objectGroupSums(title)),
       list: html`<hs-subscriptions .table=${table} .label=${title} .marked=${this.ctx.state.detail}></hs-subscriptions>
         <p class="half-foot">${da.subscriptionsFoot}</p>`,
     };

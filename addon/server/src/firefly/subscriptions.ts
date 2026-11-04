@@ -6,6 +6,7 @@ import { ASSET, type WireBill, type WireGroup, type WirePaidDate, type WireSplit
 
 export interface RawSubscription {
   bill: WireBill;
+  objectGroup: string;
   lastPaid: WirePaidDate | null;
   split: WireSplit | null;
 }
@@ -47,16 +48,19 @@ export async function readSubscriptions(
 ): Promise<{ kept: RawSubscription[]; bills: WireBill[] }> {
   const query = { start: addDays(today, -PAID_WINDOW_DAYS), end: today };
   const bills = await getAllPages<WireBill>(client, "bills", query, settings.pageSize, signal);
-  const grouped = bills.filter((bill) => objectGroupOf(bill) !== null);
-  const kept = await eachLimited(grouped, GROUP_READS_AT_ONCE, async (bill) => {
+  const grouped = bills.flatMap((bill) => {
+    const objectGroup = objectGroupOf(bill);
+    return objectGroup === null ? [] : [{ bill, objectGroup }];
+  });
+  const kept = await eachLimited(grouped, GROUP_READS_AT_ONCE, async ({ bill, objectGroup }) => {
     const lastPaid = latestPaid(bill, today);
-    if (lastPaid === null) return { bill, lastPaid, split: null };
+    if (lastPaid === null) return { bill, objectGroup, lastPaid, split: null };
     const path = `transactions/${encodeURIComponent(lastPaid.transaction_group_id)}`;
     const group = (await client.get(path, {}, signal)) as { data?: WireGroup };
     const split = group.data?.attributes?.transactions?.find(
       (s) => s.transaction_journal_id === lastPaid.transaction_journal_id,
     );
-    return { bill, lastPaid, split: split ?? null };
+    return { bill, objectGroup, lastPaid, split: split ?? null };
   });
   return { kept, bills };
 }
@@ -71,10 +75,9 @@ export function keepSubscriptions(
   warn: (message: string) => void,
 ): Subscription[] {
   const kept: Subscription[] = [];
-  for (const { bill, lastPaid, split } of raw) {
+  for (const { bill, objectGroup, lastPaid, split } of raw) {
     const a = bill.attributes;
-    const objectGroup = objectGroupOf(bill);
-    if (objectGroup === null || !a.active) continue;
+    if (!a.active) continue;
     const end = a.end_date === null ? null : day(a.end_date);
     if (end !== null && end < today) continue;
     const repeat = a.repeat_freq;

@@ -229,6 +229,7 @@ export const da = {
   } satisfies Record<Grouping, string>,
   subscriptionsIn: (name: string) => `Faste udgifter i ${name}`,
   perYear: (value: string) => `${value} om året`,
+  objectGroupSums: (title: string) => `${title} om året`,
   subscriptionColumns: {
     name: "Fast udgift",
     category: "Kategori",

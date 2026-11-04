@@ -18,6 +18,8 @@ const BUDGET = "Budgetkonto";
 const CARD = "Kreditkort";
 
 const INCOME_AND_TRANSFERS = "Penge ind og ud";
+const FIXED_COSTS = "Faste udgifter";
+const SUBSCRIPTIONS_GROUP = "Abonnementer";
 
 /** Main group → its categories, and where and how much the money goes. */
 const SPENDING: Record<string, Record<string, { shops: string[]; min: number; max: number }>> = {
@@ -194,7 +196,7 @@ export function generateSeed(options: { today: string; seed: number }): SeedData
   const subscriptions: SeedSubscription[] = [
     { name: "Husleje", amountMin: "9500.00", amountMax: "9500.00",
       start: firstOfMonth(Math.floor(startMonth / 12), (startMonth % 12) + 1), repeat: "monthly",
-      objectGroup: "Faste udgifter" },
+      objectGroup: FIXED_COSTS },
   ];
   const recurring = (
     sub: Omit<SeedSubscription, "start">,
@@ -210,23 +212,28 @@ export function generateSeed(options: { today: string; seed: number }): SeedData
     amounts.map((amount, i) => ({ date: addMonths(date, -i), amount }));
   const soon = (days: number) => addMonths(addDays(options.today, days), -1);
 
-  recurring({ name: "Netflix", amountMin: "99.00", amountMax: "129.00", repeat: "monthly", objectGroup: "Abonnementer" }, soon(3), "Netflix",
-    "Streaming", monthsBack(soon(3), ["119.00", "119.00", "99.00"]));
-  recurring({ name: "Mobilabonnement", amountMin: "149.00", amountMax: "199.00", repeat: "monthly", objectGroup: "Faste udgifter" }, soon(1),
-    "Teleselskabet", "Mobil", monthsBack(soon(1), ["179.00", "179.00"]));
-  recurring({ name: "Spotify", amountMin: "99.00", amountMax: "119.00", repeat: "monthly", objectGroup: "Abonnementer" },
+  recurring({ name: "Netflix", amountMin: "99.00", amountMax: "129.00", repeat: "monthly",
+    objectGroup: SUBSCRIPTIONS_GROUP }, soon(3), "Netflix", "Streaming",
+    monthsBack(soon(3), ["119.00", "119.00", "99.00"]));
+  recurring({ name: "Mobilabonnement", amountMin: "149.00", amountMax: "199.00", repeat: "monthly",
+    objectGroup: FIXED_COSTS }, soon(1), "Teleselskabet", "Mobil", monthsBack(soon(1), ["179.00", "179.00"]));
+  recurring({ name: "Spotify", amountMin: "99.00", amountMax: "119.00", repeat: "monthly",
+    objectGroup: SUBSCRIPTIONS_GROUP },
     addDays(options.today, -10), "Spotify", "Streaming",
     monthsBack(addDays(options.today, -10), ["149.00", "109.00", "109.00"]));
-  recurring({ name: "Alarmselskabet", amountMin: "450.00", amountMax: "550.00", repeat: "quarterly", objectGroup: "Faste udgifter" },
+  recurring({ name: "Alarmselskabet", amountMin: "450.00", amountMax: "550.00", repeat: "quarterly",
+    objectGroup: FIXED_COSTS },
     addMonths(options.today, -4), "Forsikringsselskabet", "Forsikring", [
       { date: addMonths(options.today, -4), amount: "495.00" },
       { date: addMonths(options.today, -7), amount: "495.00" },
     ]);
-  recurring({ name: "Indboforsikring", amountMin: "2800.00", amountMax: "3400.00", repeat: "yearly", objectGroup: "Faste udgifter" },
+  recurring({ name: "Indboforsikring", amountMin: "2800.00", amountMax: "3400.00", repeat: "yearly",
+    objectGroup: FIXED_COSTS },
     addMonths(options.today, -3), "Forsikringsselskabet", "Forsikring", [
       { date: addMonths(options.today, -3), amount: "3100.00" },
     ]);
-  recurring({ name: "Madkasse", amountMin: "250.00", amountMax: "350.00", repeat: "weekly", objectGroup: "Faste udgifter" },
+  recurring({ name: "Madkasse", amountMin: "250.00", amountMax: "350.00", repeat: "weekly",
+    objectGroup: FIXED_COSTS },
     addDays(options.today, -1), "Netto", "Dagligvarer",
     [1, 8, 15, 22].map((back) => ({ date: addDays(options.today, -back), amount: "299.00" })));
   recurring({ name: "Havehjælp", amountMin: "700.00", amountMax: "900.00", repeat: "monthly", skip: 1 },
