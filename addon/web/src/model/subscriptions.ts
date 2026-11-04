@@ -32,8 +32,10 @@ export interface SubscriptionRow {
   objectGroup: string;
   /** "1. nov"; null: no next date. */
   next: string | null;
-  /** "8.000 kr. pr. måned", which wraps only between the amount and its repeat. */
+  /** "8.000 kr.", unbroken. */
   amount: string;
+  /** "pr. måned", unbroken; the table shows it on its own line under the amount. */
+  repeat: string;
   perYear: string;
   category: string;
   /** Øre, for sorting. */
@@ -81,9 +83,15 @@ function shown(ctx: ViewContext): Shown[] {
     );
 }
 
-/** The Beløb column's text: "8.000 kr. pr. måned", which wraps only between the amount and its repeat. */
+/** The Beløb cell's two lines, each unbroken. */
+function paymentParts(s: Subscription): { amount: string; repeat: string } {
+  return { amount: unbroken(kr(amountPerPayment(s))), repeat: unbroken(da.repeatText(s.repeat, s.skip)) };
+}
+
+/** "8.000 kr. pr. måned" on one line, which wraps only between the amount and its repeat. */
 export function paymentText(s: Subscription): string {
-  return `${unbroken(kr(amountPerPayment(s)))} ${unbroken(da.repeatText(s.repeat, s.skip))}`;
+  const { amount, repeat } = paymentParts(s);
+  return `${amount} ${repeat}`;
 }
 
 export function statusCell(status: SubscriptionStatus, today: string): SubscriptionRow["status"] {
@@ -94,6 +102,15 @@ export function billHref(base: string | null, id: string): string | null {
   return base === null ? null : `${base}/bills/show/${encodeURIComponent(id)}`;
 }
 
+function isDue(status: SubscriptionStatus, today: string): boolean {
+  return status.kind === "expected" && status.date !== null && status.date < today;
+}
+
+/** Ikke set and Forfalden carry the date in the status, so the name cell shows no "næste". */
+function statusShowsDate(status: SubscriptionStatus, today: string): boolean {
+  return status.kind === "notSeen" || isDue(status, today);
+}
+
 function statusText(status: SubscriptionStatus, today: string): string {
   switch (status.kind) {
     case "notSeen":
@@ -101,7 +118,8 @@ function statusText(status: SubscriptionStatus, today: string): string {
     case "risen":
       return da.status.risen(...stepAmounts(status.max, status.paid));
     case "expected":
-      return da.status.expected(status.date === null ? null : shortDate(status.date, today));
+      if (status.date === null) return da.status.expected(null);
+      return (isDue(status, today) ? da.status.due : da.status.expected)(shortDate(status.date, today));
     case "paid":
       return da.status.paid(shortDate(status.date, today));
   }
@@ -167,8 +185,8 @@ export function subscriptionTable(ctx: ViewContext, kept: Sorted<SubscriptionCol
       id: s.id,
       name: s.name,
       objectGroup: s.objectGroup,
-      next: next === null || status.kind === "notSeen" ? null : shortDate(next, today),
-      amount: paymentText(s),
+      next: next === null || statusShowsDate(status, today) ? null : shortDate(next, today),
+      ...paymentParts(s),
       perYear: kr(amountPerYear(s)),
       category: known ? last : da.noCategory,
       amountOre: amountPerPayment(s),

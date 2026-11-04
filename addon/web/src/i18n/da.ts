@@ -213,7 +213,6 @@ export const da = {
   hideHidden: "Skjul skjulte",
   noShop: (sum: string) => `Uden butik: ${sum}`,
   noShops: "Ingen butikker at vise",
-  share: (p: number) => `${p} %`,
   fetching: "Henter …",
   hiddenUnreadable: "Skjulte butikker kunne ikke hentes.",
   saveFailed: "Kunne ikke gemme. Prøv igen.",
@@ -246,12 +245,13 @@ export const da = {
   nextOn: (date: string) => `næste ${date}`,
   noSubscriptions: (name: string) => `Ingen faste udgifter i ${name}`,
   subscriptionsFoot:
-    "Fra Firefly III. Beløbet er midten af den faste udgifts beløbsinterval. Om året er det regnet om til et år.",
+    "Fra Firefly III. Beløbet er midten af den faste udgifts beløbsinterval, eller den seneste betaling, når den er steget. Om året er det regnet om til et år.",
   status: {
     notSeen: (date: string) => `Ikke set · ventet ${date}`,
     risen: (max: string, paid: string) => `Steget · ${max} → ${paid} ${da.kr}`,
     expected: (date: string | null) => (date === null ? "Forventes ikke" : `Forventes ${date}`),
     paid: (date: string) => `Betalt ${date}`,
+    due: (date: string) => `Forfalden ${date}`,
   },
   backTo: (title: string) => `Tilbage til ${title}`,
   close: "Luk",

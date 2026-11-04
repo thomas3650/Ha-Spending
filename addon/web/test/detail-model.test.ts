@@ -214,7 +214,7 @@ describe("a detail's head and boxes", () => {
     const v = shown(sub("b1"), data);
     const row = subscriptionRows(viewContext(data, DEFAULT_STATE, TODAY)).find((r) => r.id === "b1");
     expect(v.amount).toBe(`8.000${NBSP}kr. pr.${NBSP}måned`);
-    expect(v.amount).toBe(row?.amount);
+    expect(v.amount).toBe(`${row?.amount} ${row?.repeat}`);
     expect(v.status).toEqual(row?.status);
     expect(v.status?.kind).toBe("expected");
     expect(v.href).toBe(`${LINK}/bills/show/b1`);

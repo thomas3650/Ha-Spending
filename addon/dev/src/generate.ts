@@ -217,6 +217,9 @@ export function generateSeed(options: { today: string; seed: number }): SeedData
     monthsBack(soon(3), ["119.00", "119.00", "99.00"]));
   recurring({ name: "Mobilabonnement", amountMin: "149.00", amountMax: "199.00", repeat: "monthly",
     objectGroup: FIXED_COSTS }, soon(1), "Teleselskabet", "Mobil", monthsBack(soon(1), ["179.00", "179.00"]));
+  recurring({ name: "Fitnessabonnement", amountMin: "249.00", amountMax: "299.00", repeat: "monthly",
+    objectGroup: SUBSCRIPTIONS_GROUP }, soon(-2), "Sportsklubben", "Sport",
+    monthsBack(soon(-2), ["279.00", "279.00"]));
   recurring({ name: "Spotify", amountMin: "99.00", amountMax: "119.00", repeat: "monthly",
     objectGroup: SUBSCRIPTIONS_GROUP },
     addDays(options.today, -10), "Spotify", "Streaming",

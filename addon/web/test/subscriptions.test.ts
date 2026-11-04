@@ -116,6 +116,22 @@ describe("the subscriptions key number", () => {
 });
 
 describe("the subscriptions card", () => {
+  it("shows a payment under 1 kr. above the max as no rise, and a larger one as what is paid now", async () => {
+    const base = SUBSCRIPTIONS[1];
+    const small = { ...base, amountMin: 9800, amountMax: 9900, lastPayment: { ...base.lastPayment!, amount: 9950 } };
+    const large = { ...base, amountMin: 9940, amountMax: 9940, lastPayment: { ...base.lastPayment!, amount: 10060 } };
+    const { root: smallRoot } = await mountWith("card=subscriptions", [small]);
+    expect(cells(card(smallRoot, "Faste udgifter"), "Streaming").slice(1, 3)).toEqual(["99 kr. pr. måned", "1.182 kr."]);
+    expect(text(card(smallRoot, "Faste udgifter"))).not.toContain("Steget");
+    unmount();
+    const { root } = await mountWith("card=subscriptions", [large]);
+    expect(cells(card(root, "Faste udgifter"), "Streaming").slice(1)).toEqual([
+      "101 kr. pr. måned",
+      "1.207 kr.",
+      "Steget · 99 → 101 kr.",
+    ]);
+  });
+
   it("lists every subscription in the order of its status within its group", async () => {
     const { root } = await mountWith("card=subscriptions");
     const region = card(root, "Faste udgifter");
@@ -128,7 +144,7 @@ describe("the subscriptions card", () => {
     ]);
     expect(rowNames(region)).toEqual(["Indboforsikring", "Husleje", "Bilforsikring", "Streaming", "Avis", "Tennisklub"]);
     expect(cells(region, "Husleje")).toEqual(["Husleje næste 1. nov", "8.000 kr. pr. måned", "96.000 kr.", "Forventes 1. nov"]);
-    expect(cells(region, "Streaming").slice(1)).toEqual(["114 kr. pr. måned", "1.368 kr.", "Steget · 129 → 149 kr."]);
+    expect(cells(region, "Streaming").slice(1)).toEqual(["149 kr. pr. måned", "1.788 kr.", "Steget · 129 → 149 kr."]);
     expect(cells(region, "Indboforsikring")[0]).toBe("Indboforsikring");
     expect(cells(region, "Indboforsikring").slice(1)).toEqual([
       "900 kr. pr. kvartal",
@@ -142,7 +158,10 @@ describe("the subscriptions card", () => {
       "Betalt 1. mar",
     ]);
     expect(cells(region, "Avis").slice(1)).toEqual(["200 kr. hver 2. måned", "1.200 kr.", "Forventes 20. nov"]);
-    getByText(region, da.subscriptionsFoot);
+    getByText(
+      region,
+      "Fra Firefly III. Beløbet er midten af den faste udgifts beløbsinterval, eller den seneste betaling, når den er steget. Om året er det regnet om til et år.",
+    );
     const box = getByRole(region, "group", { name: "Faste udgifter" });
     expect(box.tabIndex).toBe(0);
     getByRole(box, "table");
@@ -250,7 +269,7 @@ describe("the object groups in the card", () => {
     const { root } = await mountWith("card=subscriptions");
     expect(sums(card(root, "Faste udgifter"))).toEqual([
       "Faste udgifter 105.600 kr. om året",
-      "Abonnementer 3.168 kr. om året",
+      "Abonnementer 3.588 kr. om året",
     ]);
   });
 
@@ -258,8 +277,8 @@ describe("the object groups in the card", () => {
     const { root } = await mountWith("card=subscriptions");
     const region = card(root, "Faste udgifter");
     const kroner = (box: string) => Number(/([\d.]+) kr\./.exec(box)![1].replace(/\./g, ""));
-    expect(sums(region).reduce((total, box) => total + kroner(box), 0)).toBe(108768);
-    expect(text(region)).not.toContain("108.768");
+    expect(sums(region).reduce((total, box) => total + kroner(box), 0)).toBe(109188);
+    expect(text(region)).not.toContain("109.188");
   });
 
   it("orders boxes with equal sums by name", async () => {
@@ -267,7 +286,7 @@ describe("the object groups in the card", () => {
       ...s,
       amountMin: 10000,
       amountMax: 10000,
-      lastPayment: s.lastPayment && { ...s.lastPayment, account: "1" },
+      lastPayment: s.lastPayment && { ...s.lastPayment, amount: 10000, account: "1" },
     }));
     const { root } = await mountWith("card=subscriptions", [
       { ...equal[0], objectGroup: "Faste udgifter" },
@@ -325,14 +344,30 @@ describe("the subscriptions card grouped", () => {
       "Mad 1 fast udgift",
       `${da.noMainGroup} 2 faste udgifter`,
     ]);
-    expect(within(groupRow(region, "Bolig")).getAllByRole("cell").map(text)).toEqual(["", "", "99.600 kr.", ""]);
-    expect(within(groupRow(region, "Bil")).getAllByRole("cell").map(text)).toEqual(["", "", "4.800 kr.", ""]);
+    expect(within(groupRow(region, "Bolig")).getAllByRole("cell").map(text)).toEqual(["99.600 kr.", ""]);
+    expect(within(groupRow(region, "Bil")).getAllByRole("cell").map(text)).toEqual(["4.800 kr.", ""]);
     expect(getAllByRole(region, "columnheader").map(text)).toContain("Kategori");
     expect(tbodyOf(region, "Bolig").contains(row(region, "Husleje"))).toBe(true);
     expect(tbodyOf(region, "Bil").contains(row(region, "Husleje"))).toBe(false);
     expect(tbodyOf(region, "Bil").contains(row(region, "Bilforsikring"))).toBe(true);
     expect(categoryOf(region, "Husleje")).toBe("Husleje");
     expect(categoryOf(region, "Streaming")).toBe("Café");
+  });
+
+  it("gives a group's row one row header over the empty columns, with and without Kategori", async () => {
+    for (const [hash, title, group] of [
+      ["card=subscriptions", "Faste udgifter", "Bolig"],
+      ["group=Bolig&card=subscriptions", "Faste udgifter i Bolig", "Husleje"],
+    ]) {
+      const { root } = await mountWith(hash);
+      const row = groupRow(card(root, title), group);
+      const [header] = within(row).getAllByRole("rowheader") as HTMLTableCellElement[];
+      expect(within(row).getAllByRole("rowheader")).toHaveLength(1);
+      expect(within(row).getAllByRole("cell")).toHaveLength(2);
+      const columns = within(card(root, title)).getAllByRole("columnheader").length;
+      expect(header.colSpan).toBe(columns - 2);
+      unmount();
+    }
   });
 
   it("puts one with no payment and one with an unknown category last, reading Uden kategori", async () => {
@@ -377,7 +412,7 @@ describe("the subscriptions card grouped", () => {
     const region = card(root, "Faste udgifter i Bolig");
     expect(groupHeaders(region).map(text)).toEqual(["Husleje 2 faste udgifter"]);
     expect(getAllByRole(region, "columnheader").map(text)).not.toContain("Kategori");
-    expect(within(groupRow(region, "Husleje")).getAllByRole("cell").map(text)).toEqual(["", "99.600 kr.", ""]);
+    expect(within(groupRow(region, "Husleje")).getAllByRole("cell").map(text)).toEqual(["99.600 kr.", ""]);
   });
 
   it("puts the no-payment and unknown-category ones of Uden hovedgruppe under one Uden kategori, last", async () => {
@@ -411,6 +446,41 @@ describe("the answer's today", () => {
     const husleje = rows.find((r) => r.name === "Husleje");
     expect(husleje?.status.text).toBe("Forventes 1. nov");
     expect(husleje?.next).toBe("1. nov");
+  });
+});
+
+describe("a payment that is due", () => {
+  const monthly = (id: string, name: string, lastDate: string): Subscription => ({
+    id,
+    name,
+    objectGroup: "Faste udgifter",
+    repeat: "monthly",
+    skip: 0,
+    start: lastDate,
+    end: null,
+    amountMin: 50000,
+    amountMax: 50000,
+    lastPayment: { date: lastDate, amount: 50000, category: "Husleje", account: "1" },
+  });
+
+  it("says Forfalden with its date and no next date, when the date is before today", async () => {
+    const { root } = await mountWith("card=subscriptions", [monthly("d1", "Fitness", "2026-09-28")]);
+    expect(cells(card(root, "Faste udgifter"), "Fitness")).toEqual([
+      "Fitness",
+      "500 kr. pr. måned",
+      "6.000 kr.",
+      "Forfalden 28. okt",
+    ]);
+  });
+
+  it("says Forventes with its date and the next date, when the date is today", async () => {
+    const { root } = await mountWith("card=subscriptions", [monthly("d2", "Fitness", "2026-09-30")]);
+    expect(cells(card(root, "Faste udgifter"), "Fitness")).toEqual([
+      "Fitness næste 30. okt",
+      "500 kr. pr. måned",
+      "6.000 kr.",
+      "Forventes 30. okt",
+    ]);
   });
 });
 
