@@ -61,6 +61,13 @@ describe("generateSeed", () => {
     for (const x of linked) expect(names).toContain(x.subscription);
   });
 
+  it("has a monthly subscription whose payment fell due two days ago and has not come", () => {
+    const due = (s.subscriptions ?? []).find((x) => x.name === "Fitnessabonnement");
+    const paid = splits.filter((x) => x.subscription === "Fitnessabonnement").map((x) => x.date).sort();
+    expect(due?.repeat).toBe("monthly");
+    expect(paid.at(-1)).toBe("2026-09-28");
+  });
+
   it("puts bills in both object groups and leaves one without", () => {
     const group = (name: string) => (s.subscriptions ?? []).find((x) => x.name === name)?.objectGroup;
     expect(group("Netflix")).toBe("Abonnementer");

@@ -246,6 +246,7 @@ export const da = {
     risen: (max: string, paid: string) => `Steget · ${max} → ${paid} ${da.kr}`,
     expected: (date: string | null) => (date === null ? "Forventes ikke" : `Forventes ${date}`),
     paid: (date: string) => `Betalt ${date}`,
+    due: (date: string) => `Forfalden ${date}`,
   },
   backTo: (title: string) => `Tilbage til ${title}`,
   close: "Luk",

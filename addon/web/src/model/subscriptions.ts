@@ -94,6 +94,15 @@ export function billHref(base: string | null, id: string): string | null {
   return base === null ? null : `${base}/bills/show/${encodeURIComponent(id)}`;
 }
 
+function isDue(status: SubscriptionStatus, today: string): boolean {
+  return status.kind === "expected" && status.date !== null && status.date < today;
+}
+
+/** Ikke set and Forfalden carry the date in the status, so the name cell shows no "næste". */
+function statusShowsDate(status: SubscriptionStatus, today: string): boolean {
+  return status.kind === "notSeen" || isDue(status, today);
+}
+
 function statusText(status: SubscriptionStatus, today: string): string {
   switch (status.kind) {
     case "notSeen":
@@ -101,7 +110,8 @@ function statusText(status: SubscriptionStatus, today: string): string {
     case "risen":
       return da.status.risen(...stepAmounts(status.max, status.paid));
     case "expected":
-      return da.status.expected(status.date === null ? null : shortDate(status.date, today));
+      if (status.date === null) return da.status.expected(null);
+      return (isDue(status, today) ? da.status.due : da.status.expected)(shortDate(status.date, today));
     case "paid":
       return da.status.paid(shortDate(status.date, today));
   }
@@ -167,7 +177,7 @@ export function subscriptionTable(ctx: ViewContext, kept: Sorted<SubscriptionCol
       id: s.id,
       name: s.name,
       objectGroup: s.objectGroup,
-      next: next === null || status.kind === "notSeen" ? null : shortDate(next, today),
+      next: next === null || statusShowsDate(status, today) ? null : shortDate(next, today),
       amount: paymentText(s),
       perYear: kr(amountPerYear(s)),
       category: known ? last : da.noCategory,

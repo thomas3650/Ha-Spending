@@ -430,6 +430,41 @@ describe("the answer's today", () => {
   });
 });
 
+describe("a payment that is due", () => {
+  const monthly = (id: string, name: string, lastDate: string): Subscription => ({
+    id,
+    name,
+    objectGroup: "Faste udgifter",
+    repeat: "monthly",
+    skip: 0,
+    start: lastDate,
+    end: null,
+    amountMin: 50000,
+    amountMax: 50000,
+    lastPayment: { date: lastDate, amount: 50000, category: "Husleje", account: "1" },
+  });
+
+  it("says Forfalden with its date and no next date, when the date is before today", async () => {
+    const { root } = await mountWith("card=subscriptions", [monthly("d1", "Fitness", "2026-09-28")]);
+    expect(cells(card(root, "Faste udgifter"), "Fitness")).toEqual([
+      "Fitness",
+      "500 kr. pr. måned",
+      "6.000 kr.",
+      "Forfalden 28. okt",
+    ]);
+  });
+
+  it("says Forventes with its date and the next date, when the date is today", async () => {
+    const { root } = await mountWith("card=subscriptions", [monthly("d2", "Fitness", "2026-09-30")]);
+    expect(cells(card(root, "Faste udgifter"), "Fitness")).toEqual([
+      "Fitness næste 30. okt",
+      "500 kr. pr. måned",
+      "6.000 kr.",
+      "Forventes 30. okt",
+    ]);
+  });
+});
+
 describe("with no subscriptions", () => {
   it("shows plain key numbers and no Faste udgifter", async () => {
     const { root } = await mount("card=subscriptions");
