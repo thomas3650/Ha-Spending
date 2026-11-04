@@ -109,6 +109,22 @@ describe("the subscriptions key number", () => {
     card(root, "Faste udgifter");
   });
 
+  it("shows a payment under 1 kr. above the max as no rise, and a larger one as what is paid now", async () => {
+    const base = SUBSCRIPTIONS[1];
+    const small = { ...base, amountMin: 9800, amountMax: 9900, lastPayment: { ...base.lastPayment!, amount: 9950 } };
+    const large = { ...base, amountMin: 9940, amountMax: 9940, lastPayment: { ...base.lastPayment!, amount: 10060 } };
+    const { root: smallRoot } = await mountWith("card=subscriptions", [small]);
+    expect(cells(card(smallRoot, "Faste udgifter"), "Streaming").slice(1, 3)).toEqual(["99 kr. pr. måned", "1.182 kr."]);
+    expect(text(card(smallRoot, "Faste udgifter"))).not.toContain("Steget");
+    unmount();
+    const { root } = await mountWith("card=subscriptions", [large]);
+    expect(cells(card(root, "Faste udgifter"), "Streaming").slice(1)).toEqual([
+      "101 kr. pr. måned",
+      "1.207 kr.",
+      "Steget · 99 → 101 kr.",
+    ]);
+  });
+
   it("counts one subscription in the singular", async () => {
     const { root } = await mountWith("card=subscriptions", [SUBSCRIPTIONS[0]]);
     expect(text(groupRow(card(root, "Faste udgifter"), "Bolig"))).toContain(da.subscriptionCount(1));
@@ -128,7 +144,7 @@ describe("the subscriptions card", () => {
     ]);
     expect(rowNames(region)).toEqual(["Indboforsikring", "Husleje", "Bilforsikring", "Streaming", "Avis", "Tennisklub"]);
     expect(cells(region, "Husleje")).toEqual(["Husleje næste 1. nov", "8.000 kr. pr. måned", "96.000 kr.", "Forventes 1. nov"]);
-    expect(cells(region, "Streaming").slice(1)).toEqual(["114 kr. pr. måned", "1.368 kr.", "Steget · 129 → 149 kr."]);
+    expect(cells(region, "Streaming").slice(1)).toEqual(["149 kr. pr. måned", "1.788 kr.", "Steget · 129 → 149 kr."]);
     expect(cells(region, "Indboforsikring")[0]).toBe("Indboforsikring");
     expect(cells(region, "Indboforsikring").slice(1)).toEqual([
       "900 kr. pr. kvartal",
@@ -250,7 +266,7 @@ describe("the object groups in the card", () => {
     const { root } = await mountWith("card=subscriptions");
     expect(sums(card(root, "Faste udgifter"))).toEqual([
       "Faste udgifter 105.600 kr. om året",
-      "Abonnementer 3.168 kr. om året",
+      "Abonnementer 3.588 kr. om året",
     ]);
   });
 
@@ -258,8 +274,8 @@ describe("the object groups in the card", () => {
     const { root } = await mountWith("card=subscriptions");
     const region = card(root, "Faste udgifter");
     const kroner = (box: string) => Number(/([\d.]+) kr\./.exec(box)![1].replace(/\./g, ""));
-    expect(sums(region).reduce((total, box) => total + kroner(box), 0)).toBe(108768);
-    expect(text(region)).not.toContain("108.768");
+    expect(sums(region).reduce((total, box) => total + kroner(box), 0)).toBe(109188);
+    expect(text(region)).not.toContain("109.188");
   });
 
   it("orders boxes with equal sums by name", async () => {
@@ -267,7 +283,7 @@ describe("the object groups in the card", () => {
       ...s,
       amountMin: 10000,
       amountMax: 10000,
-      lastPayment: s.lastPayment && { ...s.lastPayment, account: "1" },
+      lastPayment: s.lastPayment && { ...s.lastPayment, amount: 10000, account: "1" },
     }));
     const { root } = await mountWith("card=subscriptions", [
       { ...equal[0], objectGroup: "Faste udgifter" },

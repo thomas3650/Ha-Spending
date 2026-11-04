@@ -197,8 +197,7 @@ export function shortDate(date: string, today: string): string {
   return year === parts(today).year ? text : `${text} ${year}`;
 }
 
-/** Whole kroner like the Beløb column, or both with øre when whole kroner would make the two read the same. */
+/** Both amounts in whole kroner like the Beløb column; a rise is at least 1 kr., so the two never read the same. */
 export function stepAmounts(max: number, paid: number): [string, string] {
-  const wholes: [string, string] = [whole.format(max / 100), whole.format(paid / 100)];
-  return wholes[0] === wholes[1] ? [cents.format(max / 100), cents.format(paid / 100)] : wholes;
+  return [whole.format(max / 100), whole.format(paid / 100)];
 }

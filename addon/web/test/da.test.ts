@@ -36,7 +36,7 @@ describe("da", () => {
   });
   it("words a subscription's status", () => {
     expect(da.status.notSeen("5. jul")).toBe("Ikke set · ventet 5. jul");
-    expect(da.status.risen("149,50", "149,75")).toBe("Steget · 149,50 → 149,75 kr.");
+    expect(da.status.risen("149", "150")).toBe("Steget · 149 → 150 kr.");
     expect(da.status.expected("1. nov")).toBe("Forventes 1. nov");
     expect(da.status.expected(null)).toBe("Forventes ikke");
     expect(da.status.paid("1. mar")).toBe("Betalt 1. mar");
