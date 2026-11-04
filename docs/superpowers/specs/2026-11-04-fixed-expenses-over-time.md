@@ -141,8 +141,8 @@ The left half holds the bars, titled "<object-group step text> pr. måned" (or "
 - **A chosen unit** is resolved against these units, not the overview's. So December, or any month of "I år" in
   January, can be chosen in the view. The bars are buttons whenever there are two or more units; with days (one
   month), they are not, as D59 says.
-- **In the three presets that run on, the units after today** hold estimates instead of being empty slots (D23). A unit that has begun and runs past
-  today is the running unit, as today.
+- **In the three presets that run on, the units after today** hold estimates instead of being empty slots (D23). A
+  unit that has begun and runs past today is the running unit, as today.
 - "Sidste 12 måneder" and the other presets end before today's month, so they have no running unit and no estimates.
 
 ### 5.2 Colours follow the tree
@@ -251,9 +251,8 @@ D20's rules hold. One new value and one new key:
 
 - `og` falls back to absent (Alle) when it is not in §3.2's set of object groups, or when there is only one.
 - `view=fixed` falls back to the overview when the answer has no subscriptions, as the link then does not exist.
-- **`unit` with `view=fixed`** is kept when the view's units (§5.1) have a unit starting on that date, and dropped
-  otherwise, and when the bars are not buttons (days, §5.1). This is an exception to top filter spec §6's `unit` rule,
-  for the view only.
+- **`unit` with `view=fixed`** is kept when the bars are buttons and the view's units (§5.1) have a unit starting on
+  that date; otherwise it is dropped. This is an exception to top filter spec §6's `unit` rule, for the view only.
 - **Leaving the view** by a replace (§2) drops a `unit` the overview's period does not have, by §6's rule.
 - With `view=fixed`, `card` keeps the overview's tab, so leaving shows the tab the view was opened from. `detail` is
   dropped. Claude's call.
@@ -273,9 +272,9 @@ Made-up data only. Hard rule 5: behaviour through roles, accessible names and re
   Escape right after the open go back, and a following Back does not reopen the view. ← after choosing another object
   group leaves the view by a replace. The Faste udgifter tab's ⤢ still opens its table in full screen.
 - §3: the "Sti" text reads "Alt forbrug › Faste udgifter › I år Hovedgruppe", and in Bolig "Alt forbrug › Bolig ›
-  Faste udgifter › I år Kategori". "Skift objektgruppe: Faste udgifter"
-  opens the groups and Alle with their counts and sums; choosing Alle shows "Alle faste udgifter" and removes a chosen
-  unit; with one object group there is no list.
+  Faste udgifter › I år Kategori". "Skift objektgruppe: Faste udgifter" opens the groups and Alle with their counts
+  and sums; choosing Alle shows "Alle faste udgifter" and removes a chosen unit; with one object group there is no
+  list.
 - §4: with "I år" on 4 November, the four cards' values match the fake data: "Betalt i år" equals the overview's
   key-number value for the same object group; "Resterende udgifter" is the sum of the estimate rows, a due one
   included; "Estimat for hele 2026" is their sum; "Pr. måned i snit" is a twelfth of it. "Denne måned", "Alt" and
