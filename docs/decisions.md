@@ -191,7 +191,7 @@ to set their status to `superseded by D<n>`, or to name a part a later decision 
 - **Source:** Claude, [page plan](superpowers/plans/2026-10-31-page.md)
 
 ### D20: The view state's hash
-- **Date:** 2026-10-31 · **Status:** active; key list superseded by D35, D42, D44, D60 and D61
+- **Date:** 2026-10-31 · **Status:** active; key list superseded by D35, D42, D44, D60, D61 and D66
 - **Decision:**
   - The keys are `period`, `from`, `to`, `by`, `accounts`, `group`, `category`, `unit`, `card`, `view`, `q`, `sort`,
     `min` and `max`, in a `URLSearchParams` string.
@@ -221,7 +221,7 @@ to set their status to `superseded by D<n>`, or to name a part a later decision 
 - **Source:** Claude, [page plan](superpowers/plans/2026-10-31-page.md)
 
 ### D23: Dates follow the UI spec, and a unit after today is empty
-- **Date:** 2026-10-31 · **Status:** active
+- **Date:** 2026-10-31 · **Status:** active; "a unit after today is empty" superseded in the fixed-expenses view by D66
 - **Decision:**
   - Short month names come without a dot, from `da.months`, so a range reads "1. jan – 30. okt 2026". `Intl` stays
     for numbers, long month names and table dates.
@@ -644,7 +644,7 @@ to set their status to `superseded by D<n>`, or to name a part a later decision 
   is Claude's call.
 
 ### D62: The object-group links open the Faste udgifter tab
-- **Date:** 2026-11-04 · **Status:** active
+- **Date:** 2026-11-04 · **Status:** active; "opens the Faste udgifter tab in the normal card" superseded by D66
 - **Decision:** The link under each object-group key number reads "Vis faste udgifter →" and opens the Faste udgifter
   tab in the normal card. The object-group filter (`og`) goes.
 - **Why:** Fixed payments are seen under their own tab, not as a filter of the postings.
@@ -685,6 +685,21 @@ to set their status to `superseded by D<n>`, or to name a part a later decision 
 - **Source:** Claude, 2026-11-04, under the controller session's brief, and the
   [small walkthrough fixes spec](superpowers/specs/2026-11-04-walkthrough-small-fixes.md) §7
 
+### D66: A view of the fixed expenses over time
+- **Date:** 2026-11-04 · **Status:** active
+- **Decision:**
+  - "Vis faste udgifter →" opens a view with the fixed expenses as bars per unit and the payments under them. A trail
+    step right after "Alt forbrug" chooses an object group or all of them; the view is `view=fixed` with `og` in the
+    hash.
+  - Paid is solid. The due dates on and after today, and a due one, are hatched estimates of `amountPerPayment`. "I
+    år", "Denne måned" and "Alt" run on past today to their own end; the units after today hold estimates, and a
+    chosen unit is resolved against the view's units.
+  - The bars stack by the tree's next level in the overview's colours; a part without one takes a free palette colour.
+- **Why:** Thomas missed an overview of what the fixed expenses cost per month, backwards and forwards, with the
+  estimate visible.
+- **Source:** Thomas, 2026-11-04, [fixed expenses over time spec](superpowers/specs/2026-11-04-fixed-expenses-over-time.md).
+  The span, the colour rule for parts without a circle colour and the hash rules are Claude's call.
+
 ### D67: The bars fill the window's height in full screen
 - **Date:** 2026-11-04 · **Status:** active
 - **Decision:** In full screen the Søjler chart grows so the page reaches the window's bottom edge, and it is never
@@ -701,3 +716,14 @@ to set their status to `superseded by D<n>`, or to name a part a later decision 
   follows [D19](#d19-the-charts-are-drawn-by-echarts-and-named-in-the-dom).
 - **Why:** One line of wiring is not worth a kind of test that later tests would copy (#132).
 - **Source:** Claude, 2026-11-04, [full-screen bars spec](superpowers/specs/2026-11-04-full-screen-bars-and-follow-ups.md) §3.
+
+### D69: The unit is a trail step with a list, and a unit within one year has no year
+- **Date:** 2026-11-04 · **Status:** active
+- **Decision:**
+  - On every screen the period is followed by the unit step: a dashed "Måned" or "År" with no unit, or the chosen unit
+    with ▾ and ×. Both open a list of the bars' units with their sums. Where the bars are not buttons there is none.
+  - When the bars' units lie in one calendar year, a unit is named without its year.
+- **Why:** Thomas wanted to choose the month from the top like the other steps, with the same top bar on every screen,
+  and a year repeated on every month said nothing.
+- **Source:** Thomas, 2026-11-04, [fixed expenses over time spec](superpowers/specs/2026-11-04-fixed-expenses-over-time.md)
+  §3.2 and §3.3. The list's rows and the dashed button's place are Claude's call.

@@ -159,7 +159,7 @@ The page's list. Every screenshot is at 1440×960 with the console free of error
     of them. At 1440 and 1728 px the cards are a fifth of the row wide and the end of the row is empty, with and without
     a chosen unit.
 31. `46-objektgruppe-link`: the two object group key numbers at Alt forbrug and at a
-    main group; the link "Vis faste udgifter →" under each opens the Faste udgifter tab in the normal card, and Back
+    main group; the link "Vis faste udgifter →" under each opens the fixed-expenses view ([D66](decisions.md)), and Back
     returns to the card before. At 1440 px.
 32. `47-butikker`: the Butikker card at Alt forbrug, at a main group and at a category (the title "Butikker i Mad"), and
     with a chosen unit as a step in the trail. The rows run biggest first, with place, bar, sum and share; "Uden butik"
@@ -245,3 +245,10 @@ The page's list. Every screenshot is at 1440×960 with the console free of error
     The bar's tooltip says "+… kr. retur", the axis goes only a little below zero, and no tick has a minus.
     The accessibility tree of the trail's steps and of the Beløb pill shows no "menu", and the empty pill is named
     "Filtrér på beløb".
+51. `66-faste-udgifter-over-tid`: the fixed-expenses view ([fixed expenses over time
+    spec](superpowers/specs/2026-11-04-fixed-expenses-over-time.md) §9), at 1440 and 1728 px. The way in from both
+    object-group cards, and the object-group step with its list of groups and "Alle". "I år", "Denne måned", "Sidste år"
+    and "Alt": the four key numbers, the hatched estimates and the "i dag" line only where the span runs past today.
+    A chosen unit, and the month step in the trail ([D69](decisions.md)) on the overview and in the view: the dashed
+    "Måned", the list with its sums, a month without its year inside one year, and the cross. The colours at Alt
+    forbrug, in a main group and in a category. The way out by ← and by Back.

@@ -46,7 +46,9 @@ The page is in Danish and has a light theme. It is made for a computer's screen;
 layout of its own there, and a table can scroll sideways. Click a bar to choose a unit, a main group to see its
 categories and a category to see its postings. The trail at the top of the page is the filter for the whole overview.
 It names what is chosen, in the order period, unit, main group, category. The period is always there: press it to
-change it. A unit, a main group and a category each have a cross that removes it; the cross on a main group removes its
+change it. Right after it comes the unit step: a dashed "Måned" (or "År") button, or the chosen month with a cross.
+Both open a list of the bars' months with their sums, so you can choose a month from the top as well as from a bar. A
+unit, a main group and a category each have a cross that removes it; the cross on a main group removes its
 category too. A main group or a category is also a button: press it to switch to another one at the same level. The
 dashed button at the end of the trail offers the next level, so it is the way to choose a main group in full screen,
 where there is no circle. "Alt forbrug" in the trail clears the unit, the main group and the category and keeps the
@@ -79,7 +81,16 @@ a click on that count opens the Posteringer card in full screen, with no quick f
 The key number for an object group shows the payments of that group in the period, with the sum per month and the
 number of subscriptions paid. With a unit chosen it shows the payments in that unit, as "<group> i <unit>", with the
 number of subscriptions paid and no sum per month. The key numbers are not buttons; the Faste udgifter choice in the
-right card shows that view. Under each one, the link "Vis faste udgifter →" opens that card.
+right card shows that view. Under each one, the link "Vis faste udgifter →" opens the fixed-expenses view.
+
+The fixed-expenses view shows what the fixed expenses cost per month, with that object group chosen in the first step
+of the trail ("Alle faste udgifter" for all of them). The bars on the left are the months of the period, stacked by
+main group, category or fixed expense, with the payments on the right. A payment already made is solid. A payment
+still to come is a hatched estimate in the same colour, marked "ca.", and is the amount of the fixed expense's
+latest payment. "I år", "Denne måned" and "Alt" run on past today to the end of the year, month or running unit, so
+they show the estimates; other periods show only what was paid. A fixed expense that was not seen on its date is listed
+with no amount and is left out of every sum. Press a bar to see only that month's payments. The ← button before the
+trail, Escape and the browser's Back button leave the view.
 
 On the Posteringer card the quick filter sits over the list: a search field and the Beløb pill. The search matches the
 text or a shop; the suggestions show each shop's count and sum. The Beløb pill offers four kinds: Omkring (the amount
