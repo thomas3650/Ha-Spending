@@ -25,6 +25,7 @@ import {
   setMainGroup,
   setObjectGroup,
   setPeriod,
+  setFullScreen,
   setSearch,
   setUnit,
   setSort,
@@ -482,6 +483,16 @@ describe("the detail", () => {
     expect(keepDetail(onShops, openShop(onShops, "Netto")).detail).toBeNull();
     const all = openAllPostingsFresh(onPostings);
     expect(keepDetail(all, backToOverview(all)).detail).toBeNull();
+  });
+
+  it("full screen on and off keeps it", () => {
+    const s = state({ card: "postings", detail: posting("p23") });
+    const on = setFullScreen(s, true);
+    expect(on).toEqual({ ...s, fullScreen: true });
+    expect(keepDetail(s, on).detail).toEqual(s.detail);
+    const off = setFullScreen(on, false);
+    expect(off).toEqual(s);
+    expect(keepDetail(on, off).detail).toEqual(s.detail);
   });
 
   it("the period, the accounts, the level, the unit, the search and the sort keep it", () => {

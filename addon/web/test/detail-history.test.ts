@@ -36,6 +36,24 @@ function fullScreen(root: HTMLElement): HTMLElement {
   return getByRole(root, "button", { name: da.fullScreen });
 }
 
+function pressed(root: HTMLElement): string | null {
+  return fullScreen(root).getAttribute("aria-pressed");
+}
+
+/** Mounts on the overview and pushes Posteringer, so a Back past it lands on a known entry. */
+async function toPostings(): Promise<{ app: SpendingApp; root: HTMLElement }> {
+  const { app, root } = await mount("");
+  fireEvent.click(getByRole(getByRole(root, "group", { name: da.view }), "button", { name: da.postings }));
+  await settle(app);
+  expect(location.hash).toBe("#card=postings");
+  return { app, root };
+}
+
+async function toggleFullScreen(app: SpendingApp, root: HTMLElement): Promise<void> {
+  fireEvent.click(fullScreen(root));
+  await settle(app);
+}
+
 describe("the detail in the history", () => {
   it("open, then Back, shows the list", async () => {
     const { app, root } = await mount("card=postings");
@@ -79,20 +97,40 @@ describe("the detail in the history", () => {
     await hashBecomes(app, "");
   });
 
-  it("two Escapes in a row close the detail once and then leave full screen", async () => {
-    const { app, root } = await mount("card=postings");
-    fireEvent.click(fullScreen(root));
-    await settle(app);
+  it("Escapes in a row close the detail once and then leave full screen, landing before ⤢", async () => {
+    const { app, root } = await toPostings();
+    await toggleFullScreen(app, root);
     await open(app, CAFE);
     // happy-dom's Back fires popstate at once; a browser's comes later, which is the case this test is about.
     const back = history.back.bind(history);
+    const go = history.go.bind(history);
     vi.spyOn(history, "back").mockImplementation(() => void setTimeout(back));
+    vi.spyOn(history, "go").mockImplementation((delta) => void setTimeout(() => go(delta)));
+    fireEvent.keyDown(window, { key: "Escape" });
     fireEvent.keyDown(window, { key: "Escape" });
     fireEvent.keyDown(window, { key: "Escape" });
     await hashBecomes(app, "#card=postings");
-    await settle(app);
+    await settle(app, 10);
     expect(location.hash).toBe("#card=postings");
-    expect(fullScreen(root).getAttribute("aria-pressed")).toBe("false");
+    expect(pressed(root)).toBe("false");
+    expect(queryByRole(root, "heading", { level: 3 })).toBeNull();
+    history.back();
+    await hashBecomes(app, "");
+  });
+
+  it("an Escape while ⤡'s Back is on its way closes the detail once it lands", async () => {
+    const { app, root } = await toPostings();
+    await open(app, CAFE);
+    await toggleFullScreen(app, root);
+    const back = history.back.bind(history);
+    vi.spyOn(history, "back").mockImplementation(() => void setTimeout(back));
+    fireEvent.click(fullScreen(root));
+    fireEvent.keyDown(window, { key: "Escape" });
+    await hashBecomes(app, "#card=postings");
+    await settle(app, 10);
+    expect(location.hash).toBe("#card=postings");
+    expect(pressed(root)).toBe("false");
+    expect(queryByRole(root, "heading", { level: 3 })).toBeNull();
   });
 
   const bars = (root: HTMLElement) =>
@@ -104,10 +142,10 @@ describe("the detail in the history", () => {
     fireEvent.click(fullScreen(root));
     await settle(app);
     await open(app, CAFE);
-    expect(location.hash).toBe("#card=postings&detail=p%3Ap23");
+    expect(location.hash).toBe("#card=postings&view=full&detail=p%3Ap23");
     fireEvent.click(bars(root));
     await settle(app);
-    expect(location.hash).toBe("");
+    expect(location.hash).toBe("#view=full");
   });
 
   it("open, close, then Back does not reopen it", async () => {
@@ -145,16 +183,20 @@ describe("the detail in the history", () => {
     expect(history.length).toBe(length);
   });
 
-  it("Escape closes the detail and not full screen, and a second Escape leaves full screen", async () => {
-    const { app, root } = await mount("card=postings");
+  it("Escape closes the detail and not full screen, a second Escape leaves full screen, and Back is not full screen", async () => {
+    const { app, root } = await toPostings();
     fireEvent.click(fullScreen(root));
     await settle(app);
     await open(app, CAFE);
     await escape(app);
-    await hashBecomes(app, "#card=postings");
-    expect(fullScreen(root).getAttribute("aria-pressed")).toBe("true");
+    await hashBecomes(app, "#card=postings&view=full");
+    expect(pressed(root)).toBe("true");
     await escape(app);
-    expect(fullScreen(root).getAttribute("aria-pressed")).toBe("false");
+    await hashBecomes(app, "#card=postings");
+    expect(pressed(root)).toBe("false");
+    history.back();
+    await hashBecomes(app, "");
+    expect(pressed(root)).toBe("false");
   });
 
   it("Escape on Alle posteringer closes the detail", async () => {
@@ -185,7 +227,88 @@ describe("the detail in the history", () => {
     getByRole(root, "listbox", { name: da.suggestions });
     await escape(app, box);
     expect(queryByRole(root, "listbox", { name: da.suggestions })).toBeNull();
-    expect(location.hash).toBe("#card=postings&q=n&detail=p%3Ap23");
+    expect(location.hash).toBe("#card=postings&view=full&q=n&detail=p%3Ap23");
+  });
+});
+
+describe("full screen and the detail in the history", () => {
+  it("back after ⤡ with a detail: ⤢, a row, ⤡, then Back is not full screen", async () => {
+    const { app, root } = await toPostings();
+    await toggleFullScreen(app, root);
+    await open(app, CAFE);
+    expect(location.hash).toBe("#card=postings&view=full&detail=p%3Ap23");
+    await toggleFullScreen(app, root);
+    await hashBecomes(app, "#card=postings");
+    expect(pressed(root)).toBe("false");
+    expect(queryByRole(root, "heading", { level: 3 })).toBeNull();
+    history.back();
+    await hashBecomes(app, "");
+    expect(pressed(root)).toBe("false");
+  });
+
+  it("⤢, a row, another row, ⤡, then Back is not full screen", async () => {
+    const { app, root } = await toPostings();
+    await toggleFullScreen(app, root);
+    await open(app, CAFE);
+    await open(app, LATER);
+    expect(location.hash).toBe("#card=postings&view=full&detail=p%3Ap26");
+    await toggleFullScreen(app, root);
+    await hashBecomes(app, "#card=postings");
+    history.back();
+    await hashBecomes(app, "");
+    expect(pressed(root)).toBe("false");
+  });
+
+  it("⤢, a row, typing in the search, ⤡, then Back is not full screen", async () => {
+    const { app, root } = await toPostings();
+    await toggleFullScreen(app, root);
+    await open(app, CAFE);
+    fireEvent.input(getByRole(root, "combobox", { name: da.searchLabel }), { target: { value: "n" } });
+    await settle(app);
+    expect(location.hash).toBe("#card=postings&view=full&q=n&detail=p%3Ap23");
+    await toggleFullScreen(app, root);
+    await hashBecomes(app, "#card=postings");
+    history.back();
+    await hashBecomes(app, "");
+    expect(pressed(root)).toBe("false");
+  });
+
+  it("⤢, a row, typing: Escape closes the detail and keeps the search, then Escape and Back are not full screen", async () => {
+    const { app, root } = await toPostings();
+    await toggleFullScreen(app, root);
+    await open(app, CAFE);
+    fireEvent.input(getByRole(root, "combobox", { name: da.searchLabel }), { target: { value: "n" } });
+    await settle(app);
+    await escape(app);
+    expect(location.hash).toBe("#card=postings&view=full&q=n");
+    await escape(app);
+    await hashBecomes(app, "#card=postings");
+    expect(pressed(root)).toBe("false");
+    history.back();
+    await hashBecomes(app, "");
+    expect(pressed(root)).toBe("false");
+  });
+
+  it("a row, then ⤢, keeps the detail, and ⤡ goes back to it", async () => {
+    const { app, root } = await toPostings();
+    await open(app, CAFE);
+    await toggleFullScreen(app, root);
+    expect(location.hash).toBe("#card=postings&view=full&detail=p%3Ap23");
+    getByRole(getByRole(root, "region", { name: da.postingsTitle }), "group", { name: "Café Søde" });
+    await toggleFullScreen(app, root);
+    await hashBecomes(app, "#card=postings&detail=p%3Ap23");
+    expect(pressed(root)).toBe("false");
+    history.back();
+    await hashBecomes(app, "#card=postings");
+  });
+
+  it("with a detail from a reload in full screen, ⤡ replaces and closes the detail", async () => {
+    const { app, root } = await mount("card=postings&view=full&detail=p%3Ap23");
+    const length = history.length;
+    await toggleFullScreen(app, root);
+    expect(location.hash).toBe("#card=postings");
+    expect(history.length).toBe(length);
+    expect(pressed(root)).toBe("false");
   });
 });
 

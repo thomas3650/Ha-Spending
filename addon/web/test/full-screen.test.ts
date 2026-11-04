@@ -37,6 +37,11 @@ async function press(app: SpendingApp, root: HTMLElement): Promise<HTMLElement> 
   return button;
 }
 
+async function hashBecomes(app: SpendingApp, hash: string): Promise<void> {
+  await vi.waitFor(() => expect(location.hash).toBe(hash));
+  await settle(app);
+}
+
 async function escape(app: SpendingApp, target: Element): Promise<void> {
   fireEvent.keyDown(target, { key: "Escape" });
   await settle(app);
@@ -76,6 +81,70 @@ async function choosePreset(root: HTMLElement, app: SpendingApp, name: string) {
   fireEvent.click(getByRole(getByRole(root, "group", { name: da.period }), "button", { name }));
   await settle(app);
 }
+
+describe("full screen in the hash", () => {
+  const tab = (root: HTMLElement, name: string) =>
+    getByRole(getByRole(root, "group", { name: da.view }), "button", { name });
+
+  it("⤢ writes view=full in one new entry, and Back leaves it", async () => {
+    const { app, root } = await mount("card=postings");
+    const length = history.length;
+    await press(app, root);
+    expect(location.hash).toBe("#card=postings&view=full");
+    expect(history.length).toBe(length + 1);
+    expectOn(root);
+    history.back();
+    await hashBecomes(app, "#card=postings");
+    expectOff(root);
+  });
+
+  it("a reload of view=full opens in full screen", async () => {
+    const { root } = await mount("card=postings&view=full");
+    expectOn(root);
+    getByRole(root, "region", { name: da.postingsTitle });
+  });
+
+  it("⤡ goes back to the entry before ⤢", async () => {
+    const { app, root } = await mount("card=postings");
+    await press(app, root);
+    await press(app, root);
+    await hashBecomes(app, "#card=postings");
+    expectOff(root);
+    history.forward();
+    await hashBecomes(app, "#card=postings&view=full");
+    expectOn(root);
+  });
+
+  it("⤢, typing in the search, ⤡, then Back is not full screen", async () => {
+    const { app, root } = await mount("");
+    fireEvent.click(tab(root, da.postings));
+    await settle(app);
+    await press(app, root);
+    const box = getByRole(root, "combobox", { name: da.searchLabel });
+    fireEvent.input(box, { target: { value: "Netto" } });
+    await settle(app);
+    expect(location.hash).toBe("#card=postings&view=full&q=Netto");
+    await press(app, root);
+    await hashBecomes(app, "#card=postings");
+    expectOff(root);
+    history.back();
+    await hashBecomes(app, "");
+    expectOff(root);
+  });
+
+  it("⤢, then Søjler, then ⤡ replaces the entry", async () => {
+    const { app, root } = await mount("card=postings");
+    await press(app, root);
+    fireEvent.click(tab(root, da.bars));
+    await settle(app);
+    expect(location.hash).toBe("#view=full");
+    const length = history.length;
+    await press(app, root);
+    expect(location.hash).toBe("");
+    expect(history.length).toBe(length);
+    expectOff(root);
+  });
+});
 
 describe("Posteringer in full screen", () => {
   const card = (root: HTMLElement) => getByRole(root, "region", { name: da.postingsTitle });
@@ -137,11 +206,8 @@ describe("the right card in full screen", () => {
     expect(within(viewSwitch).queryByRole("button", { name: da.fullScreen })).toBeNull();
   });
 
-  it("leaves out the left card and the key numbers, keeps the focus, and touches no history", async () => {
+  it("leaves out the left card and the key numbers, and keeps the focus on the same button", async () => {
     const { app, root } = await mountWith("");
-    const hash = location.hash;
-    const push = vi.spyOn(history, "pushState");
-    const replace = vi.spyOn(history, "replaceState");
     expect(subscriptionsKey(root)).not.toBeNull();
 
     const button = await press(app, root);
@@ -149,15 +215,12 @@ describe("the right card in full screen", () => {
     expect(subscriptionsKey(root)).toBeNull();
     expect(app.shadowRoot?.activeElement).toBe(button);
     expect(fullScreen(root)).toBe(button);
-    expect(location.hash).toBe(hash);
 
     fireEvent.click(button);
     await settle(app);
     expectOff(root);
     expect(subscriptionsKey(root)).not.toBeNull();
     expect(app.shadowRoot?.activeElement).toBe(button);
-    expect(push).not.toHaveBeenCalled();
-    expect(replace).not.toHaveBeenCalled();
   });
 
   it("turns off on Escape on the overview", async () => {
@@ -165,17 +228,19 @@ describe("the right card in full screen", () => {
     const button = await press(app, root);
     await escape(app, button);
     expectOff(root);
+    expect(location.hash).toBe("");
   });
 
-  it("does nothing on Escape on Alle posteringer, and is still on when coming back", async () => {
+  it("is not on Alle posteringer, where Escape does nothing, and Back returns to it", async () => {
     const { app, root } = await mount("card=postings");
     await press(app, root);
     location.hash = "#card=postings&view=all-postings";
     await settle(app);
     getByRole(root, "heading", { level: 1, name: da.allPostings });
     await escape(app, document.body);
-    fireEvent.click(getByRole(getByRole(root, "navigation", { name: da.trail }), "link", { name: da.allSpending }));
-    await settle(app);
+    expect(location.hash).toBe("#card=postings&view=all-postings");
+    history.back();
+    await hashBecomes(app, "#card=postings&view=full");
     expectOn(root);
   });
 
@@ -210,7 +275,7 @@ describe("the right card in full screen", () => {
     const bars = getByRole(root, "region", { name: da.per("month") });
     fireEvent.click(getByRole(bars, "button", { name: new RegExp(`^${JULY},`) }));
     await settle(app);
-    expect(location.hash).toBe("#unit=2026-07-01&card=postings");
+    expect(location.hash).toBe("#unit=2026-07-01&card=postings&view=full");
     expectOn(root);
   });
 
@@ -298,7 +363,7 @@ describe("the detail in full screen", () => {
 
     fireEvent.click(getByRole(roma, "button", { name: da.close }));
     await settle(app);
-    expect(location.hash).toBe("#card=postings");
+    expect(location.hash).toBe("#card=postings&view=full");
     expect(queryByRole(root, "heading", { level: 3 })).toBeNull();
     expect(app.shadowRoot?.activeElement).toBe(rowButton(root, "Pizzeria Roma", "2026-09-22"));
     expectOn(root);

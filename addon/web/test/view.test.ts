@@ -28,6 +28,7 @@ describe("the view state's hash", () => {
       unit: "2026-02-02",
       card: "shops",
       screen: "allPostings",
+      fullScreen: false,
       search: "pizza",
       shop: "Netto",
       sort: { column: "amount", descending: true },
@@ -208,6 +209,27 @@ describe("the view state's hash", () => {
   it("og is dropped on the overview", () => {
     expect(parseHash("og=Abonnementer").objectGroup).toBeNull();
     expect(toHash({ ...DEFAULT_STATE, objectGroup: "Abonnementer" })).toBe("");
+  });
+
+  it("full screen is view=full, after the card and before the search", () => {
+    const s: ViewState = { ...DEFAULT_STATE, card: "postings", fullScreen: true, search: "rema" };
+    expect(toHash(s)).toBe("card=postings&view=full&q=rema");
+    expect(parseHash("#" + toHash(s))).toEqual(s);
+    expect(parseHash("view=full")).toEqual({ ...DEFAULT_STATE, fullScreen: true });
+    expect(DEFAULT_STATE.fullScreen).toBe(false);
+  });
+
+  it("view=full holds for every tab and keeps the detail", () => {
+    for (const card of ["bars", "postings", "subscriptions", "shops"] as const) {
+      expect(parseHash(`card=${card}&view=full`)).toMatchObject({ card, fullScreen: true, screen: "overview" });
+    }
+    const s: ViewState = { ...DEFAULT_STATE, card: "postings", fullScreen: true, detail: { kind: "posting", id: "p1" } };
+    expect(toHash(s)).toBe("card=postings&view=full&detail=p%3Ap1");
+  });
+
+  it("view=all-postings is not full screen, and an unknown view is neither", () => {
+    expect(parseHash("view=all-postings")).toMatchObject({ screen: "allPostings", fullScreen: false });
+    expect(parseHash("view=wide")).toEqual(DEFAULT_STATE);
   });
 
   it("tells no accounts from all accounts", () => {

@@ -55,6 +55,7 @@ import {
   setAmount,
   setCard,
   setCategory,
+  setFullScreen,
   setMainGroup,
   setObjectGroup,
   setPeriod,
@@ -89,9 +90,33 @@ type Load =
 
 /** Marks the history entry that opening a detail pushed, so closing knows it may go back (spec §5). */
 const DETAIL_ENTRY = { detail: true };
+/** Marks the entry that opening full screen pushed; a detail pushed right over it says so (top-filter spec §3.2). */
+const FULL_ENTRY = { full: true };
+const DETAIL_OVER_FULL = { detail: true, overFull: true };
+
+interface Marks {
+  detail?: unknown;
+  full?: unknown;
+  overFull?: unknown;
+}
+
+function marks(): Marks {
+  const state: unknown = history.state;
+  return typeof state === "object" && state !== null ? state : {};
+}
 
 function detailEntry(): boolean {
-  return (history.state as { detail?: unknown } | null)?.detail === true;
+  return marks().detail === true;
+}
+
+/**
+ * A change made in place leaves the entry what its push made it, so a later close can still go back past it. A choice
+ * such as typing drops the detail's mark, so closing the detail replaces and keeps that choice, as D44 does.
+ */
+function replaceKeepingMarks(hash: string, detail: "keep" | "drop"): void {
+  const { detail: open, ...rest } = marks();
+  const kept = detail === "keep" && open === true ? { ...rest, detail: true } : rest;
+  history.replaceState(Object.keys(kept).length === 0 ? null : kept, "", hash);
 }
 
 function sameRange(a: Period, b: Period): boolean {
@@ -105,7 +130,6 @@ export class SpendingApp extends LitElement {
     load: { state: true },
     accounts: { state: true },
     earliest: { state: true },
-    fullScreen: { state: true },
     postingsSort: { state: true },
     subscriptionsSort: { state: true },
     shopsAll: { state: true },
@@ -210,8 +234,6 @@ export class SpendingApp extends LitElement {
   declare accounts: Account[] | null;
   /** The last answer's earliest posting date; undefined until the first answer. */
   declare earliest: string | null | undefined;
-  /** A layout setting of this page load, so it stays out of the view state and the hash. */
-  declare private fullScreen: boolean;
   /** The Posteringer card's sort, kept here because the card is made anew when the right card switches (D37). */
   declare private postingsSort: Sort;
   declare private subscriptionsSort: Sorted<SubscriptionColumn>;
@@ -233,6 +255,10 @@ export class SpendingApp extends LitElement {
   private closed: DetailKey | null = null;
   /** Set by a row's click only: a link, a reload or full screen leave the focus where it is. */
   private openedByRow = false;
+  /** Back is async: until its popstate, history.state still shows the entry being left. */
+  private backPending = false;
+  /** A close asked for while a Back was pending, run once that Back has landed. */
+  private afterBack: (() => void) | null = null;
 
   constructor() {
     super();
@@ -241,7 +267,6 @@ export class SpendingApp extends LitElement {
     this.load = { kind: "idle" };
     this.accounts = null;
     this.earliest = undefined;
-    this.fullScreen = false;
     this.postingsSort = DEFAULT_STATE.sort;
     this.subscriptionsSort = DEFAULT_SUBSCRIPTION_SORT;
     this.shopsAll = false;
@@ -260,18 +285,27 @@ export class SpendingApp extends LitElement {
     this.change(next);
   };
 
+  private readonly onPop = (): void => {
+    this.backPending = false;
+    this.onHash();
+    const after = this.afterBack;
+    this.afterBack = null;
+    after?.();
+  };
+
   private readonly onKey = (event: KeyboardEvent): void => {
     if (event.key !== "Escape") return;
     if (this.state.detail !== null) this.closeDetail();
-    else if (this.fullScreen && this.state.screen === "overview") this.fullScreen = false;
+    else if (this.state.fullScreen) this.closeFullScreen();
   };
 
   private readonly onDetailOpen = (event: Event): void => {
     const next = openDetail(this.state, (event as CustomEvent<DetailKey>).detail);
     if (this.load.kind !== "ready" || !detailResolves(next, this.load.data, this.today)) return;
     const hash = `#${toHash(next)}`;
-    if (this.state.detail === null) history.pushState(DETAIL_ENTRY, "", hash);
-    else history.replaceState(detailEntry() ? DETAIL_ENTRY : null, "", hash);
+    const pushed = marks().full === true ? DETAIL_OVER_FULL : DETAIL_ENTRY;
+    if (this.state.detail === null) history.pushState(pushed, "", hash);
+    else replaceKeepingMarks(hash, "keep");
     this.openedByRow = true;
     this.change(next);
   };
@@ -286,14 +320,59 @@ export class SpendingApp extends LitElement {
     if (this.state.detail === null) return;
     this.closed = this.state.detail;
     const next = closeDetail(this.state);
+    if (this.backPending) {
+      this.afterBack = () => this.closeDetail();
+      this.change(next);
+      return;
+    }
     if (detailEntry()) {
       if (this.besideList()) this.keepScrollOnBack();
       this.change(next);
-      history.back();
+      this.goBack(1);
       return;
     }
+    replaceKeepingMarks(`#${toHash(next)}`, "keep");
+    this.change(next);
+  }
+
+  private openFullScreen(): void {
+    const next = setFullScreen(this.state, true);
+    history.pushState(FULL_ENTRY, "", `#${toHash(next)}`);
+    this.change(next);
+  }
+
+  /**
+   * Goes back past the open when this page load pushed it and at most one detail open came after it, so Back does not
+   * reopen it; otherwise replaces (top-filter spec §3.2). The state is set at once, as closeDetail does.
+   */
+  private closeFullScreen(): void {
+    if (!this.state.fullScreen) return;
+    const off = setFullScreen(this.state, false);
+    if (this.backPending) {
+      this.afterBack = () => this.closeFullScreen();
+      this.change(off);
+      return;
+    }
+    const entry = marks();
+    if (entry.full === true) {
+      this.change(off);
+      this.goBack(1);
+      return;
+    }
+    if (entry.overFull === true) {
+      this.change(closeDetail(off));
+      this.goBack(2);
+      return;
+    }
+    const next = closeDetail(off);
     history.replaceState(null, "", `#${toHash(next)}`);
     this.change(next);
+  }
+
+  private goBack(steps: 1 | 2): void {
+    this.backPending = true;
+    if (steps === 1) history.back();
+    else history.go(-2);
   }
 
   /**
@@ -308,7 +387,7 @@ export class SpendingApp extends LitElement {
   override connectedCallback(): void {
     super.connectedCallback();
     window.addEventListener("hashchange", this.onHash);
-    window.addEventListener("popstate", this.onHash);
+    window.addEventListener("popstate", this.onPop);
     window.addEventListener("keydown", this.onKey);
     this.addEventListener("detail-open", this.onDetailOpen);
     this.addEventListener("detail-close", this.onDetailClose);
@@ -346,7 +425,7 @@ export class SpendingApp extends LitElement {
 
   override disconnectedCallback(): void {
     window.removeEventListener("hashchange", this.onHash);
-    window.removeEventListener("popstate", this.onHash);
+    window.removeEventListener("popstate", this.onPop);
     window.removeEventListener("keydown", this.onKey);
     this.removeEventListener("detail-open", this.onDetailOpen);
     this.removeEventListener("detail-close", this.onDetailClose);
@@ -376,7 +455,7 @@ export class SpendingApp extends LitElement {
 
   /** In a split of 1024 px or wider the detail stands beside the list, so a focus must not scroll the page. */
   private besideList(): boolean {
-    const split = this.state.screen === "allPostings" || (this.state.screen === "overview" && this.fullScreen);
+    const split = this.state.screen === "allPostings" || this.state.fullScreen;
     return split && window.matchMedia("(min-width: 1024px)").matches;
   }
 
@@ -398,7 +477,7 @@ export class SpendingApp extends LitElement {
   apply(choice: ViewState, mode: "push" | "replace"): void {
     const next = keepDetail(this.state, choice);
     const hash = toHash(next);
-    if (mode === "replace") history.replaceState(null, "", `#${hash}`);
+    if (mode === "replace") replaceKeepingMarks(`#${hash}`, "drop");
     else if (hash !== toHash(this.state)) history.pushState(null, "", `#${hash}`);
     this.change(next);
   }
@@ -490,7 +569,7 @@ export class SpendingApp extends LitElement {
   }
 
   private loadingHalves() {
-    const single = this.fullScreen;
+    const single = this.state.fullScreen;
     return html`<div class="halves ${single ? "single" : ""}">
       ${(single ? [0] : [0, 1]).map(
         () => html`<section class="card half" role="region" aria-busy="true" aria-label=${da.loading}></section>`,
@@ -513,10 +592,9 @@ export class SpendingApp extends LitElement {
     return html`
       ${ctx.data.mainGroupsFound ? nothing : html`<p class="card line status" role="status">${da.noRuleGroup}</p>`}
       ${overview
-        ? html`${this.fullScreen ? nothing : this.keyNumbers(ctx)}
+        ? html`${this.state.fullScreen ? nothing : this.keyNumbers(ctx)}
             <hs-overview
               .ctx=${ctx}
-              .fullScreen=${this.fullScreen}
               .postingsSort=${this.postingsSort}
               .subscriptionsSort=${this.subscriptionsSort}
               .hiddenShops=${this.hiddenShops}
@@ -524,14 +602,14 @@ export class SpendingApp extends LitElement {
               .shopsAll=${this.shopsAll}
               .shopsHidden=${this.shopsHidden}
               @posting-sort=${(e: CustomEvent<PostingColumn>) =>
-                (this.postingsSort = nextSort(shownPostingSort(this.postingsSort, showsCategory(this.fullScreen)), e.detail, postingFirstDescending))}
+                (this.postingsSort = nextSort(shownPostingSort(this.postingsSort, showsCategory(this.state.fullScreen)), e.detail, postingFirstDescending))}
               @subscription-sort=${(e: CustomEvent<SubscriptionColumn>) =>
                 (this.subscriptionsSort = nextSort(
                   shownSubscriptionSort(this.subscriptionsSort, this.state.level.kind),
                   e.detail,
                   subscriptionFirstDescending,
                 ))}
-              @full-screen-toggle=${() => (this.fullScreen = !this.fullScreen)}
+              @full-screen-toggle=${() => (this.state.fullScreen ? this.closeFullScreen() : this.openFullScreen())}
               @shops-all-toggle=${() => (this.shopsAll = !this.shopsAll)}
               @shops-hidden-toggle=${() => (this.shopsHidden = !this.shopsHidden)}
               @shop-hide=${this.onShopHide}
@@ -583,7 +661,7 @@ export class SpendingApp extends LitElement {
         return ctx === null ? nothing : this.ready(ctx);
       default:
         return this.state.screen === "overview"
-          ? html`${this.fullScreen ? nothing : html`<hs-key-numbers .cards=${null} .boxes=${this.boxes}></hs-key-numbers>`}
+          ? html`${this.state.fullScreen ? nothing : html`<hs-key-numbers .cards=${null} .boxes=${this.boxes}></hs-key-numbers>`}
               ${this.loadingHalves()}`
           : html`<section class="card half" role="region" aria-busy="true" aria-label=${da.loading}></section>`;
     }

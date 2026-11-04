@@ -29,7 +29,6 @@ const SHOPS_LIMIT = 10;
 export class Overview extends LitElement {
   static override properties = {
     ctx: { attribute: false },
-    fullScreen: { attribute: false },
     postingsSort: { attribute: false },
     subscriptionsSort: { attribute: false },
     hiddenShops: { attribute: false },
@@ -39,7 +38,6 @@ export class Overview extends LitElement {
   };
 
   declare ctx: ViewContext;
-  declare fullScreen: boolean;
   declare postingsSort: Sort;
   declare subscriptionsSort: Sorted<SubscriptionColumn>;
   declare hiddenShops: HiddenState;
@@ -49,7 +47,6 @@ export class Overview extends LitElement {
 
   constructor() {
     super();
-    this.fullScreen = false;
     this.postingsSort = DEFAULT_STATE.sort;
     this.subscriptionsSort = DEFAULT_SUBSCRIPTION_SORT;
     this.hiddenShops = { kind: "loading" };
@@ -159,7 +156,7 @@ export class Overview extends LitElement {
       body = html`<p class="empty">${unfiltered ? da.noSpending : da.noMatch}</p>`;
     } else {
       const units = chosen === null ? ctx.units : [chosen];
-      const category = showsCategory(this.fullScreen);
+      const category = showsCategory(this.ctx.state.fullScreen);
       const sort = shownPostingSort(this.postingsSort, category);
       const list = postingList(postings, units, ctx, sort, categoryColours(ctx));
       body = html`<hs-postings
@@ -224,7 +221,7 @@ export class Overview extends LitElement {
       .all=${this.shopsAll}
       .showHidden=${this.shopsHidden}
       .canHide=${state.kind === "ready"}
-      .limit=${this.fullScreen ? null : SHOPS_LIMIT}
+      .limit=${this.ctx.state.fullScreen ? null : SHOPS_LIMIT}
     ></hs-shops>`;
   }
 
@@ -237,11 +234,11 @@ export class Overview extends LitElement {
     const listed = card === "subscriptions" || card === "postings";
     const view = listed && ctx.state.detail !== null ? detailView(ctx.state.detail, ctx) : null;
     // Full screen has the room to put the detail beside the list (detail spec §1.2).
-    const inPlace = view !== null && !this.fullScreen;
+    const inPlace = view !== null && !this.ctx.state.fullScreen;
     let body: unknown;
     if (listed) {
       const { above, list } = card === "subscriptions" ? this.subscriptions(title) : this.postings();
-      body = detailSplit(above, list, view, !this.fullScreen);
+      body = detailSplit(above, list, view, !this.ctx.state.fullScreen);
     } else if (card === "shops") body = this.shops();
     else if (inPeriod.length === 0) body = this.empty();
     else body = this.bars();
@@ -270,11 +267,11 @@ export class Overview extends LitElement {
             type="button"
             class="full-screen"
             aria-label=${da.fullScreen}
-            aria-pressed=${String(this.fullScreen)}
+            aria-pressed=${String(this.ctx.state.fullScreen)}
             @click=${() => fire(this, "full-screen-toggle")}
           >
             <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false">
-              <path d=${this.fullScreen ? COLLAPSE : EXPAND} />
+              <path d=${this.ctx.state.fullScreen ? COLLAPSE : EXPAND} />
             </svg>
           </button>
         </div>
@@ -287,7 +284,7 @@ export class Overview extends LitElement {
   }
 
   override render() {
-    const single = this.fullScreen;
+    const single = this.ctx.state.fullScreen;
     return html`<div class="halves ${single ? "single" : ""}">${single ? nothing : this.left()} ${this.right()}</div>`;
   }
 }

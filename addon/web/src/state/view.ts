@@ -36,6 +36,8 @@ export interface ViewState {
   unit: string | null;
   card: Card;
   screen: "overview" | "allPostings";
+  /** The right card fills the page; only on the overview. */
+  fullScreen: boolean;
   /** The search and the chosen shop are shared choices; sort, amount and object group belong to Alle posteringer. */
   search: string;
   shop: string | null;
@@ -54,6 +56,7 @@ export const DEFAULT_STATE: ViewState = {
   unit: null,
   card: "bars",
   screen: "overview",
+  fullScreen: false,
   search: "",
   shop: null,
   sort: { column: "date", descending: true },
@@ -75,6 +78,7 @@ const SORT_NAMES: readonly [string, Sort][] = [
   ]),
 ];
 const ALL_POSTINGS = "all-postings";
+const FULL = "full";
 
 function oneOf<T extends string>(values: readonly T[], value: string | null, fallback: T): T {
   return values.find((v) => v === value) ?? fallback;
@@ -155,7 +159,8 @@ export function parseHash(hash: string): ViewState {
   const p = new URLSearchParams(hash.startsWith("#") ? hash.slice(1) : hash);
   const accounts = p.get("accounts");
   const unit = p.get("unit") ?? undefined;
-  const allPostings = p.get("view") === ALL_POSTINGS;
+  const view = p.get("view");
+  const allPostings = view === ALL_POSTINGS;
   return {
     period: parsePeriod(p),
     accounts: accounts === null ? null : accounts.split(",").filter((id) => id !== ""),
@@ -163,6 +168,7 @@ export function parseHash(hash: string): ViewState {
     unit: isDate(unit) ? unit : null,
     card: oneOf(CARDS, p.get("card"), DEFAULT_STATE.card),
     screen: allPostings ? "allPostings" : "overview",
+    fullScreen: view === FULL,
     search: p.get("q") ?? DEFAULT_STATE.search,
     shop: p.get("shop") || DEFAULT_STATE.shop,
     sort: allPostings ? parseSort(p.get("sort")) : DEFAULT_STATE.sort,
@@ -191,6 +197,7 @@ export function toHash(s: ViewState): string {
   if (s.unit !== null) p.set("unit", s.unit);
   if (s.card !== DEFAULT_STATE.card) p.set("card", s.card);
   if (s.screen === "allPostings") p.set("view", ALL_POSTINGS);
+  else if (s.fullScreen) p.set("view", FULL);
   if (s.search !== "") p.set("q", s.search);
   if (s.shop !== null) p.set("shop", s.shop);
   if (s.screen === "allPostings") {

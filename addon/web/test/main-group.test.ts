@@ -296,14 +296,12 @@ describe("switching sideways from the trail", () => {
   });
 
   it("the dashed button chooses a main group in full screen", async () => {
-    const { app, root } = await mount("");
-    fireEvent.click(getByRole(root, "button", { name: da.fullScreen }));
-    await settle(app);
+    const { app, root } = await mount("view=full");
     expect(queryByRole(root, "region", { name: da.mainGroups })).toBeNull();
     await open(app, root, da.chooseMainGroup);
     fireEvent.click(within(list(root, da.mainGroups)).getByRole("button", { name: partLabel("Bolig", BOLIG, null) }));
     await settle(app);
-    expect(location.hash).toBe("#group=Bolig");
+    expect(location.hash).toBe("#group=Bolig&view=full");
     expect(getByRole(root, "button", { name: da.fullScreen }).getAttribute("aria-pressed")).toBe("true");
     expectHeading(root, "Bolig");
   });
