@@ -17,6 +17,9 @@ options:
   main_group_rule_group: Hovedgrupper
   excluded_main_groups:
     - Penge ind og ud
+  members: []
+  savings_categories: []
+  credit_accounts: []
   sorter_inbox_category: Til sortering
   moved_tag: moved-by-assistant
 schema:
@@ -25,6 +28,12 @@ schema:
   firefly_link_url: url?
   main_group_rule_group: str
   excluded_main_groups:
+    - str
+  members:
+    - str
+  savings_categories:
+    - str
+  credit_accounts:
     - str
   sorter_key: password?
   sorter_inbox_category: str

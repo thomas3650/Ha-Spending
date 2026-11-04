@@ -23,9 +23,15 @@ endpoint* below).
 | `firefly_link_url` | Firefly III's address as your browser reaches it. When set, the detail of a posting or a fixed expense links there. Optional. |
 | `main_group_rule_group` | The Firefly III rule group whose rules put categories into main groups. Default `Hovedgrupper`. |
 | `excluded_main_groups` | Main groups that are not spending, such as money moved in and out. Default `Penge ind og ud`. |
+| `members` | The household's members, by name, for the *Til overs* view. Each name is a revenue account in Firefly III for the money paid in, and an expense account of the same name for the money paid back. Example: `Anna`, `Bo`. Default none, which leaves the view out. |
+| `savings_categories` | The categories of money moved to or from savings. Example: `Opsparing`. Default none. |
+| `credit_accounts` | The asset accounts that are credit lines. Example: `Kassekredit`. Default none. |
 | `sorter_key` | The key of the sorter's endpoint (see *The sorter's endpoint* below), at least 32 characters, for example from `openssl rand -hex 32`. When empty, the endpoint is off. Optional. |
 | `sorter_inbox_category` | The Firefly III category of postings still to be sorted. Default `Til sortering`. |
 | `moved_tag` | The tag `move_posting` (see *The chat's tools* below) adds to every posting it moves. Default `moved-by-assistant`. |
+
+The categories of the members' deposits, of the money paid back to them and of savings belong in an excluded main
+group (`excluded_main_groups`), so that they are not counted as spending.
 
 Without `firefly_url` and `firefly_token` the app stops and says so in its log, and so it does with a `sorter_key`
 shorter than 32 characters.

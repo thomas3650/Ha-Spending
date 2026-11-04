@@ -38,6 +38,9 @@ describe("readOptions", () => {
       firefly_link_url: "http://firefly.test/",
       main_group_rule_group: "Grupper",
       excluded_main_groups: ["A", "B"],
+      members: ["Anna", "Bo"],
+      savings_categories: ["Opsparing"],
+      credit_accounts: ["Kassekredit"],
       sorter_key: "k".repeat(32),
       sorter_inbox_category: "Indbakke",
       moved_tag: "flyttet",
@@ -48,6 +51,9 @@ describe("readOptions", () => {
       fireflyLinkUrl: "http://firefly.test",
       mainGroupRuleGroup: "Grupper",
       excludedMainGroups: ["A", "B"],
+      members: ["Anna", "Bo"],
+      savingsCategories: ["Opsparing"],
+      creditAccounts: ["Kassekredit"],
       sorterKey: "k".repeat(32),
       sorterInboxCategory: "Indbakke",
       movedTag: "flyttet",
@@ -62,6 +68,9 @@ describe("readOptions", () => {
       fireflyLinkUrl: null,
       mainGroupRuleGroup: "Hovedgrupper",
       excludedMainGroups: ["Penge ind og ud"],
+      members: [],
+      savingsCategories: [],
+      creditAccounts: [],
       sorterKey: null,
       sorterInboxCategory: "Til sortering",
       movedTag: "moved-by-assistant",
@@ -96,6 +105,10 @@ describe("readOptions", () => {
     expect(refusal(file({ ...base, firefly_link_url: 42 })).message).toContain("firefly_link_url");
     expect(refusal(file({ ...base, excluded_main_groups: "A" })).message).toContain("excluded_main_groups");
     expect(refusal(file({ ...base, excluded_main_groups: ["A", 1] })).message).toContain("excluded_main_groups");
+    for (const key of ["members", "savings_categories", "credit_accounts"]) {
+      expect(refusal(file({ ...base, [key]: ["A", 1] })).message).toContain(key);
+      expect(refusal(file({ ...base, [key]: "A" })).message).toContain(key);
+    }
   });
 
   it("reads an empty rule group as the default", () => {
