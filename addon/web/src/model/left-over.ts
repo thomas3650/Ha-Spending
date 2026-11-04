@@ -155,6 +155,12 @@ function monthName(month: string, withYear: boolean): string {
   return withYear ? `${name} ${year}` : name;
 }
 
+/** The calendar months the period touches, also those it cuts. */
+export function monthsIn(period: Period): number {
+  const index = (date: string) => Number(date.slice(0, 4)) * 12 + Number(date.slice(5, 7));
+  return index(period.end) - index(period.start) + 1;
+}
+
 /** Newest month first, as the answer has them, closed by "I alt". */
 export function leftOverTable(data: LeftOverData, today: string): LeftOverTable {
   const withYear = new Set(data.months.map((m) => m.month.slice(0, 4))).size > 1;

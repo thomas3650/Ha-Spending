@@ -323,8 +323,10 @@ export const da = {
     empty: (level: string) => `Ingen faste udgifter i ${level} i perioden`,
   },
   leftOver: {
+    name: "Til overs",
     /** The chosen unit's name, or null for the whole period. */
-    label: (unit: string | null) => (unit === null ? da.inPeriod("Til overs") : da.levelInUnit("Til overs", unit)),
+    label: (unit: string | null) =>
+      unit === null ? da.inPeriod(da.leftOver.name) : da.levelInUnit(da.leftOver.name, unit),
     showMonths: "Vis måneder",
     paidInSub: (amount: string) => `ind ${amount}`,
     borrowedSub: (amount: string) => `, lånt ${amount}`,

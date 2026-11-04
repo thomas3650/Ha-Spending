@@ -202,8 +202,9 @@ function fixedUnit(s: ViewState, data: SpendingData, today: string): string | nu
   return f.buttons && f.units.some((u) => u.fullStart === s.unit) ? s.unit : null;
 }
 
-/** Drops what the answer does not know. */
+/** Drops what the answer does not know; a link to the Til overs view of a household not set up shows the overview. */
 export function normalise(s: ViewState, data: SpendingData, today: string): ViewState {
+  if (s.leftOver && !data.leftOver) return normalise(leaveLeftOver(s), data, today);
   const accounts = s.accounts && s.accounts.filter((id) => data.accounts.some((a) => a.id === id));
   const unit = s.fixed && data.subscriptions.length > 0 ? fixedUnit(s, data, today) : overviewUnit(s, data, today);
   const card =

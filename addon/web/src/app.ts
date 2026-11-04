@@ -38,6 +38,7 @@ import { levelRows, unitRows } from "./model/circle";
 import { finerUnits, type ViewContext, viewContext } from "./model/context";
 import { type FixedView, fixedUnits, fixedView, objectGroupStep } from "./model/fixed";
 import { fixedList } from "./model/fixed-list";
+import { leftOverTable, monthsIn } from "./model/left-over";
 import {
   type KeyCard,
   keyCards,
@@ -51,6 +52,8 @@ import type { HiddenState } from "./model/shops";
 import { DEFAULT_SUBSCRIPTION_SORT, shownSubscriptionSort, subscriptionFirstDescending } from "./model/subscriptions";
 import "./screens/fixed";
 import { fixedStyles } from "./screens/fixed";
+import "./screens/left-over";
+import { leftOverStyles } from "./screens/left-over";
 import "./screens/overview";
 import { overviewStyles } from "./screens/overview";
 import {
@@ -65,8 +68,10 @@ import {
   openPart,
   chooseFixedUnit,
   leaveFixed,
+  leaveLeftOver,
   openFixed,
   openLeftOver,
+  openMonth,
   openPostingsFull,
   openShop,
   setObjectGroup,
@@ -206,6 +211,7 @@ export class SpendingApp extends LitElement {
     fixedBarsStyles,
     fixedListStyles,
     fixedStyles,
+    leftOverStyles,
     css`
       :host {
         display: block;
@@ -324,10 +330,12 @@ export class SpendingApp extends LitElement {
   private writes: Promise<void> = Promise.resolve();
   /** The detail a close or Back just closed, whose row gets the focus back after the render. */
   private closed: DetailKey | null = null;
-  /** Full screen or the fixed-expenses view ended, so the focus may have lost its element. */
+  /** Full screen, the fixed-expenses view or the Til overs view ended, so the focus may have lost its element. */
   private leftScreen = false;
   /** The fixed-expenses view began, by its link, Back or Forward; the element that had the focus is gone. */
   private enteredFixed = false;
+  /** The Til overs view began, as enteredFixed says for the fixed-expenses view. */
+  private enteredLeftOver = false;
   private headingAfterBack = false;
   /** Set by a row's click only: a link, a reload or full screen leave the focus where it is. */
   private openedByRow = false;
@@ -383,7 +391,9 @@ export class SpendingApp extends LitElement {
 
   private readonly onKey = (event: KeyboardEvent): void => {
     if (event.key !== "Escape") return;
-    if (this.state.detail !== null) this.closeDetail();
+    // The view keeps a detail for the way back without drawing it (spec §6.3), so the view goes first.
+    if (this.state.leftOver) this.closeLeftOver();
+    else if (this.state.detail !== null) this.closeDetail();
     else if (this.state.fullScreen) this.closeFullScreen();
     else if (this.state.fixed) this.closeFixed();
   };
@@ -517,6 +527,24 @@ export class SpendingApp extends LitElement {
     this.change(off);
   }
 
+  /** As closeFixed, by the Til overs view's own mark. */
+  private closeLeftOver(): void {
+    if (!this.state.leftOver) return;
+    const off = leaveLeftOver(this.state);
+    if (this.backPending) {
+      this.afterBack = () => this.closeLeftOver();
+      this.change(off);
+      return;
+    }
+    if (marks().leftOver === true) {
+      this.change(off);
+      this.goBack(1);
+      return;
+    }
+    history.replaceState(null, "", `#${toHash(off)}`);
+    this.change(off);
+  }
+
   private keepQuickFilter(quick: QuickFilter): void {
     const next = { ...this.state, ...quick };
     const hash = toHash(next);
@@ -605,6 +633,10 @@ export class SpendingApp extends LitElement {
       this.enteredFixed = false;
       void this.focusFixedIfLost();
     }
+    if (this.enteredLeftOver) {
+      this.enteredLeftOver = false;
+      void this.focusCaptionIfLost();
+    }
     if (this.openedByRow) {
       this.openedByRow = false;
       void this.focusDetail();
@@ -628,6 +660,14 @@ export class SpendingApp extends LitElement {
     await root.querySelector<LitElement>("hs-fixed")?.updateComplete;
     if (this.shadowRoot?.activeElement) return;
     root.querySelector<HTMLElement>("#hs-fixed-bars-title")?.focus();
+  }
+
+  /** The caption is drawn while the months load too, so the focus need not wait for them. */
+  private async focusCaptionIfLost(): Promise<void> {
+    const root = this.renderRoot;
+    await root.querySelector<LitElement>("hs-left-over")?.updateComplete;
+    if (this.shadowRoot?.activeElement) return;
+    root.querySelector<HTMLElement>("hs-left-over caption")?.focus();
   }
 
   private async focusDetail(): Promise<void> {
@@ -663,9 +703,13 @@ export class SpendingApp extends LitElement {
   }
 
   private change(next: ViewState): void {
-    if ((this.state.fullScreen && !next.fullScreen) || (this.state.fixed && !next.fixed)) this.leftScreen = true;
+    const prev = this.state;
+    if ((prev.fullScreen && !next.fullScreen) || (prev.fixed && !next.fixed) || (prev.leftOver && !next.leftOver)) {
+      this.leftScreen = true;
+    }
     // A page load leaves the focus where it is.
-    if (this.hasUpdated && !this.state.fixed && next.fixed) this.enteredFixed = true;
+    if (this.hasUpdated && !prev.fixed && next.fixed) this.enteredFixed = true;
+    if (this.hasUpdated && !prev.leftOver && next.leftOver) this.enteredLeftOver = true;
     this.state = next;
     this.ensureData();
     this.normaliseState();
@@ -895,6 +939,28 @@ export class SpendingApp extends LitElement {
     `;
   }
 
+  private errorCard(code: LoadErrorCode) {
+    return html`<p class="card line alert" role="alert">${da.errors[code]}</p>`;
+  }
+
+  /**
+   * The view stands where the key numbers and the halves do (spec §4). Its months show only once their answer is for
+   * the trail's period; until then the table holds a placeholder row per month.
+   */
+  private leftOverScreen() {
+    if (this.load.kind === "error") return this.errorCard(this.load.code);
+    const period = periodOf(this.state.period, this.today, this.earliest ?? null);
+    const asked = this.leftOverAsked;
+    const answer =
+      this.load.kind === "ready" && asked !== null && sameRange(asked, period) ? this.leftOverLoad : null;
+    if (answer?.kind === "error") return this.errorCard(answer.code);
+    return html`<hs-left-over
+      .table=${answer?.kind === "ready" ? leftOverTable(answer.data, this.today) : null}
+      .placeholders=${monthsIn(period)}
+      @month-open=${(e: CustomEvent<string>) => this.push(openMonth(this.state, e.detail, this.today))}
+    ></hs-left-over>`;
+  }
+
   /** The trail's × moves the focus to its heading, so the keyboard does not fall back to the page's start. */
   private removeFromTrail(next: ViewState): void {
     this.push(next);
@@ -909,9 +975,10 @@ export class SpendingApp extends LitElement {
   }
 
   private body(ctx: ViewContext | null, view: FixedView | null) {
+    if (this.state.leftOver) return this.leftOverScreen();
     switch (this.load.kind) {
       case "error":
-        return html`<p class="card line alert" role="alert">${da.errors[this.load.code]}</p>`;
+        return this.errorCard(this.load.code);
       case "ready":
         if (ctx === null) return nothing;
         return view === null ? this.ready(ctx) : this.fixedScreen(ctx, view);
@@ -925,6 +992,7 @@ export class SpendingApp extends LitElement {
 
   /** Before the answer the period alone says whether its bars are buttons: one month draws its days (D59). */
   private unitStep(ctx: ViewContext | null, view: FixedView | null): UnitStep | null {
+    if (this.state.leftOver) return null;
     if (view !== null) return view.unitStep;
     if (ctx === null && this.state.fixed) {
       const f = fixedUnits({ earliestPostingDate: this.earliest ?? null }, this.state, this.today);
@@ -957,6 +1025,7 @@ export class SpendingApp extends LitElement {
         .unitStep=${this.unitStep(ctx, view)}
         .lists=${lists}
         .fixed=${this.state.fixed}
+        .leftOver=${this.state.leftOver}
         .objectGroups=${view?.groups ?? null}
         .objectGroupStep=${objectGroupStep(view?.groups ?? null, this.state.objectGroup)}
         @hs-period=${this.onPeriod}
@@ -967,7 +1036,7 @@ export class SpendingApp extends LitElement {
         @set-unit=${(e: CustomEvent<string>) =>
           this.push((this.state.fixed ? chooseFixedUnit : chooseUnit)(this.state, e.detail))}
         @set-object-group=${(e: CustomEvent<string | null>) => this.push(setObjectGroup(this.state, e.detail))}
-        @back=${() => this.closeFixed()}
+        @back=${() => (this.state.leftOver ? this.closeLeftOver() : this.closeFixed())}
         @remove-unit=${() => this.removeFromTrail(removeUnit(this.state))}
         @remove-main-group=${() => this.removeFromTrail(removeMainGroup(this.state))}
         @remove-category=${() => this.removeFromTrail(removeCategory(this.state))}
