@@ -361,8 +361,11 @@ describe("the subscriptions card grouped", () => {
     ]) {
       const { root } = await mountWith(hash);
       const row = groupRow(card(root, title), group);
+      const [header] = within(row).getAllByRole("rowheader") as HTMLTableCellElement[];
       expect(within(row).getAllByRole("rowheader")).toHaveLength(1);
       expect(within(row).getAllByRole("cell")).toHaveLength(2);
+      const columns = within(card(root, title)).getAllByRole("columnheader").length;
+      expect(header.colSpan).toBe(columns - 2);
       unmount();
     }
   });

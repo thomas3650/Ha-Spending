@@ -207,8 +207,9 @@ export const shopsStyles = css`
     background: var(--hs-field);
   }
   @media (max-width: 480px) {
-    .shop-row {
-      grid-template-columns: 2.5ch minmax(0, 1fr) auto 4.5ch auto;
+    .shop-row,
+    .shops-hideable .shop-row {
+      grid-template-columns: 2.5ch minmax(0, 1fr) auto 5.5ch auto;
     }
     .shop-bar {
       grid-row: 2;
