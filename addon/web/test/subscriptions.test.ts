@@ -341,14 +341,27 @@ describe("the subscriptions card grouped", () => {
       "Mad 1 fast udgift",
       `${da.noMainGroup} 2 faste udgifter`,
     ]);
-    expect(within(groupRow(region, "Bolig")).getAllByRole("cell").map(text)).toEqual(["", "", "99.600 kr.", ""]);
-    expect(within(groupRow(region, "Bil")).getAllByRole("cell").map(text)).toEqual(["", "", "4.800 kr.", ""]);
+    expect(within(groupRow(region, "Bolig")).getAllByRole("cell").map(text)).toEqual(["99.600 kr.", ""]);
+    expect(within(groupRow(region, "Bil")).getAllByRole("cell").map(text)).toEqual(["4.800 kr.", ""]);
     expect(getAllByRole(region, "columnheader").map(text)).toContain("Kategori");
     expect(tbodyOf(region, "Bolig").contains(row(region, "Husleje"))).toBe(true);
     expect(tbodyOf(region, "Bil").contains(row(region, "Husleje"))).toBe(false);
     expect(tbodyOf(region, "Bil").contains(row(region, "Bilforsikring"))).toBe(true);
     expect(categoryOf(region, "Husleje")).toBe("Husleje");
     expect(categoryOf(region, "Streaming")).toBe("Café");
+  });
+
+  it("gives a group's row one row header over the empty columns, with and without Kategori", async () => {
+    for (const [hash, title, group] of [
+      ["card=subscriptions", "Faste udgifter", "Bolig"],
+      ["group=Bolig&card=subscriptions", "Faste udgifter i Bolig", "Husleje"],
+    ]) {
+      const { root } = await mountWith(hash);
+      const row = groupRow(card(root, title), group);
+      expect(within(row).getAllByRole("rowheader")).toHaveLength(1);
+      expect(within(row).getAllByRole("cell")).toHaveLength(2);
+      unmount();
+    }
   });
 
   it("puts one with no payment and one with an unknown category last, reading Uden kategori", async () => {
@@ -393,7 +406,7 @@ describe("the subscriptions card grouped", () => {
     const region = card(root, "Faste udgifter i Bolig");
     expect(groupHeaders(region).map(text)).toEqual(["Husleje 2 faste udgifter"]);
     expect(getAllByRole(region, "columnheader").map(text)).not.toContain("Kategori");
-    expect(within(groupRow(region, "Husleje")).getAllByRole("cell").map(text)).toEqual(["", "99.600 kr.", ""]);
+    expect(within(groupRow(region, "Husleje")).getAllByRole("cell").map(text)).toEqual(["99.600 kr.", ""]);
   });
 
   it("puts the no-payment and unknown-category ones of Uden hovedgruppe under one Uden kategori, last", async () => {

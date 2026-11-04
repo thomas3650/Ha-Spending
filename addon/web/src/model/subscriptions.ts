@@ -32,8 +32,10 @@ export interface SubscriptionRow {
   objectGroup: string;
   /** "1. nov"; null: no next date. */
   next: string | null;
-  /** "8.000 kr. pr. måned", which wraps only between the amount and its repeat. */
+  /** "8.000 kr.", unbroken. */
   amount: string;
+  /** "pr. måned", unbroken; the table shows it on its own line under the amount. */
+  repeat: string;
   perYear: string;
   category: string;
   /** Øre, for sorting. */
@@ -81,9 +83,15 @@ function shown(ctx: ViewContext): Shown[] {
     );
 }
 
-/** The Beløb column's text: "8.000 kr. pr. måned", which wraps only between the amount and its repeat. */
+/** The Beløb cell's two lines, each unbroken. */
+function paymentParts(s: Subscription): { amount: string; repeat: string } {
+  return { amount: unbroken(kr(amountPerPayment(s))), repeat: unbroken(da.repeatText(s.repeat, s.skip)) };
+}
+
+/** "8.000 kr. pr. måned" on one line, which wraps only between the amount and its repeat. */
 export function paymentText(s: Subscription): string {
-  return `${unbroken(kr(amountPerPayment(s)))} ${unbroken(da.repeatText(s.repeat, s.skip))}`;
+  const { amount, repeat } = paymentParts(s);
+  return `${amount} ${repeat}`;
 }
 
 export function statusCell(status: SubscriptionStatus, today: string): SubscriptionRow["status"] {
@@ -178,7 +186,7 @@ export function subscriptionTable(ctx: ViewContext, kept: Sorted<SubscriptionCol
       name: s.name,
       objectGroup: s.objectGroup,
       next: next === null || statusShowsDate(status, today) ? null : shortDate(next, today),
-      amount: paymentText(s),
+      ...paymentParts(s),
       perYear: kr(amountPerYear(s)),
       category: known ? last : da.noCategory,
       amountOre: amountPerPayment(s),
