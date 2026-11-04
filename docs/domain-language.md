@@ -32,7 +32,7 @@ its name in code, so the same thing has one name everywhere. The Danish word is 
 | Object group | objektgruppe | `objectGroup`: the title of the group Firefly III puts a bill in; the page shows it as the pill on a row, as a sum per group and as a key number for the period, and as a filter of Alle posteringer ([D38](decisions.md), [D41](decisions.md), [D42](decisions.md)) |
 | Posting's subscription | — | `Posting.subscription`: the bill a posting is linked to, with its id, name and object group, or `null` |
 | Detail | detalje | `detail` in the view state (`DetailKey`): the open detail of a fixed expense (`s:<id>`) or a posting (`p:<id>`), kept in the hash ([D44](decisions.md)) |
-| Card | kort | `card` in the view state: which card the second half shows, Søjler, Posteringer, Forskel or Faste udgifter or Butikker (`"bars"` \| `"postings"` \| `"difference"` \| `"subscriptions"` \| `"shops"`) |
+| Card | kort | `card` in the view state: which card the second half shows, Søjler, Posteringer, Faste udgifter or Butikker (`"bars"` \| `"postings"` \| `"subscriptions"` \| `"shops"`) |
 | Sort | sortér | a table sorted by a column header: a click sorts by the column, a second click reverses it; `aria-sort` marks the column ([D40](decisions.md)) |
 | Shop | butik | `shop` (`Posting.shop`): the name of the shop a posting was made at, null when it has none |
 | Hidden shop | skjult butik | `hiddenShops` (type `HiddenShops`): a shop the user has hidden from the Butikker card ([D43](decisions.md)) |
