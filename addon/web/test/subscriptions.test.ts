@@ -474,17 +474,34 @@ describe("a payment that is due", () => {
   });
 
   it("flags the row as due, still expected, and keeps its place among the Forventes rows by date", () => {
+    const weekly = (id: string, name: string, lastDate: string): Subscription => ({
+      ...monthly(id, name, lastDate),
+      repeat: "weekly",
+    });
+    // By date alone these would interleave: Fitness (26 Oct) before Tennis (27 Oct), Kaffe (4 Nov) before Bredbånd.
     const subscriptions = [
-      monthly("d3", "Fitness", "2026-09-28"),
+      monthly("d3", "Fitness", "2026-09-26"),
+      weekly("d6", "Tennis", "2026-10-20"),
       monthly("d4", "Avis", "2026-09-30"),
-      monthly("d5", "Bredbånd", "2026-09-29"),
+      monthly("d5", "Bredbånd", "2026-10-05"),
+      weekly("d7", "Kaffe", "2026-10-28"),
     ];
     const data = withSubscriptions(answerFor({ start: "2025-12-01", end: "2026-10-30" }), subscriptions);
     const rows = subscriptionRows(viewContext(data, DEFAULT_STATE, "2026-10-30"));
     const status = (name: string) => rows.find((r) => r.name.startsWith(name))?.status;
-    expect(status("Fitness")).toEqual({ kind: "expected", due: true, text: da.status.due("28. okt") });
+    expect(status("Fitness")).toEqual({ kind: "expected", due: true, text: da.status.due("26. okt") });
+    expect(status("Tennis")).toMatchObject({ kind: "notSeen" });
     expect(status("Avis")).toMatchObject({ kind: "expected", due: false });
-    expect(rows.map((r) => r.name.split(" ")[0])).toEqual(["Fitness", "Bredbånd", "Avis"]);
+    expect(status("Bredbånd")).toMatchObject({ kind: "expected", due: false });
+    expect(status("Kaffe")).toMatchObject({ kind: "paid" });
+    const ours = new Set(subscriptions.map((s) => s.name));
+    expect(rows.map((r) => r.name.split(" ")[0]).filter((n) => ours.has(n))).toEqual([
+      "Tennis",
+      "Fitness",
+      "Avis",
+      "Bredbånd",
+      "Kaffe",
+    ]);
   });
 
   it("says Forventes with its date and the next date, when the date is today", async () => {

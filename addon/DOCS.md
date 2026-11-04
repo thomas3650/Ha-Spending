@@ -101,11 +101,11 @@ kant: forfalden".
 Hover a bar to see each part's paid and estimated sums, and "I alt" with the two kept apart. A bar with more than ten
 parts lists the nine biggest and folds the rest into "n andre".
 
-Each of the two cards has the button "Fuld skærm: <card title>". It gives that card the page's whole width and height,
-and hides the other card and the key numbers. In the list's full screen the rows show the object-group badge again.
-In full screen, Escape and the browser's Back button close full screen first and stay in the view; then they leave the
-view, as does the ← button before the trail (in one press). A very narrow window may scroll the list sideways in full
-screen.
+Each of the two cards has the button "Fuld skærm: <card title>". It gives that card the page's whole width (the bars
+also its height), and hides the other card and the key numbers. In the list's full screen the rows show the object-group
+badge again. In full screen, Escape and the browser's Back button close full screen first and stay in the view; then
+they leave the view, as does the ← button before the trail (in one press). A very narrow window may scroll the list
+sideways in full screen.
 
 On the Posteringer card the quick filter sits over the list: a search field and the Beløb pill. The search matches the
 text or a shop; the suggestions show each shop's count and sum. The Beløb pill offers four kinds: Omkring (the amount

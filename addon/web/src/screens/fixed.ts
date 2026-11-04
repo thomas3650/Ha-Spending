@@ -82,12 +82,9 @@ export class Fixed extends LitElement {
 }
 
 export const fixedStyles = css`
-  .halves.fixed-halves:not(.single) {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  }
-  @media (max-width: 1023px) {
-    .halves.fixed-halves {
-      grid-template-columns: minmax(0, 1fr);
+  @media (min-width: 1024px) {
+    .halves.fixed-halves:not(.single) {
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
     }
   }
   .fixed-summary {
