@@ -565,6 +565,16 @@ describe("the bars' keyboard highlight (D19)", () => {
   });
 });
 
+describe("the bars' keyboard highlight, a fully due estimate", () => {
+  it("names no estimate series when every estimate of the bar is due", async () => {
+    const { root } = await open(OPEN.slice(1), { answer: answer({ bills: [HUSLEJE, FORSIKRING] }) });
+    const buttons = getAllByRole(barsRegion(root), "button");
+    const chart = fixedBarChart();
+    fireEvent.focus(buttons[9]);
+    expect(chart.series.highlight.at(-1)).toEqual([0, 1]);
+  });
+});
+
 describe("the accounts and refunds (spec §5.3)", () => {
   /** Q8's July posting on Kreditkort, paid through Avis. */
   const viaCard = (p: Posting): Link =>

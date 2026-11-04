@@ -19,10 +19,21 @@ const HATCH = {
   color: "rgba(255, 255, 255, 0.75)",
 };
 
+const KINDS = ["paid", "due", "estimate"] as const;
+type Kind = (typeof KINDS)[number];
+
+/** What a part's series of this kind draws in the bar; the estimate series holds what is not due. */
+function valueOf(kind: Kind, bar: FixedBar, key: string | null): number | null {
+  if (kind === "paid") return bar.paid.get(key) ?? null;
+  if (kind === "due") return bar.due.get(key) ?? null;
+  const rest = (bar.estimate.get(key) ?? 0) - (bar.due.get(key) ?? 0);
+  return rest === 0 ? null : rest;
+}
+
 /**
- * The fixed expenses per unit, stacked by part: paid solid, the estimates hatched above them (spec §5.4). ECharts draws
- * them, and a due estimate is outlined in red; a hidden button per bar names each (D19), or a plain list item when the bars choose nothing. The legend is in
- * the DOM. Fires `unit-click` with the bar's unit.
+ * The fixed expenses per unit, stacked by part: paid solid, the estimates hatched above them, a due estimate outlined
+ * in red (spec §5.3 of the fixed view's full screen). ECharts draws them; a hidden button per bar names each (D19), or
+ * a plain list item when the bars choose nothing. The legend is in the DOM. Fires `unit-click` with the bar's unit.
  */
 export class FixedBars extends LitElement {
   static override properties = {
@@ -114,13 +125,9 @@ export class FixedBars extends LitElement {
   /** Every series that draws a value in the bar: per part its paid, due and estimate series, in the parts' order. */
   private segments(bar: FixedBar): number[] {
     const n = this.parts.length;
-    return this.parts
-      .flatMap((part, i) => [
-        ...(bar.paid.has(part.key) ? [i] : []),
-        ...(bar.due.has(part.key) ? [n + i] : []),
-        ...((bar.estimate.get(part.key) ?? 0) - (bar.due.get(part.key) ?? 0) !== 0 ? [2 * n + i] : []),
-      ])
-      .sort((a, b) => a - b);
+    return KINDS.flatMap((kind, k) =>
+      this.parts.flatMap((part, i) => (valueOf(kind, bar, part.key) === null ? [] : [k * n + i])),
+    );
   }
 
   private hasEstimates(): boolean {
@@ -138,13 +145,7 @@ export class FixedBars extends LitElement {
     const muted = token("--hs-muted");
     const bars = this.bars;
     const faded = (bar: FixedBar) => this.chosen !== null && bar.unit.fullStart !== this.chosen;
-    const valueOf = (kind: "paid" | "due" | "estimate", bar: FixedBar, key: string | null): number | null => {
-      if (kind === "paid") return bar.paid.get(key) ?? null;
-      if (kind === "due") return bar.due.get(key) ?? null;
-      const rest = (bar.estimate.get(key) ?? 0) - (bar.due.get(key) ?? 0);
-      return rest === 0 ? null : rest;
-    };
-    const series = (kind: "paid" | "due" | "estimate") =>
+    const series = (kind: Kind) =>
       this.parts.map((part) => ({
         type: "bar",
         stack: "fixed",
@@ -161,7 +162,7 @@ export class FixedBars extends LitElement {
           return { value: valueOf(kind, bar, part.key), itemStyle: { opacity } };
         }),
       }));
-    const all: Record<string, unknown>[] = [...series("paid"), ...series("due"), ...series("estimate")];
+    const all: Record<string, unknown>[] = KINDS.flatMap((kind) => series(kind));
     const running = bars.find((b) => b.running);
     const last = bars.at(-1);
     if (all.length > 0 && running !== undefined && last !== undefined && last.unit.end > this.today) {
