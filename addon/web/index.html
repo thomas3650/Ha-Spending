@@ -6,6 +6,12 @@
     <!-- main.ts sets the title from the language file. -->
     <title></title>
     <script type="module" src="./src/main.ts"></script>
+    <!-- The page fills the window's height, so the body's default margin would make it scroll. -->
+    <style>
+      body {
+        margin: 0;
+      }
+    </style>
   </head>
   <body>
     <hs-app></hs-app>

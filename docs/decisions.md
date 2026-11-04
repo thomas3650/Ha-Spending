@@ -260,7 +260,8 @@ to set their status to `superseded by D<n>`, or to name a part a later decision 
   from the first test of 0.1.0.
 
 ### D27: A bigger circle with bigger names
-- **Date:** 2026-10-31 · **Status:** active; the height below 600 px superseded by D28
+- **Date:** 2026-10-31 · **Status:** active; the height below 600 px superseded by D28, the bars' height in full
+  screen by D67
 - **Decision:** The ring is as big as the room for its labels allows, between 46 % and 62 % of half the chart's
   shorter side, and is sized again when the chart is resized. Names are 14 px and amounts 12 px. The circle and the
   bars are 400 px high, the circle 560 px below 600 px.
@@ -683,3 +684,12 @@ to set their status to `superseded by D<n>`, or to name a part a later decision 
 - **Why:** "0 %" beside a real amount read as nothing.
 - **Source:** Claude, 2026-11-04, under the controller session's brief, and the
   [small walkthrough fixes spec](superpowers/specs/2026-11-04-walkthrough-small-fixes.md) §7
+
+### D67: The bars fill the window's height in full screen
+- **Date:** 2026-11-04 · **Status:** active
+- **Decision:** In full screen the Søjler chart grows so the page reaches the window's bottom edge, and it is never
+  shorter than 400 px. The normal card keeps 400 px.
+- **Why:** At full-screen width the chart filled only a third of the screen (#152).
+- **Source:** Thomas, 2026-11-04;
+  [full-screen bars spec](superpowers/specs/2026-11-04-full-screen-bars-and-follow-ups.md) §1. The height rule is
+  Claude's call.

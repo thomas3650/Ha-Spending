@@ -182,7 +182,7 @@ export class SpendingApp extends LitElement {
         box-sizing: border-box;
       }
       .page {
-        padding: 16px 20px;
+        padding: 24px 28px;
         display: flex;
         flex-direction: column;
         gap: 14px;
@@ -220,6 +220,26 @@ export class SpendingApp extends LitElement {
       }
       .half:has(.empty) {
         min-height: 0;
+      }
+      /* Full screen's bars reach the window's bottom edge (D67). The boxes down to the chart keep min-height: 0, so
+         the chart's last pixel size never holds the page open when the window gets lower. */
+      .page:has(.half.right.fill) {
+        min-height: 100vh;
+      }
+      .page:has(.half.right.fill) > hs-overview {
+        display: flex;
+        flex-direction: column;
+        flex: 1 1 auto;
+        min-height: 0;
+      }
+      .halves:has(> .half.right.fill) {
+        flex: 1 1 auto;
+        min-height: 0;
+        align-items: stretch;
+      }
+      .half.right.fill {
+        display: flex;
+        flex-direction: column;
       }
       @media (max-width: 1279px) {
         .halves {

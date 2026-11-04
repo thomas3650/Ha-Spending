@@ -316,6 +316,19 @@ export const barsStyles = [
     .bars .chart {
       height: 400px;
     }
+    .fill > hs-bars,
+    .fill .bars {
+      display: flex;
+      flex-direction: column;
+      flex: 1 1 auto;
+      min-height: 0;
+    }
+    /* A basis of 0 keeps ECharts' pixel-sized inner element out of the chart's own height. */
+    .fill .bars .chart {
+      flex: 1 1 0;
+      height: auto;
+      min-height: 400px;
+    }
   `,
 ];
 

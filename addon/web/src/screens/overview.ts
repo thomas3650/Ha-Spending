@@ -266,13 +266,17 @@ export class Overview extends LitElement {
     // Full screen has the room to put the detail beside the list (detail spec §1.2).
     const inPlace = view !== null && !this.ctx.state.fullScreen;
     let body: unknown;
+    let fill = false;
     if (listed) {
       const { above, list } = card === "subscriptions" ? this.subscriptions(title) : this.postings();
       body = detailSplit(above, list, view, !this.ctx.state.fullScreen);
     } else if (card === "shops") body = this.shops();
     else if (inPeriod.length === 0) body = this.empty();
-    else body = this.bars();
-    return html`<section class="card half right" role="region" aria-labelledby=${RIGHT_TITLE}>
+    else {
+      body = this.bars();
+      fill = ctx.state.fullScreen;
+    }
+    return html`<section class="card half right ${fill ? "fill" : ""}" role="region" aria-labelledby=${RIGHT_TITLE}>
       <div class="half-head with-tools">
         <div class="half-title ${inPlace ? "in-detail" : ""}">
           ${inPlace
