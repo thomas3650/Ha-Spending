@@ -77,8 +77,9 @@ Claude proposed these, and Thomas agreed:
   rows apart.
 - A group line's name and count clip before its sum does.
 
-At an outer card width under 520 px (a window under 1024 px, where the halves stack, or a phone) the list may scroll
-sideways as it does now. Claude's call: the list stacks under the bars there and has the whole width.
+At an outer card width under 520 px the list may scroll sideways, as it does now. That is a page from 1024 px to about
+1110 px, where the halves stand side by side, or a phone. Claude's call: accepted there, since full screen gives the
+list the page's width. Below 1024 px the halves stack, and each card has the whole width.
 
 ## 3. Full screen
 
@@ -147,14 +148,17 @@ They work as the overview's full screen does (top filter spec §3.2):
   - When the current entry is the full-screen open pushed right over the view's open, ← goes back two entries, so Back
     afterwards does not reopen the view.
   - Otherwise it replaces the current entry with the overview, as the view's ← does after any push (fixed expenses
-    over time spec §2). Back then reopens the view in the normal card.
+    over time spec §2). Back then lands on the entry before. That can be the view in the normal card, or, after a
+    choice made in full screen, the full-screen open's entry: the view in full screen without that choice, as in the
+    Escape case above. Accepted.
 - Choosing a unit, a period, a level or an object group in full screen pushes an entry as in the normal card, and
   keeps full screen.
 - **The focus:**
   - Opening and closing by the button leave it on the button, which stays in its card.
-  - When the element that had the focus is gone (Escape, Back, Forward or a press in the other card's absence), it
-    goes to the heading of the card that fills, or filled, the page: `#hs-fixed-bars-title` or `#hs-fixed-list-title`.
-    Both headings take the focus (`tabindex="-1"`); the list's gets it with this change.
+  - When Escape, Back or Forward leaves the element that had the focus gone, the focus goes to the heading of the card
+    that fills, or filled, the page: `#hs-fixed-bars-title` or `#hs-fixed-list-title`. Both headings take the focus
+    (`tabindex="-1"`); the list's gets it with this change. A card goes away only when full screen opens, so this is
+    mainly Back or Forward onto a full-screen entry.
   - A reload into full screen leaves the focus where the page puts it.
 
 ### 3.6 Widths
@@ -186,9 +190,9 @@ tooltip text ("Betalt: …", "Estimat: ca. …", "I alt: ca. …").
   A not-seen row has no amount and adds no line. A refund counts negative, as in the sums. A paid sum below zero reads
   as `barKr` writes it, "+500 kr. retur" ([D54](../../decisions.md)).
 - **More than ten parts:** the nine biggest get a line, still in the legend's order, and the rest are one line after
-  them: "3 andre: 1.200 kr." in the same format. "Biggest" is the absolute value of paid plus estimates in the unit. So
-  a tooltip has at most ten part lines, and the folded line holds at least two parts. Claude's call: a tooltip must fit
-  the chart.
+  them: "3 andre: 1.200 kr." in the same format, with a grey swatch, and " · forfalden" when any folded part holds a
+  due estimate. "Biggest" is the absolute value of paid plus estimates in the unit. So a tooltip has at most ten part
+  lines, and the folded line holds at least two parts. Claude's call: a tooltip must fit the chart.
 - The last line is the bar's total, in bold: "I alt: 9.000 kr.", or with estimates "I alt: 8.000 kr. + ca. 900 kr.".
   Claude's call: the paid and estimated parts stay apart, so the total does not read as paid.
 - An empty bar's tooltip has the unit and "Ingen betalinger".
@@ -272,9 +276,10 @@ and the colours (§5) are checked in Chrome, not in tests.
     reopen the view.
   - A unit chosen in full screen, then Escape: the view in the normal card with the unit; Back then lands in full
     screen without the unit.
-  - The focus stays on the button after open and after close. Escape from the list's full screen, with the focus on
-    the list's scroll region, which stays, leaves it there; after Back from full screen with the focus in the card that is gone, it is
-    on the bars' or the list's heading.
+  - A unit chosen in full screen, then ←: the overview; Back then lands in full screen without the unit.
+  - The focus stays on the button after open and after close.
+  - Escape from the list's full screen with the focus on the list's scroll region: the focus stays there.
+  - The focus in the list, then Forward onto the bars' full-screen entry: the focus is on `#hs-fixed-bars-title`.
 - **§3.7:** while loading with `full=bars` there is one placeholder region and no key numbers.
 - **§4:** unit tests of the tooltip function:
   - a bar with paid only, a mixed bar, an estimates-only bar, a part with a due estimate;
@@ -282,14 +287,16 @@ and the colours (§5) are checked in Chrome, not in tests.
   - an empty bar;
   - eleven parts giving nine lines and "2 andre: …", and ten parts giving ten lines and no folded line;
   - the legend's order, and the total line keeping paid and estimates apart;
-  - a part name holding `<` comes back as plain text, and the chart's tooltip shows it as text.
+  - the folded line's grey swatch, and its " · forfalden" when a folded part is due;
+  - the exported step that turns the lines into the tooltip's HTML escapes a part name holding `<` ([D68](../../decisions.md):
+    the chart's wiring is not read in tests).
 - **§5.1:** a model unit test: the tab's row for a due subscription is marked due, keeps the Forventes kind, and keeps
   its place in the Status sort. Its text reads "Forfalden …".
 - **§5.3:**
   - With a due estimate in the bars the legend has "Rød kant: forfalden"; without one it does not.
   - The legend reads "Skraveret: estimat" when there are estimates.
   - A model test: a part with a due estimate and a future one in the running unit gives a due sum and an estimate sum.
-- **The Chrome check** ([`testing.md`](../../testing.md#chrome-check)), in the fast loop at 1200, 1440 and 1728 px, at
+- **The Chrome check** ([`testing.md`](../../testing.md#chrome-check)), in the fast loop at 1100, 1200, 1440 and 1728 px, at
   900 px for the stacked halves, and in a window about 500 px high:
   - the normal list fits with no sideways scroll, no badge and no cut status or sum, with one object group and with
     "Alle";
