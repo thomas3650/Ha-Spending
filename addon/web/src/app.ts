@@ -82,6 +82,8 @@ import {
 } from "./state/view";
 import { card, chip, field, objectGroupMark, theme } from "./theme";
 
+type QuickFilter = Pick<ViewState, "search" | "shop" | "amount">;
+
 type Load =
   | { kind: "idle" }
   | { kind: "loading" }
@@ -259,6 +261,8 @@ export class SpendingApp extends LitElement {
   private backPending = false;
   /** A close asked for while a Back was pending, run once that Back has landed. */
   private afterBack: (() => void) | null = null;
+  /** The quick filter a full-screen close had, put back on the entry its Back lands on, so none of it is lost. */
+  private quickOnLanding: QuickFilter | null = null;
 
   constructor() {
     super();
@@ -288,6 +292,9 @@ export class SpendingApp extends LitElement {
   private readonly onPop = (): void => {
     this.backPending = false;
     this.onHash();
+    const quick = this.quickOnLanding;
+    this.quickOnLanding = null;
+    if (quick !== null) this.keepQuickFilter(quick);
     const after = this.afterBack;
     this.afterBack = null;
     after?.();
@@ -354,18 +361,22 @@ export class SpendingApp extends LitElement {
       return;
     }
     const entry = marks();
-    if (entry.full === true) {
-      this.change(off);
-      this.goBack(1);
-      return;
-    }
-    if (entry.overFull === true) {
-      this.change(closeDetail(off));
-      this.goBack(2);
+    if (entry.full === true || entry.overFull === true) {
+      this.quickOnLanding = { search: off.search, shop: off.shop, amount: off.amount };
+      this.change(entry.full === true ? off : closeDetail(off));
+      this.goBack(entry.full === true ? 1 : 2);
       return;
     }
     const next = closeDetail(off);
     history.replaceState(null, "", `#${toHash(next)}`);
+    this.change(next);
+  }
+
+  private keepQuickFilter(quick: QuickFilter): void {
+    const next = { ...this.state, ...quick };
+    const hash = toHash(next);
+    if (hash === toHash(this.state)) return;
+    replaceKeepingMarks(`#${hash}`, "keep");
     this.change(next);
   }
 

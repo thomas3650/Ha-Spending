@@ -115,7 +115,7 @@ describe("full screen in the hash", () => {
     expectOn(root);
   });
 
-  it("⤢, typing in the search, ⤡, then Back is not full screen", async () => {
+  it("⤢, typing in the search, ⤡: not full screen, the search stays, and Back is not full screen", async () => {
     const { app, root } = await mount("");
     fireEvent.click(tab(root, da.postings));
     await settle(app);
@@ -125,8 +125,9 @@ describe("full screen in the hash", () => {
     await settle(app);
     expect(location.hash).toBe("#card=postings&view=full&q=Netto");
     await press(app, root);
-    await hashBecomes(app, "#card=postings");
+    await hashBecomes(app, "#card=postings&q=Netto");
     expectOff(root);
+    expect((getByRole(root, "combobox", { name: da.searchLabel }) as HTMLInputElement).value).toBe("Netto");
     history.back();
     await hashBecomes(app, "");
     expectOff(root);

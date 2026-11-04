@@ -259,7 +259,7 @@ describe("full screen and the detail in the history", () => {
     expect(pressed(root)).toBe("false");
   });
 
-  it("⤢, a row, typing in the search, ⤡, then Back is not full screen", async () => {
+  it("⤢, a row, typing in the search, ⤡: the search stays, and Back is not full screen", async () => {
     const { app, root } = await toPostings();
     await toggleFullScreen(app, root);
     await open(app, CAFE);
@@ -267,7 +267,9 @@ describe("full screen and the detail in the history", () => {
     await settle(app);
     expect(location.hash).toBe("#card=postings&view=full&q=n&detail=p%3Ap23");
     await toggleFullScreen(app, root);
-    await hashBecomes(app, "#card=postings");
+    await hashBecomes(app, "#card=postings&q=n");
+    expect(pressed(root)).toBe("false");
+    expect(queryByRole(root, "heading", { level: 3 })).toBeNull();
     history.back();
     await hashBecomes(app, "");
     expect(pressed(root)).toBe("false");
@@ -282,7 +284,7 @@ describe("full screen and the detail in the history", () => {
     await escape(app);
     expect(location.hash).toBe("#card=postings&view=full&q=n");
     await escape(app);
-    await hashBecomes(app, "#card=postings");
+    await hashBecomes(app, "#card=postings&q=n");
     expect(pressed(root)).toBe("false");
     history.back();
     await hashBecomes(app, "");
