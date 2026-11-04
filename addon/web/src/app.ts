@@ -61,6 +61,7 @@ import {
 import {
   type Card,
   DEFAULT_POSTING_SORT,
+  DEFAULT_STATE,
   type DetailKey,
   nextSort,
   parseHash,
@@ -94,6 +95,12 @@ interface Marks {
   detail?: unknown;
   full?: unknown;
   overFull?: unknown;
+  /** The full-screen open's quick filter, so a close can tell whether it changed in full screen. */
+  quick?: unknown;
+}
+
+function quickKey(s: QuickFilter): string {
+  return toHash({ ...DEFAULT_STATE, search: s.search, shop: s.shop, amount: s.amount });
 }
 
 function marks(): Marks {
@@ -308,7 +315,8 @@ export class SpendingApp extends LitElement {
       return;
     }
     const hash = `#${toHash(next)}`;
-    const pushed = marks().full === true ? DETAIL_OVER_FULL : DETAIL_ENTRY;
+    const entry = marks();
+    const pushed = entry.full === true ? { ...DETAIL_OVER_FULL, quick: entry.quick } : DETAIL_ENTRY;
     if (this.state.detail === null) history.pushState(pushed, "", hash);
     else replaceKeepingMarks(hash, "keep");
     this.openedByRow = true;
@@ -351,14 +359,15 @@ export class SpendingApp extends LitElement {
     }
     if (this.state.fullScreen) return;
     const next = open(this.state);
-    history.pushState(FULL_ENTRY, "", `#${toHash(next)}`);
+    history.pushState({ ...FULL_ENTRY, quick: quickKey(next) }, "", `#${toHash(next)}`);
     this.change(next);
   }
 
   /**
    * Goes back past the open when the entry's marks say it is the full-screen open, or one detail open pushed right
    * over it, so Back does not reopen it; otherwise replaces (top-filter spec §3.2). The marks live in history.state, so
-   * an open from before a reload counts too. The state is set at once, as closeDetail does.
+   * an open from before a reload counts too. The state is set at once, as closeDetail does. The landed entry takes the
+   * quick filter only when it changed in full screen, so a search the link cleared comes back.
    */
   private closeFullScreen(): void {
     if (!this.state.fullScreen) return;
@@ -370,7 +379,8 @@ export class SpendingApp extends LitElement {
     }
     const entry = marks();
     if (entry.full === true || entry.overFull === true) {
-      this.quickOnLanding = { search: off.search, shop: off.shop, amount: off.amount };
+      const quick = { search: off.search, shop: off.shop, amount: off.amount };
+      this.quickOnLanding = entry.quick === quickKey(quick) ? null : quick;
       this.change(entry.full === true ? off : closeDetail(off));
       this.goBack(entry.full === true ? 1 : 2);
       return;

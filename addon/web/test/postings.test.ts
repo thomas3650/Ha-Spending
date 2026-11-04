@@ -158,9 +158,9 @@ describe("the postings list", () => {
     expect(linkBase("http://firefly.test/sub")).toBe("http://firefly.test/sub");
   });
 
-  it("shows the shop, with the bank text as its title", async () => {
+  it("shows the shop, with the shop's name as its title", async () => {
     const el = await render(listOf());
-    getAllByRole(el, "cell", { name: "Netto", description: "DK NETTO 4521" });
+    getAllByRole(el, "cell", { name: "Netto", description: "Netto" });
   });
 
   it("shows the bank text of a posting with no shop, with its full text as its title", async () => {

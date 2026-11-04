@@ -334,7 +334,7 @@ describe("the search on Posteringer", () => {
     it("finds the rows by their shop although the bank text says otherwise", async () => {
       const { app, root } = await mount("card=postings");
       await type(app, root, "roma");
-      expect(getAllByTitle(card(root), "MOBILEPAY 1234")).toHaveLength(2);
+      expect(getAllByTitle(card(root), "Pizzeria Roma")).toHaveLength(2);
       summary(root, 2, 50000);
     });
 

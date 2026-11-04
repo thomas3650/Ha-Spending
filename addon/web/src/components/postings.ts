@@ -110,7 +110,7 @@ export class Postings extends LitElement {
       @click=${() => fire(this, "detail-open", { kind: "posting", id: p.id })}
     >
       <td class="posting-date">${tableDate(p.date)}</td>
-      <td class="posting-text" title=${p.text}>
+      <td class="posting-text" title=${p.shop ?? p.text}>
         <div class="posting-name">
           <button type="button" class="row-name" data-detail=${`p:${p.id}`}>${p.shop ?? p.text}</button>${mark}
         </div>

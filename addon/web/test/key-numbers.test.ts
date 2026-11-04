@@ -228,12 +228,26 @@ describe("the first key number's link to Posteringer in full screen", () => {
     await expectLandedBeforeLink(app, root);
   });
 
-  it("⤡ after the link puts the empty quick filter on the entry before it", async () => {
+  it("⤡ after the link brings back the search from before it", async () => {
     const { app, root } = await mount("card=postings&q=Netto");
     await follow(app, postingsLink(root));
-    fireEvent.click(fullScreenButton(root));
-    await hashBecomes(app, "#card=postings");
     expect(searchValue(root)).toBe("");
+    fireEvent.click(fullScreenButton(root));
+    await hashBecomes(app, "#card=postings&q=Netto");
+    expect(isFullScreen(root)).toBe(false);
+    expect(searchValue(root)).toBe("Netto");
+  });
+
+  it("⤡ after the link, a row and a search keeps the search typed in full screen", async () => {
+    const { app, root } = await mount("card=postings&q=Netto");
+    await follow(app, postingsLink(root));
+    fireEvent.click(getAllByRole(root, "button", { name: "Café Søde" })[0]);
+    await settle(app);
+    fireEvent.input(getByRole(root, "combobox", { name: da.searchLabel }), { target: { value: "Café" } });
+    await settle(app);
+    fireEvent.click(fullScreenButton(root));
+    await hashBecomes(app, "#card=postings&q=Caf%C3%A9");
+    expect(searchValue(root)).toBe("Café");
   });
 
   it("a main group's and a category's counts are that level's", async () => {
