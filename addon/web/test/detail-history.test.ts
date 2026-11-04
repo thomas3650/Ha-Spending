@@ -151,6 +151,25 @@ describe("the detail in the history", () => {
     expect(pressed(root)).toBe("false");
   });
 
+  it("a row's open while the close's Back is on its way opens it on the landed entry", async () => {
+    const { app, root } = await toPostings();
+    const length = history.length;
+    await open(app, CAFE);
+    const back = history.back.bind(history);
+    const go = history.go.bind(history);
+    vi.spyOn(history, "back").mockImplementation(() => void setTimeout(back));
+    vi.spyOn(history, "go").mockImplementation((delta) => void setTimeout(() => go(delta)));
+    fireEvent.keyDown(window, { key: "Escape" });
+    app.dispatchEvent(new CustomEvent("detail-open", { detail: LATER, bubbles: true, composed: true }));
+    await hashBecomes(app, "#card=postings&detail=p%3Ap26");
+    await settle(app, 10);
+    expect(location.hash).toBe("#card=postings&detail=p%3Ap26");
+    expect(history.length).toBe(length + 1);
+    history.back();
+    await hashBecomes(app, "#card=postings");
+    expect(queryByRole(root, "heading", { level: 3 })).toBeNull();
+  });
+
   it("a row, ⤢, typing, ⤡ with the Back on its way, then Escape: the detail closes and the search stays", async () => {
     const { app, root } = await toPostings();
     await open(app, CAFE);
