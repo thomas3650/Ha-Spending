@@ -8,6 +8,7 @@ import {
   queryAllByRole,
   queryByRole,
   queryByText,
+  queryByTitle,
 } from "@testing-library/dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
@@ -146,8 +147,13 @@ function barsRegion(root: HTMLElement, title = da.levelPer("Faste udgifter", "mo
   return getByRole(root, "region", { name: title });
 }
 
+/** The bars' own buttons, in their list, not the card's full-screen button. */
+function barButtons(root: HTMLElement, title?: string): HTMLElement[] {
+  return getAllByRole(getByRole(barsRegion(root, title), "list"), "button");
+}
+
 function barNames(root: HTMLElement, title?: string): string[] {
-  return getAllByRole(barsRegion(root, title), "button").map((b) => flat(b.textContent));
+  return barButtons(root, title).map((b) => flat(b.textContent));
 }
 
 function listRegion(root: HTMLElement, title = da.fixed.inPeriod): HTMLElement {
@@ -327,10 +333,12 @@ describe("the way in and out (spec §2)", () => {
     getByRole(root, "region", { name: da.subscriptions });
   });
 
-  it("view=fixed with no subscriptions shows the overview", async () => {
-    const { root } = await mount("view=fixed&og=Faste%20udgifter");
+  it("view=fixed with no subscriptions shows the overview, not in full screen", async () => {
+    const { root } = await mount("view=fixed&og=Faste%20udgifter&full=list");
     expect(location.hash).toBe("");
     inOverview(root);
+    getByRole(root, "region", { name: da.mainGroups });
+    expect(getByRole(root, "button", { name: da.fullScreen }).getAttribute("aria-pressed")).toBe("false");
   });
 });
 
@@ -468,12 +476,12 @@ describe("the bars (spec §5)", () => {
     const today = "2026-01-15";
     const { app, root } = await mount(OPEN.slice(1), { now: `${today}T10:00:00Z`, answer: answer({ today }) });
     const december = month("2026-12-01", today);
-    const buttons = getAllByRole(barsRegion(root), "button");
+    const buttons = barButtons(root);
     expect(buttons).toHaveLength(12);
     await click(app, buttons[11]);
     expect(location.hash).toBe("#unit=2026-12-01&view=fixed&og=Faste+udgifter");
     getByRole(root, "button", { name: da.switchMonth(december) });
-    expect(getAllByRole(barsRegion(root), "button")[11].getAttribute("aria-pressed")).toBe("true");
+    expect(barButtons(root)[11].getAttribute("aria-pressed")).toBe("true");
     await click(app, back(root));
     expect(location.hash).toBe("");
     inOverview(root, "day");
@@ -492,7 +500,7 @@ describe("the bars (spec §5)", () => {
   it("Denne måned draws its days, and they are not buttons", async () => {
     const { root } = await open("period=thisMonth&view=fixed&og=Faste+udgifter");
     const region = barsRegion(root, da.levelPer("Faste udgifter", "day"));
-    expect(queryAllByRole(region, "button")).toEqual([]);
+    expect(queryAllByRole(getByRole(region, "list"), "button")).toEqual([]);
     expect(getAllByRole(region, "listitem")).toHaveLength(31);
     expect(queryByRole(root, "button", { name: da.chooseMonth })).toBeNull();
   });
@@ -541,11 +549,11 @@ describe("the bars (spec §5)", () => {
   it("a bar press chooses its unit, as the trail's step shows, and a second press removes it", async () => {
     const { app, root } = await open(OPEN.slice(1));
     const october = month("2026-10-01");
-    await click(app, getAllByRole(barsRegion(root), "button")[9]);
+    await click(app, barButtons(root)[9]);
     expect(location.hash).toBe("#unit=2026-10-01&view=fixed&og=Faste+udgifter");
     getByRole(root, "button", { name: da.switchMonth(october) });
     expect(getAllByRole(listRegion(root, october), "row")).toHaveLength(4);
-    await click(app, getAllByRole(barsRegion(root), "button")[9]);
+    await click(app, barButtons(root)[9]);
     expect(location.hash).toBe(OPEN);
   });
 });
@@ -553,7 +561,7 @@ describe("the bars (spec §5)", () => {
 describe("the bars' keyboard highlight (D19)", () => {
   it("a focused bar button highlights every segment of its bar, and blur lets go", async () => {
     const { root } = await open(OPEN.slice(1));
-    const buttons = getAllByRole(barsRegion(root), "button");
+    const buttons = barButtons(root);
     const chart = fixedBarChart();
     // One part, Bolig: its paid series is 0, its due series 1 and its estimate series 2.
     for (const [i, series] of [
@@ -574,7 +582,7 @@ describe("the bars' keyboard highlight (D19)", () => {
 describe("the bars' keyboard highlight, a fully due estimate", () => {
   it("names no estimate series when every estimate of the bar is due", async () => {
     const { root } = await open(OPEN.slice(1), { answer: answer({ bills: [HUSLEJE, FORSIKRING] }) });
-    const buttons = getAllByRole(barsRegion(root), "button");
+    const buttons = barButtons(root);
     const chart = fixedBarChart();
     fireEvent.focus(buttons[9]);
     expect(chart.series.highlight.at(-1)).toEqual([0, 1]);
@@ -704,6 +712,18 @@ describe("the payments (spec §6)", () => {
     }
   });
 
+  it("with no og and one object group in the answer, a row's name tooltip is the name alone", async () => {
+    const { root } = await open("view=fixed", { answer: answer({ bills: [HUSLEJE, AVIS, FORSIKRING] }) });
+    const husleje = dataRows(listRegion(root))
+      .map((r) => queryAllByRole(r, "cell")[1])
+      .filter((c) => flat(c.textContent).startsWith("Husleje"));
+    expect(husleje.length).toBeGreaterThan(0);
+    for (const cell of husleje) {
+      getByTitle(cell, "Husleje");
+      expect(queryByTitle(cell, da.fixed.nameInGroup("Husleje", "Faste udgifter"))).toBeNull();
+    }
+  });
+
   it("Alt by År with Alle starts each row's line with its object group", async () => {
     const { root } = await open("period=all&view=fixed", { answer: answer({ earliest: "2023-01-01" }) });
     const groupOf = new Map(BILLS.map((b) => [b.name, b.objectGroup]));
@@ -729,5 +749,281 @@ describe("the payments (spec §6)", () => {
   it("says so when the level has no fixed expenses", async () => {
     const { root } = await open("group=Bil&view=fixed&og=Faste+udgifter");
     getByText(listRegion(root), da.fixed.empty("Bil"));
+  });
+});
+
+describe("full screen (spec §3)", () => {
+  const BARS = da.levelPer("Faste udgifter", "month");
+  const FULL_BARS = `${OPEN}&full=bars`;
+  const FULL_LIST = `${OPEN}&full=list`;
+
+  function fullButton(root: HTMLElement, title: string): HTMLElement {
+    return getByRole(root, "button", { name: da.fullScreenOf(title) });
+  }
+
+  function keyNumbers(root: HTMLElement): HTMLElement | null {
+    return queryByRole(root, "group", { name: da.fixed.paidThisYear });
+  }
+
+  async function press(app: SpendingApp, button: HTMLElement): Promise<HTMLElement> {
+    button.focus();
+    await click(app, button);
+    return button;
+  }
+
+  function bothCards(root: HTMLElement): void {
+    barsRegion(root);
+    listRegion(root);
+    expect(keyNumbers(root)).not.toBeNull();
+    expect(fullButton(root, BARS).getAttribute("aria-pressed")).toBe("false");
+    expect(fullButton(root, da.fixed.inPeriod).getAttribute("aria-pressed")).toBe("false");
+  }
+
+  function barsAlone(root: HTMLElement): void {
+    barsRegion(root);
+    expect(queryByRole(root, "region", { name: da.fixed.inPeriod })).toBeNull();
+    expect(keyNumbers(root)).toBeNull();
+    expect(fullButton(root, BARS).getAttribute("aria-pressed")).toBe("true");
+  }
+
+  function listAlone(root: HTMLElement, title: string = da.fixed.inPeriod): void {
+    listRegion(root, title);
+    expect(queryByRole(root, "region", { name: BARS })).toBeNull();
+    expect(keyNumbers(root)).toBeNull();
+    expect(fullButton(root, title).getAttribute("aria-pressed")).toBe("true");
+  }
+
+  /** Opens the view by its link from the overview, so its entry has the open's mark. */
+  async function fromOverview(start = "") {
+    const opened = await open(start);
+    await click(opened.app, link(opened.root, FIXED_CARD));
+    return opened;
+  }
+
+  describe("the buttons and what they show (§3.1, §3.2)", () => {
+    it("each card has its button, named after the card, not pressed", async () => {
+      const { root } = await open(OPEN.slice(1));
+      bothCards(root);
+      getByRole(barsRegion(root), "button", { name: da.fullScreenOf(BARS) });
+      getByRole(listRegion(root), "button", { name: da.fullScreenOf(da.fixed.inPeriod) });
+    });
+
+    it("the bars' button shows the bars alone, and a second press brings both cards back", async () => {
+      const { app, root } = await open(OPEN.slice(1));
+      await click(app, fullButton(root, BARS));
+      expect(location.hash).toBe(FULL_BARS);
+      barsAlone(root);
+      await click(app, fullButton(root, BARS));
+      expect(location.hash).toBe(OPEN);
+      bothCards(root);
+    });
+
+    it("the list's button shows the list alone, and a second press brings both cards back", async () => {
+      const { app, root } = await open(OPEN.slice(1));
+      await click(app, fullButton(root, da.fixed.inPeriod));
+      expect(location.hash).toBe(FULL_LIST);
+      listAlone(root);
+      await click(app, fullButton(root, da.fixed.inPeriod));
+      expect(location.hash).toBe(OPEN);
+      bothCards(root);
+    });
+
+    it("the buttons are there when the list shows its empty text", async () => {
+      const { root } = await open("group=Bil&view=fixed&og=Faste+udgifter");
+      getByText(listRegion(root), da.fixed.empty("Bil"));
+      fullButton(root, da.levelPer("Faste udgifter", "month"));
+      fullButton(root, da.fixed.inPeriod);
+    });
+
+    it("a bar press in full screen chooses the unit, and the bars stay alone", async () => {
+      const { app, root } = await open(FULL_BARS.slice(1));
+      await click(app, barButtons(root)[9]);
+      expect(location.hash).toBe("#unit=2026-10-01&view=fixed&og=Faste+udgifter&full=bars");
+      getByRole(root, "button", { name: da.switchMonth(month("2026-10-01")) });
+      barsAlone(root);
+    });
+
+    it("in the list's full screen, a unit from the trail's list narrows the list, and full screen stays", async () => {
+      const { app, root } = await open(FULL_LIST.slice(1));
+      const october = month("2026-10-01");
+      await click(app, getByRole(root, "button", { name: da.chooseMonth }));
+      const units = getByRole(root, "group", { name: da.units });
+      await click(app, getByRole(units, "button", { name: new RegExp(`^${october},`) }));
+      expect(location.hash).toBe("#unit=2026-10-01&view=fixed&og=Faste+udgifter&full=list");
+      listAlone(root, october);
+      expect(getAllByRole(listRegion(root, october), "row")).toHaveLength(4);
+    });
+  });
+
+  describe("the list in full screen (§3.3)", () => {
+    it("has the object group's badge on its rows", async () => {
+      const { root } = await open(FULL_LIST.slice(1));
+      const rows = dataRows(listRegion(root));
+      expect(rows.length).toBeGreaterThan(0);
+      for (const row of rows) getByText(queryAllByRole(row, "cell")[1], "Faste udgifter");
+    });
+  });
+
+  describe("the hash (§3.4)", () => {
+    it("a load with full=list opens the list in full screen and leaves the focus alone", async () => {
+      const { app, root } = await open(FULL_LIST.slice(1));
+      expect(location.hash).toBe(FULL_LIST);
+      listAlone(root);
+      expect(app.shadowRoot?.activeElement ?? null).toBeNull();
+    });
+
+    it("leaving the view by ← drops full", async () => {
+      const { app, root } = await open(FULL_BARS.slice(1));
+      await click(app, back(root));
+      expect(location.hash).toBe("");
+      inOverview(root);
+      expect(getByRole(root, "button", { name: da.fullScreen }).getAttribute("aria-pressed")).toBe("false");
+    });
+  });
+
+  describe("history, Escape and ← (§3.5)", () => {
+    it("open, then Back, closes full screen and stays in the view", async () => {
+      const { app, root } = await open(OPEN.slice(1));
+      await click(app, fullButton(root, BARS));
+      history.back();
+      await hashBecomes(app, OPEN);
+      bothCards(root);
+    });
+
+    it("open, then the button's close, then Back: full screen does not reopen, and Back leaves the view", async () => {
+      const { app, root } = await fromOverview();
+      const length = history.length;
+      await click(app, fullButton(root, da.fixed.inPeriod));
+      await click(app, fullButton(root, da.fixed.inPeriod));
+      await hashBecomes(app, OPEN);
+      expect(history.length).toBe(length + 1);
+      bothCards(root);
+      history.back();
+      await hashBecomes(app, "");
+      inOverview(root);
+    });
+
+    it("Escape closes full screen, and a second Escape leaves the view", async () => {
+      const { app, root } = await fromOverview();
+      await click(app, fullButton(root, BARS));
+      fireEvent.keyDown(window, { key: "Escape" });
+      await hashBecomes(app, OPEN);
+      bothCards(root);
+      fireEvent.keyDown(window, { key: "Escape" });
+      await hashBecomes(app, "");
+      inOverview(root);
+    });
+
+    it("with the trail's list open, the first Escape closes the list, and full screen stays", async () => {
+      const { app, root } = await open(FULL_LIST.slice(1));
+      const list = await openGroups(app, root, "Faste udgifter");
+      fireEvent.keyDown(getAllByRole(list, "button")[0], { key: "Escape" });
+      await settle(app);
+      expect(queryByRole(root, "group", { name: da.objectGroups })).toBeNull();
+      expect(location.hash).toBe(FULL_LIST);
+      listAlone(root);
+    });
+
+    it("← right after the view's open and full screen's open leaves the view, and Back does not reopen it", async () => {
+      const { app, root } = await open("");
+      await click(app, getByRole(getByRole(root, "group", { name: da.view }), "button", { name: da.postings }));
+      await click(app, link(root, FIXED_CARD));
+      await click(app, fullButton(root, BARS));
+      expect(location.hash).toBe("#card=postings&view=fixed&og=Faste+udgifter&full=bars");
+      await click(app, back(root));
+      await hashBecomes(app, "#card=postings");
+      getByRole(root, "region", { name: da.postingsTitle });
+      history.back();
+      await hashBecomes(app, "");
+      inOverview(root);
+    });
+
+    it("a unit chosen in full screen, then Escape: the normal cards with the unit; Back lands in full screen without it", async () => {
+      const { app, root } = await fromOverview();
+      await click(app, fullButton(root, BARS));
+      await click(app, barButtons(root)[9]);
+      fireEvent.keyDown(window, { key: "Escape" });
+      await settle(app);
+      expect(location.hash).toBe("#unit=2026-10-01&view=fixed&og=Faste+udgifter");
+      listRegion(root, month("2026-10-01"));
+      barsRegion(root);
+      expect(keyNumbers(root)).not.toBeNull();
+      history.back();
+      await hashBecomes(app, FULL_BARS);
+      barsAlone(root);
+    });
+
+    it("a unit chosen in full screen, then ←: the overview; Back lands in full screen without it", async () => {
+      const { app, root } = await fromOverview();
+      await click(app, fullButton(root, BARS));
+      await click(app, barButtons(root)[9]);
+      await click(app, back(root));
+      expect(location.hash).toBe("#unit=2026-10-01");
+      expect(queryByRole(root, "button", { name: da.backToOverview })).toBeNull();
+      history.back();
+      await hashBecomes(app, FULL_BARS);
+      barsAlone(root);
+    });
+
+    it("the focus stays on the button after open and after close", async () => {
+      const { app, root } = await fromOverview();
+      const active = () => app.shadowRoot?.activeElement;
+      const button = await press(app, fullButton(root, da.fixed.inPeriod));
+      expect(active()).toBe(button);
+      await click(app, button);
+      await hashBecomes(app, OPEN);
+      expect(fullButton(root, da.fixed.inPeriod)).toBe(button);
+      expect(active()).toBe(button);
+    });
+
+    it("Escape from the list's full screen with the focus on its scroll region keeps the focus there", async () => {
+      const { app, root } = await fromOverview();
+      await click(app, fullButton(root, da.fixed.inPeriod));
+      const scroll = getByRole(listRegion(root), "group", { name: da.fixed.inPeriod });
+      scroll.focus();
+      fireEvent.keyDown(window, { key: "Escape" });
+      await hashBecomes(app, OPEN);
+      bothCards(root);
+      expect(app.shadowRoot?.activeElement).toBe(scroll);
+    });
+
+    it("the focus in the list, then Forward onto the bars' full screen: the focus is on the bars' heading", async () => {
+      const { app, root } = await fromOverview();
+      await click(app, fullButton(root, BARS));
+      history.back();
+      await hashBecomes(app, OPEN);
+      getByRole(listRegion(root), "group", { name: da.fixed.inPeriod }).focus();
+      history.forward();
+      await hashBecomes(app, FULL_BARS);
+      barsAlone(root);
+      expect(app.shadowRoot?.activeElement).toBe(getByRole(root, "heading", { level: 2, name: BARS }));
+    });
+
+    it("Forward onto the list's full screen from the overview puts the focus on the list's heading", async () => {
+      const { app, root } = await fromOverview();
+      await click(app, fullButton(root, da.fixed.inPeriod));
+      history.go(-2);
+      await hashBecomes(app, "");
+      history.go(2);
+      await hashBecomes(app, FULL_LIST);
+      listAlone(root);
+      expect(app.shadowRoot?.activeElement).toBe(getByRole(root, "heading", { level: 2, name: da.fixed.inPeriod }));
+    });
+  });
+
+  describe("loading and errors (§3.7)", () => {
+    it("while loading with full=bars there is one placeholder region and no key numbers", async () => {
+      const { root } = await open(FULL_BARS.slice(1), { answer: () => new Promise(() => {}) });
+      const busy = getAllByRole(root, "region", { name: da.loading });
+      expect(busy).toHaveLength(1);
+      expect(busy[0].getAttribute("aria-busy")).toBe("true");
+      expect(queryAllByRole(root, "group", { name: da.loading })).toEqual([]);
+    });
+
+    it("on an error shows the error line and no full-screen button", async () => {
+      const { root } = await open(FULL_LIST.slice(1), { answer: () => json({ error: "unreachable" }, 502) });
+      expect(getByRole(root, "alert").textContent).toContain(da.errors.unreachable);
+      expect(queryByRole(root, "button", { name: new RegExp(`^${da.fullScreenOf("")}`) })).toBeNull();
+    });
   });
 });

@@ -151,6 +151,7 @@ export const da = {
   postings: "Posteringer",
   view: "Visning",
   fullScreen: "Fuld skærm",
+  fullScreenOf: (title: string) => `Fuld skærm: ${title}`,
   circleHintGroup: "Klik på en kategori for kun den.",
   chosenHint: (name: string) => `Klik på det valgte stykke igen, eller på ✕, for hele ${name}.`,
   inProgress: "i gang",

@@ -159,6 +159,16 @@ export const fixedListStyles = css`
   .fixed-list .fixed-name-line .object-group-mark {
     margin-left: 6px;
   }
+  /* Full screen's badge (spec §3.3) has a cap, and the line holds the dot, 6em of name and a capped badge, so a narrow
+     card cuts a long name no shorter than 6em. The room left over falls after the badge, so short names keep no gap. */
+  .fixed-list table.full .fixed-name-line {
+    min-width: calc(8px + 6px + 6em + 6px + 120px);
+  }
+  .fixed-list table.full .object-group-mark {
+    max-width: 120px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
   .fixed-list .fixed-sub {
     color: var(--hs-muted);
     font-size: 12px;

@@ -296,6 +296,20 @@ export const fixedBarsStyles = css`
   .fixed-bars .chart {
     height: 400px;
   }
+  /* Full screen's bars reach the window's bottom edge, under the legend, as the overview's do (D67). */
+  .fill > hs-fixed-bars,
+  .fill .fixed-bars {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+    min-height: 0;
+  }
+  .fill .fixed-bars .chart {
+    flex: 1 1 0;
+    height: auto;
+    min-height: 400px;
+    overflow: hidden;
+  }
 `;
 
 if (!customElements.get("hs-fixed-bars")) customElements.define("hs-fixed-bars", FixedBars);

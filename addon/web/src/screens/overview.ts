@@ -4,6 +4,7 @@ import "../components/amount-pill";
 import "../components/bars";
 import { detailSplit } from "../components/detail";
 import { fire } from "../components/chip";
+import { fullScreenButton } from "../components/full-screen-button";
 import "../components/circle";
 import "../components/postings";
 import "../components/search";
@@ -24,8 +25,6 @@ import { type Card, DEFAULT_POSTING_SORT, type Sort, type SubscriptionColumn, ty
 
 const LEFT_TITLE = "hs-left-title";
 const RIGHT_TITLE = "hs-right-title";
-const EXPAND = "M14 4h6v6M20 4l-7 7M10 20H4v-6M4 20l7-7";
-const COLLAPSE = "M14 4v6h6M14 10l7-7M10 20v-6H4M10 14l-7 7";
 const SHOPS_LIMIT = 10;
 
 export class Overview extends LitElement {
@@ -298,17 +297,7 @@ export class Overview extends LitElement {
             ${ctx.data.subscriptions.length === 0 ? nothing : this.switchButton("subscriptions", da.subscriptions)}
             ${shops ? this.switchButton("shops", da.shops) : nothing}
           </div>
-          <button
-            type="button"
-            class="full-screen"
-            aria-label=${da.fullScreen}
-            aria-pressed=${String(this.ctx.state.fullScreen)}
-            @click=${() => fire(this, "full-screen-toggle")}
-          >
-            <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false">
-              <path d=${this.ctx.state.fullScreen ? COLLAPSE : EXPAND} />
-            </svg>
-          </button>
+          ${fullScreenButton(da.fullScreen, this.ctx.state.fullScreen, () => fire(this, "full-screen-toggle"))}
         </div>
       </div>
       ${card === "shops" && this.hiddenWriteFailed

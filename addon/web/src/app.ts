@@ -69,6 +69,7 @@ import {
   setAmount,
   setCard,
   setCategory,
+  setFixedFull,
   setFullScreen,
   setMainGroup,
   setPeriod,
@@ -79,6 +80,7 @@ import {
   DEFAULT_POSTING_SORT,
   DEFAULT_STATE,
   type DetailKey,
+  type FixedCard,
   nextSort,
   parseHash,
   type PeriodChoice,
@@ -108,12 +110,20 @@ const FULL_ENTRY = { full: true };
 const DETAIL_OVER_FULL = { detail: true, overFull: true };
 /** Marks the entry that opening the fixed-expenses view pushed, so leaving it may go back (spec §2). */
 const FIXED_ENTRY = { fixed: true };
+/**
+ * Marks the entry that opening the view's full screen pushed (spec §3.5); one pushed right over the view's open says so.
+ * A mark of its own, so the overview's full-screen checks never take it for theirs.
+ */
+const FIXED_FULL_ENTRY = { fixedFull: true };
+const FIXED_FULL_OVER_FIXED = { fixedFull: true, overFixed: true };
 
 interface Marks {
   detail?: unknown;
   full?: unknown;
   overFull?: unknown;
   fixed?: unknown;
+  fixedFull?: unknown;
+  overFixed?: unknown;
   /** The full-screen open's quick filter, so a close can tell whether it changed in full screen. */
   quick?: unknown;
 }
@@ -243,21 +253,22 @@ export class SpendingApp extends LitElement {
       }
       /* Full screen's bars reach the window's bottom edge (D67). The boxes down to the chart keep min-height: 0, so
          the chart's last pixel size never holds the page open when the window gets lower. */
-      .page:has(.half.right.fill) {
+      .page:has(.half.fill) {
         min-height: 100vh;
       }
-      .page:has(.half.right.fill) > hs-overview {
+      .page:has(.half.fill) > hs-overview,
+      .page:has(.half.fill) > hs-fixed {
         display: flex;
         flex-direction: column;
         flex: 1 1 auto;
         min-height: 0;
       }
-      .halves:has(> .half.right.fill) {
+      .halves:has(> .half.fill) {
         flex: 1 1 auto;
         min-height: 0;
         align-items: stretch;
       }
-      .half.right.fill {
+      .half.fill {
         display: flex;
         flex-direction: column;
       }
@@ -302,7 +313,7 @@ export class SpendingApp extends LitElement {
   private closed: DetailKey | null = null;
   /** Full screen or the fixed-expenses view ended, so the focus may have lost its element. */
   private leftScreen = false;
-  /** The fixed-expenses view began, by its link, Back or Forward; the element that had the focus is gone. */
+  /** The fixed-expenses view began or its full screen changed, so the element that had the focus may be gone. */
   private enteredFixed = false;
   private headingAfterBack = false;
   /** Set by a row's click only: a link, a reload or full screen leave the focus where it is. */
@@ -360,6 +371,7 @@ export class SpendingApp extends LitElement {
     if (event.key !== "Escape") return;
     if (this.state.detail !== null) this.closeDetail();
     else if (this.state.fullScreen) this.closeFullScreen();
+    else if (this.state.fixedFull !== null) this.closeFixedFull();
     else if (this.state.fixed) this.closeFixed();
   };
 
@@ -460,8 +472,9 @@ export class SpendingApp extends LitElement {
   }
 
   /**
-   * ← and Escape go back past the open when the entry is the one the open pushed, so Back does not reopen the view;
-   * after any push in the view they replace (spec §2). The state is set at once, as closeFullScreen does.
+   * ← and Escape go back past the open when the entry is the one the open pushed, or the view's full-screen open pushed
+   * right over it, so Back does not reopen the view; after any push in the view they replace (spec §2, §3.5). The state
+   * is set at once, as closeFullScreen does.
    */
   private closeFixed(): void {
     if (!this.state.fixed) return;
@@ -471,12 +484,46 @@ export class SpendingApp extends LitElement {
       this.change(off);
       return;
     }
-    if (marks().fixed === true) {
+    const entry = marks();
+    if (entry.overFixed === true || entry.fixed === true) {
+      this.change(off);
+      this.goBack(entry.overFixed === true ? 2 : 1);
+      return;
+    }
+    history.replaceState(null, "", `#${toHash(off)}`);
+    this.change(off);
+  }
+
+  /** A card's full-screen button in the view. Like openFixed, a push waits for a pending Back to land. */
+  private openFixedFull(card: FixedCard): void {
+    if (this.backPending) {
+      this.afterBack = () => this.openFixedFull(card);
+      return;
+    }
+    if (!this.state.fixed || this.state.fixedFull !== null) return;
+    const next = setFixedFull(this.state, card);
+    history.pushState(marks().fixed === true ? FIXED_FULL_OVER_FIXED : FIXED_FULL_ENTRY, "", `#${toHash(next)}`);
+    this.change(next);
+  }
+
+  /**
+   * Goes back past the open when the entry is the one the open pushed, so Back does not reopen full screen; otherwise
+   * replaces, keeping the entry's marks (spec §3.5). The state is set at once, as closeFullScreen does.
+   */
+  private closeFixedFull(): void {
+    if (this.state.fixedFull === null) return;
+    const off = setFixedFull(this.state, null);
+    if (this.backPending) {
+      this.afterBack = () => this.closeFixedFull();
+      this.change(off);
+      return;
+    }
+    if (marks().fixedFull === true) {
       this.change(off);
       this.goBack(1);
       return;
     }
-    history.replaceState(null, "", `#${toHash(off)}`);
+    replaceKeepingMarks(`#${toHash(off)}`, "drop");
     this.change(off);
   }
 
@@ -586,7 +633,8 @@ export class SpendingApp extends LitElement {
     const root = this.renderRoot;
     await root.querySelector<LitElement>("hs-fixed")?.updateComplete;
     if (this.shadowRoot?.activeElement) return;
-    root.querySelector<HTMLElement>("#hs-fixed-bars-title")?.focus();
+    const heading = this.state.fixedFull === "list" ? "#hs-fixed-list-title" : "#hs-fixed-bars-title";
+    root.querySelector<HTMLElement>(heading)?.focus();
   }
 
   private async focusDetail(): Promise<void> {
@@ -623,8 +671,9 @@ export class SpendingApp extends LitElement {
 
   private change(next: ViewState): void {
     if ((this.state.fullScreen && !next.fullScreen) || (this.state.fixed && !next.fixed)) this.leftScreen = true;
-    // A page load leaves the focus where it is.
-    if (this.hasUpdated && !this.state.fixed && next.fixed) this.enteredFixed = true;
+    // A page load leaves the focus where it is. A card goes away when the view begins or its full screen changes.
+    const fullChanged = this.state.fixed && next.fixed && this.state.fixedFull !== next.fixedFull;
+    if (this.hasUpdated && ((!this.state.fixed && next.fixed) || fullChanged)) this.enteredFixed = true;
     this.state = next;
     this.ensureData();
     this.normaliseState();
@@ -723,7 +772,7 @@ export class SpendingApp extends LitElement {
   }
 
   private loadingHalves() {
-    const single = this.state.fullScreen;
+    const single = this.oneCard();
     return html`<div class="halves ${single ? "single" : ""}">
       ${(single ? [0] : [0, 1]).map(
         () => html`<section class="card half" role="region" aria-busy="true" aria-label=${da.loading}></section>`,
@@ -735,6 +784,11 @@ export class SpendingApp extends LitElement {
     const link = event.detail;
     if (link.kind === "postings") this.openFullScreen(openPostingsFull);
     else this.openFixed(link.objectGroup);
+  }
+
+  /** The overview's or the view's full screen: one card and no key numbers. */
+  private oneCard(): boolean {
+    return this.state.fullScreen || this.state.fixedFull !== null;
   }
 
   private keyNumbers(ctx: ViewContext) {
@@ -796,12 +850,17 @@ export class SpendingApp extends LitElement {
     const oneGroup = this.state.objectGroup !== null || step.single;
     return html`
       ${ctx.data.mainGroupsFound ? nothing : html`<p class="card line status" role="status">${da.noRuleGroup}</p>`}
-      <hs-key-numbers .cards=${view.cards} .objectGroups=${[]}></hs-key-numbers>
+      ${this.state.fixedFull === null
+        ? html`<hs-key-numbers .cards=${view.cards} .objectGroups=${[]}></hs-key-numbers>`
+        : nothing}
       <hs-fixed
         .view=${view}
-        .list=${fixedList(view, view.chosen, { full: false, oneGroup })}
+        .list=${fixedList(view, view.chosen, { full: this.state.fixedFull === "list", oneGroup })}
         .groupTitle=${step.title}
+        .full=${this.state.fixedFull}
         @unit-click=${(e: CustomEvent<UnitSelection>) => this.push(chooseFixedUnit(this.state, e.detail.fullStart))}
+        @fixed-full-toggle=${(e: CustomEvent<FixedCard>) =>
+          this.state.fixedFull === null ? this.openFixedFull(e.detail) : this.closeFixedFull()}
       ></hs-fixed>
     `;
   }
@@ -827,7 +886,7 @@ export class SpendingApp extends LitElement {
         if (ctx === null) return nothing;
         return view === null ? this.ready(ctx) : this.fixedScreen(ctx, view);
       default:
-        return html`${this.state.fullScreen
+        return html`${this.oneCard()
             ? nothing
             : html`<hs-key-numbers .cards=${null} .boxes=${this.boxes}></hs-key-numbers>`}
           ${this.loadingHalves()}`;
