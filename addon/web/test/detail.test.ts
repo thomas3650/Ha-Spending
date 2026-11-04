@@ -502,4 +502,25 @@ describe("the detail on the normal page", () => {
     const searched = await mountLinked("card=postings&q=Netto&detail=p%3Ap25");
     expect(boxes(detail(searched.root, "Pizzeria Roma"))).toEqual(before);
   });
+
+  describe("the bars' names follow the year", () => {
+    async function barLabels(hash: string): Promise<string[]> {
+      const { root } = await mountLinked(hash);
+      const bars = getByRole(detail(root, "Husleje"), "list", { name: da.detailPer("month") });
+      return getAllByRole(bars, "listitem").map((item) => text(item));
+    }
+
+    it("carry the year when Sidste 12 måneder crosses a new year", async () => {
+      const labels = await barLabels("period=last12Months&card=subscriptions&detail=s%3Ab1");
+      expect(labels).toHaveLength(12);
+      expect(labels[0]).toContain("Oktober 2025: ");
+      expect(labels[11]).toContain("September 2026: ");
+    });
+
+    it("leave the year off with I år", async () => {
+      const labels = await barLabels("card=subscriptions&detail=s%3Ab1");
+      expect(labels[0]).toContain("Januar: ");
+      expect(labels.some((l) => /\b20\d\d: /.test(l))).toBe(false);
+    });
+  });
 });

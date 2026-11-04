@@ -347,15 +347,21 @@ describe("a unit's name carries its year only when the bars cross a new year", (
   function postingsGroups(root: HTMLElement): string[] {
     return queryAllByRole(getByRole(root, "region", { name: da.postingsTitle }), "button")
       .map((b) => b.getAttribute("aria-label") ?? b.textContent ?? "")
-      .filter((n) => /^(Juli|Juli 2026)\b/.test(n));
+      .filter((n) => /^Juli\b/.test(n));
   }
 
   it("with I år the trail, the bar and the Posteringer group read the month alone", async () => {
     const { root } = await mount("unit=2026-07-01", at(TODAY));
-    expect(trailText(root)).toContain(`› Juli`);
-    expect(trailText(root)).not.toContain("Juli 2026");
+    getByRole(trail(root), "button", { name: da.remove("Juli") });
+    expect(queryByRole(trail(root), "button", { name: da.remove("Juli 2026") })).toBeNull();
     expect(names(barButtons(root, da.per("month")))[6]).toMatch(/^Juli,/);
     getByRole(trail(root), "button", { name: da.remove("Juli") });
+  });
+
+  it("with I år the Posteringer group lines are months without a year", async () => {
+    const { root } = await mount("card=postings", at(TODAY));
+    expect(postingsGroups(root).length).toBe(1);
+    expect(postingsGroups(root)[0]).toMatch(/^Juli, /);
   });
 
   it("with Sidste 12 måneder in November the month keeps its year", async () => {

@@ -4,6 +4,7 @@ import { afterEach, describe, expect, it } from "vitest";
 
 import { kr, unitName } from "../src/format";
 import { da } from "../src/i18n/da";
+import { type BarItem, barTooltip } from "../src/components/bars";
 import { barsList, names } from "./bars-helpers";
 import { barChart, forgetCharts } from "./chart-mock";
 import { answerFor, OBJECT_GROUP } from "./fixture";
@@ -24,6 +25,16 @@ function dayItems(root: HTMLElement): HTMLElement[] {
 }
 
 describe("a one-month period draws its days", () => {
+  it("Denne måned names its days without a year, in the bar and the tooltip", async () => {
+    const { root } = await mount("period=thisMonth");
+    expect(names(dayItems(root))[3]).toBe(`4. oktober, ${kr(0)}`);
+    const item = (root.querySelector("hs-bars") as unknown as { items: BarItem[] }).items[3];
+    expect(item.name).toBe("4. oktober");
+    expect(barTooltip(item)).toContain("4. oktober");
+    expect(barTooltip(item)).not.toContain("2026");
+  });
+
+
   it("Sidste måned draws a bar per day of September", async () => {
     const { root } = await mount("period=lastMonth");
     const shown = names(dayItems(root));

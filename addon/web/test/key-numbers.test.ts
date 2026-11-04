@@ -352,6 +352,11 @@ describe("the key numbers of the object groups", () => {
     }
   });
 
+  it("names the chosen unit without its year with I år", async () => {
+    const { root } = await mount("unit=2026-07-01", { answer: BILLS });
+    expect(objectCardNames(root, "Juli")).toContain("Faste udgifter i juli");
+  });
+
   it("names the chosen unit with its year when the bars cross a new year", async () => {
     const answer = linking(bills, "2026-11-04");
     const { root } = await mount("period=last12Months&unit=2026-07-01", { answer, now: "2026-11-04T10:00:00Z" });
