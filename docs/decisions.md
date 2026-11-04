@@ -308,7 +308,7 @@ to set their status to `superseded by D<n>`, or to name a part a later decision 
 - **Source:** Claude, for D29; the re-read and the fields written: Thomas, 2026-10-31, the design of the AI sorting
 
 ### D31: The search is a shared choice
-- **Date:** 2026-10-31 · **Status:** active; the way into Alle posteringer superseded by D57, leaving it through the trail by D60
+- **Date:** 2026-10-31 · **Status:** active; the way into Alle posteringer that keeps the search superseded by D57, leaving it through the trail by D60
 - **Decision:** The search is one of the shared choices. `q` is in the hash on every screen, and typing replaces the
   entry wherever it is typed. Opening Alle posteringer and leaving it through the trail keep the search.
 - **Why:** Thomas looks for a store's cost on the overview and expects the search to stay when he switches cards.
@@ -359,7 +359,7 @@ to set their status to `superseded by D<n>`, or to name a part a later decision 
   note); the names, the limits and the refusals: Claude
 
 ### D35: The chosen shop is a shared choice
-- **Date:** 2026-11-01 · **Status:** active; the way into Alle posteringer superseded by D57, "before `sort`" by D60
+- **Date:** 2026-11-01 · **Status:** active; the way into Alle posteringer that keeps the shop superseded by D57, "before `sort`" by D60
 - **Decision:** The chosen shop belongs with the search: one of the shared choices, kept and changed as the search is.
   It is the hash key `shop`, written right after `q` and before `sort` on every screen ([D20](decisions.md)); an empty
   value is no shop.
