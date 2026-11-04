@@ -598,8 +598,8 @@ to set their status to `superseded by D<n>`, or to name a part a later decision 
 - **Decision:**
   - The right card has no Forskel tab, and an old `card=difference` shows Søjler. Alle posteringer is reached from the
     key numbers' links only: "Vis alle" goes from Posteringer in full screen too.
-  - Full screen's Posteringer has the Kategori column and its sort, and the normal card shows the default sort while
-    the sort is by Kategori.
+  - Full screen's Posteringer has the Kategori column and its sort when the viewport is at least 600 px wide. Narrower,
+    and in the normal card, it has no column and shows the default sort while the sort is by Kategori.
   - This supersedes D52, D31's and D35's way into Alle posteringer that keeps the search and the shop, D19's Forskel
     table, D51's "the month's Forskel reachable", UI spec §4.2's and §4.4's Forskel, §7's sign of the Forskel view and
     the technical spec's Forskel bars.
