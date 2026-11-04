@@ -36,6 +36,8 @@ export interface ViewState {
   fixed: boolean;
   /** The fixed-expenses view's object group; null is Alle. Only with `fixed`. */
   objectGroup: string | null;
+  /** The Til overs view replaces the overview; never with `fixed` or full screen. */
+  leftOver: boolean;
   /** The quick filter: shared choices that stay when the top filter or the tab changes. */
   search: string;
   shop: string | null;
@@ -53,6 +55,7 @@ export const DEFAULT_STATE: ViewState = {
   fullScreen: false,
   fixed: false,
   objectGroup: null,
+  leftOver: false,
   search: "",
   shop: null,
   amount: null,
@@ -67,6 +70,7 @@ const CARDS: readonly Card[] = ["bars", "postings", "subscriptions", "shops"];
 const ALL_POSTINGS = "all-postings";
 const FULL = "full";
 const FIXED = "fixed";
+const LEFT_OVER = "leftover";
 
 function oneOf<T extends string>(values: readonly T[], value: string | null, fallback: T): T {
   return values.find((v) => v === value) ?? fallback;
@@ -145,7 +149,10 @@ function parseDetail(value: string | null): DetailKey | null {
   return { kind: match[1] === "s" ? "subscription" : "posting", id: match[2] };
 }
 
-/** What does not parse falls back to DEFAULT_STATE's value (D20); an old link's `sort` is ignored, and `og` only counts with `view=fixed`. */
+/**
+ * What does not parse falls back to DEFAULT_STATE's value (D20); an old link's `sort` is ignored, and `og` only counts
+ * with `view=fixed`. The Til overs view covers every account and all spending, so it drops the filter and the unit.
+ */
 export function parseHash(hash: string): ViewState {
   const p = new URLSearchParams(hash.startsWith("#") ? hash.slice(1) : hash);
   const accounts = p.get("accounts");
@@ -153,15 +160,17 @@ export function parseHash(hash: string): ViewState {
   const view = p.get("view");
   const allPostings = view === ALL_POSTINGS;
   const fixed = view === FIXED;
+  const leftOver = view === LEFT_OVER;
   return {
     period: parsePeriod(p),
-    accounts: accounts === null ? null : accounts.split(",").filter((id) => id !== ""),
-    level: parseLevel(p),
-    unit: isDate(unit) ? unit : null,
+    accounts: accounts === null || leftOver ? null : accounts.split(",").filter((id) => id !== ""),
+    level: leftOver ? { kind: "all" } : parseLevel(p),
+    unit: isDate(unit) && !leftOver ? unit : null,
     card: allPostings ? "postings" : oneOf(CARDS, p.get("card"), DEFAULT_STATE.card),
     fullScreen: allPostings || view === FULL,
     fixed,
     objectGroup: fixed ? p.get("og") || null : null,
+    leftOver,
     search: p.get("q") ?? DEFAULT_STATE.search,
     shop: p.get("shop") || DEFAULT_STATE.shop,
     amount: parseAmount(p),
@@ -187,7 +196,9 @@ export function toHash(s: ViewState): string {
   if (s.level.kind === "category") p.set("category", s.level.category ?? "");
   if (s.unit !== null) p.set("unit", s.unit);
   if (s.card !== DEFAULT_STATE.card) p.set("card", s.card);
-  if (s.fixed) {
+  if (s.leftOver) {
+    p.set("view", LEFT_OVER);
+  } else if (s.fixed) {
     p.set("view", FIXED);
     if (s.objectGroup !== null) p.set("og", s.objectGroup);
   } else if (s.fullScreen) {
