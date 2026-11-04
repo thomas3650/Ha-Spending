@@ -5,6 +5,7 @@ import {
   type Cell,
   type Column,
   leftOverCard,
+  type LeftOverTable,
   leftOverTable,
   roundKroner,
   type Row,
@@ -88,6 +89,33 @@ function expectSumRules(row: Row): void {
   expect(amount(c.change), `${row.name}: Ændring på konti`).toBe(
     amount(c.leftOver) + amount(c.credit) + amount(c.savings) + amount(c.other),
   );
+}
+
+const ALL_COLUMNS: Column[] = ["paidIn", "back", "spending", "leftOver", "credit", "savings", "other", "change"];
+
+/** The members line as kroner by name: "Anna 18.000 · Bo 13.000". */
+function members(cell: Cell): Map<string, number> {
+  const out = new Map<string, number>();
+  for (const part of cell.members?.split(" · ") ?? []) {
+    const at = part.lastIndexOf(" ");
+    out.set(part.slice(0, at), Number(part.slice(at + 1).replaceAll(".", "")));
+  }
+  return out;
+}
+
+/** "I alt" sums the rounded month cells as shown, column by column and member by member (spec §4.2). */
+function expectTotalSumsRows(table: LeftOverTable): void {
+  for (const column of ALL_COLUMNS) {
+    const sum = table.rows.reduce((acc, row) => acc + amount(row.cells[column]), 0);
+    expect(amount(table.total.cells[column]), `I alt: ${column}`).toBe(sum);
+  }
+  for (const column of ["paidIn", "back"] as const) {
+    const sums = new Map<string, number>();
+    for (const row of table.rows) {
+      for (const [name, kroner] of members(row.cells[column])) sums.set(name, (sums.get(name) ?? 0) + kroner);
+    }
+    expect(members(table.total.cells[column]), `I alt: ${column}'s members`).toEqual(sums);
+  }
 }
 
 function texts(row: Row): Record<string, string> {
@@ -222,7 +250,23 @@ describe("the Til overs table", () => {
     expectSumRules(table.total);
   });
 
-  it("holds both sum rules on every row and on I alt", () => {
+  it("sums I alt from the rounded months, so two months of 50 øre read +2, not +1", () => {
+    const table = leftOverTable(
+      data([
+        month("2026-10", [{ name: "Anna", paidIn: 50, back: 0 }], { other: 50 }),
+        month("2026-09", [{ name: "Anna", paidIn: 50, back: 0 }], { other: 50 }),
+      ]),
+      TODAY,
+    );
+    expect(table.rows.map((r) => r.cells.other.text)).toEqual(["+1", "+1"]);
+    expect(table.total.cells.other.text).toBe("+2");
+    expect(table.total.cells.paidIn).toEqual({ text: "+2", tone: "plain", members: "Anna 2" });
+    expect(table.total.cells.change.text).toBe("+4");
+    expectTotalSumsRows(table);
+    expectSumRules(table.total);
+  });
+
+  it("holds both sum rules on every row and on I alt, and I alt sums the rows", () => {
     for (const answer of [
       EXAMPLE,
       leftOverFor({ start: "2025-06-15", end: "2026-11-10" }),
@@ -238,6 +282,7 @@ describe("the Til overs table", () => {
     ]) {
       const table = leftOverTable(answer, TODAY);
       for (const row of [...table.rows, table.total]) expectSumRules(row);
+      expectTotalSumsRows(table);
     }
   });
 

@@ -33,7 +33,8 @@ export async function settle(app: SpendingApp, rounds = 5): Promise<void> {
 
 export async function mount(hash: string, opts: MountOptions = {}) {
   vi.useFakeTimers({ toFake: ["Date"] });
-  vi.setSystemTime(opts.now ?? "2026-10-30T10:00:00Z");
+  const now = opts.now ?? "2026-10-30T10:00:00Z";
+  vi.setSystemTime(now);
   let n = 0;
   const fetch = vi.fn(async (...[url]: [url: string, init?: RequestInit]) => {
     n += 1;
@@ -44,7 +45,7 @@ export async function mount(hash: string, opts: MountOptions = {}) {
   const leftOver = vi.fn(async (...[url]: [url: string, init?: RequestInit]) => {
     leftOverCalls += 1;
     const range = rangeOf(url);
-    return opts.leftOver ? opts.leftOver(range, leftOverCalls) : json(leftOverFor(range));
+    return opts.leftOver ? opts.leftOver(range, leftOverCalls) : json(leftOverFor(range, now.slice(0, 10)));
   });
   let shops: string[] = [];
   const hidden = vi.fn(async (init: RequestInit | undefined) => {

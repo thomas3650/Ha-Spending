@@ -16,7 +16,7 @@ export interface Row {
   /** `YYYY-MM`; empty on "I alt". */
   month: string;
   name: string;
-  /** Today's month. */
+  /** Today's month; the view adds "(i gang)", which `name` leaves out. */
   running: boolean;
   cells: Record<Column, Cell>;
 }
