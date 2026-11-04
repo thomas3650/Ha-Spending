@@ -27,7 +27,7 @@ import { unitName } from "./format";
 import { da } from "./i18n/da";
 import { type ViewContext, viewContext } from "./model/context";
 import { keyCards, objectGroupCards } from "./model/key-numbers";
-import { shownPostingSort } from "./model/postings";
+import { shownPostingSort, showsCategory } from "./model/postings";
 import type { HiddenState } from "./model/shops";
 import { DEFAULT_SUBSCRIPTION_SORT, shownSubscriptionSort, subscriptionFirstDescending } from "./model/subscriptions";
 import { allPostingsStyles, type CategoryChoice } from "./screens/all-postings";
@@ -525,7 +525,7 @@ export class SpendingApp extends LitElement {
               .shopsAll=${this.shopsAll}
               .shopsHidden=${this.shopsHidden}
               @posting-sort=${(e: CustomEvent<PostingColumn>) =>
-                (this.postingsSort = nextSort(shownPostingSort(this.postingsSort, this.fullScreen), e.detail, postingFirstDescending))}
+                (this.postingsSort = nextSort(shownPostingSort(this.postingsSort, showsCategory(this.fullScreen)), e.detail, postingFirstDescending))}
               @subscription-sort=${(e: CustomEvent<SubscriptionColumn>) =>
                 (this.subscriptionsSort = nextSort(
                   shownSubscriptionSort(this.subscriptionsSort, this.state.level.kind),

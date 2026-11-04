@@ -14,7 +14,7 @@ import { barItems, categoryColours, circleItems, circleSpan, circleTotal, partCo
 import { finerUnits, levelName, type ViewContext } from "../model/context";
 import { detailView } from "../model/detail";
 import { matches, shopSuggestions } from "../model/filter";
-import { postingList, shownPostingSort } from "../model/postings";
+import { postingList, shownPostingSort, showsCategory, watchCategoryWidth } from "../model/postings";
 import { type HiddenState, shopList } from "../model/shops";
 import { DEFAULT_SUBSCRIPTION_SORT, subscriptionTable } from "../model/subscriptions";
 import { hasShops } from "../state/actions";
@@ -58,8 +58,21 @@ export class Overview extends LitElement {
     this.hiddenWriteFailed = false;
   }
 
+  private stopWatchingWidth: (() => void) | null = null;
+
   protected override createRenderRoot(): HTMLElement {
     return this;
+  }
+
+  override connectedCallback(): void {
+    super.connectedCallback();
+    this.stopWatchingWidth = watchCategoryWidth(() => this.requestUpdate());
+  }
+
+  override disconnectedCallback(): void {
+    this.stopWatchingWidth?.();
+    this.stopWatchingWidth = null;
+    super.disconnectedCallback();
   }
 
   /** Waits for the lists too, so the app can focus a row's button once they show (detail spec §1.3). */
@@ -146,14 +159,16 @@ export class Overview extends LitElement {
       body = html`<p class="empty">${unfiltered ? da.noSpending : da.noMatch}</p>`;
     } else {
       const units = chosen === null ? ctx.units : [chosen];
-      const list = postingList(postings, units, ctx, shownPostingSort(this.postingsSort, this.fullScreen), categoryColours(ctx));
+      const category = showsCategory(this.fullScreen);
+      const sort = shownPostingSort(this.postingsSort, category);
+      const list = postingList(postings, units, ctx, sort, categoryColours(ctx));
       body = html`<hs-postings
           .list=${list}
           .query=${search}
           .shop=${shop}
           .grouping=${g}
-          .sort=${shownPostingSort(this.postingsSort, this.fullScreen)}
-          .showCategory=${this.fullScreen}
+          .sort=${sort}
+          .showCategory=${category}
           .marked=${ctx.state.detail}
         ></hs-postings>`;
     }

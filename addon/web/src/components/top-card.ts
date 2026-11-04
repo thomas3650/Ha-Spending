@@ -80,18 +80,18 @@ export class TopCard extends LitElement {
     )}`;
   }
 
-  /** The step and its × in one unbreakable span, so a wrap never parts them. */
+  /** The step and its × in one unbreakable box, so a wrap never parts them. */
   private step(step: Step, last: boolean) {
     const name = last ? html`<h1 tabindex="-1">${step.name}</h1>` : html`<span>${step.name}</span>`;
     const label = da.remove(step.name);
-    return html`<span class="trail-step"
+    return html`<div class="trail-step"
       >${name}<button
         type="button"
         class="trail-x"
         aria-label=${label}
         title=${label}
         @click=${() => fire(this, step.remove)}
-      >${X}</button></span
+      >${X}</button></div
     >`;
   }
 

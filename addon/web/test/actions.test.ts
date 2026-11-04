@@ -10,7 +10,6 @@ import {
   keepDetail,
   normalise,
   openDetail,
-  openAllPostings,
   openAllPostingsFresh,
   openObjectGroupPostings,
   openPart,
@@ -115,15 +114,6 @@ describe("the actions", () => {
     expect(setAccounts(DEFAULT_STATE, [], ["1", "2"]).accounts).toEqual([]);
   });
 
-  it("opens Alle posteringer keeping the search", () => {
-    const s = openAllPostings({ ...at(cafe), search: "rema", sort: { column: "amount", descending: true }, amount: { min: 1, max: null } });
-    expect(s.screen).toBe("allPostings");
-    expect(s.search).toBe("rema");
-    expect(s.sort).toEqual(DEFAULT_STATE.sort);
-    expect(s.amount).toBeNull();
-    expect(s.level).toEqual(cafe);
-  });
-
   it("opens Alle posteringer fresh: no search and no shop, the rest kept", () => {
     const from: ViewState = {
       ...at(cafe),
@@ -136,7 +126,15 @@ describe("the actions", () => {
       amount: { min: 1, max: null },
     };
     const s = openAllPostingsFresh(from);
-    expect(s).toEqual({ ...openAllPostings(from), search: "", shop: null });
+    expect(s).toEqual({
+      ...from,
+      screen: "allPostings",
+      sort: DEFAULT_STATE.sort,
+      amount: null,
+      objectGroup: null,
+      search: "",
+      shop: null,
+    });
     expect(s.screen).toBe("allPostings");
     expect(s.level).toEqual(cafe);
     expect(s.accounts).toEqual(["2"]);
@@ -171,7 +169,7 @@ describe("the actions", () => {
   });
 
   it("leaves Alle posteringer through the trail with the shared choices kept", () => {
-    const inAll = openAllPostings({ ...at(cafe), unit: "2026-07-01" });
+    const inAll = openAllPostingsFresh({ ...at(cafe), unit: "2026-07-01" });
     const s = backToOverview({
       ...inAll,
       search: "pizza",
@@ -198,10 +196,9 @@ describe("the actions", () => {
   });
 
   it("opening Alle posteringer and the trail clear the object group", () => {
-    const inAll = setObjectGroup(openAllPostings(at(cafe)), "Abonnementer");
+    const inAll = setObjectGroup(openAllPostingsFresh(at(cafe)), "Abonnementer");
     expect(inAll.objectGroup).toBe("Abonnementer");
     expect(setObjectGroup(inAll, null).objectGroup).toBeNull();
-    expect(openAllPostings(inAll).objectGroup).toBeNull();
     expect(openAllPostingsFresh(inAll).objectGroup).toBeNull();
     expect(backToOverview(inAll).objectGroup).toBeNull();
     expect(setPeriod(inAll, { preset: "lastYear" }).objectGroup).toBe("Abonnementer");
@@ -210,7 +207,7 @@ describe("the actions", () => {
   });
 
   it("normalise keeps an object group the answer does not carry", () => {
-    const s = setObjectGroup(openAllPostings(DEFAULT_STATE), "Ukendt");
+    const s = setObjectGroup(openAllPostingsFresh(DEFAULT_STATE), "Ukendt");
     expect(normalise(s, answerFor({ start: "2026-01-01", end: "2026-10-30" }), "2026-10-30").objectGroup).toBe("Ukendt");
   });
 
@@ -274,7 +271,7 @@ describe("the subscriptions card", () => {
     expect(openPart(subs, "Mad").card).toBe("subscriptions");
     expect(clearChoices(at(cafe)).card).toBe("bars");
     expect(clearChoices({ ...subs, level: cafe }).card).toBe("subscriptions");
-    expect(backToOverview(openAllPostings({ ...subs, level: cafe })).card).toBe("subscriptions");
+    expect(backToOverview(openAllPostingsFresh({ ...subs, level: cafe })).card).toBe("subscriptions");
     expect(removeMainGroup({ ...subs, level: cafe }).card).toBe("subscriptions");
     expect(removeCategory({ ...subs, level: cafe }).card).toBe("subscriptions");
   });
@@ -299,9 +296,8 @@ describe("the chosen shop", () => {
 
   it("is kept by the actions that keep the search", () => {
     const kept = [
-      openAllPostings(netto),
       clearChoices(netto),
-      backToOverview(openAllPostings(netto)),
+      backToOverview(netto),
       openPart(netto, "Mad"),
       setCard(netto, "postings"),
       setPeriod(netto, { preset: "lastYear" }),
@@ -474,9 +470,9 @@ describe("the detail", () => {
     const onShops = state({ card: "shops", detail: posting("p23") });
     expect(keepDetail(onSubs, setCard(onSubs, "bars")).detail).toBeNull();
     expect(keepDetail(onBars, chooseUnit(onBars, "2026-07-01")).detail).toBeNull();
-    expect(keepDetail(onPostings, openAllPostings(onPostings)).detail).toBeNull();
+    expect(keepDetail(onPostings, openAllPostingsFresh(onPostings)).detail).toBeNull();
     expect(keepDetail(onShops, openShop(onShops, "Netto")).detail).toBeNull();
-    const all = openAllPostings(onPostings);
+    const all = openAllPostingsFresh(onPostings);
     expect(keepDetail(all, backToOverview(all)).detail).toBeNull();
   });
 

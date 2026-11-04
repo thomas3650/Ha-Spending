@@ -45,7 +45,8 @@ key.
 The page is in Danish and has a light theme. Click a bar to choose a unit, a main group to see its categories and a
 category to see its postings. The trail at the top of the page names what is chosen, in the order unit, main group,
 category, and each step has a cross that removes it; the cross on a main group removes its category too. "Alt forbrug"
-in the trail clears all three and keeps the search and the shop. While the page loads, the trail leaves out the unit. If the rule group in `main_group_rule_group` does not exist, the page says so.
+in the trail clears all three and keeps the search and the shop. While the page loads, the trail leaves out the unit. If
+the rule group in `main_group_rule_group` does not exist, the page says so.
 
 A click on a fixed expense or on a posting shows its detail: the sums, the bars and the postings. When
 `firefly_link_url` is set, the detail has the link "Åbn i Firefly III", each posting's date links to it in Firefly III,

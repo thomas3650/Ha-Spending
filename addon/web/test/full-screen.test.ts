@@ -79,7 +79,8 @@ async function choosePreset(root: HTMLElement, app: SpendingApp, name: string) {
 
 describe("Posteringer in full screen", () => {
   const card = (root: HTMLElement) => getByRole(root, "region", { name: da.postingsTitle });
-  const firstRow = (root: HTMLElement) => getAllByRole(card(root), "row")[2].textContent ?? "";
+  const postingRows = (root: HTMLElement) => getAllByRole(card(root), "row").filter((r) => within(r).queryAllByRole("cell").length > 0);
+  const firstRow = (root: HTMLElement) => postingRows(root)[0].textContent ?? "";
 
   it("shows the Kategori column with each row's category, and the normal card does not", async () => {
     const { app, root } = await mountWith("card=postings");
@@ -87,6 +88,18 @@ describe("Posteringer in full screen", () => {
     await press(app, root);
     getByRole(card(root), "columnheader", { name: da.columns.category });
     expect(getAllByRole(card(root), "cell", { name: /Café/ }).length).toBeGreaterThan(0);
+  });
+
+  it("has no Kategori column in full screen below 600 px, and no sort by it", async () => {
+    const happy = (window as unknown as { happyDOM: { setViewport(s: { width: number; height: number }): void } }).happyDOM;
+    happy.setViewport({ width: 420, height: 768 });
+    try {
+      const { app, root } = await mountWith("card=postings");
+      await press(app, root);
+      expect(queryByRole(card(root), "columnheader", { name: da.columns.category })).toBeNull();
+    } finally {
+      happy.setViewport({ width: 1024, height: 768 });
+    }
   });
 
   it("has no Vis alle, in full screen or in the normal card", async () => {

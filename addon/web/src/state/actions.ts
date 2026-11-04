@@ -60,13 +60,9 @@ export function setCard(s: ViewState, card: Card): ViewState {
   return { ...s, card };
 }
 
-export function openAllPostings(s: ViewState): ViewState {
-  return { ...s, screen: "allPostings", sort: DEFAULT_STATE.sort, amount: null, objectGroup: null };
-}
-
 /** The key number's way in: the search and the chosen shop go (D31, D35). */
 export function openAllPostingsFresh(s: ViewState): ViewState {
-  return { ...openAllPostings(s), search: "", shop: null };
+  return { ...s, screen: "allPostings", sort: DEFAULT_STATE.sort, amount: null, objectGroup: null, search: "", shop: null };
 }
 
 /** The object group's key number: its count follows the chosen unit, so the unit stays. */

@@ -4,7 +4,20 @@ import { type ViewContext, partName } from "./context";
 import { DEFAULT_STATE, type PostingColumn, type Sort } from "../state/view";
 import { byDate } from "./filter";
 
-/** Kategori is a column only in full screen; elsewhere a sort by it falls back to the default. */
+const WIDE = "(min-width: 600px)";
+
+/** Whether the list shows the Kategori column: in full screen, on a viewport wide enough to hold it with the rest. */
+export function showsCategory(fullScreen: boolean): boolean {
+  return fullScreen && window.matchMedia(WIDE).matches;
+}
+
+export function watchCategoryWidth(onChange: () => void): () => void {
+  const query = window.matchMedia(WIDE);
+  query.addEventListener("change", onChange);
+  return () => query.removeEventListener("change", onChange);
+}
+
+/** Kategori is a column only when `category` is true; elsewhere a sort by it falls back to the default. */
 export function shownPostingSort(sort: Sort, category: boolean): Sort {
   return sort.column === "category" && !category ? DEFAULT_STATE.sort : sort;
 }
