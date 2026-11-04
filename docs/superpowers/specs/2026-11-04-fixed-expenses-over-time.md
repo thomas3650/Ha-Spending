@@ -58,8 +58,8 @@ The view's trail adds one step, the object group, right after "Alt forbrug". The
 - `← Alt forbrug › Alle faste udgifter ▾ › I år ▾ › Bolig ▾ × [Kategori]`
 
 Thomas chose the object group first, over the mockup's main group first, so the rest reads as on the overview ("vi
-holder os til det er ens"), with the month after "I år". The period step, the unit step, the main group and category steps and the dashed button
-work as on the overview (top filter spec §2), with these differences:
+holder os til det er ens"), with the month after "I år". The period step, the unit step, the main group and category
+steps and the dashed button work as on the overview (top filter spec §2), with these differences:
 
 - The main group and category lists list the pieces of the overview's circle at that level, as on the overview, though
   the view has no circle.
@@ -267,8 +267,8 @@ Made-up data only. Hard rule 5: behaviour through roles, accessible names and re
   same period and level, and `view=fixed` and `og` in the hash; `history.back()` returns to the overview's tab. ← and
   Escape right after the open go back, and a following Back does not reopen the view. ← after choosing another object
   group leaves the view by a replace. The Faste udgifter tab's ⤢ still opens its table in full screen.
-- §3: the "Sti" text reads "Alt forbrug › Faste udgifter › I år Hovedgruppe", and in Bolig "Alt forbrug › Faste udgifter ›
-  I år › Bolig Kategori". "Skift objektgruppe: Faste udgifter" opens the groups and Alle with their counts
+- §3: the "Sti" text reads "Alt forbrug › Faste udgifter › I år Hovedgruppe", and in Bolig "Alt forbrug › Faste
+  udgifter › I år › Bolig Kategori". "Skift objektgruppe: Faste udgifter" opens the groups and Alle with their counts
   and sums; choosing Alle shows "Alle faste udgifter" and removes a chosen unit; with one object group there is no
   list.
 - §4: with "I år" on 4 November, the four cards' values match the fake data: "Betalt i år" equals the overview's
