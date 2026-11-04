@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.14.1](https://github.com/thomas3650/Ha-Spending/compare/v0.14.0...v0.14.1) (2026-11-04)
+
+
+### Bug Fixes
+
+* small follow-ups from the object-groups change ([#141](https://github.com/thomas3650/Ha-Spending/issues/141)) ([e820ff1](https://github.com/thomas3650/Ha-Spending/commit/e820ff111da11147b8c4a00bd90695b4df09cb1a))
+* the bars chart sets outerBounds, not the deprecated containLabel ([#138](https://github.com/thomas3650/Ha-Spending/issues/138)) ([d554312](https://github.com/thomas3650/Ha-Spending/commit/d5543122cefacf54f4b961c0d97b75de25f090f0)), closes [#134](https://github.com/thomas3650/Ha-Spending/issues/134)
+
 ## [0.14.0](https://github.com/thomas3650/Ha-Spending/compare/v0.13.0...v0.14.0) (2026-11-04)
 
 
