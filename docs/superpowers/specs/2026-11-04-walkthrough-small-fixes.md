@@ -55,6 +55,9 @@ This changes subscriptions spec §1.2 (the foot), §2.1 and §2.3, and supersede
 
 - The circle's labels keep their place, but get longer leader lines and more space between them, so the labels of the
   small pieces at 9 o'clock are apart and each line runs to its piece without a sharp bend.
+- The longer lines take room from the labels. So they are drawn only where even the smallest ring leaves the labels
+  their whole room, and the ring is a little smaller there to make room for them. On a narrower chart (the 1024 px
+  window) the lines stay short, so no name breaks inside a word.
 - Small pieces are not folded into one label: each piece is a click target that opens its main group or category, and
   a folded label could also clash with a real main group named like it.
 - Only the chart's label layout changes; the ring's size stays within the label room of UI spec §3.2.
