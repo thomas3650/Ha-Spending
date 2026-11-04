@@ -468,6 +468,11 @@ describe("the fixed-expenses view", () => {
     });
   });
 
+  it("openFixed and leaveFixed leave no full-screen card", () => {
+    expect(openFixed({ ...DEFAULT_STATE, fixedFull: "list" }, "Abonnementer").fixedFull).toBeNull();
+    expect(leaveFixed({ ...fixed, fixedFull: "bars" }).fixedFull).toBeNull();
+  });
+
   it("setObjectGroup chooses the group and drops the unit", () => {
     expect(setObjectGroup({ ...fixed, unit: "2026-07-01" }, null)).toEqual({ ...fixed, objectGroup: null, unit: null });
     expect(setObjectGroup(fixed, "Abonnementer").objectGroup).toBe("Abonnementer");
@@ -488,8 +493,10 @@ describe("the fixed-expenses view", () => {
   });
 
   it("normalise turns fixed off when the answer has no subscriptions", () => {
-    const n = normalise(fixed, answerFor(range), today);
+    const n = normalise({ ...fixed, fixedFull: "list" }, answerFor(range), today);
     expect(n.fixed).toBe(false);
+    expect(n.fullScreen).toBe(false);
+    expect(n.fixedFull).toBeNull();
     expect(n.objectGroup).toBeNull();
   });
 

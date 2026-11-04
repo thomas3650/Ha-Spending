@@ -31,12 +31,28 @@ describe("the view state's hash", () => {
       fullScreen: true,
       fixed: false,
       objectGroup: null,
+      fixedFull: null,
       search: "pizza",
       shop: "Netto",
       amount: { kind: "about", value: 80_000 },
       detail: { kind: "posting", id: "p1" },
     };
     expect(parseHash("#" + toHash(s))).toEqual(s);
+  });
+
+  it("the fixed view's full-screen card round-trips, written after og or after view", () => {
+    const bars: ViewState = { ...DEFAULT_STATE, fixed: true, fixedFull: "bars" };
+    expect(toHash(bars)).toBe("view=fixed&full=bars");
+    expect(parseHash("#view=fixed&full=bars")).toEqual(bars);
+    const list: ViewState = { ...DEFAULT_STATE, fixed: true, objectGroup: "Abonnementer", fixedFull: "list", search: "x" };
+    expect(toHash(list)).toBe("view=fixed&og=Abonnementer&full=list&q=x");
+    expect(parseHash("#" + toHash(list))).toEqual(list);
+  });
+
+  it("reads another full value, or full without view=fixed, as null", () => {
+    expect(parseHash("view=fixed&full=other").fixedFull).toBeNull();
+    expect(parseHash("full=list").fixedFull).toBeNull();
+    expect(parseHash("view=full&full=list").fixedFull).toBeNull();
   });
 
   it("ignores an old link's grouping and never writes one", () => {

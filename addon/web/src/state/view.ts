@@ -9,6 +9,7 @@ import {
 import type { AmountFilter } from "../model/amount";
 
 export type PeriodChoice = { preset: Preset } | { preset: "custom"; start: string; end: string };
+export type FixedCard = "bars" | "list";
 export type Card = "bars" | "postings" | "subscriptions" | "shops";
 export type PostingColumn = "date" | "text" | "category" | "account" | "amount";
 export type SubscriptionColumn = "name" | "category" | "amount" | "perYear" | "status";
@@ -30,12 +31,14 @@ export interface ViewState {
   /** The chosen unit's fullStart. */
   unit: string | null;
   card: Card;
-  /** The right card fills the page. */
+  /** The overview's right card fills the page. */
   fullScreen: boolean;
-  /** The fixed-expenses view replaces the overview; it is never full screen. */
+  /** The fixed-expenses view replaces the overview; never the overview's full screen. */
   fixed: boolean;
   /** The fixed-expenses view's object group; null is Alle. Only with `fixed`. */
   objectGroup: string | null;
+  /** The fixed-expenses view's card that fills the page. Only with `fixed`. */
+  fixedFull: FixedCard | null;
   /** The quick filter: shared choices that stay when the top filter or the tab changes. */
   search: string;
   shop: string | null;
@@ -53,6 +56,7 @@ export const DEFAULT_STATE: ViewState = {
   fullScreen: false,
   fixed: false,
   objectGroup: null,
+  fixedFull: null,
   search: "",
   shop: null,
   amount: null,
@@ -67,6 +71,7 @@ const CARDS: readonly Card[] = ["bars", "postings", "subscriptions", "shops"];
 const ALL_POSTINGS = "all-postings";
 const FULL = "full";
 const FIXED = "fixed";
+const FIXED_CARDS: readonly FixedCard[] = ["bars", "list"];
 
 function oneOf<T extends string>(values: readonly T[], value: string | null, fallback: T): T {
   return values.find((v) => v === value) ?? fallback;
@@ -145,7 +150,7 @@ function parseDetail(value: string | null): DetailKey | null {
   return { kind: match[1] === "s" ? "subscription" : "posting", id: match[2] };
 }
 
-/** What does not parse falls back to DEFAULT_STATE's value (D20); an old link's `sort` is ignored, and `og` only counts with `view=fixed`. */
+/** What does not parse falls back to DEFAULT_STATE's value (D20); an old link's `sort` is ignored, and `og` and `full` only count with `view=fixed`. */
 export function parseHash(hash: string): ViewState {
   const p = new URLSearchParams(hash.startsWith("#") ? hash.slice(1) : hash);
   const accounts = p.get("accounts");
@@ -162,6 +167,7 @@ export function parseHash(hash: string): ViewState {
     fullScreen: allPostings || view === FULL,
     fixed,
     objectGroup: fixed ? p.get("og") || null : null,
+    fixedFull: fixed ? (FIXED_CARDS.find((c) => c === p.get("full")) ?? null) : null,
     search: p.get("q") ?? DEFAULT_STATE.search,
     shop: p.get("shop") || DEFAULT_STATE.shop,
     amount: parseAmount(p),
@@ -190,6 +196,7 @@ export function toHash(s: ViewState): string {
   if (s.fixed) {
     p.set("view", FIXED);
     if (s.objectGroup !== null) p.set("og", s.objectGroup);
+    if (s.fixedFull !== null) p.set("full", s.fixedFull);
   } else if (s.fullScreen) {
     p.set("view", FULL);
   }
