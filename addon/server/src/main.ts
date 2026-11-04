@@ -30,13 +30,16 @@ const settings: ReadSettings = {
   mainGroupRuleGroup: options.mainGroupRuleGroup,
   excludedMainGroups: options.excludedMainGroups,
   fireflyLinkUrl: options.fireflyLinkUrl,
+  members: options.members,
+  savingsCategories: options.savingsCategories,
+  creditAccounts: options.creditAccounts,
   pageSize: 500,
   timeoutMs: READ_TIMEOUT_MS,
 };
-const loadData = createDataLoader(client, settings, () => new Date(), logger.warn);
+const { loadData, loadLeftOver } = createDataLoader(client, settings, () => new Date(), logger.warn);
 
 const hiddenShops = createHiddenShopsStore(env.hiddenShopsPath, logger.error);
-const app = createApp({ webDir: env.webDir, dev: env.dev, loadData, hiddenShops });
+const app = createApp({ webDir: env.webDir, dev: env.dev, loadData, loadLeftOver, hiddenShops });
 
 serve({ fetch: app.fetch, port: PORT, hostname: env.hostname }, () => {
   logger.info(

@@ -12,6 +12,7 @@ import {
   type HiddenShopsError,
   type HiddenShopsErrorCode,
   isDate,
+  type LeftOverData,
   type Period,
   type SpendingData,
 } from "@ha-spending/shared";
@@ -31,6 +32,7 @@ function peerAddress(c: Context): string | undefined {
 }
 
 export type DataLoader = (range: Period) => Promise<SpendingData>;
+export type LeftOverLoader = (range: Period) => Promise<LeftOverData>;
 
 function failure(error: unknown): { status: 500 | 502; code: DataErrorCode } {
   if (error instanceof FireflyError) return { status: 502, code: error.reason };
@@ -71,6 +73,7 @@ export function createApp(options: {
   webDir: string;
   dev: boolean;
   loadData: DataLoader;
+  loadLeftOver?: LeftOverLoader;
   hiddenShops: HiddenShopsStore;
   log?: (message: string) => void;
 }): Hono {
@@ -83,22 +86,24 @@ export function createApp(options: {
   });
 
   app.get("/api/health", (c) => c.json<Health>({ status: "ok", version: VERSION }));
-  app.get("/api/data", async (c) => {
+  const answerRange = <T>(route: string, load: (range: Period) => Promise<T>) => async (c: Context) => {
     const start = c.req.query("start");
     const end = c.req.query("end");
     if (!isDate(start) || !isDate(end) || start > end) {
-      log("GET /api/data: bad-request");
+      log(`GET ${route}: bad-request`);
       return c.json<DataError>({ error: "bad-request" }, 400);
     }
     try {
-      return c.json<SpendingData>(await options.loadData({ start, end }));
+      return c.json<T>(await load({ start, end }));
     } catch (error) {
       const { status, code } = failure(error);
       // The reason and the error's name only: a message or a cause may carry a posting, an amount or the token.
-      log(`GET /api/data: ${code}${code === "internal" && error instanceof Error ? ` (${error.name})` : ""}`);
+      log(`GET ${route}: ${code}${code === "internal" && error instanceof Error ? ` (${error.name})` : ""}`);
       return c.json<DataError>({ error: code }, status);
     }
-  });
+  };
+  app.get("/api/data", answerRange("/api/data", options.loadData));
+  if (options.loadLeftOver) app.get("/api/left-over", answerRange("/api/left-over", options.loadLeftOver));
 
   const answerHiddenShops = (c: Context, shops: string[]) => {
     c.header("Cache-Control", "no-store");

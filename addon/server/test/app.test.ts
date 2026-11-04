@@ -3,9 +3,9 @@ import type { AddressInfo } from "node:net";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { serve } from "@hono/node-server";
-import type { SpendingData } from "@ha-spending/shared";
+import type { LeftOverData, SpendingData } from "@ha-spending/shared";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
-import { createApp as createAppWith, type DataLoader } from "../src/app";
+import { createApp as createAppWith, type DataLoader, type LeftOverLoader } from "../src/app";
 import { FireflyError } from "../src/firefly/client";
 import { createHiddenShopsStore } from "../src/hidden-shops";
 import { VERSION } from "../src/version";
@@ -58,7 +58,19 @@ const D: SpendingData = {
 
 const unused: DataLoader = () => Promise.reject(new Error("not used"));
 
-function createApp(options: { webDir: string; dev: boolean; loadData?: DataLoader }) {
+const L: LeftOverData = {
+  range: { start: "2026-01-01", end: "2026-01-31" },
+  today: "2026-01-15",
+  hasSavings: false,
+  hasCredit: false,
+  months: [
+    { month: "2026-01", paidIn: 700000, back: 0, members: [{ name: "Anna", paidIn: 700000, back: 0 }],
+      spending: 600000, savings: 0, credit: 0, other: 0, change: 100000 },
+  ],
+};
+
+function createApp(options: { webDir: string; dev: boolean; loadData?: DataLoader; loadLeftOver?: LeftOverLoader;
+  log?: (message: string) => void }) {
   const hiddenShops = createHiddenShopsStore(join(dataDir, "hidden-shops.json"), () => {});
   return createAppWith({ loadData: unused, log: () => {}, hiddenShops, ...options });
 }
@@ -165,5 +177,63 @@ describe("createApp", () => {
     expect((await app.request(query, {}, from("127.0.0.1"))).status).toBe(403);
     expect((await app.request(query, { method: "POST" }, ingress)).status).toBe(404);
     expect(loadData).not.toHaveBeenCalled();
+  });
+
+  describe("/api/left-over", () => {
+    const query = "/api/left-over?start=2026-01-01&end=2026-01-31";
+
+    it("answers Til overs for a range", async () => {
+      const loadLeftOver = vi.fn(async () => L);
+      const res = await createApp({ webDir, dev: false, loadLeftOver }).request(query, {}, ingress);
+      expect(res.status).toBe(200);
+      expect(await res.json()).toEqual(L);
+      expect(loadLeftOver).toHaveBeenCalledWith({ start: "2026-01-01", end: "2026-01-31" });
+    });
+
+    it("is not found without a loader", async () => {
+      expect((await createApp({ webDir, dev: false }).request(query, {}, ingress)).status).toBe(404);
+    });
+
+    it.each(["", "?start=2026-01-01", "?start=2026-02-30&end=2026-03-01", "?start=2026-02-01&end=2026-01-31"])(
+      "refuses %s with 400",
+      async (bad) => {
+        const loadLeftOver = vi.fn(async () => L);
+        const res = await createApp({ webDir, dev: false, loadLeftOver }).request(`/api/left-over${bad}`, {}, ingress);
+        expect(res.status).toBe(400);
+        expect(await res.json()).toEqual({ error: "bad-request" });
+        expect(loadLeftOver).not.toHaveBeenCalled();
+      },
+    );
+
+    it("maps the Firefly III errors", async () => {
+      const answer = async (error: Error) => {
+        const app = createApp({ webDir, dev: false, loadLeftOver: () => Promise.reject(error) });
+        const res = await app.request(query, {}, ingress);
+        return { status: res.status, body: await res.json() };
+      };
+      expect(await answer(new FireflyError("refused"))).toEqual({ status: 502, body: { error: "refused" } });
+      expect(await answer(new Error())).toEqual({ status: 500, body: { error: "internal" } });
+    });
+
+    it("guards the route like every other", async () => {
+      const loadLeftOver = vi.fn(async () => L);
+      const app = createApp({ webDir, dev: false, loadLeftOver });
+      expect((await app.request(query, {}, from("127.0.0.1"))).status).toBe(403);
+      expect((await app.request(query, { method: "POST" }, ingress)).status).toBe(404);
+      expect(loadLeftOver).not.toHaveBeenCalled();
+    });
+
+    it("logs no amount", async () => {
+      const log = vi.fn();
+      const error = new Error("amount 700000 of Anna");
+      await createApp({ webDir, dev: false, loadLeftOver: () => Promise.reject(error), log }).request(query, {}, ingress);
+      await createApp({ webDir, dev: false, loadLeftOver: vi.fn(async () => L), log }).request(
+        "/api/left-over?start=x",
+        {},
+        ingress,
+      );
+      expect(log).toHaveBeenCalledTimes(2);
+      for (const [line] of log.mock.calls) expect(String(line)).not.toMatch(/\d{4,}|Anna/);
+    });
   });
 });

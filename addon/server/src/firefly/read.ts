@@ -115,7 +115,7 @@ export async function readSpanFree(
   return { accounts, revenue, liabilities, categories, mainGroups, earliest, subscriptions };
 }
 
-function readTransactions(
+export function readTransactions(
   client: FireflyClient,
   settings: Pick<ReadSettings, "pageSize">,
   range: Period,
