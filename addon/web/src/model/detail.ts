@@ -92,7 +92,8 @@ function common(ctx: ViewContext, rows: ClassifiedPosting[], marked: string | nu
     bars: units.map((unit, i) => {
       const running = isRunning(unit, ctx.today);
       const label = `${unitName(unit, g)}: ${detailKr(totals[i])}`;
-      return { name: i % step === 0 ? unitAxis(unit, g) : "", amount: totals[i], label: running ? `${label} (${da.inProgress})` : label, running };
+      const name = i % step === 0 ? unitAxis(unit, g) : "";
+      return { name, amount: totals[i], label: running ? `${label} (${da.inProgress})` : label, running };
     }),
     first: {
       label: da.detailInPeriod,

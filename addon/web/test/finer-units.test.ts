@@ -2,12 +2,10 @@ import { type Period, type Posting, unitAt, unitsOf } from "@ha-spending/shared"
 import { fireEvent, getAllByRole, getByRole, queryByRole, queryByText } from "@testing-library/dom";
 import { afterEach, describe, expect, it } from "vitest";
 
-import { barTooltip } from "../src/components/bars";
+import { type BarItem, barTooltip } from "../src/components/bars";
 import { rangeText, unitName } from "../src/format";
 import { da } from "../src/i18n/da";
-import { barItems } from "../src/model/circle";
-import { viewContext } from "../src/model/context";
-import { parseHash } from "../src/state/view";
+import { barButtons, barsList, names, pressed } from "./bars-helpers";
 import { answerFor } from "./fixture";
 import { json, mount, settle, unmount } from "./mount";
 
@@ -34,22 +32,6 @@ function withWeekPosting(range: Period): Response {
   const data = answerFor(range);
   const inRange = WEEK_POSTING.date >= range.start && WEEK_POSTING.date <= range.end;
   return json({ ...data, postings: inRange ? [WEEK_POSTING, ...data.postings] : data.postings });
-}
-
-function barsList(root: HTMLElement, name: string): HTMLElement {
-  return getByRole(getByRole(root, "region", { name }), "list");
-}
-
-function barButtons(root: HTMLElement, name: string): HTMLElement[] {
-  return getAllByRole(barsList(root, name), "button");
-}
-
-function names(buttons: HTMLElement[]): string[] {
-  return buttons.map((b) => b.textContent?.trim() ?? "");
-}
-
-function pressed(buttons: HTMLElement[]): string[] {
-  return buttons.map((b) => b.getAttribute("aria-pressed") ?? "");
 }
 
 function running(buttons: HTMLElement[]): boolean[] {
@@ -98,8 +80,7 @@ describe("a one-unit period draws finer bars", () => {
     const shown = names(barButtons(root, da.per("month")));
     expect(shown).toHaveLength(2);
     expect(shown[0].startsWith("August 2026")).toBe(true);
-    const data = answerFor({ start: "2026-08-15", end: "2026-09-30" });
-    const first = barItems(viewContext(data, parseHash(hash), TODAY))[0];
+    const first = (root.querySelector("hs-bars") as unknown as { items: BarItem[] }).items[0];
     expect(first.name).toBe("August 2026");
     expect(barTooltip(first)).toContain(rangeText({ start: "2026-08-15", end: "2026-08-31" }));
   });
@@ -176,8 +157,7 @@ describe("a one-unit period draws finer bars", () => {
     expect(names(buttons).map((n) => n.split(" (")[0].split(",")[0])).toEqual(
       monthNames({ start: "2026-02-01", end: "2026-12-31" }),
     );
-    const data = { ...answerFor({ start: "2026-02-10", end: TODAY }), earliestPostingDate: "2026-02-10" };
-    const first = barItems(viewContext(data, parseHash(hash), TODAY))[0];
+    const first = (root.querySelector("hs-bars") as unknown as { items: BarItem[] }).items[0];
     expect(barTooltip(first)).toContain(rangeText({ start: "2026-02-10", end: "2026-02-28" }));
     expect(running(buttons)).toEqual(Array.from({ length: 11 }, (_, i) => i === 8));
   });

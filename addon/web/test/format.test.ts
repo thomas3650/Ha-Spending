@@ -16,7 +16,6 @@ import {
   percent,
   postingAmount,
   rangeText,
-  signedKr,
   shortDate,
   stepAmounts,
   tableDate,
@@ -45,12 +44,6 @@ describe("money", () => {
     expect(barKr(800000)).toBe(kr(800000));
     expect(barKr(0)).toBe(kr(0));
     expect(barKr(-40)).toBe(kr(0));
-  });
-  it("signs differences", () => {
-    expect(signedKr(193750)).toBe("+1.938 kr.");
-    expect(signedKr(-2500)).toBe("-25 kr.");
-    expect(signedKr(0)).toBe("0 kr.");
-    expect(signedKr(-20)).toBe("0 kr.");
   });
   it("shows spending as minus and a refund as plus", () => {
     expect(postingAmount(31012)).toBe("-310,12");

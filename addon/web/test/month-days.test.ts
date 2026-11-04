@@ -4,6 +4,7 @@ import { afterEach, describe, expect, it } from "vitest";
 
 import { kr, unitName } from "../src/format";
 import { da } from "../src/i18n/da";
+import { barsList, names, pressed } from "./bars-helpers";
 import { answerFor, OBJECT_GROUP } from "./fixture";
 import { json, mount, settle, unmount } from "./mount";
 import { cardNames } from "./text";
@@ -13,20 +14,8 @@ afterEach(unmount);
 const TODAY = "2026-10-30";
 const SEPTEMBER = unitName(unitAt("2026-09-01", "month", TODAY), "month");
 
-function barsList(root: HTMLElement, name: string): HTMLElement {
-  return getByRole(getByRole(root, "region", { name }), "list");
-}
-
 function dayButtons(root: HTMLElement, name = da.per("day")): HTMLElement[] {
   return getAllByRole(barsList(root, name), "button");
-}
-
-function names(buttons: HTMLElement[]): string[] {
-  return buttons.map((b) => b.textContent?.trim() ?? "");
-}
-
-function pressed(buttons: HTMLElement[]): string[] {
-  return buttons.map((b) => b.getAttribute("aria-pressed") ?? "");
 }
 
 describe("a one-month period draws its days", () => {

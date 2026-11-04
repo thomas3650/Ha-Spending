@@ -64,12 +64,6 @@ export function barKr(ore: number): string {
   return ore < 0 && !isZero(text) ? `+${text} ${da.refundMark}` : text;
 }
 
-export function signedKr(ore: number): string {
-  const text = whole.format(Math.abs(ore) / 100);
-  if (isZero(text)) return `${text} ${da.kr}`;
-  return `${ore < 0 ? "-" : "+"}${text} ${da.kr}`;
-}
-
 export function amountChip(range: AmountRange): string {
   const text = (ore: number | null) => {
     if (ore === null) return null;
