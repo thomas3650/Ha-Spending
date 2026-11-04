@@ -197,7 +197,14 @@ export class Bars extends LitElement {
     const hasNegative = items.some((i) => i.amount < 0);
     return {
       textStyle: { fontFamily: token("--hs-font") },
-      grid: { left: 8, right: this.average === null ? 8 : AVERAGE_ROOM, top: 16, bottom: 8, containLabel: true },
+      grid: {
+        left: 8,
+        right: this.average === null ? 8 : AVERAGE_ROOM,
+        top: 16,
+        bottom: 8,
+        outerBoundsMode: "same",
+        outerBoundsContain: "axisLabel",
+      },
       tooltip: {
         trigger: "item",
         formatter: (p: { dataIndex: number }) => {
