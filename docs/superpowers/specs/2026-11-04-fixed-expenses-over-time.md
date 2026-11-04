@@ -79,10 +79,12 @@ Thomas: "kan vælge mellem de 3 i top baren som i år".
   with `aria-haspopup`. Claude's call on "Alle faste udgifter"; the mockup wrote the group names joined, which would
   change the data's own titles.
 - A press opens a list under the step: one row per object group, by name, then **"Alle"**. The rows are the object
-  groups of the subscriptions (`Subscription.objectGroup`).
+  groups the overview's key numbers show (D41's set in `objectGroupCards`: the subscriptions' groups and the groups
+  found on the period's postings), so every card's link opens its own group.
 - Under each row's name: the count of that group's subscriptions that the Faste udgifter tab shows at the level and
   accounts (`shown` in `model/subscriptions.ts`), and the paid sum in the period at the level and accounts (§5.3):
-  "5 stk. · 124.031 kr. i perioden". "Alle" sums them. The chosen row is marked with `aria-current`. Claude's call.
+  "5 stk. · 124.031 kr. i perioden". A group found only on postings reads "0 stk.". "Alle" counts every posting
+  with a bill link and every subscription. The chosen row is marked with `aria-current`. Claude's call.
 - Choosing a row pushes a history entry and removes the chosen unit. Claude's call: the unit's bar may be empty in the
   new set.
 - With one object group, the step is plain text with that group's title, and there is no "Alle". Claude's call.
@@ -136,7 +138,7 @@ The left half holds the bars, titled "<object-group step text> pr. måned" (or "
 - **A chosen unit** is resolved against these units, not the overview's. So December, or any month of "I år" in
   January, can be chosen in the view. The bars are buttons whenever there are two or more units; with days (one
   month), they are not, as D59 says.
-- **The units after today** hold estimates instead of being empty slots (D23). A unit that has begun and runs past
+- **In the three presets that run on, the units after today** hold estimates instead of being empty slots (D23). A unit that has begun and runs past
   today is the running unit, as today.
 - "Sidste 12 måneder" and the other presets end before today's month, so they have no running unit and no estimates.
 
@@ -171,6 +173,8 @@ Thomas: "forskellige farver … afhængigt af hvor i træet de er".
   - **nothing**, when it is another date before today: the later misses of a not-seen subscription do not show;
   - **an estimate** otherwise, of `amountPerPayment` (D63). That includes a due one (`nextDate` before today, D64's
     "Forfalden") and one due today. Claude's call.
+- A due date before the drawn span's first day shows nowhere and counts in no sum, such as a Forfalden of 30 October
+  in "Denne måned" in November.
 - Not-seen rows are not payments: they are not counted in "n betalinger". Claude's call.
 
 ### 5.4 How they look
@@ -242,11 +246,11 @@ D20's rules hold. One new value and one new key:
 | `view` | `full` as today, or **`fixed`** for this view |
 | `og` | **new:** the chosen object group's title; absent is "Alle faste udgifter". Read only with `view=fixed`, written right after `view` |
 
-- `og` falls back to absent (Alle) when no subscription has that object group, or when there is only one object group.
+- `og` falls back to absent (Alle) when it is not in §3.2's set of object groups, or when there is only one.
 - `view=fixed` falls back to the overview when the answer has no subscriptions, as the link then does not exist.
 - **`unit` with `view=fixed`** is kept when the view's units (§5.1) have a unit starting on that date, and dropped
-  otherwise. This is an exception to top filter spec §6's `unit` rule and D59's "a one-unit period never has a chosen
-  unit", for the view only.
+  otherwise, and when the bars are not buttons (days, §5.1). This is an exception to top filter spec §6's `unit` rule,
+  for the view only.
 - **Leaving the view** by a replace (§2) drops a `unit` the overview's period does not have, by §6's rule.
 - With `view=fixed`, `card` keeps the overview's tab, so leaving shows the tab the view was opened from. `detail` is
   dropped. Claude's call.
@@ -326,10 +330,8 @@ Changed in the same PR:
 
 | Decision | Status after this change |
 | --- | --- |
-| D16 | active; the comparison superseded by D53; colours of parts the circle does not colour added by D66 |
 | D20 | active; key list superseded by D35, D42, D44, D60, D61 and D66 |
 | D23 | active; "a unit after today is empty" superseded in the fixed-expenses view by D66 |
-| D59 | active; "a one-unit period never has a chosen unit" superseded in the fixed-expenses view by D66 |
 | D62 | active; "opens the Faste udgifter tab in the normal card" superseded by D66 |
 
 ## Open to Thomas
