@@ -9,6 +9,8 @@ import { fire } from "./chip";
 import "./accounts-picker";
 import "./level-menu";
 import "./period-picker";
+import type { UnitStep } from "./unit-menu";
+import "./unit-menu";
 
 /** What `set-category` fires: a category keeps its main group. */
 export interface CategoryChoice {
@@ -31,9 +33,10 @@ const X = html`<svg viewBox="0 0 10 10" width="10" height="10" aria-hidden="true
 type Last = "period" | "unit" | "mainGroup" | "category";
 
 /**
- * The trail and Konti. The trail is the top filter: "Alt forbrug", the period, the chosen unit, the main group and the
- * category, then a dashed button for the next level. Fires `hs-period`, `hs-accounts`, `set-main-group`,
- * `set-category`, and from the trail's × `remove-unit`, `remove-main-group` and `remove-category`.
+ * The trail and Konti. The trail is the top filter: "Alt forbrug", the period, the unit, the main group and the
+ * category, then a dashed button for the next level. Fires `hs-period`, `hs-accounts`, `set-unit` with a unit's
+ * `fullStart`, `set-main-group`, `set-category`, and from the trail's × `remove-unit`, `remove-main-group` and
+ * `remove-category`.
  */
 export class TopCard extends LitElement {
   static override properties = {
@@ -41,7 +44,7 @@ export class TopCard extends LitElement {
     today: { attribute: false },
     accounts: { attribute: false },
     earliest: { attribute: false },
-    unitName: { attribute: false },
+    unitStep: { attribute: false },
     lists: { attribute: false },
   };
 
@@ -49,14 +52,14 @@ export class TopCard extends LitElement {
   declare today: string;
   declare accounts: Account[] | null;
   declare earliest: string | null | undefined;
-  /** The chosen unit's name, null while the answer loads or with no unit: the answer decides which units exist. */
-  declare unitName: string | null;
+  /** null where the bars are not buttons, so there is no unit to choose. */
+  declare unitStep: UnitStep | null;
   declare lists: LevelLists | null;
 
   constructor() {
     super();
     this.accounts = null;
-    this.unitName = null;
+    this.unitStep = null;
     this.lists = null;
   }
 
@@ -67,7 +70,7 @@ export class TopCard extends LitElement {
   /** The heading may sit in a step's own element, so a focus after an update waits for the steps too. */
   protected override async getUpdateComplete(): Promise<boolean> {
     const done = await super.getUpdateComplete();
-    const steps = [...this.querySelectorAll<LitElement>("hs-period-picker, hs-level-menu")];
+    const steps = [...this.querySelectorAll<LitElement>("hs-period-picker, hs-unit-menu, hs-level-menu")];
     await Promise.all(steps.map((step) => step.updateComplete));
     return done;
   }
@@ -88,13 +91,13 @@ export class TopCard extends LitElement {
   private trail() {
     const state = this.state;
     const level = state.level;
-    const unit = this.unitName;
+    const unit = this.unitStep?.chosen ?? null;
     const mainGroup = level.kind === "all" ? undefined : level.mainGroup;
     const category = level.kind === "category" ? level.category : undefined;
     const last: Last =
       category !== undefined ? "category" : mainGroup !== undefined ? "mainGroup" : unit !== null ? "unit" : "period";
     const root = last === "period" ? html`<span>${da.allSpending}</span>` : this.home(clearChoices(state));
-    const unitStep = unit === null ? nothing : html`${SEP}${this.unitStep(unit, last === "unit")}`;
+    const unitStep = this.unit(last === "unit");
     const mainGroupStep =
       mainGroup === undefined ? nothing : html`${SEP}${this.levelStep("mainGroup", mainGroup, last === "mainGroup")}`;
     const categoryStep = category === undefined ? nothing : html`${SEP}${this.levelStep("category", category, true)}`;
@@ -102,10 +105,17 @@ export class TopCard extends LitElement {
     return html`${root}${SEP}${this.period(last === "period")}${unitStep}${mainGroupStep}${categoryStep} ${next}`;
   }
 
-  private unitStep(name: string, last: boolean) {
-    return html`<div class="trail-step">
-      ${last ? html`<h1 tabindex="-1">${name}</h1>` : html`<span>${name}</span>`}${this.x(name, "remove-unit")}
-    </div>`;
+  /** The dashed button sits right after the period, before the "›" to the main group (spec §3.2). */
+  private unit(last: boolean) {
+    const step = this.unitStep;
+    if (step === null) return nothing;
+    const menu = html`<hs-unit-menu
+      .step=${step}
+      .heading=${last}
+      @unit-choose=${(e: CustomEvent<string>) => fire(this, "set-unit", e.detail)}
+    ></hs-unit-menu>`;
+    if (step.chosen === null) return html` ${menu}`;
+    return html`${SEP}<div class="trail-step">${menu}${this.x(step.chosen, "remove-unit")}</div>`;
   }
 
   private levelStep(of: "mainGroup" | "category", key: string | null, last: boolean) {

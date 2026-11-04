@@ -14,7 +14,8 @@ import {
 } from "@ha-spending/shared";
 import type { BarItem } from "../components/bars";
 import type { CircleItem } from "../components/circle";
-import { unitAxis, unitName } from "../format";
+import type { UnitRow } from "../components/unit-menu";
+import { barKr, unitAxis, unitName } from "../format";
 import { finerUnits, partName, type ViewContext } from "./context";
 
 function periodCircle(ctx: ViewContext, postings = ctx.circlePostings, level = ctx.circleLevel): CirclePart[] {
@@ -116,5 +117,15 @@ export function barItems(ctx: ViewContext): BarItem[] {
     amount: totals[i],
     running: isRunning(unit, ctx.today),
     choose: finer === null ? unit.fullStart : null,
+  }));
+}
+
+/** The trail's list of units: the bars' units, each with its bar's sum. */
+export function unitRows(ctx: ViewContext): UnitRow[] {
+  return barItems(ctx).map((item) => ({
+    fullStart: item.unit.fullStart,
+    name: item.name,
+    sum: barKr(item.amount),
+    current: item.unit.fullStart === ctx.chosen?.fullStart,
   }));
 }

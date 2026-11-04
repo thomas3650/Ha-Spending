@@ -26,6 +26,13 @@ export const da = {
   chooseCategory: "Vælg kategori",
   mainGroupStep: "Hovedgruppe",
   categoryStep: "Kategori",
+  switchMonth: (name: string) => `Skift måned: ${name}`,
+  switchYear: (name: string) => `Skift år: ${name}`,
+  chooseMonth: "Vælg måned",
+  chooseYear: "Vælg år",
+  monthStep: "Måned",
+  yearStep: "År",
+  units: "Enheder",
 
   period: "Periode",
   presets: {

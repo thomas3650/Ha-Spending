@@ -6,6 +6,7 @@ import {
   localToday,
   type Period,
   type SpendingData,
+  unitsOf,
 } from "@ha-spending/shared";
 import { css, html, LitElement, nothing } from "lit";
 
@@ -24,12 +25,13 @@ import { searchStyles } from "./components/search";
 import { shopsStyles } from "./components/shops";
 import { subscriptionsStyles } from "./components/subscriptions";
 import { type CategoryChoice, type LevelLists, topCardStyles } from "./components/top-card";
+import { type UnitStep, unitMenuStyles } from "./components/unit-menu";
 import { LoadError, type LoadErrorCode, loadData, loadHiddenShops, setHiddenShop } from "./data/api";
 import { unitName } from "./format";
 import { da } from "./i18n/da";
 import type { AmountFilter } from "./model/amount";
-import { levelRows } from "./model/circle";
-import { type ViewContext, viewContext } from "./model/context";
+import { levelRows, unitRows } from "./model/circle";
+import { finerUnits, type ViewContext, viewContext } from "./model/context";
 import { keyCards, type KeyLink, objectGroupCards } from "./model/key-numbers";
 import { shownColumns, shownPostingSort } from "./model/postings";
 import type { HiddenState } from "./model/shops";
@@ -157,6 +159,7 @@ export class SpendingApp extends LitElement {
     calendarStyles,
     topCardStyles,
     levelMenuStyles,
+    unitMenuStyles,
     keyNumbersStyles,
     circleStyles,
     barsStyles,
@@ -745,6 +748,21 @@ export class SpendingApp extends LitElement {
     }
   }
 
+  /** Before the answer the period alone says whether its bars are buttons: one month draws its days (D59). */
+  private unitStep(ctx: ViewContext | null): UnitStep | null {
+    if (ctx === null) {
+      const period = periodOf(this.state.period, this.today, this.earliest ?? null);
+      const word = groupingFor(period);
+      return unitsOf(period, word, this.today).length === 1 ? null : { word, rows: null, chosen: null };
+    }
+    if (finerUnits(ctx) !== null) return null;
+    return {
+      word: groupingFor(ctx.timeline.period),
+      rows: unitRows(ctx),
+      chosen: ctx.chosen === null ? null : unitName(ctx.chosen, ctx.timeline.grouping, ctx.unitYear),
+    };
+  }
+
   override render() {
     const ctx = this.load.kind === "ready" ? viewContext(this.load.data, this.state, this.today) : null;
     const lists: LevelLists | null =
@@ -755,13 +773,14 @@ export class SpendingApp extends LitElement {
         .today=${this.today}
         .accounts=${this.accounts}
         .earliest=${this.earliest}
-        .unitName=${ctx?.chosen ? unitName(ctx.chosen, ctx.timeline.grouping, ctx.unitYear) : null}
+        .unitStep=${this.unitStep(ctx)}
         .lists=${lists}
         @hs-period=${this.onPeriod}
         @hs-accounts=${this.onAccounts}
         @set-main-group=${(e: CustomEvent<string | null>) => this.push(setMainGroup(this.state, e.detail))}
         @set-category=${(e: CustomEvent<CategoryChoice>) =>
           this.push(setCategory(this.state, e.detail.mainGroup, e.detail.category))}
+        @set-unit=${(e: CustomEvent<string>) => this.push(chooseUnit(this.state, e.detail))}
         @remove-unit=${() => this.removeFromTrail(removeUnit(this.state))}
         @remove-main-group=${() => this.removeFromTrail(removeMainGroup(this.state))}
         @remove-category=${() => this.removeFromTrail(removeCategory(this.state))}

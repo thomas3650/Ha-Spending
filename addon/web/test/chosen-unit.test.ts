@@ -56,6 +56,18 @@ describe("screen 4, a chosen unit", () => {
     expect(hasArrow(root)).toBe(false);
   });
 
+  it("chooses July from the trail as from its bar", async () => {
+    const { app, root } = await mount("");
+    const trail = getByRole(root, "navigation", { name: da.trail });
+    fireEvent.click(getByRole(trail, "button", { name: da.chooseMonth }));
+    await app.updateComplete;
+    fireEvent.click(getByRole(getByRole(trail, "group", { name: da.units }), "button", { name: `${julyName()}, ${kr(JULY)}` }));
+    await settle(app);
+    expect(location.hash).toBe("#unit=2026-07-01&card=postings");
+    expect(getByRole(viewSwitch(root), "button", { name: da.postings }).getAttribute("aria-pressed")).toBe("true");
+    getByRole(trail, "button", { name: da.switchMonth(julyName()) });
+  });
+
   it("a chosen unit with nothing before it has only its sum", async () => {
     const onlyFrom = (from: string) => (range: Period) => {
       const answer = answerFor(range);
