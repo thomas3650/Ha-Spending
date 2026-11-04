@@ -294,7 +294,7 @@ describe("the Butikker card", () => {
     ]);
   });
 
-  it("the rows follow the level, the accounts and a chosen unit, with its chip", async () => {
+  it("the rows follow the level, the accounts and a chosen unit, named in the trail", async () => {
     let { root } = await mount("group=Mad&card=shops");
     expect(names(card(root, "Butikker i Mad"))).toEqual(["Netto", "Café Søde", "Pizzeria Roma"]);
     unmount();
@@ -308,7 +308,7 @@ describe("the Butikker card", () => {
       da.shopOption("Q8", kr(90000)),
       da.shopOption("Café Søde", kr(50000)),
     ]);
-    getByRole(card(root), "button", { name: da.remove("Juli 2026") });
+    getByRole(getByRole(root, "navigation", { name: da.trail }), "button", { name: da.remove("Juli 2026") });
   });
 
   it("the search and the chosen shop do not narrow the list, and the chosen shop is pressed", async () => {

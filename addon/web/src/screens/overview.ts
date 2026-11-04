@@ -1,11 +1,9 @@
-import { chosenUnitNumbers, differences, keyNumbers, total, type Unit, within } from "@ha-spending/shared";
+import { keyNumbers, total, within } from "@ha-spending/shared";
 import { css, html, LitElement, nothing } from "lit";
 import "../components/bars";
 import { detailSplit } from "../components/detail";
-import { chip, fire } from "../components/chip";
+import { fire } from "../components/chip";
 import "../components/circle";
-import "../components/difference";
-import type { DifferenceItem } from "../components/difference";
 import "../components/postings";
 import "../components/search";
 import "../components/shops";
@@ -13,10 +11,10 @@ import { objectGroupSums } from "../components/subscriptions";
 import { count, kr, unitName } from "../format";
 import { da } from "../i18n/da";
 import { barItems, categoryColours, circleItems, circleSpan, circleTotal, partColours } from "../model/circle";
-import { finerUnits, levelName, partName, type ViewContext } from "../model/context";
+import { finerUnits, levelName, type ViewContext } from "../model/context";
 import { detailView } from "../model/detail";
 import { matches, shopSuggestions } from "../model/filter";
-import { postingList } from "../model/postings";
+import { postingList, shownPostingSort, showsCategory, watchCategoryWidth } from "../model/postings";
 import { type HiddenState, shopList } from "../model/shops";
 import { DEFAULT_SUBSCRIPTION_SORT, subscriptionTable } from "../model/subscriptions";
 import { hasShops } from "../state/actions";
@@ -60,8 +58,21 @@ export class Overview extends LitElement {
     this.hiddenWriteFailed = false;
   }
 
+  private stopWatchingWidth: (() => void) | null = null;
+
   protected override createRenderRoot(): HTMLElement {
     return this;
+  }
+
+  override connectedCallback(): void {
+    super.connectedCallback();
+    this.stopWatchingWidth = watchCategoryWidth(() => this.requestUpdate());
+  }
+
+  override disconnectedCallback(): void {
+    this.stopWatchingWidth?.();
+    this.stopWatchingWidth = null;
+    super.disconnectedCallback();
   }
 
   /** Waits for the lists too, so the app can focus a row's button once they show (detail spec §1.3). */
@@ -118,12 +129,6 @@ export class Overview extends LitElement {
     </button>`;
   }
 
-  /** Without a chosen unit, Forskel keeps its place hidden, so the switch is as wide either way and no button moves. */
-  private differenceSlot() {
-    if (this.ctx.chosen !== null) return this.switchButton("difference", da.difference);
-    return html`<button type="button" class="kept" aria-hidden="true" tabindex="-1">${da.difference}</button>`;
-  }
-
   private bars() {
     const ctx = this.ctx;
     // On finer bars the key numbers' average is a whole week's, month's, quarter's or year's, far above any finer bar.
@@ -154,39 +159,30 @@ export class Overview extends LitElement {
       body = html`<p class="empty">${unfiltered ? da.noSpending : da.noMatch}</p>`;
     } else {
       const units = chosen === null ? ctx.units : [chosen];
-      const list = postingList(postings, units, ctx, this.postingsSort, categoryColours(ctx));
+      const category = showsCategory(this.fullScreen);
+      const sort = shownPostingSort(this.postingsSort, category);
+      const list = postingList(postings, units, ctx, sort, categoryColours(ctx));
       body = html`<hs-postings
           .list=${list}
           .query=${search}
           .shop=${shop}
           .grouping=${g}
-          .sort=${this.postingsSort}
+          .sort=${sort}
+          .showCategory=${category}
           .marked=${ctx.state.detail}
         ></hs-postings>`;
     }
     const above = html`<div class="postings-search-row">
         <hs-search .search=${search} .shop=${shop} .suggestions=${shopSuggestions(base, search)}></hs-search>
-        ${this.fullScreen
-          ? html`<button type="button" class="show-all" @click=${() => fire(this, "open-all-postings")}>${da.showAll}</button>`
-          : nothing}
       </div>
       <p class="postings-summary">${da.summary(count(postings.length), kr(total(postings)))}</p>`;
     return { above, list: body };
   }
 
-  private differenceTitle(unit: Unit): string {
-    const ctx = this.ctx;
-    const g = ctx.timeline.grouping;
-    const name = unitName(unit, g);
-    const basis = chosenUnitNumbers(ctx.shown, ctx.timeline, unit).average.basis;
-    return basis === "before" ? da.differenceTitleBefore(name) : da.differenceTitle(name, g);
-  }
-
-  /** A chosen category is named by its chip and the trail; the title names its main group, so it does not change. */
+  /** A chosen category is named by the trail; the title names its main group, so it does not change. */
   private cardTitle(card: Card): string {
     const level = this.ctx.state.level;
     const g = finerUnits(this.ctx)?.grouping ?? this.ctx.timeline.grouping;
-    if (card === "difference" && this.ctx.chosen !== null) return this.differenceTitle(this.ctx.chosen);
     if (level.kind === "all") {
       if (card === "subscriptions") return da.subscriptions;
       if (card === "postings") return da.postingsTitle;
@@ -198,34 +194,6 @@ export class Overview extends LitElement {
     if (card === "postings") return da.postingsOf(name);
     if (card === "shops") return da.shopsIn(name);
     return da.levelPer(name, g);
-  }
-
-  private difference(unit: Unit, title: string) {
-    const ctx = this.ctx;
-    const level = ctx.state.level;
-    const chosen = level.kind === "category" ? level.category : undefined;
-    const of = ctx.circleLevel.kind === "all" ? "mainGroup" : "category";
-    const items: DifferenceItem[] = differences(ctx.circlePostings, ctx.circleLevel, ctx.timeline, unit).map((d) => ({
-      key: d.key,
-      name: partName(d.key, of),
-      difference: d.difference,
-      chosen: d.key === chosen,
-    }));
-    return html`<hs-difference .items=${items} .title=${title}></hs-difference>
-      <p class="half-foot">${da.differenceHint}</p>`;
-  }
-
-  /** Faste udgifter does not follow the chosen unit, so its chip does not show there; the unit stays chosen. */
-  private chips() {
-    const ctx = this.ctx;
-    const level = ctx.state.level;
-    const unit =
-      ctx.chosen === null || ctx.state.card === "subscriptions" ? null : unitName(ctx.chosen, ctx.timeline.grouping);
-    if (level.kind !== "category" && unit === null) return nothing;
-    return html`<div class="card-chips">
-      ${level.kind === "category" ? chip(levelName(level), () => fire(this, "remove-category")) : nothing}
-      ${unit === null ? nothing : chip(unit, () => fire(this, "remove-unit"))}
-    </div>`;
   }
 
   private subscriptions(title: string) {
@@ -276,7 +244,6 @@ export class Overview extends LitElement {
       body = detailSplit(above, list, view, !this.fullScreen);
     } else if (card === "shops") body = this.shops();
     else if (inPeriod.length === 0) body = this.empty();
-    else if (card === "difference" && ctx.chosen !== null) body = this.difference(ctx.chosen, title);
     else body = this.bars();
     return html`<section class="card half right" role="region" aria-labelledby=${RIGHT_TITLE}>
       <div class="half-head with-tools">
@@ -294,10 +261,10 @@ export class Overview extends LitElement {
           <h2 id=${RIGHT_TITLE} tabindex="-1" title=${title}>${title}</h2>
         </div>
         <div class="card-tools">
-          <div class="card-switch ${ctx.chosen === null ? "" : "with-unit"}" role="group" aria-label=${da.view}>
+          <div class="card-switch" role="group" aria-label=${da.view}>
             ${this.switchButton("bars", da.bars)} ${this.switchButton("postings", da.postings)}
             ${ctx.data.subscriptions.length === 0 ? nothing : this.switchButton("subscriptions", da.subscriptions)}
-            ${shops ? this.switchButton("shops", da.shops) : nothing} ${this.differenceSlot()}
+            ${shops ? this.switchButton("shops", da.shops) : nothing}
           </div>
           <button
             type="button"
@@ -312,7 +279,6 @@ export class Overview extends LitElement {
           </button>
         </div>
       </div>
-      ${inPlace ? nothing : this.chips()}
       ${card === "shops" && this.hiddenWriteFailed
         ? html`<p class="line alert" role="alert">${da.saveFailed}</p>`
         : nothing}
@@ -406,12 +372,6 @@ export const overviewStyles = css`
     text-overflow: ellipsis;
     white-space: nowrap;
   }
-  .card-chips {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    margin-bottom: 8px;
-  }
   .half-sum {
     flex: none;
     color: var(--hs-muted);
@@ -421,6 +381,9 @@ export const overviewStyles = css`
     display: contents;
   }
   .card-tools .full-screen {
+    box-sizing: border-box;
+    height: calc(1lh + 12px + 2px);
+    font: inherit;
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -450,7 +413,7 @@ export const overviewStyles = css`
     flex-wrap: wrap;
     max-width: 100%;
   }
-  /* The buttons draw the border, so it ends after the last shown one and the kept Forskel place stays outside it. */
+  /* The buttons draw the border, so each one's left edge is the previous one's right edge. */
   .card-switch button {
     font: inherit;
     padding: 6px 14px;
@@ -464,12 +427,8 @@ export const overviewStyles = css`
     border-left-width: 1px;
     border-radius: 6px 0 0 6px;
   }
-  .card-switch.with-unit button:last-child,
-  .card-switch:not(.with-unit) button:nth-last-child(2) {
+  .card-switch button:last-child {
     border-radius: 0 6px 6px 0;
-  }
-  .card-switch button.kept {
-    visibility: hidden;
   }
   .card-switch button[aria-pressed="true"] {
     color: #fff;
@@ -498,24 +457,6 @@ export const overviewStyles = css`
     display: flex;
     gap: 8px;
     align-items: stretch;
-  }
-  .postings-search-row .show-all {
-    flex: none;
-    align-self: flex-start;
-    padding: 10px 14px;
-    font: inherit;
-    color: var(--hs-accent-text);
-    background: var(--hs-card);
-    border: 1px solid var(--hs-field);
-    border-radius: 8px;
-    cursor: pointer;
-  }
-  .postings-search-row .show-all:hover {
-    border-color: var(--hs-accent-text);
-  }
-  .postings-search-row .show-all:focus-visible {
-    outline: 2px solid var(--hs-accent-text);
-    outline-offset: -2px;
   }
   .postings-summary {
     margin: 12px 0;

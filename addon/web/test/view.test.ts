@@ -27,7 +27,7 @@ describe("the view state's hash", () => {
       accounts: ["1"],
       level: { kind: "category", mainGroup: "Mad", category: "Café" },
       unit: "2026-02-02",
-      card: "difference",
+      card: "shops",
       screen: "allPostings",
       search: "pizza",
       shop: "Netto",
@@ -70,6 +70,10 @@ describe("the view state's hash", () => {
     const s: ViewState = { ...DEFAULT_STATE, card: "subscriptions" };
     expect(toHash(s)).toBe("card=subscriptions");
     expect(parseHash("#" + toHash(s))).toEqual(s);
+  });
+
+  it("an old link to Forskel opens the bars", () => {
+    expect(parseHash("card=difference").card).toBe("bars");
   });
 
   it("card=shops round-trips", () => {

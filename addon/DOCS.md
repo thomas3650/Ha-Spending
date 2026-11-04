@@ -42,8 +42,11 @@ key.
 
 ## The page
 
-The page is in Danish and has a light theme. Click a main group to see its categories and a category to see its
-postings. If the rule group in `main_group_rule_group` does not exist, the page says so.
+The page is in Danish and has a light theme. Click a bar to choose a unit, a main group to see its categories and a
+category to see its postings. The trail at the top of the page names what is chosen, in the order unit, main group,
+category, and each step has a cross that removes it; the cross on a main group removes its category too. "Alt forbrug"
+in the trail clears all three and keeps the search and the shop. While the page loads, the trail leaves out the unit. If
+the rule group in `main_group_rule_group` does not exist, the page says so.
 
 A click on a fixed expense or on a posting shows its detail: the sums, the bars and the postings. When
 `firefly_link_url` is set, the detail has the link "Åbn i Firefly III", each posting's date links to it in Firefly III,
@@ -69,9 +72,11 @@ groups; sorted by another column they are one list. The first key number shows h
 a click on that count opens the page with all postings.
 
 The key number for an object group shows the payments of that group in the period, with the sum per month and the
-number of subscriptions paid. A click on it shows the card. Under it, a link such as "58 posteringer →" opens the page
-with all postings, filtered to that object group; the filter shows as a chip that you remove with its cross. The link
-clears any search, shop and chosen unit. "+ Filter" can also choose an object group. Its Beløb fields take Danish
+number of subscriptions paid. With a unit chosen it shows the payments in that unit, as "<group> i <unit>", with the
+number of subscriptions paid and no sum per month. The key numbers are not buttons; the Faste udgifter choice in the
+right card shows that view. Under it, a link such as "58 posteringer →" opens the page with all postings, filtered to
+that object group and to the chosen unit; each filter shows as a chip that you remove with its cross. The link clears
+any search and shop. "+ Filter" can also choose a unit and an object group. Its Beløb fields take Danish
 numbers such as `1000`, `1.000`, `1000,50`, `1.000,50` and `0,5`.
 
 The right card's choice "Butikker" lists the shops with the most spending, for what is chosen on the left: all

@@ -15,7 +15,6 @@ import { keyNumbersStyles } from "./components/key-numbers";
 import { barsStyles, type UnitSelection } from "./components/bars";
 import { type CircleSelection, circleStyles } from "./components/circle";
 import { detailStyles } from "./components/detail";
-import { differenceStyles } from "./components/difference";
 import { calendarStyles, periodPickerStyles } from "./components/period-picker";
 import { postingsStyles } from "./components/postings";
 import { sortHeaderStyles } from "./components/sort-header";
@@ -24,9 +23,11 @@ import { shopsStyles } from "./components/shops";
 import { subscriptionsStyles } from "./components/subscriptions";
 import { topCardStyles } from "./components/top-card";
 import { LoadError, type LoadErrorCode, loadData, loadHiddenShops, setHiddenShop } from "./data/api";
+import { unitName } from "./format";
 import { da } from "./i18n/da";
 import { type ViewContext, viewContext } from "./model/context";
 import { keyCards, objectGroupCards } from "./model/key-numbers";
+import { shownPostingSort, showsCategory } from "./model/postings";
 import type { HiddenState } from "./model/shops";
 import { DEFAULT_SUBSCRIPTION_SORT, shownSubscriptionSort, subscriptionFirstDescending } from "./model/subscriptions";
 import { allPostingsStyles, type CategoryChoice } from "./screens/all-postings";
@@ -39,7 +40,6 @@ import {
   detailResolves,
   keepDetail,
   normalise,
-  openAllPostings,
   openAllPostingsFresh,
   openDetail,
   openObjectGroupPostings,
@@ -59,7 +59,7 @@ import {
   setPeriod,
   setSearch,
   setSort,
-  toggleSubscriptions,
+  setUnit,
 } from "./state/actions";
 import {
   type AmountRange,
@@ -126,7 +126,6 @@ export class SpendingApp extends LitElement {
     keyNumbersStyles,
     circleStyles,
     barsStyles,
-    differenceStyles,
     postingsStyles,
     detailStyles,
     sortHeaderStyles,
@@ -500,24 +499,14 @@ export class SpendingApp extends LitElement {
     </div>`;
   }
 
-  private objectGroupKeys(ctx: ViewContext) {
-    const cards = objectGroupCards(
+  private keyNumbers(ctx: ViewContext) {
+    const cards = keyCards(ctx, `#${toHash(keepDetail(this.state, openAllPostingsFresh(this.state)))}`);
+    const objectGroups = objectGroupCards(
       ctx,
       (t) => `#${toHash(keepDetail(this.state, openObjectGroupPostings(this.state, t)))}`,
     );
-    if (cards.length === 0) return null;
-    return { cards, toggle: ctx.data.subscriptions.length > 0, pressed: this.state.card === "subscriptions" };
-  }
-
-  private keyNumbers(ctx: ViewContext) {
-    const cards = keyCards(ctx, `#${toHash(keepDetail(this.state, openAllPostingsFresh(this.state)))}`);
-    const objectGroups = this.objectGroupKeys(ctx);
-    this.boxes = cards.length + (objectGroups?.cards.length ?? 0);
-    return html`<hs-key-numbers
-      .cards=${cards}
-      .objectGroups=${objectGroups}
-      @subscriptions-toggle=${() => this.push(toggleSubscriptions(this.state))}
-    ></hs-key-numbers>`;
+    this.boxes = cards.length + objectGroups.length;
+    return html`<hs-key-numbers .cards=${cards} .objectGroups=${objectGroups}></hs-key-numbers>`;
   }
 
   private ready(ctx: ViewContext) {
@@ -536,7 +525,7 @@ export class SpendingApp extends LitElement {
               .shopsAll=${this.shopsAll}
               .shopsHidden=${this.shopsHidden}
               @posting-sort=${(e: CustomEvent<PostingColumn>) =>
-                (this.postingsSort = nextSort(this.postingsSort, e.detail, postingFirstDescending))}
+                (this.postingsSort = nextSort(shownPostingSort(this.postingsSort, showsCategory(this.fullScreen)), e.detail, postingFirstDescending))}
               @subscription-sort=${(e: CustomEvent<SubscriptionColumn>) =>
                 (this.subscriptionsSort = nextSort(
                   shownSubscriptionSort(this.subscriptionsSort, this.state.level.kind),
@@ -551,9 +540,6 @@ export class SpendingApp extends LitElement {
               @part-click=${(e: CustomEvent<CircleSelection>) => this.push(openPart(this.state, e.detail.key))}
               @unit-click=${(e: CustomEvent<UnitSelection>) => this.push(chooseUnit(this.state, e.detail.fullStart))}
               @card-change=${(e: CustomEvent<Card>) => this.push(setCard(this.state, e.detail))}
-              @remove-unit=${() => this.push(removeUnit(this.state))}
-              @remove-category=${() => this.push(removeCategory(this.state))}
-              @open-all-postings=${() => this.push(openAllPostings(this.state))}
               @search-input=${this.onSearch}
               @shop-choose=${this.onShopChoose}
               @shop-remove=${this.onShopRemove}
@@ -569,6 +555,7 @@ export class SpendingApp extends LitElement {
             @remove-unit=${() => this.push(removeUnit(this.state))}
             @set-amount=${(e: CustomEvent<AmountRange | null>) => this.push(setAmount(this.state, e.detail))}
             @set-object-group=${(e: CustomEvent<string | null>) => this.push(setObjectGroup(this.state, e.detail))}
+            @set-unit=${(e: CustomEvent<string>) => this.push(setUnit(this.state, e.detail))}
             @set-main-group=${(e: CustomEvent<string | null>) => this.push(setMainGroup(this.state, e.detail))}
             @set-category=${(e: CustomEvent<CategoryChoice>) =>
               this.push(setCategory(this.state, e.detail.mainGroup, e.detail.category))}
@@ -576,12 +563,25 @@ export class SpendingApp extends LitElement {
     `;
   }
 
-  private body() {
+  /** The trail's × moves the focus to its heading, so the keyboard does not fall back to the page's start. */
+  private removeFromTrail(next: ViewState): void {
+    this.push(next);
+    void this.focusHeading();
+  }
+
+  private async focusHeading(): Promise<void> {
+    await this.updateComplete;
+    const top = this.renderRoot.querySelector<LitElement>("hs-top-card");
+    await top?.updateComplete;
+    this.renderRoot.querySelector<HTMLElement>("hs-top-card h1")?.focus();
+  }
+
+  private body(ctx: ViewContext | null) {
     switch (this.load.kind) {
       case "error":
         return html`<p class="card line alert" role="alert">${da.errors[this.load.code]}</p>`;
       case "ready":
-        return this.ready(viewContext(this.load.data, this.state, this.today));
+        return ctx === null ? nothing : this.ready(ctx);
       default:
         return this.state.screen === "overview"
           ? html`${this.fullScreen ? nothing : html`<hs-key-numbers .cards=${null} .boxes=${this.boxes}></hs-key-numbers>`}
@@ -591,17 +591,22 @@ export class SpendingApp extends LitElement {
   }
 
   override render() {
+    const ctx = this.load.kind === "ready" ? viewContext(this.load.data, this.state, this.today) : null;
     return html`<main class="page">
       <hs-top-card
         .state=${this.state}
         .today=${this.today}
         .accounts=${this.accounts}
         .earliest=${this.earliest}
+        .unitName=${ctx?.chosen ? unitName(ctx.chosen, ctx.timeline.grouping) : null}
         @hs-period=${this.onPeriod}
         @hs-grouping=${this.onGrouping}
         @hs-accounts=${this.onAccounts}
+        @remove-unit=${() => this.removeFromTrail(removeUnit(this.state))}
+        @remove-main-group=${() => this.removeFromTrail(removeMainGroup(this.state))}
+        @remove-category=${() => this.removeFromTrail(removeCategory(this.state))}
       ></hs-top-card>
-      ${this.body()}
+      ${this.body(ctx)}
     </main>`;
   }
 }

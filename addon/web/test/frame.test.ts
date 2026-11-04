@@ -377,11 +377,11 @@ describe("the frame", () => {
     getByText(firstCard(root), kr(0));
   });
 
-  it("names the trail's links back to their level", async () => {
+  it("links the trail's Alt forbrug to the overview with nothing chosen", async () => {
     const { root } = await mount("group=Mad&category=Café");
     const trail = getByRole(root, "navigation", { name: da.trail });
     expect(getByRole(trail, "link", { name: da.allSpending }).getAttribute("href")).toBe("#");
-    expect(getByRole(trail, "link", { name: "Mad" }).getAttribute("href")).toBe("#group=Mad");
+    expect(queryByRole(trail, "link", { name: "Mad" })).toBeNull();
     getByRole(trail, "heading", { level: 1, name: "Café" });
     await waitFor(() => getByRole(root, "group", { name: da.inPeriod("Café") }));
   });

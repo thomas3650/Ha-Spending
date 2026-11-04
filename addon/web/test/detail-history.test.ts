@@ -95,23 +95,19 @@ describe("the detail in the history", () => {
     expect(fullScreen(root).getAttribute("aria-pressed")).toBe("false");
   });
 
-  const showAll = (root: HTMLElement) => getByRole(root, "button", { name: da.showAll });
   const bars = (root: HTMLElement) =>
     getByRole(getByRole(root, "group", { name: da.view }), "button", { name: da.bars });
 
-  it.each([
-    ["Vis alle", showAll, "#card=postings&view=all-postings"],
-    ["the card", bars, ""],
-  ])("a choice that changes the screen or the card closes the detail: %s", async (_, button, hash) => {
+  it("a choice that changes the card closes the detail", async () => {
     const { app, root } = await mount("card=postings");
-    // Full screen shows Vis alle and keeps the list's rows above the detail; the normal page hides them while it is open.
+    // Full screen keeps the list's rows above the detail; the normal page hides them while it is open.
     fireEvent.click(fullScreen(root));
     await settle(app);
     await open(app, CAFE);
     expect(location.hash).toBe("#card=postings&detail=p%3Ap23");
-    fireEvent.click(button(root));
+    fireEvent.click(bars(root));
     await settle(app);
-    expect(location.hash).toBe(hash);
+    expect(location.hash).toBe("");
   });
 
   it("open, close, then Back does not reopen it", async () => {

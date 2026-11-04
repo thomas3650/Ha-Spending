@@ -51,7 +51,7 @@ function keyNumbers(root: HTMLElement): HTMLElement | null {
 }
 
 function subscriptionsKey(root: HTMLElement): HTMLElement | null {
-  return queryByRole(root, "button", { name: new RegExp(`^${KEY_LABEL}`) });
+  return queryByRole(root, "group", { name: KEY_LABEL });
 }
 
 function expectOn(root: HTMLElement): void {
@@ -77,11 +77,56 @@ async function choosePreset(root: HTMLElement, app: SpendingApp, name: string) {
   await settle(app);
 }
 
+describe("Posteringer in full screen", () => {
+  const card = (root: HTMLElement) => getByRole(root, "region", { name: da.postingsTitle });
+  const postingRows = (root: HTMLElement) => getAllByRole(card(root), "row").filter((r) => within(r).queryAllByRole("cell").length > 0);
+  const firstRow = (root: HTMLElement) => postingRows(root)[0].textContent ?? "";
+
+  it("shows the Kategori column with each row's category, and the normal card does not", async () => {
+    const { app, root } = await mountWith("card=postings");
+    expect(queryByRole(card(root), "columnheader", { name: da.columns.category })).toBeNull();
+    await press(app, root);
+    getByRole(card(root), "columnheader", { name: da.columns.category });
+    expect(getAllByRole(card(root), "cell", { name: /Café/ }).length).toBeGreaterThan(0);
+  });
+
+  it("has no Kategori column in full screen below 600 px, and no sort by it", async () => {
+    const happy = (window as unknown as { happyDOM: { setViewport(s: { width: number; height: number }): void } }).happyDOM;
+    happy.setViewport({ width: 420, height: 768 });
+    try {
+      const { app, root } = await mountWith("card=postings");
+      await press(app, root);
+      expect(queryByRole(card(root), "columnheader", { name: da.columns.category })).toBeNull();
+    } finally {
+      happy.setViewport({ width: 1024, height: 768 });
+    }
+  });
+
+  it("has no Vis alle, in full screen or in the normal card", async () => {
+    const { app, root } = await mountWith("card=postings");
+    expect(queryByRole(root, "button", { name: "Vis alle" })).toBeNull();
+    await press(app, root);
+    expect(queryByRole(root, "button", { name: "Vis alle" })).toBeNull();
+  });
+
+  it("falls back to the newest first when Kategori was the sort and full screen ends", async () => {
+    const { app, root } = await mountWith("card=postings");
+    await press(app, root);
+    fireEvent.click(getByRole(card(root), "button", { name: da.columns.category }));
+    await settle(app);
+    expect(getByRole(card(root), "columnheader", { name: da.columns.category }).getAttribute("aria-sort")).not.toBeNull();
+    expect(firstRow(root)).not.toContain("Café Søde");
+    await press(app, root);
+    expect(firstRow(root)).toContain("Café Søde");
+    await press(app, root);
+    expect(getByRole(card(root), "columnheader", { name: da.columns.category }).getAttribute("aria-sort")).not.toBeNull();
+  });
+});
+
 describe("the right card in full screen", () => {
   it.each([
     ["Søjler", "", da.per("month")],
     ["Posteringer", "card=postings", da.postingsTitle],
-    ["Forskel", "unit=2026-07-01&card=difference", da.differenceTitle(JULY, "month")],
     ["Faste udgifter", "card=subscriptions", da.subscriptions],
   ])("offers the button in the right card on %s", async (_, hash, title) => {
     const { root } = await mountWith(hash);
@@ -125,7 +170,7 @@ describe("the right card in full screen", () => {
   it("does nothing on Escape on Alle posteringer, and is still on when coming back", async () => {
     const { app, root } = await mount("card=postings");
     await press(app, root);
-    fireEvent.click(getByRole(root, "button", { name: da.showAll }));
+    location.hash = "#card=postings&view=all-postings";
     await settle(app);
     getByRole(root, "heading", { level: 1, name: da.allPostings });
     await escape(app, document.body);

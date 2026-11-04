@@ -1,8 +1,26 @@
 import { byUnit, type ClassifiedPosting, NO_PIECE, type Posting, type Unit } from "@ha-spending/shared";
 import { unitName } from "../format";
 import { type ViewContext, partName } from "./context";
-import type { PostingColumn, Sort } from "../state/view";
+import { DEFAULT_STATE, type PostingColumn, type Sort } from "../state/view";
 import { byDate } from "./filter";
+
+const WIDE = "(min-width: 600px)";
+
+/** Whether the list shows the Kategori column: in full screen, on a viewport wide enough to hold it with the rest. */
+export function showsCategory(fullScreen: boolean): boolean {
+  return fullScreen && window.matchMedia(WIDE).matches;
+}
+
+export function watchCategoryWidth(onChange: () => void): () => void {
+  const query = window.matchMedia(WIDE);
+  query.addEventListener("change", onChange);
+  return () => query.removeEventListener("change", onChange);
+}
+
+/** Kategori is a column only when `category` is true; elsewhere a sort by it falls back to the default. */
+export function shownPostingSort(sort: Sort, category: boolean): Sort {
+  return sort.column === "category" && !category ? DEFAULT_STATE.sort : sort;
+}
 
 export interface PostingRow {
   posting: ClassifiedPosting;

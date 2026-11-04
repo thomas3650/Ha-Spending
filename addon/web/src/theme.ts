@@ -18,8 +18,6 @@ export const theme = css`
     --hs-grid: #ececec;
     --hs-leader: #b5b5b5;
     --hs-up: #c62828;
-    --hs-more: #eb6834;
-    --hs-less: #2a78d6;
     --hs-not-seen: #b71c1c;
     --hs-not-seen-soft: #fdecea;
     --hs-risen: #9a4a00;

@@ -3,7 +3,6 @@ import {
   byUnit,
   chosenUnitNumbers,
   classify,
-  differences,
   keyNumbers,
   parts,
   select,
@@ -113,23 +112,6 @@ describe("money", () => {
       amount: 523000,
       average: { amount: 504500, units: 1, basis: "period" },
     });
-  });
-
-  it("lists the differences per part, largest first", () => {
-    expect(differences(all, { kind: "all" }, T, jan)).toEqual([
-      { key: "Mad", amount: 23000, average: 0, difference: 23000 },
-      { key: null, amount: 0, average: 4500, difference: -4500 },
-      { key: "Bolig", amount: 500000, average: 500000, difference: 0 },
-    ]);
-  });
-
-  it("puts the differences without an average last", () => {
-    const dec = { ...T, period: { start: "2025-12-01", end: "2025-12-31" } };
-    const [unit] = unitsOf(dec.period, dec.grouping, dec.today);
-    expect(differences(all, { kind: "all" }, dec, unit)).toEqual([
-      { key: "Bolig", amount: 500000, average: null, difference: null },
-      { key: "Mad", amount: 10000, average: null, difference: null },
-    ]);
   });
 
   it("splits postings per unit, adding up to the bars", () => {

@@ -1,4 +1,4 @@
-import { type ClassifiedPosting, type Period, type Posting, unitAt } from "@ha-spending/shared";
+import { type ClassifiedPosting, type Period, type Posting, unitAt, unitsOf } from "@ha-spending/shared";
 import { fireEvent, getAllByRole, getByRole, getByText, queryAllByRole, queryByRole, queryByText, within } from "@testing-library/dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
@@ -59,7 +59,7 @@ describe("screen 3, all postings", () => {
     chip(root, da.categoryChip("Café"));
     summary(root, 4, 131012);
     const links = getAllByRole(trail(root), "link").map((a) => a.textContent?.trim());
-    expect(links).toEqual([da.allSpending, "Mad", "Café"]);
+    expect(links).toEqual([da.allSpending]);
     expect(queryByRole(root, "region", { name: da.mainGroups })).toBeNull();
     getByRole(root, "columnheader", { name: da.columns.category });
   });
@@ -186,7 +186,6 @@ describe("screen 3, all postings", () => {
     expect(queryByRole(root, "button", { name: da.remove(da.categoryChip("Café")) })).toBeNull();
     expect(queryByRole(root, "button", { name: da.remove(da.mainGroupChip("Mad")) })).toBeNull();
     summary(root, 28, 11566012);
-    expect(queryByRole(trail(root), "link", { name: "Mad" })).toBeNull();
     getByRole(trail(root), "link", { name: da.allSpending });
   });
 
@@ -293,9 +292,9 @@ describe("screen 3, all postings", () => {
 
   it("keeps the search but not the amount through the trail", async () => {
     const { app, root } = await mount(`${CAFE}&q=pizza&min=400`);
-    fireEvent.click(getByRole(trail(root), "link", { name: "Mad" }));
+    fireEvent.click(getByRole(trail(root), "link", { name: da.allSpending }));
     await settle(app);
-    getByRole(root, "heading", { level: 1, name: "Mad" });
+    getByRole(root, "heading", { level: 1, name: "Café" });
     const params = new URLSearchParams(location.hash.slice(1));
     expect(params.get("q")).toBe("pizza");
     expect(params.has("min")).toBe(false);
@@ -455,7 +454,7 @@ function rowNames(root: HTMLElement): (string | undefined)[] {
 }
 
 function objectGroupPart(root: HTMLElement): HTMLElement {
-  return getByRole(root, "group", { name: da.subscriptions });
+  return getByRole(root, "group", { name: da.fixedPayments });
 }
 
 /** Netto of 2026-09-10 in Åbne aftaler and Pizzeria Roma of 2026-09-20 in Abonnementer. */
@@ -562,7 +561,7 @@ describe("the object group on Alle posteringer", () => {
     const categories = getByRole(root, "group", { name: da.categories });
     expect(getAllByRole(categories, "button").map((b) => b.textContent?.trim())).toEqual(["Husleje"]);
     expect(queryByRole(root, "group", { name: da.mainGroups })).toBeNull();
-    expect(queryByRole(root, "group", { name: da.subscriptions })).toBeNull();
+    expect(queryByRole(root, "group", { name: da.fixedPayments })).toBeNull();
     getByRole(root, "group", { name: da.amountFilter });
     expect(queryByText(root, da.noFilterHits)).toBeNull();
   });
@@ -602,11 +601,11 @@ describe("the object group on Alle posteringer", () => {
     expect(queryByRole(root, "group", { name: da.mainGroups })).toBeNull();
   });
 
-  it("the filter menu lists Beløb, the object groups, Hovedgrupper, Kategorier in that order", async () => {
+  it("the filter menu lists the units, Beløb, the object groups, Hovedgrupper, Kategorier in that order", async () => {
     const { app, root } = await mount("view=all-postings", { answer: twoGroups });
     await openFilter(app, root);
     const names = getAllByRole(root, "heading", { level: 3 }).map((h) => h.textContent?.trim());
-    expect(names).toEqual([da.amountFilter, da.subscriptions, da.mainGroups, da.categories]);
+    expect(names).toEqual([da.unitsHeading.month, da.amountFilter, da.fixedPayments, da.mainGroups, da.categories]);
   });
 
   it("the filter search is empty when the menu opens again", async () => {
@@ -626,7 +625,7 @@ describe("the object group on Alle posteringer", () => {
     const first = await mount("view=all-postings&period=lastYear");
     await openFilter(first.app, first.root);
     getByRole(first.root, "group", { name: da.amountFilter });
-    expect(queryByRole(first.root, "group", { name: da.subscriptions })).toBeNull();
+    expect(queryByRole(first.root, "group", { name: da.fixedPayments })).toBeNull();
     unmount();
 
     const { app, root } = await mount("view=all-postings&period=lastYear&og=Ukendt");
@@ -746,5 +745,63 @@ describe("the detail on Alle posteringer", () => {
     expect(queryAllByRole(root, "button", { name: "Café Søde" })).toEqual([]);
     await click(app, getByRole(d, "button", { name: da.close }));
     expect(app.shadowRoot?.activeElement).toBe(getByRole(root, "heading", { level: 1, name: da.allPostings }));
+  });
+});
+
+describe("the units in + Filter", () => {
+  const months = (grouping: "month") =>
+    unitsOf({ start: "2026-01-01", end: TODAY }, grouping, TODAY).map((u) => unitName(u, grouping));
+  const unitGroup = (root: HTMLElement) => getByRole(root, "group", { name: da.unitsHeading.month });
+  const unitButton = (root: HTMLElement, name: string) => getByRole(unitGroup(root), "button", { name });
+
+  it("lists every unit of the period in order; pressing chooses, replaces and removes it", async () => {
+    const { app, root } = await mount(CAFE);
+    const names = months("month");
+    await openFilter(app, root);
+    expect(getAllByRole(unitGroup(root), "button").map((b) => b.textContent?.trim())).toEqual(names);
+    fireEvent.click(unitButton(root, names[8]));
+    await settle(app);
+    chip(root, names[8]);
+    summary(root, 2, 50000);
+    await openFilter(app, root);
+    expect(unitButton(root, names[8]).getAttribute("aria-pressed")).toBe("true");
+    fireEvent.click(unitButton(root, names[7]));
+    await settle(app);
+    chip(root, names[7]);
+    expect(queryByRole(root, "button", { name: da.remove(names[8]) })).toBeNull();
+    await openFilter(app, root);
+    fireEvent.click(unitButton(root, names[7]));
+    await settle(app);
+    expect(queryByRole(root, "button", { name: da.remove(names[7]) })).toBeNull();
+  });
+
+  it("the panel search narrows the units, and a unit hit is no empty result", async () => {
+    const { app, root } = await mount("view=all-postings");
+    await openFilter(app, root);
+    fireEvent.input(getByRole(root, "textbox", { name: da.filterSearch }), { target: { value: "jan" } });
+    await settle(app);
+    expect(getAllByRole(unitGroup(root), "button").map((b) => b.textContent?.trim())).toEqual([months("month")[0]]);
+    expect(queryByText(root, da.noFilterHits)).toBeNull();
+  });
+
+  it("has no units group for one unit or for more than 62", async () => {
+    const one = await mount("view=all-postings&period=thisMonth");
+    await openFilter(one.app, one.root);
+    expect(queryByRole(one.root, "group", { name: da.unitsHeading.month })).toBeNull();
+    unmount();
+    const many = await mount("view=all-postings&by=day&period=all");
+    await openFilter(many.app, many.root);
+    expect(queryByRole(many.root, "group", { name: da.unitsHeading.day })).toBeNull();
+  });
+
+  it("presses the unit chosen on the overview, and none once the period changes", async () => {
+    const { app, root } = await mount("view=all-postings&unit=2026-09-01");
+    const sep = months("month")[8];
+    await openFilter(app, root);
+    expect(unitButton(root, sep).getAttribute("aria-pressed")).toBe("true");
+    unmount();
+    const gone = await mount("view=all-postings&unit=2026-09-01&period=lastYear");
+    await openFilter(gone.app, gone.root);
+    expect(queryByRole(unitGroup(gone.root), "button", { pressed: true })).toBeNull();
   });
 });

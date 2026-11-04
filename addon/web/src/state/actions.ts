@@ -13,7 +13,7 @@ import {
 const ALL: Level = { kind: "all" };
 
 function withoutUnit(s: ViewState): ViewState {
-  return { ...s, unit: null, card: s.card === "difference" ? "bars" : s.card };
+  return { ...s, unit: null };
 }
 
 export function setPeriod(s: ViewState, period: PeriodChoice): ViewState {
@@ -52,43 +52,32 @@ export function chooseUnit(s: ViewState, fullStart: string): ViewState {
   return s.unit === fullStart ? withoutUnit(s) : { ...s, unit: fullStart, card: "postings" };
 }
 
+export function setUnit(s: ViewState, fullStart: string): ViewState {
+  return s.unit === fullStart ? withoutUnit(s) : { ...s, unit: fullStart };
+}
+
 export function setCard(s: ViewState, card: Card): ViewState {
   return { ...s, card };
 }
 
-export function toggleSubscriptions(s: ViewState): ViewState {
-  return { ...s, card: s.card === "subscriptions" ? "bars" : "subscriptions" };
-}
-
-export function openAllPostings(s: ViewState): ViewState {
-  return { ...s, screen: "allPostings", sort: DEFAULT_STATE.sort, amount: null, objectGroup: null };
-}
-
-/** The key number's way in: the search and the chosen shop go, unlike "Vis alle" (D31, D35). */
+/** The key number's way in: the search and the chosen shop go (D31, D35). */
 export function openAllPostingsFresh(s: ViewState): ViewState {
-  return { ...openAllPostings(s), search: "", shop: null };
+  return { ...s, screen: "allPostings", sort: DEFAULT_STATE.sort, amount: null, objectGroup: null, search: "", shop: null };
 }
 
-/** The object group's key number: its count ignores the chosen unit, so the unit goes too (D42). */
+/** The object group's key number: its count follows the chosen unit, so the unit stays. */
 export function openObjectGroupPostings(s: ViewState, title: string): ViewState {
-  return { ...withoutUnit(openAllPostingsFresh(s)), objectGroup: title };
+  return { ...openAllPostingsFresh(s), objectGroup: title };
 }
 
-function levelAt(level: Level, depth: 0 | 1 | 2): Level {
-  if (depth === 0 || level.kind === "all") return ALL;
-  if (depth === 1 || level.kind === "mainGroup") return { kind: "mainGroup", mainGroup: level.mainGroup };
-  return level;
+/** The overview's "Alt forbrug": the unit, the main group and the category go; the search and the shop stay. */
+export function clearChoices(s: ViewState): ViewState {
+  return { ...withoutUnit(s), level: ALL };
 }
 
-export function trailLevel(s: ViewState, depth: 0 | 1 | 2): ViewState {
-  return {
-    ...s,
-    level: levelAt(s.level, depth),
-    screen: "overview",
-    sort: DEFAULT_STATE.sort,
-    amount: null,
-    objectGroup: null,
-  };
+/** Alle posteringer's "Alt forbrug": only what belongs to Alle posteringer goes. */
+export function backToOverview(s: ViewState): ViewState {
+  return { ...s, screen: "overview", sort: DEFAULT_STATE.sort, amount: null, objectGroup: null };
 }
 
 /** A category implies its main group, so it goes too (D21). */
@@ -97,7 +86,8 @@ export function removeMainGroup(s: ViewState): ViewState {
 }
 
 export function removeCategory(s: ViewState): ViewState {
-  return { ...s, level: levelAt(s.level, 1) };
+  const level = s.level;
+  return level.kind === "category" ? { ...s, level: { kind: "mainGroup", mainGroup: level.mainGroup } } : s;
 }
 
 export function removeUnit(s: ViewState): ViewState {
@@ -188,7 +178,6 @@ export function normalise(s: ViewState, data: SpendingData, today: string): View
   const units = unitsOf(periodOf(s.period, today, data.earliestPostingDate), s.grouping, today);
   const unit = s.unit !== null && units.some((u) => u.fullStart === s.unit) ? s.unit : null;
   const card =
-    (s.card === "difference" && unit === null) ||
     (s.card === "subscriptions" && data.subscriptions.length === 0) ||
     (s.card === "shops" && !hasShops(data))
       ? "bars"

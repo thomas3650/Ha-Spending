@@ -173,7 +173,7 @@ to set their status to `superseded by D<n>`, or to name a part a later decision 
 - **Source:** Claude, [data plan](superpowers/plans/2026-10-31-data.md)
 
 ### D19: The charts are drawn by ECharts and named in the DOM
-- **Date:** 2026-10-31 · **Status:** active; the chunk-size limit superseded by D39
+- **Date:** 2026-10-31 · **Status:** active; the chunk-size limit superseded by D39, the Forskel table by D57
 - **Decision:**
   - ECharts uses the SVG renderer and is bundled from `echarts/core` with only the parts used. The build is one JS
     chunk, with `chunkSizeWarningLimit` 700, because ECharts core and zrender dominate it.
@@ -308,7 +308,7 @@ to set their status to `superseded by D<n>`, or to name a part a later decision 
 - **Source:** Claude, for D29; the re-read and the fields written: Thomas, 2026-10-31, the design of the AI sorting
 
 ### D31: The search is a shared choice
-- **Date:** 2026-10-31 · **Status:** active
+- **Date:** 2026-10-31 · **Status:** active; the way into Alle posteringer that keeps the search superseded by D57
 - **Decision:** The search is one of the shared choices. `q` is in the hash on every screen, and typing replaces the
   entry wherever it is typed. Opening Alle posteringer and leaving it through the trail keep the search.
 - **Why:** Thomas looks for a store's cost on the overview and expects the search to stay when he switches cards.
@@ -359,7 +359,7 @@ to set their status to `superseded by D<n>`, or to name a part a later decision 
   note); the names, the limits and the refusals: Claude
 
 ### D35: The chosen shop is a shared choice
-- **Date:** 2026-11-01 · **Status:** active
+- **Date:** 2026-11-01 · **Status:** active; the way into Alle posteringer that keeps the shop superseded by D57
 - **Decision:** The chosen shop belongs with the search: one of the shared choices, kept and changed as the search is.
   It is the hash key `shop`, written right after `q` and before `sort` on every screen ([D20](decisions.md)); an empty
   value is no shop.
@@ -408,7 +408,7 @@ to set their status to `superseded by D<n>`, or to name a part a later decision 
 - **Source:** Thomas, 2026-11-02, [the lists spec](superpowers/specs/2026-11-02-lists-period-postings.md) §2
 
 ### D41: Key numbers for the object groups, and a link to all postings
-- **Date:** 2026-11-02 · **Status:** active
+- **Date:** 2026-11-02 · **Status:** active; the period's payments with the sum per month superseded by D56
 - **Decision:** There is one key number per Firefly III object group, showing the period's payments with the sum per
   month and the count of bills; they replace "Faste udgifter om året" ([D33](decisions.md)). The first key number links
   to Alle posteringer and clears the search and the chosen shop, an exception to [D31](decisions.md) and
@@ -418,7 +418,7 @@ to set their status to `superseded by D<n>`, or to name a part a later decision 
 - **Source:** Thomas, 2026-11-02, [the lists spec](superpowers/specs/2026-11-02-lists-period-postings.md) §3 and §4
 
 ### D42: The object group is a filter of Alle posteringer
-- **Date:** 2026-11-02 · **Status:** active
+- **Date:** 2026-11-02 · **Status:** active; the exception "and the chosen unit" superseded by D56
 - **Decision:** The object group is a filter of Alle posteringer, in the hash as `og` after `max`, reached from the link
   under its key number. An object group that no posting carries still filters, an exception to [D20](decisions.md)'s
   fallback. The link clears the search and the shop, as [D41](decisions.md) does (an exception to
@@ -510,7 +510,7 @@ to set their status to `superseded by D<n>`, or to name a part a later decision 
   spelling taken from the shop's account of the other type: Claude
 
 ### D51: A one-month period draws its days
-- **Date:** 2026-11-03 · **Status:** active; the detail's bars, the one-unit Uge, Kvartal and År periods and the name below zero superseded by D54
+- **Date:** 2026-11-03 · **Status:** active; the detail's bars, the one-unit Uge, Kvartal and År periods and the name below zero superseded by D54, the month's Forskel reachable by D57
 - **Decision:**
   - By Måned, a period inside one calendar month draws one bar per day on the Søjler card, decided by `dayUnits` in
     `model/context.ts`; its title is "Pr. dag", with no average line. "Denne måned" draws on to the month's last day,
@@ -524,7 +524,7 @@ to set their status to `superseded by D<n>`, or to name a part a later decision 
   the sign; [month days spec](superpowers/specs/2026-11-03-month-days.md)
 
 ### D52: "Vis alle" only in full screen
-- **Date:** 2026-11-03 · **Status:** active
+- **Date:** 2026-11-03 · **Status:** superseded by D57
 - **Decision:** In the normal right card, Posteringer has no "Vis alle"; Alle posteringer is reached from the key
   numbers' links. In full screen, where the key numbers are not shown, "Vis alle" stays and keeps the search (D31, D35
   unchanged).
@@ -565,3 +565,44 @@ to set their status to `superseded by D<n>`, or to name a part a later decision 
   value with a minus.
 - **Source:** Thomas, 2026-11-03, issues #100, #101 and #103;
   [finer bars spec](superpowers/specs/2026-11-03-finer-bars.md)
+
+### D55: The trail is the overview's filter
+- **Date:** 2026-11-04 · **Status:** active
+- **Decision:**
+  - On the overview the top card's trail names the chosen unit, main group and category, in that order, whatever order
+    they were chosen in. Each has a × that removes it; the × on the main group removes its category too. "Alt forbrug"
+    is a link when something is chosen, and clears all three.
+  - The overview has no chips for the unit and the category. While the answer loads, and on an error, the trail leaves
+    out the unit's step.
+  - Alle posteringer keeps its chips and its plain trail "Alt forbrug › Alle posteringer", and "+ Filter" there gets a
+    section for the period's units (from 2 to 62 units). The object groups' heading there reads "Faste betalinger".
+  - This supersedes UI spec §3.1's trail, §4.2's category chip at the right card's title, §4.3's list of what
+    "+ Filter" adds, §4.4's unit chip at the right card's title and its "a unit is chosen from a bar only", and §5's
+    trail.
+- **Why:** Thomas had to find the bars to get back and wanted one filter that looks the same everywhere.
+- **Source:** Thomas, 2026-11-03 and 2026-11-04; [one filter spec](superpowers/specs/2026-11-04-one-filter.md) §1 and §3
+
+### D56: The key-number cards follow the chosen unit and are not buttons
+- **Date:** 2026-11-04 · **Status:** active
+- **Decision:**
+  - With a unit chosen, an object group's card shows the unit's payments and the bill count, labelled "<group> i
+    <unit>". The set of cards stays the period's.
+  - The card's link keeps the unit: Alle posteringer opens with the object group and the chosen unit as filters.
+  - No key-number card is a button. Only the link can be clicked.
+  - This supersedes D41's "the period's payments with the sum per month" and D42's exception "and the chosen unit".
+- **Why:** A card that ignored the chosen unit contradicted the trail, and the toggle on the card was not used.
+- **Source:** Thomas, 2026-11-04; [one filter spec](superpowers/specs/2026-11-04-one-filter.md) §2
+
+### D57: No Forskel and no "Vis alle"
+- **Date:** 2026-11-04 · **Status:** active
+- **Decision:**
+  - The right card has no Forskel tab, and an old `card=difference` shows Søjler. Alle posteringer is reached from the
+    key numbers' links only: "Vis alle" goes from Posteringer in full screen too.
+  - Full screen's Posteringer has the Kategori column and its sort when the viewport is at least 600 px wide. Narrower,
+    and in the normal card, it has no column and shows the default sort while the sort is by Kategori.
+  - This supersedes D52, D31's and D35's way into Alle posteringer that keeps the search and the shop, D19's Forskel
+    table, D51's "the month's Forskel reachable", UI spec §4.2's and §4.4's Forskel, §7's sign of the Forskel view and
+    the technical spec's Forskel bars.
+- **Why:** Thomas did not use the Forskel view, and full screen then needed no button that the key numbers' links
+  already replace.
+- **Source:** Thomas, 2026-11-03 and 2026-11-04; [one filter spec](superpowers/specs/2026-11-04-one-filter.md) §4 and §5

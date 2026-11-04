@@ -1,9 +1,9 @@
-import { type Period, type Posting, type Subscription } from "@ha-spending/shared";
+import { type Period, type Posting, type Subscription, unitAt } from "@ha-spending/shared";
 import { fireEvent, getAllByRole, getByRole, getByText, queryAllByRole, queryByRole, queryByText } from "@testing-library/dom";
 import { afterEach, describe, expect, it } from "vitest";
 
 import type { SpendingApp } from "../src/app";
-import { count, kr } from "../src/format";
+import { count, kr, unitName } from "../src/format";
 import { da } from "../src/i18n/da";
 import { answerFor, SUBSCRIPTIONS, withSubscriptions } from "./fixture";
 import { json, mount, settle, unmount } from "./mount";
@@ -15,6 +15,9 @@ type Link = Posting["subscription"];
 
 const FIXED = da.inPeriod("Faste udgifter");
 const SUBS = da.inPeriod("Abonnementer");
+const JULY = unitName(unitAt("2026-07-01", "month", "2026-10-30"), "month");
+const JULY_FIXED = da.levelInUnit("Faste udgifter", JULY);
+const JULY_SUBS = da.levelInUnit("Abonnementer", JULY);
 
 function linkLine(n: number): string {
   return da.postingsLink(count(n));
@@ -52,10 +55,11 @@ function bills(p: Posting): Link {
 
 const BILLS = linking(bills);
 
-function objectCardNames(root: HTMLElement): string[] {
+function objectCardNames(root: HTMLElement, unit: string | null = null): string[] {
+  const suffix = unit === null ? " i perioden" : ` i ${unit.toLowerCase()}`;
   return queryAllByRole(root, "group")
     .map((el) => el.getAttribute("aria-label") ?? "")
-    .filter((name) => / i perioden$/.test(name) && name !== da.spendingInPeriod);
+    .filter((name) => name.endsWith(suffix) && name !== da.spendingInPeriod && name !== da.unitTotal(unit ?? ""));
 }
 
 function objectCard(root: HTMLElement, label: string): HTMLElement {
@@ -63,11 +67,13 @@ function objectCard(root: HTMLElement, label: string): HTMLElement {
 }
 
 function card(root: HTMLElement, label: string): HTMLElement {
-  return getByRole(root, "button", { name: new RegExp(`^${label}`) });
+  return getByRole(root, "group", { name: label });
 }
 
+/** The card's label, value and sub-line, without its postings line. */
 function name(root: HTMLElement, label: string): string {
-  return (card(root, label).textContent ?? "").replace(/\s+/g, " ").trim();
+  const postings = new RegExp(` [\\d.]+ (${da.postingMany}|${da.postingOne})( →)?`);
+  return (card(root, label).textContent ?? "").replace(/\s+/g, " ").replace(postings, "").trim();
 }
 
 function line(perMonth: number | null, n: number): string {
@@ -186,11 +192,18 @@ describe("the key numbers of the object groups", () => {
     expect(name(account.root, FIXED)).toBe(`${FIXED} ${kr(90000)} ${line(9000, 1)}`);
     unmount();
 
-    for (const hash of ["unit=2026-07-01", "card=postings&q=Netto", "card=postings&shop=Q8"]) {
+    for (const hash of ["card=postings&q=Netto", "card=postings&shop=Q8"]) {
       const other = await mount(hash, { answer: BILLS });
       expect(name(other.root, FIXED)).toBe(`${FIXED} ${kr(8090000)} ${line(812700, 2)}`);
       unmount();
     }
+  });
+
+  it("with a chosen unit the value is that unit's payments, and a group with none keeps its card", async () => {
+    const { root } = await mount("unit=2026-07-01", { answer: BILLS });
+    expect(objectCardNames(root, JULY)).toEqual([JULY_SUBS, JULY_FIXED]);
+    expect(name(root, JULY_FIXED)).toBe(`${JULY_FIXED} ${kr(890000)} ${da.billCount(2)}`);
+    expect(name(root, JULY_SUBS)).toBe(`${JULY_SUBS} ${kr(0)} ${da.noPayments}`);
   });
 
   it("n counts different bills, not payments", async () => {
@@ -248,24 +261,6 @@ describe("the key numbers of the object groups", () => {
     expect(name(root, FIXED)).toBe(`${FIXED} ${kr(0)} ${da.noPayments}`);
   });
 
-  it("a click toggles Faste udgifter and every card is pressed", async () => {
-    const { app, root } = await mount("", { answer: (range) => json(withSubscriptions(answerFor(range))) });
-    const pressed = () => [SUBS, FIXED].map((label) => card(root, label).getAttribute("aria-pressed"));
-    expect(pressed()).toEqual(["false", "false"]);
-
-    fireEvent.click(card(root, SUBS));
-    await settle(app);
-    getByRole(root, "region", { name: da.subscriptions });
-    expect(pressed()).toEqual(["true", "true"]);
-    expect(location.hash).toBe("#card=subscriptions");
-
-    fireEvent.click(card(root, FIXED));
-    await settle(app);
-    getByRole(root, "region", { name: da.per("month") });
-    expect(pressed()).toEqual(["false", "false"]);
-    expect(location.hash).toBe("");
-  });
-
   it("no object group at all: two key numbers", async () => {
     const { root } = await mount("period=thisMonth");
     expect(objectCardNames(root)).toEqual([]);
@@ -288,7 +283,7 @@ describe("the link on each object group's key number", () => {
     expect(getByRole(objectCard(root, SUBS), "link").textContent?.trim()).toBe("1 postering →");
   });
 
-  it("the count follows the period, the level, a category and one account, not the chosen unit", async () => {
+  it("the count follows the period, the level, a category, one account and the chosen unit", async () => {
     const counts = async (hash: string, label: string, n: number) => {
       const { root } = await mount(hash, { answer: BILLS });
       getByRole(objectCard(root, label), "link", { name: linkLine(n) });
@@ -299,8 +294,8 @@ describe("the link on each object group's key number", () => {
     await counts("group=Bolig", FIXED, 10);
     await counts("group=Bil&category=Br%C3%A6ndstof", FIXED, 1);
     await counts("accounts=2", FIXED, 1);
-    await counts("unit=2026-07-01", FIXED, 11);
-    await counts("unit=2026-07-01&card=difference", SUBS, 1);
+    await counts("unit=2026-07-01", JULY_FIXED, 2);
+    await counts("unit=2026-09-01", da.levelInUnit("Abonnementer", unitName(unitAt("2026-09-01", "month", "2026-10-30"), "month")), 1);
   });
 
   it("no posting, no link", async () => {
@@ -310,45 +305,42 @@ describe("the link on each object group's key number", () => {
     expect(queryByRole(subs, "link")).toBeNull();
   });
 
-  it("the toggle keeps its name and aria-pressed, the link is outside the button, and a click still switches the right card", async () => {
+  it("no key-number card holds a button, and a click on a label changes nothing", async () => {
     const { app, root } = await mount("", { answer: BILLS });
-    const group = objectCard(root, FIXED);
-    const button = getByRole(group, "button", { name: new RegExp(`^${FIXED}`) });
-    expect(name(root, FIXED)).toBe(`${FIXED} ${kr(8090000)} ${line(812700, 2)}`);
-    expect(button.getAttribute("aria-pressed")).toBe("false");
-    const link = getByRole(group, "link", { name: linkLine(11) });
-    expect(button.contains(link)).toBe(false);
-    expect(queryByRole(button, "link")).toBeNull();
-
-    fireEvent.click(button);
+    const kpis = getByRole(root, "group", { name: FIXED }).parentElement as HTMLElement;
+    expect(queryAllByRole(kpis, "button")).toEqual([]);
+    const before = location.hash;
+    fireEvent.click(getByText(card(root, FIXED), FIXED));
     await settle(app);
-    getByRole(root, "region", { name: da.subscriptions });
-    expect(card(root, FIXED).getAttribute("aria-pressed")).toBe("true");
-    expect(location.hash).toBe("#card=subscriptions");
+    expect(location.hash).toBe(before);
+    getByRole(root, "region", { name: da.per("month") });
+    expect(name(root, FIXED)).toBe(`${FIXED} ${kr(8090000)} ${line(812700, 2)}`);
   });
 
   it("a plain card has the link too, in exactly one group with its name", async () => {
     const { root } = await mount("");
     expect(getAllByRole(root, "group", { name: SUBS })).toHaveLength(1);
-    expect(queryByRole(root, "button", { name: new RegExp(`^${SUBS}`) })).toBeNull();
     getByRole(objectCard(root, SUBS), "link", { name: "1 postering →" });
   });
 
-  it("following the link shows the chip and a summary count equal to the link's, after a search, a shop and a unit", async () => {
-    const { app, root } = await mount("unit=2026-07-01&card=postings&q=Netto&shop=Q8", { answer: BILLS });
-    const link = getByRole(objectCard(root, FIXED), "link", { name: linkLine(11) });
+  it("following the link shows the chips and a summary count equal to the link's, after a search, a shop and a unit", async () => {
+    const { app, root } = await mount("unit=2026-07-01&q=Netto&shop=Q8", { answer: BILLS });
+    const link = getByRole(objectCard(root, JULY_FIXED), "link", { name: linkLine(2) });
     await follow(app, link);
     getByRole(root, "heading", { level: 1, name: da.allPostings });
     getByRole(root, "button", { name: da.remove("Faste udgifter") });
-    getByText(root, da.summary(count(11), kr(8090000)));
+    getByRole(root, "button", { name: da.remove(JULY) });
+    getByText(root, da.summary(count(2), kr(890000)));
     expect((getByRole(root, "combobox", { name: da.searchLabel }) as HTMLInputElement).value).toBe("");
   });
 
-  it("the link's hash has og and no q, shop, unit or card=difference", async () => {
-    const { root } = await mount("unit=2026-07-01&card=difference&q=Netto&shop=Q8", { answer: BILLS });
-    const p = params(getByRole(objectCard(root, SUBS), "link").getAttribute("href") ?? "");
+  it("the link's hash has og and the unit, and no q or shop", async () => {
+    const { root } = await mount("unit=2026-09-01&q=Netto&shop=Q8", { answer: BILLS });
+    const label = da.levelInUnit("Abonnementer", unitName(unitAt("2026-09-01", "month", "2026-10-30"), "month"));
+    const p = params(getByRole(objectCard(root, label), "link").getAttribute("href") ?? "");
     expect(p.get("view")).toBe("all-postings");
     expect(p.get("og")).toBe("Abonnementer");
-    for (const key of ["q", "shop", "unit", "card", "sort", "min", "max"]) expect(p.has(key)).toBe(false);
+    expect(p.get("unit")).toBe("2026-09-01");
+    for (const key of ["q", "shop", "card", "sort", "min", "max"]) expect(p.has(key)).toBe(false);
   });
 });

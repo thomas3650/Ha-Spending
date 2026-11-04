@@ -19,10 +19,6 @@ function mountWith(hash: string, subscriptions: Subscription[] = SUBSCRIPTIONS, 
   });
 }
 
-function keyNumber(root: HTMLElement): HTMLElement {
-  return getByRole(root, "button", { name: new RegExp(`^${KEY_LABEL}`) });
-}
-
 function viewSwitch(root: HTMLElement): HTMLElement {
   return getByRole(root, "group", { name: da.view });
 }
@@ -95,23 +91,10 @@ function categoryOf(region: HTMLElement, name: string): string {
 }
 
 describe("the subscriptions key number", () => {
-  it("opens the card from the Faste udgifter key number", async () => {
-    const { app, root } = await mountWith("");
-    const button = keyNumber(root);
-    expect(button.getAttribute("aria-pressed")).toBe("false");
-
-    fireEvent.click(button);
-    await settle(app);
-    card(root, "Faste udgifter");
-    expect(keyNumber(root).getAttribute("aria-pressed")).toBe("true");
-    expect(getByRole(viewSwitch(root), "button", { name: "Faste udgifter" }).getAttribute("aria-pressed")).toBe("true");
-    expect(location.hash).toBe("#card=subscriptions");
-
-    fireEvent.click(keyNumber(root));
-    await settle(app);
-    card(root, da.per("month"));
-    expect(keyNumber(root).getAttribute("aria-pressed")).toBe("false");
-    expect(location.hash).toBe("");
+  it("is a plain card; the view switch is the way to the card", async () => {
+    const { root } = await mountWith("");
+    expect(queryByRole(root, "button", { name: new RegExp(`^${KEY_LABEL}`) })).toBeNull();
+    getByRole(root, "group", { name: KEY_LABEL });
   });
 
   it("adds Faste udgifter to the switch", async () => {
@@ -121,12 +104,6 @@ describe("the subscriptions key number", () => {
     fireEvent.click(getByRole(viewSwitch(root), "button", { name: "Faste udgifter" }));
     await settle(app);
     card(root, "Faste udgifter");
-  });
-
-  it("orders all five buttons of the switch with a unit chosen", async () => {
-    const { root } = await mountWith("unit=2026-07-01");
-    const buttons = getAllByRole(viewSwitch(root), "button").map((b) => b.textContent?.trim());
-    expect(buttons).toEqual([da.bars, da.postings, "Faste udgifter", da.shops, da.difference]);
   });
 
   it("counts one subscription in the singular", async () => {
@@ -197,11 +174,11 @@ describe("the subscriptions card", () => {
     expect(rowNames(card(root, "Faste udgifter"))).toEqual(["Indboforsikring", "Husleje", "Avis", "Tennisklub"]);
   });
 
-  it("shows a category's subscriptions and its chip", async () => {
+  it("shows a category's subscriptions, with no chip", async () => {
     const { root } = await mountWith("group=Mad&category=Café&card=subscriptions");
     const region = card(root, "Faste udgifter i Mad");
     expect(rowNames(region)).toEqual(["Streaming"]);
-    getByRole(region, "button", { name: da.remove("Café") });
+    expect(queryByRole(region, "button", { name: da.remove("Café") })).toBeNull();
   });
 
   it("does not follow the search", async () => {
@@ -213,9 +190,8 @@ describe("the subscriptions card", () => {
   it("does not follow a chosen unit or the period", async () => {
     const { app, root } = await mountWith("unit=2026-07-01&card=subscriptions");
     const region = card(root, "Faste udgifter");
-    expect(queryByRole(root, "button", { name: da.remove("Juli 2026") })).toBeNull();
+    expect(queryByRole(region, "button", { name: da.remove("Juli 2026") })).toBeNull();
     expect(rowNames(region)).toHaveLength(6);
-    getByRole(viewSwitch(root), "button", { name: da.difference });
 
     fireEvent.click(getByRole(root, "button", { name: new RegExp(`^${da.period}`) }));
     await app.updateComplete;

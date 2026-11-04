@@ -1,7 +1,9 @@
 import type { Chart } from "../src/charts/echarts";
 
 export interface FakeChart extends Chart {
-  calls: { setOption: number; highlight: number[]; downplay: number[] };
+  calls: { setOption: number; highlight: number[]; downplay: number[]; hideTip: number };
+  /** The setOption and hideTip calls in the order they came. */
+  order: ("setOption" | "hideTip")[];
   clickHandlers: ((p: { dataIndex: number }) => void)[];
 }
 
@@ -14,10 +16,12 @@ export function forgetCharts(): void {
 
 export function createChart(): Chart {
   const chart: FakeChart = {
-    calls: { setOption: 0, highlight: [], downplay: [] },
+    calls: { setOption: 0, highlight: [], downplay: [], hideTip: 0 },
     clickHandlers: [],
+    order: [],
     setOption() {
       chart.calls.setOption += 1;
+      chart.order.push("setOption");
     },
     on(_event, handler) {
       chart.clickHandlers.push(handler);
@@ -27,6 +31,10 @@ export function createChart(): Chart {
     },
     downplay(dataIndex) {
       chart.calls.downplay.push(dataIndex);
+    },
+    hideTip() {
+      chart.calls.hideTip += 1;
+      chart.order.push("hideTip");
     },
     dispose() {},
   };

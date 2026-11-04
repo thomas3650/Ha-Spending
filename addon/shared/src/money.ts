@@ -39,13 +39,6 @@ export interface ChosenNumbers {
   average: Average;
 }
 
-export interface Difference {
-  key: string | null;
-  amount: number;
-  average: number | null;
-  difference: number | null;
-}
-
 const BEFORE_UNITS = 12;
 
 export function compareKeys(a: string | null, b: string | null): number {
@@ -150,29 +143,4 @@ export function keyNumbers(postings: ClassifiedPosting[], t: Timeline): KeyNumbe
 export function chosenUnitNumbers(postings: ClassifiedPosting[], t: Timeline, chosen: Unit): ChosenNumbers {
   const { units, basis } = averageUnits(t, chosen);
   return { amount: unitTotal(postings, chosen), average: average(postings, units, basis) };
-}
-
-export function differences(
-  postings: ClassifiedPosting[],
-  level: Level,
-  t: Timeline,
-  chosen: Unit,
-): Difference[] {
-  const { units } = averageUnits(t, chosen);
-  const sumsOf = (unit: Unit) => new Map(parts(within(postings, unit), level).map((p) => [p.key, p.amount]));
-  const chosenSums = sumsOf(chosen);
-  const unitSums = units.map(sumsOf);
-  const rows = parts(within(postings, t.period), level).map(({ key }) => {
-    const amount = chosenSums.get(key) ?? 0;
-    const avg = averageOf(unitSums.map((sums) => sums.get(key) ?? 0));
-    return { key, amount, average: avg, difference: avg === null ? null : amount - avg };
-  });
-  return rows.sort((a, b) => {
-    if (a.difference === null || b.difference === null) {
-      if (a.difference !== b.difference) return a.difference === null ? 1 : -1;
-    } else if (Math.abs(a.difference) !== Math.abs(b.difference)) {
-      return Math.abs(b.difference) - Math.abs(a.difference);
-    }
-    return compareKeys(a.key, b.key);
-  });
 }

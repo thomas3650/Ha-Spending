@@ -87,7 +87,6 @@ describe("screen 1, all spending", () => {
     expect(barButtons(card)).toHaveLength(10);
     getByText(card, da.average(kr(1159444)));
     expect(getByRole(viewSwitch(root), "button", { name: da.bars }).getAttribute("aria-pressed")).toBe("true");
-    expect(queryByRole(viewSwitch(root), "button", { name: da.difference })).toBeNull();
   });
 
   it("switches to the postings and back", async () => {
@@ -109,37 +108,10 @@ describe("screen 1, all spending", () => {
     expect(location.hash).toBe("");
   });
 
-  it("shows Vis alle on the right card only in full screen", async () => {
-    const { app, root } = await mount("card=postings");
-    const card = getByRole(root, "region", { name: da.postingsTitle });
-    expect(queryByRole(card, "button", { name: da.showAll })).toBeNull();
-    fireEvent.click(getByRole(card, "button", { name: da.fullScreen }));
-    await settle(app);
-    getByRole(getByRole(root, "region", { name: da.postingsTitle }), "button", { name: da.showAll });
-  });
-
-  it("reaches all postings", async () => {
-    const { app, root } = await mount("");
-    fireEvent.click(getByRole(viewSwitch(root), "button", { name: da.postings }));
-    await settle(app);
-    fireEvent.click(getByRole(root, "button", { name: da.fullScreen }));
-    await settle(app);
-    fireEvent.click(getByRole(root, "button", { name: da.showAll }));
-    await settle(app);
-    getByRole(root, "heading", { level: 1, name: da.allPostings });
-    expect(location.hash).toBe("#card=postings&view=all-postings");
-  });
-
-  it("orders the switch Søjler, Posteringer, Butikker, with no Forskel button without a chosen unit", async () => {
+  it("orders the switch Søjler, Posteringer, Butikker", async () => {
     const { root } = await mount("");
     const names = getAllByRole(viewSwitch(root), "button").map((b) => b.textContent?.trim());
     expect(names).toEqual([da.bars, da.postings, da.shops]);
-  });
-
-  it("orders the switch Søjler, Posteringer, Butikker, Forskel with a chosen unit", async () => {
-    const { root } = await mount("unit=2026-07-01");
-    const names = getAllByRole(viewSwitch(root), "button").map((b) => b.textContent?.trim());
-    expect(names).toEqual([da.bars, da.postings, da.shops, da.difference]);
   });
 
   it("keeps the grouping on the bars", async () => {
@@ -277,7 +249,8 @@ describe("the search on Posteringer", () => {
   it("shows the field above no spending in a unit after today", async () => {
     const { root } = await mount("period=custom&from=2026-10-01&to=2026-12-31&unit=2026-12-01&card=postings");
     const card = getByRole(root, "region", { name: da.postingsTitle });
-    getByRole(card, "button", { name: da.remove(unitName(unitAt("2026-12-01", "month", TODAY), "month")) });
+    const trail = getByRole(root, "navigation", { name: da.trail });
+    getByRole(trail, "button", { name: da.remove(unitName(unitAt("2026-12-01", "month", TODAY), "month")) });
     searchbox(card);
     getByText(card, da.noSpending);
   });
@@ -287,18 +260,6 @@ describe("the search on Posteringer", () => {
     const card = getByRole(root, "region", { name: da.postingsTitle });
     searchbox(card);
     getByText(card, da.noSpending);
-  });
-
-  it("opens Alle posteringer with the text from its button", async () => {
-    const { app, root } = await mount("card=postings");
-    fireEvent.click(getByRole(root, "button", { name: da.fullScreen }));
-    await settle(app);
-    await type(app, root, "roma");
-    fireEvent.click(getByRole(root, "button", { name: da.showAll }));
-    await settle(app);
-    getByRole(root, "heading", { level: 1, name: da.allPostings });
-    expect(searchbox(root).value).toBe("roma");
-    summary(root, 2, 50000);
   });
 
   it("finds Danish capitals from small letters", async () => {
