@@ -124,7 +124,7 @@ describe("the unit step after the grouping", () => {
 
   it("an old week's unit that starts mid-month shows no unit step, and month bars", async () => {
     const { root } = await mount("by=week&unit=2026-03-09");
-    expect(queryAllByRole(trail(root), "button")).toHaveLength(0);
+    expect(queryAllByRole(trail(root), "button", { name: new RegExp(`^${da.remove("")}`) })).toHaveLength(0);
     expect(new URLSearchParams(location.hash.slice(1)).get("unit")).toBeNull();
     expect(barButtons(root, da.per("month"))).toHaveLength(10);
     expect(queryByRole(root, "region", { name: da.per("week") })).toBeNull();

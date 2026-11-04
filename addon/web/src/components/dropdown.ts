@@ -1,4 +1,9 @@
-import { css, LitElement, type PropertyDeclarations } from "lit";
+import { css, html, LitElement, type PropertyDeclarations } from "lit";
+
+/** The trail's ▾, with no text node, so the trail's text reads its steps alone (top-filter spec §2.1). */
+export const CARET = html`<svg class="trail-caret" viewBox="0 0 10 10" width="10" height="10" aria-hidden="true" focusable="false">
+  <path d="M2 3.5 5 6.5 8 3.5" />
+</svg>`;
 
 const FOCUSABLE = "a[href], button, input, select, textarea, [tabindex]";
 

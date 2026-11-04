@@ -15,16 +15,18 @@ import { keyNumbersStyles } from "./components/key-numbers";
 import { barsStyles, type UnitSelection } from "./components/bars";
 import { type CircleSelection, circleStyles } from "./components/circle";
 import { detailStyles } from "./components/detail";
+import { levelMenuStyles } from "./components/level-menu";
 import { calendarStyles, periodPickerStyles } from "./components/period-picker";
 import { postingsStyles } from "./components/postings";
 import { sortHeaderStyles } from "./components/sort-header";
 import { searchStyles } from "./components/search";
 import { shopsStyles } from "./components/shops";
 import { subscriptionsStyles } from "./components/subscriptions";
-import { topCardStyles } from "./components/top-card";
+import { type LevelLists, topCardStyles } from "./components/top-card";
 import { LoadError, type LoadErrorCode, loadData, loadHiddenShops, setHiddenShop } from "./data/api";
 import { unitName } from "./format";
 import { da } from "./i18n/da";
+import { levelRows } from "./model/circle";
 import { type ViewContext, viewContext } from "./model/context";
 import { keyCards, objectGroupCards } from "./model/key-numbers";
 import { shownPostingSort, showsCategory } from "./model/postings";
@@ -122,6 +124,7 @@ export class SpendingApp extends LitElement {
     periodPickerStyles,
     calendarStyles,
     topCardStyles,
+    levelMenuStyles,
     keyNumbersStyles,
     circleStyles,
     barsStyles,
@@ -588,6 +591,8 @@ export class SpendingApp extends LitElement {
 
   override render() {
     const ctx = this.load.kind === "ready" ? viewContext(this.load.data, this.state, this.today) : null;
+    const lists: LevelLists | null =
+      ctx === null ? null : { mainGroup: levelRows(ctx, "mainGroup"), category: levelRows(ctx, "category") };
     return html`<main class="page">
       <hs-top-card
         .state=${this.state}
@@ -595,8 +600,12 @@ export class SpendingApp extends LitElement {
         .accounts=${this.accounts}
         .earliest=${this.earliest}
         .unitName=${ctx?.chosen ? unitName(ctx.chosen, ctx.timeline.grouping) : null}
+        .lists=${lists}
         @hs-period=${this.onPeriod}
         @hs-accounts=${this.onAccounts}
+        @set-main-group=${(e: CustomEvent<string | null>) => this.push(setMainGroup(this.state, e.detail))}
+        @set-category=${(e: CustomEvent<CategoryChoice>) =>
+          this.push(setCategory(this.state, e.detail.mainGroup, e.detail.category))}
         @remove-unit=${() => this.removeFromTrail(removeUnit(this.state))}
         @remove-main-group=${() => this.removeFromTrail(removeMainGroup(this.state))}
         @remove-category=${() => this.removeFromTrail(removeCategory(this.state))}

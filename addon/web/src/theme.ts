@@ -97,7 +97,7 @@ export const field = css`
     display: flex;
     flex-direction: column;
     align-items: flex-start;
-    width: var(--hs-field-width, 200px);
+    width: 200px;
     max-width: 100%;
     padding: 6px 36px 6px 12px;
     border: 1px solid var(--hs-field);

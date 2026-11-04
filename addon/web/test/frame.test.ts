@@ -93,8 +93,8 @@ describe("the frame", () => {
   it("opens on I år by month with all accounts, asking for the period's range", async () => {
     const { root, fetch } = await mount("");
     expect(fetch).toHaveBeenCalledWith("api/data?start=2026-01-01&end=2026-10-30", expect.anything());
-    expect(getByRole(root, "heading", { level: 1, name: da.allSpending })).toBeTruthy();
-    getByRole(root, "button", { name: new RegExp(`${da.period}.*${da.presets.thisYear}`) });
+    expect(getByRole(root, "heading", { level: 1 }).textContent?.trim()).toBe(da.presets.thisYear);
+    getByRole(root, "button", { name: da.periodStep(da.presets.thisYear, rangeText({ start: "2026-01-01", end: TODAY })) });
     await findByRole(root, "button", { name: escaped(da.allAccountsCount(2)) });
   });
 
@@ -355,14 +355,14 @@ describe("the frame", () => {
 
   it("the period reads Alt alone before the first answer", async () => {
     const { root } = await mount("period=all", { answer: () => new Promise<Response>(() => {}) });
-    getByRole(root, "button", { name: `${da.period} ${da.presets.all}` });
+    getByRole(root, "button", { name: da.periodStep(da.presets.all, null) });
   });
 
   it("falls back from an unknown main group and replaces the hash", async () => {
     const replace = vi.spyOn(history, "replaceState");
     const push = vi.spyOn(history, "pushState");
     const { root } = await mount("group=Ukendt");
-    expect(getByRole(root, "heading", { level: 1, name: da.allSpending })).toBeTruthy();
+    expect(getByRole(root, "heading", { level: 1 }).textContent?.trim()).toBe(da.presets.thisYear);
     expect(replace).toHaveBeenLastCalledWith(null, "", "#");
     expect(push).not.toHaveBeenCalled();
   });
@@ -380,7 +380,7 @@ describe("the frame", () => {
     const trail = getByRole(root, "navigation", { name: da.trail });
     expect(getByRole(trail, "link", { name: da.allSpending }).getAttribute("href")).toBe("#");
     expect(queryByRole(trail, "link", { name: "Mad" })).toBeNull();
-    getByRole(trail, "heading", { level: 1, name: "Café" });
+    expect(getByRole(trail, "heading", { level: 1 }).textContent?.trim()).toBe("Café");
     await waitFor(() => getByRole(root, "group", { name: da.inPeriod("Café") }));
   });
 });

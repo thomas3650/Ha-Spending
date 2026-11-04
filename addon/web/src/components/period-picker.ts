@@ -8,17 +8,24 @@ import lightCss from "vanilla-calendar-pro/styles/themes/light.css?inline";
 import { longDate, parseTypedDate, rangeText, typedDate } from "../format";
 import { da } from "../i18n/da";
 import { type PeriodChoice, periodOf } from "../state/view";
-import { Dropdown } from "./dropdown";
+import { CARET, Dropdown } from "./dropdown";
 
 const TWO_MONTHS = "(min-width: 600px)";
 const FRAME_MARGIN = 8;
 const YEARS_BEFORE_EARLIEST = 5;
 
-/** `earliest` is undefined until the first answer, when "Alt"'s dates are not known yet. */
-export function periodClosedText(choice: PeriodChoice, today: string, earliest: string | null | undefined): string {
-  if (choice.preset === "all" && earliest === undefined) return da.presets.all;
-  const label = choice.preset === "custom" ? da.customLabel : da.presets[choice.preset];
-  return da.periodClosed(label, rangeText(periodOf(choice, today, earliest ?? null)));
+/**
+ * The trail's period step: the preset's name, or a custom period's dates; its name holds the dates too. `earliest` is
+ * undefined until the first answer, when "Alt"'s dates are not known yet.
+ */
+function periodStep(choice: PeriodChoice, today: string, earliest: string | null | undefined) {
+  if (choice.preset === "all" && earliest === undefined) {
+    return { text: da.presets.all, name: da.periodStep(da.presets.all, null) };
+  }
+  const range = rangeText(periodOf(choice, today, earliest ?? null));
+  if (choice.preset === "custom") return { text: range, name: da.periodStep(da.customLabel, range) };
+  const label = da.presets[choice.preset];
+  return { text: label, name: da.periodStep(label, range) };
 }
 
 function yearOf(date: string): number {
@@ -35,12 +42,13 @@ function monthFrom(date: string, shift: number): { month: number; year: number }
   return { month: index % 12, year: Math.floor(index / 12) };
 }
 
-/** Fires `hs-period` with the chosen PeriodChoice. */
+/** The trail's period step and its panel. Fires `hs-period` with the chosen PeriodChoice. */
 export class PeriodPicker extends Dropdown {
   static override properties: PropertyDeclarations = {
     choice: { attribute: false },
     today: { attribute: false },
     earliest: { attribute: false },
+    heading: { attribute: false },
     fromText: { state: true },
     toText: { state: true },
     checked: { state: true },
@@ -49,6 +57,8 @@ export class PeriodPicker extends Dropdown {
   declare choice: PeriodChoice;
   declare today: string;
   declare earliest: string | null | undefined;
+  /** The last step is the page's heading. */
+  declare heading: boolean;
   declare fromText: string;
   declare toText: string;
   declare private checked: { from: boolean; to: boolean };
@@ -60,6 +70,7 @@ export class PeriodPicker extends Dropdown {
     super();
     this.choice = { preset: "thisYear" };
     this.today = "";
+    this.heading = false;
     this.fromText = "";
     this.toText = "";
     this.checked = { from: false, to: false };
@@ -272,17 +283,18 @@ export class PeriodPicker extends Dropdown {
   }
 
   override render() {
-    const closed = periodClosedText(this.choice, this.today, this.earliest);
+    const step = periodStep(this.choice, this.today, this.earliest);
+    const button = html`<button
+      class="trail-dd"
+      type="button"
+      aria-expanded=${this.open ? "true" : "false"}
+      aria-label=${step.name}
+      @click=${() => this.toggle()}
+    >
+      ${step.text}${CARET}
+    </button>`;
     return html`<div class="dd">
-      <button
-        class="field"
-        type="button"
-        aria-expanded=${this.open ? "true" : "false"}
-        aria-label=${`${da.period} ${closed}`}
-        @click=${() => this.toggle()}
-      >
-        <small>${da.period}</small><span>${closed}</span>
-      </button>
+      ${this.heading ? html`<h1 tabindex="-1">${button}</h1>` : button}
       ${this.open
         ? html`<div class="dd-menu period-menu" tabindex="-1" role="group" aria-label=${da.period}>
             <div class="period-presets">

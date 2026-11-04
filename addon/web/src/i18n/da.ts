@@ -18,6 +18,14 @@ export const da = {
   noCategory: "Uden kategori",
   allPostings: "Alle posteringer",
   trail: "Sti",
+  /** Without a range while "Alt"'s dates are not known yet. */
+  periodStep: (name: string, range: string | null) => (range === null ? `Periode: ${name}` : `Periode: ${name}, ${range}`),
+  switchMainGroup: (name: string) => `Skift hovedgruppe: ${name}`,
+  switchCategory: (name: string) => `Skift kategori: ${name}`,
+  chooseMainGroup: "Vælg hovedgruppe",
+  chooseCategory: "Vælg kategori",
+  mainGroupStep: "Hovedgruppe",
+  categoryStep: "Kategori",
 
   period: "Periode",
   presets: {
@@ -210,7 +218,6 @@ export const da = {
   hiddenUnreadable: "Skjulte butikker kunne ikke hentes.",
   saveFailed: "Kunne ikke gemme. Prøv igen.",
 
-  periodClosed: (label: string, range: string) => `${label} · ${range}`,
 
   perMonth: (value: string) => `${value} pr. måned`,
   billCount: (n: number) => `${n} stk.`,
