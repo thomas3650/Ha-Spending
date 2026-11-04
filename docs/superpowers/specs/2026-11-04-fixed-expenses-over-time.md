@@ -89,7 +89,8 @@ section changes the overview's trail too; it supersedes top filter spec §2.4's 
   chosen one is marked with `aria-current`. Claude's call on the rows.
 - The buttons and their lists follow the trail's other steps (`components/level-menu.ts`): `aria-expanded` and no
   `aria-haspopup`, and the list is a `role="group"` of plain buttons. The branch
-  `fix/filter-follow-ups-and-full-screen-bars` sets that rule; the object-group step (§3.4) follows it too.
+  `fix/filter-follow-ups-and-full-screen-bars` sets that rule; the object-group step (§3.4) follows it too. The build
+  starts from `main` after that branch has merged, so it does not copy the old attribute.
 - With "Alt" grouped by År, the same step switches the year: "Skift år: 2025". Thomas: "hvis alt er valgt kan man også
   skifte år på samme måde".
 - Choosing a row chooses the unit as a bar press does: it pushes a history entry, and a bar press still works.
@@ -119,9 +120,9 @@ Thomas: "hvis kun 1 år er valgt måned er uden årstal". This holds on both scr
 Thomas: "kan vælge mellem de 3 i top baren som i år".
 
 - The step is a button with ▾, like the period. Its text is the chosen object group's title as Firefly III gives it
-  (D38), or **"Alle faste udgifter"** for all of them. Its accessible name is "Skift objektgruppe: Faste udgifter",
-  Claude's call on "Alle faste udgifter"; the mockup wrote the group names joined, which would
-  change the data's own titles.
+  (D38), or **"Alle faste udgifter"** for all of them. Its accessible name is "Skift objektgruppe: Faste udgifter".
+  Claude's call on "Alle faste udgifter"; the mockup wrote the group names joined, which would change the data's own
+  titles.
 - A press opens a list under the step: one row per object group, by name, then **"Alle"**. The rows are the object
   groups the overview's key numbers show (D41's set in `objectGroupCards`: the subscriptions' groups and the groups
   found on the period's postings), so every card's link opens its own group.
