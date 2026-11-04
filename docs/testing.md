@@ -158,7 +158,7 @@ The page's list. Every screenshot is at 1440×960 with the console free of error
     unit's sum and "N stk." as "<group> i <unit>". Also at 1440, 1728, 1024 and 900 px, with no comparison card at any
     of them. At 1440 and 1728 px the cards are a fifth of the row wide and the end of the row is empty, with and without
     a chosen unit.
-31. `46-objektgruppe-link`: the two object group key numbers with their "N posteringer →" links at Alt forbrug and at a
+31. `46-objektgruppe-link`: the two object group key numbers at Alt forbrug and at a
     main group; the link "Vis faste udgifter →" under each opens the Faste udgifter tab in the normal card, and Back
     returns to the card before. At 1440 px.
 32. `47-butikker`: the Butikker card at Alt forbrug, at a main group and at a category (the title "Butikker i Mad"), and
