@@ -94,6 +94,12 @@ describe("money", () => {
 describe("percent", () => {
   it("rounds to whole per cents with a no-break space", () => {
     expect(percent(0.6917)).toBe(`69${nbsp}%`);
+    expect(percent(0.005)).toBe(`1${nbsp}%`);
+  });
+  it("reads a share above zero that rounds to 0 as under 1 %, and exactly 0 as 0 %", () => {
+    expect(percent(0.001)).toBe(`<${nbsp}1${nbsp}%`);
+    expect(percent(-0.001)).toBe(`<${nbsp}1${nbsp}%`);
+    expect(percent(0)).toBe(`0${nbsp}%`);
   });
 });
 

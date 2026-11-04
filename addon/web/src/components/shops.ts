@@ -1,7 +1,7 @@
 import type { HiddenShopChange } from "@ha-spending/shared";
 import { css, html, LitElement, nothing } from "lit";
 import { styleMap } from "lit/directives/style-map.js";
-import { kr } from "../format";
+import { kr, percent } from "../format";
 import { da } from "../i18n/da";
 import { barScale, type ShopList, type ShopRow } from "../model/shops";
 import { fire } from "./chip";
@@ -63,7 +63,7 @@ export class Shops extends LitElement {
       </button>
       <span class="shop-bar" aria-hidden="true"><span style=${styleMap({ width })}></span></span>
       <span class="shop-sum">${kr(r.sum)}</span>
-      <span class="shop-share">${da.share(r.share)}</span>
+      <span class="shop-share">${r.share === null ? "" : percent(r.share)}</span>
       ${this.canHide
         ? html`<button
             type="button"

@@ -146,6 +146,12 @@ describe("the circle", () => {
     expect(getAllByRole(el, "button", { name: /^Café,/ }).length).toBe(1);
   });
 
+  it("names a part with a tiny share under 1 %", async () => {
+    const items = [piece("Stor", 12000000, 0.999), piece("Lille", 20000, 0.001)];
+    const el = await render({ items });
+    getByRole(el, "button", { name: /^Lille, .*<\s1\s%$/ });
+  });
+
   it("turns the ring so the small pieces sit left", () => {
     const items = [piece("a", 69, 0.69), piece("b", 28, 0.28), piece("c", 13, 0.013), piece("d", 12, 0.012)];
     expect(ringStartAngle(items)).toBeCloseTo(175.5, 5);

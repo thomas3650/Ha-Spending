@@ -100,8 +100,10 @@ export function detailKr(ore: number): string {
   return `${ore < 0 && !isZero(text) ? "-" : ""}${text} ${da.kr}`;
 }
 
+/** A share above zero never reads "0 %": what Intl rounds to nothing reads "< 1 %". */
 export function percent(fraction: number): string {
-  return percentFormat.format(Math.abs(fraction));
+  const text = percentFormat.format(Math.abs(fraction));
+  return fraction !== 0 && isZero(text) ? `<\u00A0${percentFormat.format(0.01)}` : text;
 }
 
 export function axisKr(ore: number): string {
