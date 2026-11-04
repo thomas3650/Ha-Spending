@@ -606,3 +606,11 @@ to set their status to `superseded by D<n>`, or to name a part a later decision 
 - **Why:** Thomas did not use the Forskel view, and full screen then needed no button that the key numbers' links
   already replace.
 - **Source:** Thomas, 2026-11-03 and 2026-11-04; [one filter spec](superpowers/specs/2026-11-04-one-filter.md) §4 and §5
+
+### D58: No phone layout
+- **Date:** 2026-11-04 · **Status:** active
+- **Decision:** The page is made for a computer's screen. It has no phone layout, and a problem seen only at phone
+  width, such as a table that scrolls sideways at 420 px, is not fixed. The two halves still stack on a narrow page
+  (D24).
+- **Why:** Thomas uses the page on a computer, full screen, and phone support is not a feature the add-on offers.
+- **Source:** Thomas, 2026-11-04; it closes #49, #93 and #133.
