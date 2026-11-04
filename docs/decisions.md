@@ -693,3 +693,11 @@ to set their status to `superseded by D<n>`, or to name a part a later decision 
 - **Source:** Thomas, 2026-11-04;
   [full-screen bars spec](superpowers/specs/2026-11-04-full-screen-bars-and-follow-ups.md) §1. The height rule is
   Claude's call.
+
+### D68: No test reads the chart's options
+- **Date:** 2026-11-04 · **Status:** active
+- **Decision:** No test reads the options ECharts is given. Wiring that shows only inside the chart, such as the
+  y-axis tick formatter, is guarded by a unit test of the function it calls and by a named Chrome-check step. It
+  follows [D19](#d19-the-charts-are-drawn-by-echarts-and-named-in-the-dom).
+- **Why:** One line of wiring is not worth a kind of test that later tests would copy (#132).
+- **Source:** Claude, 2026-11-04, [full-screen bars spec](superpowers/specs/2026-11-04-full-screen-bars-and-follow-ups.md) §3.

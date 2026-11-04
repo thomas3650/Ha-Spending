@@ -189,11 +189,10 @@ The page's list. Every screenshot is at 1440×960 with the console free of error
     picker's dash stays aligned when a message shows (spec §3.2, §3.3).
 41. `56-filter-soeg`: the quick filter's search over the Posteringer list, in both widths: typing filters the list, and
     the suggestions offer shops with their count and sum.
-42. `57-soejle-under-nul`: a bar below zero: the axis goes only a little below it, with no odd bottom label (spec §5.7).
+42. `57-soejle-under-nul`: a bar below zero (step 50 finds such a bar): the axis goes only a little below it, with no odd bottom label (spec §5.7).
 43. `58-maanedens-dage`: "Sidste måned" and "Denne måned" at Alt forbrug and Mad, at 1440 and 1728 px, normal and full
     screen ([month days spec](superpowers/specs/2026-11-03-month-days.md)). One bar per day, readable axis labels, today
-    lighter with "i gang", the days after today empty, no average line, the tooltip on a day, and a day below zero (if
-    the example data has one) with a "+" in its tooltip. The day bars are not buttons in a one-month period: a click on a day does nothing.
+    lighter with "i gang", the days after today empty, no average line, the tooltip on a day, and a day below zero (step 50). The day bars are not buttons in a one-month period: a click on a day does nothing.
 44. `59-kategori-liste`: at 1440 and 1728 px, the list under the trail's main group and category steps, and under the
     dashed button: the rows are the circle's pieces in its order, each with its colour dot and sum, and the chosen one is
     marked. "Uden hovedgruppe" and "Uden kategori" show when they have a piece. Tab reaches every row in order.
@@ -209,15 +208,13 @@ The page's list. Every screenshot is at 1440×960 with the console free of error
     spec](superpowers/specs/2026-11-03-finer-bars.md)): a custom one-week period, a custom one-month period, "I år" in January, "Sidste måned" and
     "Denne måned", and the detail of a fixed expense on "Sidste måned". The finer bars, their titles, no average line,
     the running unit lighter, the detail's names thinned and readable, and no click on a bar, since the period is the
-    one unit. A day below zero (if the
-    example data has one): its tooltip says "+… kr. retur", and the axis under zero has no minus.
+    one unit. A day below zero (step 50).
 47. `62-et-filter`: the trail as the overview's filter ([one filter spec](superpowers/specs/2026-11-04-one-filter.md)),
     at 1440 and 1728 px, normal and full screen. The trail with its × in the thin light-grey look (B1), the × in a 24 px
     round hit area, hover and focus giving it a light background. Each × removes its step and puts the focus on the
     heading; Back brings the step back. The key numbers with and without a unit; the full-screen button level with the
     tabs in both widths; the bar tooltip hiding when the mouse leaves the chart, and on a window blur. In full screen
-    Posteringer the Kategori column shows from 600 px up. The y-axis of the bars writes its ticks with `axisTickKr`; no
-    test guards that ([#132](https://github.com/thomas3650/Ha-Spending/issues/132)).
+    Posteringer the Kategori column shows from 600 px up. The y-axis of the bars writes its ticks with `axisTickKr`: step 50 and D68.
 48. `63-smaa-rettelser`: the small fixes from the walkthrough ([small walkthrough fixes
     spec](superpowers/specs/2026-11-04-walkthrough-small-fixes.md)), at 1440 and 1728 px, normal and full screen.
     Faste udgifter: a Steget row reads in whole kroner with no øre, and its Beløb shows the same number as the
@@ -231,3 +228,14 @@ The page's list. Every screenshot is at 1440×960 with the console free of error
     Beløb pill empty, open and filled, in all four kinds, and the search and the pill the same height. The sentence
     over the list and "Ryd". The full-screen list with a detail open: no wrapped cells and no Konto column. Back and ⤡
     out of full screen.
+50. `65-fuld-skaerm-soejler`: the full-screen Søjler chart ([full-screen bars spec](superpowers/specs/2026-11-04-full-screen-bars-and-follow-ups.md) §1, [D67](decisions.md)).
+    At 1440 and 1728 px, in full screen on the Søjler tab, the chart reaches the window's bottom edge, and the page does not scroll.
+    In a window about 500 px high, the chart stays 400 px, and the page scrolls.
+    With a unit, a main group and a category chosen, the chart still ends at the window's bottom, with no page scroll.
+    In a window narrow enough for the trail to wrap, the chart is shorter by that line.
+    Back in the normal card, the chart is 400 px.
+    A bar below zero: on Posteringer, search "Retur" to find last month's "Retur …" posting and its category.
+    Choose "Sidste måned" and that category on Søjler.
+    Its day is below zero unless a bigger purchase in that category falls on the same day. Then use the month before, as a custom period.
+    The bar's tooltip says "+… kr. retur", the axis goes only a little below zero, and no tick has a minus.
+    The accessibility tree of the trail's steps and of the Beløb pill shows no "menu", and the empty pill is named "Filtrér på beløb".
