@@ -4,7 +4,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import "../src/components/circle";
 import { parseRichText } from "zrender/lib/graphic/helper/parseText.js";
-import { type CircleItem, type CircleSelection, labelText, ringRadius, ringStartAngle } from "../src/components/circle";
+import { type CircleItem, type CircleSelection, labelText, leaderLine, ringRadius, ringStartAngle } from "../src/components/circle";
 import { kr, partLabel, percent } from "../src/format";
 import { da } from "../src/i18n/da";
 import { partName } from "../src/model/context";
@@ -183,8 +183,18 @@ describe("the circle", () => {
 
   it("grows the ring with the room its labels leave, within limits", () => {
     expect(ringRadius(1000, 400)).toEqual([92, 124]);
+    expect(ringRadius(531, 400)).toEqual([77, 104]);
     expect(ringRadius(500, 400)).toEqual([74, 100]);
     expect(ringRadius(350, 560)).toEqual([60, 81]);
+  });
+
+  it("draws long leader lines only where the smallest ring leaves the labels their whole room", () => {
+    const long = { length: 16, length2: 10 };
+    const short = { length: 6, length2: 8 };
+    expect(leaderLine(1000, 400)).toEqual(long);
+    expect(leaderLine(508, 400)).toEqual(long);
+    expect(leaderLine(507, 400)).toEqual(short);
+    expect(leaderLine(460, 400)).toEqual(short);
   });
 
   it("on a narrow chart lists each part with its amount under the ring, by the same names", async () => {
