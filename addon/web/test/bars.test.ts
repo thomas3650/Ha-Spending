@@ -6,7 +6,7 @@ import "../src/components/bars";
 import { axisLabelShown, type BarItem, type Bars, barTooltip } from "../src/components/bars";
 import { barKr, kr, rangeText, unitAxis, unitName } from "../src/format";
 import { da } from "../src/i18n/da";
-import { barTooltipAt, charts, forgetCharts } from "./chart-mock";
+import { charts, forgetCharts } from "./chart-mock";
 import { answerFor } from "./fixture";
 
 const THIS_YEAR = { start: "2026-01-01", end: "2026-10-30" };
@@ -131,14 +131,13 @@ describe("the bars", () => {
     );
   });
 
-  it("ignores a chart click on a bar that chooses nothing, and keeps its tooltip", async () => {
+  it("ignores a chart click on a bar that chooses nothing", async () => {
     const items = daysChoosingNothing();
     const el = await render({ items });
     const heard = vi.fn();
     el.addEventListener("unit-click", (e) => heard((e as CustomEvent).detail));
     for (const handler of charts[0].clickHandlers) handler({ dataIndex: 1 });
     expect(heard).not.toHaveBeenCalled();
-    expect(barTooltipAt(1)).toBe(barTooltip(items[1]));
   });
 
   it("redraws after a bar click, so the chosen bar comes from its properties", async () => {

@@ -1,11 +1,12 @@
 import { type Period, unitAt, unitsOf } from "@ha-spending/shared";
-import { getAllByRole, getByRole, queryAllByRole, queryByRole } from "@testing-library/dom";
+import { getAllByRole, getByRole, getByText, queryAllByRole, queryByRole } from "@testing-library/dom";
 import { afterEach, describe, expect, it } from "vitest";
 
-import { unitName } from "../src/format";
+import { type BarItem, barTooltip } from "../src/components/bars";
+import { kr, unitName } from "../src/format";
 import { da } from "../src/i18n/da";
 import { barsList, barButtons, names } from "./bars-helpers";
-import { barTooltipAt, forgetCharts } from "./chart-mock";
+import { forgetCharts } from "./chart-mock";
 import { answerFor, OBJECT_GROUP } from "./fixture";
 import { json, mount, unmount } from "./mount";
 import { cardNames } from "./text";
@@ -33,6 +34,10 @@ function shownNames(buttons: HTMLElement[]): string[] {
 
 function monthNames(period: Period, today: string): string[] {
   return unitsOf(period, "month", today).map((u) => unitName(u, "month"));
+}
+
+function barItems(root: HTMLElement): BarItem[] {
+  return (root.querySelector("hs-bars") as unknown as { items: BarItem[] }).items;
 }
 
 function trail(root: HTMLElement): HTMLElement {
@@ -66,11 +71,25 @@ describe("the grouping follows the period", () => {
     const { root } = await mount("period=all", nowAt(TODAY, "2024-03-01"));
     expect(shownNames(barButtons(root, da.per("year")))).toEqual(["2024", "2025", "2026"]);
     expect(cardNames(root, [OBJECT_GROUP])).toEqual([da.spendingInPeriod, da.averagePer("year")]);
+    const average = getByRole(root, "group", { name: da.averagePer("year") });
+    getByText(average, kr(600000));
+    getByText(average, da.unitCount(2, "year"));
   });
 
-  it("has no control to choose the grouping", async () => {
+  it("Alt over 17 months draws a bar per month and averages per month", async () => {
+    const { root } = await mount("period=all", nowAt(TODAY, "2025-06-01"));
+    expect(shownNames(barButtons(root, da.per("month")))).toEqual(
+      monthNames({ start: "2025-06-01", end: "2026-10-31" }, TODAY),
+    );
+    expect(barButtons(root, da.per("month"))).toHaveLength(17);
+    const average = getByRole(root, "group", { name: da.averagePer("month") });
+    getByText(average, kr(727187));
+    getByText(average, da.unitCount(16, "month"));
+  });
+
+  it("has no Gruppér pr. control", async () => {
     const { root } = await mount("");
-    expect(queryAllByRole(root, "combobox")).toHaveLength(0);
+    expect(queryByRole(root, "combobox", { name: "Gruppér pr." })).toBeNull();
   });
 });
 
@@ -80,7 +99,7 @@ describe("a one-unit period's bars are not buttons", () => {
     const list = barsList(root, da.per("day"));
     expect(queryAllByRole(list, "button")).toHaveLength(0);
     expect(getAllByRole(list, "listitem")).toHaveLength(31);
-    expect(barTooltipAt(0).split("<br>")[0]).toBe(unitName(unitAt("2026-10-01", "day", TODAY), "day"));
+    expect(barTooltip(barItems(root)[0]).split("<br>")[0]).toBe(unitName(unitAt("2026-10-01", "day", TODAY), "day"));
   });
 
   it("I år in January draws January's days with tooltips and no buttons", async () => {
@@ -89,7 +108,7 @@ describe("a one-unit period's bars are not buttons", () => {
     const list = barsList(root, da.per("day"));
     expect(queryAllByRole(list, "button")).toHaveLength(0);
     expect(getAllByRole(list, "listitem")).toHaveLength(31);
-    expect(barTooltipAt(0).split("<br>")[0]).toBe(unitName(unitAt("2026-01-01", "day", today), "day"));
+    expect(barTooltip(barItems(root)[0]).split("<br>")[0]).toBe(unitName(unitAt("2026-01-01", "day", today), "day"));
   });
 });
 

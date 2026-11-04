@@ -42,7 +42,10 @@ export function presetPeriod(preset: Preset, today: string, earliest: string | n
   }
 }
 
-/** At most 12 months is grouped by month, longer by year, so a period across a new year still gets months. */
+/**
+ * At most 24 months is grouped by month, longer by year. Up to 24 months by year would hold at most one whole year,
+ * which D16 averages over the years before the data.
+ */
 export function groupingFor(period: Period): "month" | "year" {
-  return period.end < addMonths(period.start, 12) ? "month" : "year";
+  return period.end < addMonths(period.start, 24) ? "month" : "year";
 }

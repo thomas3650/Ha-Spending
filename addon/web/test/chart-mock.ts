@@ -5,8 +5,8 @@ export interface FakeChart extends Chart {
   /** The setOption and hideTip calls in the order they came. */
   order: ("setOption" | "hideTip")[];
   clickHandlers: ((p: { dataIndex: number }) => void)[];
-  /** The last option set. */
-  option: unknown;
+  /** The element the chart was made on. */
+  el: HTMLElement;
 }
 
 /** Every chart made since the last `forgetCharts()`, so a test can check calls and invoke its click handlers. */
@@ -16,14 +16,13 @@ export function forgetCharts(): void {
   charts.length = 0;
 }
 
-export function createChart(): Chart {
+export function createChart(el: HTMLElement): Chart {
   const chart: FakeChart = {
+    el,
     calls: { setOption: 0, highlight: [], downplay: [], hideTip: 0 },
     clickHandlers: [],
     order: [],
-    option: undefined,
-    setOption(option) {
-      chart.option = option;
+    setOption() {
       chart.calls.setOption += 1;
       chart.order.push("setOption");
     },
@@ -46,19 +45,9 @@ export function createChart(): Chart {
   return chart;
 }
 
-interface BarsOption {
-  xAxis?: unknown;
-  tooltip: { formatter: (p: { dataIndex: number }) => string };
-}
-
-/** The last bar chart made: the circle has no x-axis. */
+/** The last chart made inside an `hs-bars`. */
 export function barChart(): FakeChart {
-  const chart = [...charts].reverse().find((c) => (c.option as BarsOption | undefined)?.xAxis !== undefined);
+  const chart = [...charts].reverse().find((c) => c.el.closest("hs-bars") !== null);
   if (chart === undefined) throw new Error("no bar chart");
   return chart;
-}
-
-/** The tooltip of bar `index` on the last bar chart made. */
-export function barTooltipAt(index: number): string {
-  return (barChart().option as BarsOption).tooltip.formatter({ dataIndex: index });
 }

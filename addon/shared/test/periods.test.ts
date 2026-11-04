@@ -34,15 +34,23 @@ describe("presetPeriod", () => {
 });
 
 describe("groupingFor", () => {
-  it("groups a period of at most 12 months by month", () => {
+  it("groups a period of at most 24 months by month", () => {
     expect(groupingFor({ start: "2026-01-01", end: "2026-11-04" })).toBe("month");
     expect(groupingFor({ start: "2025-12-01", end: "2026-02-28" })).toBe("month");
     expect(groupingFor({ start: "2025-11-01", end: "2026-10-31" })).toBe("month");
     expect(groupingFor({ start: "2025-01-01", end: "2025-12-31" })).toBe("month");
+    expect(groupingFor({ start: "2025-01-01", end: "2026-01-01" })).toBe("month");
+    expect(groupingFor({ start: "2025-06-01", end: "2026-11-04" })).toBe("month");
   });
 
   it("groups a longer period by year", () => {
-    expect(groupingFor({ start: "2025-01-01", end: "2026-01-01" })).toBe("year");
     expect(groupingFor({ start: "2024-03-01", end: "2026-11-04" })).toBe("year");
+  });
+
+  it("puts the boundary at the day 24 months after the first", () => {
+    expect(groupingFor({ start: "2025-01-01", end: "2026-12-31" })).toBe("month");
+    expect(groupingFor({ start: "2025-01-01", end: "2027-01-01" })).toBe("year");
+    expect(groupingFor({ start: "2025-01-15", end: "2027-01-14" })).toBe("month");
+    expect(groupingFor({ start: "2025-01-15", end: "2027-01-15" })).toBe("year");
   });
 });
