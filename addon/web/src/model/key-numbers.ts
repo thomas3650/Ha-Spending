@@ -11,6 +11,8 @@ export interface KeyCard {
   value: string;
   sub: string;
   link?: KeyLink;
+  /** The value is an estimate, which the card marks with "ca.". */
+  estimate?: boolean;
 }
 
 /** ctx.parentTotal is already the chosen unit's when one is chosen. */
@@ -77,6 +79,12 @@ function days(period: Period): number {
   return (Date.parse(period.end) - Date.parse(period.start)) / DAY + 1;
 }
 
+/** A sum per month over the period, or null when it is shorter than 28 days. */
+export function perMonth(sum: number, period: Period): number | null {
+  const length = days(period);
+  return length < 28 ? null : sum / (length / MONTH_DAYS);
+}
+
 /** The object groups that a kept bill has or a shown posting in the period is linked to, unsorted. */
 export function objectGroupNames(ctx: ViewContext): string[] {
   const inPeriod = within(ctx.shown, ctx.timeline.period).flatMap((p) =>
@@ -99,7 +107,6 @@ export function objectGroupCards(ctx: ViewContext, href: string): KeyCard[] {
     p.subscription === null ? [] : [{ group: p.subscription.objectGroup, bill: p.subscription.name, amount: p.amount }],
   );
   const names = objectGroupNames(ctx);
-  const length = days(period);
   const link: KeyLink | undefined = ctx.data.subscriptions.length === 0 ? undefined : { kind: "subscriptions", href };
   return names
     .sort((a, b) => a.localeCompare(b, "da"))
@@ -107,12 +114,13 @@ export function objectGroupCards(ctx: ViewContext, href: string): KeyCard[] {
       const payments = linked.filter((l) => l.group === name);
       const bills = new Set(payments.map((l) => l.bill)).size;
       const sum = payments.reduce((acc, l) => acc + l.amount, 0);
+      const average = perMonth(sum, period);
       const sub =
         bills === 0
           ? da.noPayments
-          : unit !== null || length < 28
+          : unit !== null || average === null
             ? da.billCount(bills)
-            : `${da.perMonth(kr(sum / (length / MONTH_DAYS)))} · ${da.billCount(bills)}`;
+            : `${da.perMonth(kr(average))} · ${da.billCount(bills)}`;
       return {
         label: unit === null ? da.inPeriod(name) : da.levelInUnit(name, unit),
         value: kr(sum),

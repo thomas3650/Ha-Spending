@@ -52,14 +52,14 @@ function unbroken(text: string): string {
 
 const STATUS_ORDER: Record<SubscriptionStatus["kind"], number> = { notSeen: 0, risen: 1, expected: 2, paid: 3 };
 
-interface Shown {
+export interface Shown {
   subscription: Subscription;
   next: string | null;
   status: SubscriptionStatus;
 }
 
 /** The answer's today, the day the subscriptions were read, so the statuses match the data (spec §2). */
-function shown(ctx: ViewContext): Shown[] {
+export function shown(ctx: ViewContext): Shown[] {
   const today = ctx.data.today;
   const mainGroups = new Map(ctx.data.categories.map((c) => [c.name, c.mainGroup]));
   const accounts = ctx.state.accounts === null ? null : new Set(ctx.state.accounts);
