@@ -71,16 +71,20 @@ The page has one screen after this change: the overview. "Alle posteringer" beco
 Gruppér pr. goes; the page picks the grouping from the period (Thomas: one year gives months, several years give
 years).
 
-- A period of **at most 12 months** is grouped by **Måned**. A longer one is grouped by **År**. A period counts as at
-  most 12 months when its last day is before the day 12 months after its first day. Claude's call on how "several
-  years" is counted: by the period's length, so a period that crosses a new year inside 12 months still gives months,
-  not two year bars. Examples: "Sidste 3 måneder" in March (December to February) and "Sidste 12 måneder" in November
-  (November to October) give month bars.
+- A period of **at most 24 months** is grouped by **Måned**. A longer one is grouped by **År**. A period counts as at
+  most 24 months when its last day is before the day 24 months after its first day. Claude's call on how "several
+  years" is counted: by the period's length, so a period that crosses a new year still gives months, not two year
+  bars. Examples: "Sidste 3 måneder" in March (December to February) and "Sidste 12 måneder" in November (November to
+  October) give month bars.
+- Why 24 and not 12 (Claude's call during the build): a period of 13 to 24 months grouped by year holds one whole year
+  at most, so D16 makes it a one-unit period for the average, which then looks at the 12 years before the data and
+  shows "–". From 25 months on, a period always holds at least two whole or clipped years, so the average is real. Up
+  to 24 month bars fit the card.
 - **A one-unit period** is a period with exactly one unit of its grouping (`units.length === 1`, as D54 and
   `finerUnits` mean it, not D16's "at most one whole unit"). It still draws finer bars (D51, D54): a one-month period
   draws its days, and "I år" in January (one month unit) draws January's days.
-- So "I år" from February, "Sidste år", "Sidste 12 måneder" and "Alt" with less than 12 months of data draw months;
-  "Alt" over more than 12 months draws years, named by year.
+- So "I år" from February, "Sidste år", "Sidste 12 måneder" and "Alt" with up to 24 months of data draw months;
+  "Alt" over more than 24 months draws years, named by year.
 - Everything that names the grouping follows it as today: the bars, the average key number ("Gennemsnit pr. måned" or
   "pr. år"), the Posteringer group lines and the unit's name.
 - Uge, Kvartal and Dag are no longer chosen. `Grouping` keeps its values: the finer bars still use days (D54).
@@ -291,7 +295,8 @@ Made-up data only. Hard rule 5: behaviour through roles, accessible names and re
 - §2.2: the period step's name is "Periode: I år, …"; pressing it opens the panel; choosing "Sidste år" changes the
   trail and the bars; a custom period shows its dates in the step. On an error the period step and Konti still work.
 - §2.3: "I år" from February, "Sidste 3 måneder" in March and "Sidste 12 måneder" in November give month bars; "Alt"
-  over three years gives three year bars named by year; "Denne måned" and "I år" in January give day bars; the average
+  over three years gives three year bars named by year and a real "Gennemsnit pr. år"; "Alt" over 17 months gives
+  17 month bars and a real monthly average; "Denne måned" and "I år" in January give day bars; the average
   key number names the grouping.
 - §2.4: a bar's button chooses its unit, and the trail shows it after the period; its × and a second press remove it.
   In a one-unit period there are no bar buttons, and a `unit` in the hash shows no unit step.
@@ -338,7 +343,7 @@ Changed in the same PR:
 ## 10. Decisions
 
 - **D59: The trail holds the period, and the grouping follows it.** §2. No Periode or Gruppér pr. field. The period is
-  the trail's first chosen step and opens the Periode panel. At most 12 months group by Måned, longer by År. A
+  the trail's first chosen step and opens the Periode panel. At most 24 months group by Måned, longer by År. A
   one-unit period's finer bars are not buttons. The main group and category steps open lists of the circle's pieces,
   and a dashed button offers the next level.
 - **D60: One full-screen list, in the hash.** §3. Alle posteringer goes; "N posteringer →" opens full-screen
