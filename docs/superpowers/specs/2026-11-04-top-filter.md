@@ -238,8 +238,8 @@ Thomas chose look A of the mockups: a pill like the shop chip, with a symbol and
 Thomas, 2026-11-04: the object-group key numbers' links open the Faste udgifter tab.
 
 - The link under each object-group key number (Abonnementer, Faste udgifter, or whatever Firefly III's object groups
-  are called, D38) reads **"Vis faste udgifter →"** and opens the right card's **Faste udgifter tab** in the normal card.
-  It pushes a history entry. As any card change today, it closes an open detail. Claude's call: the text, since it no
+  are called, D38) reads **"Vis faste udgifter →"** and opens the right card's **Faste udgifter tab** in the normal
+  card. It pushes a history entry. As any card change today, it closes an open detail. Claude's call: the text, since it no
   longer opens postings; and the normal card, since the key numbers are not shown in full screen.
 - The tab keeps grouping by main group (card full-screen spec §2), so the object group's rows sit among the others, told
   apart by their badge. A click on a fixed cost shows its postings in the detail, as today. Claude's call: the tab does
@@ -286,8 +286,8 @@ back. The keys after this change, in this order:
 Made-up data only. Hard rule 5: behaviour through roles, accessible names and rendered text.
 
 - §2.1: the top card has no "Periode" or "Gruppér pr." control; on an empty hash the "Sti" text reads "Alt forbrug ›
-  I år Hovedgruppe", "Alt forbrug" is not a link, and the heading's text is "I år". With a main group chosen, "Alt forbrug"
-  is a link that removes it and keeps the period and the quick filter.
+  I år Hovedgruppe", "Alt forbrug" is not a link, and the heading's text is "I år". With a main group chosen, "Alt
+  forbrug" is a link that removes it and keeps the period and the quick filter.
 - §2.2: the period step's name is "Periode: I år, …"; pressing it opens the panel; choosing "Sidste år" changes the
   trail and the bars; a custom period shows its dates in the step. On an error the period step and Konti still work.
 - §2.3: "I år" from February, "Sidste 3 måneder" in March and "Sidste 12 måneder" in November give month bars; "Alt"
@@ -295,9 +295,9 @@ Made-up data only. Hard rule 5: behaviour through roles, accessible names and re
   key number names the grouping.
 - §2.4: a bar's button chooses its unit, and the trail shows it after the period; its × and a second press remove it.
   In a one-unit period there are no bar buttons, and a `unit` in the hash shows no unit step.
-- §2.5: with a main group chosen, its step ("Skift hovedgruppe: …") opens a list of the circle's main groups with their sums and the chosen one
-  current; choosing another switches and drops the category; a category step switches sideways and keeps the main
-  group. The dashed button's names are "Vælg hovedgruppe" and "Vælg kategori"; in full screen it chooses a main group;
+- §2.5: with a main group chosen, its step ("Skift hovedgruppe: …") opens a list of the circle's main groups with
+  their sums and the chosen one current; choosing another switches and drops the category; a category step switches
+  sideways and keeps the main group. The dashed button's names are "Vælg hovedgruppe" and "Vælg kategori"; in full screen it chooses a main group;
   it is disabled while loading and on an error.
 - §3: "N posteringer →" shows the Posteringer tab in full screen with the trail unchanged, an empty quick filter and an
   open detail closed; the hash has `view=full`; `history.back()` leaves full screen. ⤡ and Escape after the link leave
