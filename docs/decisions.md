@@ -701,3 +701,11 @@ to set their status to `superseded by D<n>`, or to name a part a later decision 
   follows [D19](#d19-the-charts-are-drawn-by-echarts-and-named-in-the-dom).
 - **Why:** One line of wiring is not worth a kind of test that later tests would copy (#132).
 - **Source:** Claude, 2026-11-04, [full-screen bars spec](superpowers/specs/2026-11-04-full-screen-bars-and-follow-ups.md) §3.
+
+### D69: No week or quarter grouping
+- **Date:** 2026-11-04 · **Status:** active
+- **Decision:** The page groups by day, month or year only. A later choice of grouping brings others back with its own
+  spec.
+- **Why:** Since [D59](#d59-the-trail-holds-the-period-and-the-grouping-follows-it) nothing reaches week or quarter,
+  and dead code needs tests and care (#159).
+- **Source:** Claude, 2026-11-04, [small follow-ups spec](superpowers/specs/2026-11-04-small-follow-ups.md) §3.

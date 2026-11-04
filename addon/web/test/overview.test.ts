@@ -280,7 +280,7 @@ describe("the search on Posteringer", () => {
 
   it("holds only the category's matching postings in the chosen unit", async () => {
     const { root } = await mount("group=Mad&category=Caf%C3%A9&unit=2026-07-01&card=postings&q=e");
-    const card = getByRole(root, "region", { name: da.postingsOf("Mad") });
+    const card = getByRole(root, "region", { name: da.postingsOf("Café") });
     expect(postingTexts(card)).toEqual(["Café Søde"]);
     showingSummary(root, 1, 1, 50000);
   });

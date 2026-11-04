@@ -293,7 +293,7 @@ describe("the Butikker card", () => {
     card(root, "Butikker i Mad");
     unmount();
     ({ root } = await mount("group=Mad&category=Caf%C3%A9&card=shops"));
-    card(root, "Butikker i Mad");
+    card(root, "Butikker i Café");
   });
 
   it("lists this year's shops by sum", async () => {

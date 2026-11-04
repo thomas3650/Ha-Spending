@@ -94,7 +94,8 @@ describe("screen 4, a chosen unit", () => {
     getByRole(root, "heading", { level: 1, name: "Mad" });
     getByRole(root, "button", { name: da.remove(julyName()) });
     const card = getByRole(root, "region", { name: da.inUnit(da.categories, julyName()) });
-    getByText(card, da.levelInUnit("Mad", julyName()));
+    getByText(card, "Mad");
+    getByText(card, da.inUnitLine(julyName()));
     expect(card.textContent).toContain(kr(500000));
   });
 
