@@ -15,7 +15,7 @@ its name in code, so the same thing has one name everywhere. The Danish word is 
 | Uden kategori | Uden kategori | `category: null` on a posting ([D15](decisions.md)) |
 | Period | periode | `period` (type `Period`) |
 | Grouping | gruppering | `grouping` (type `Grouping`): follows the period, Måned up to 24 months and År beyond ([D59](decisions.md)) |
-| Unit | enhed | `unit` (type `Unit`): one day, week, month, quarter or year of a period |
+| Unit | enhed | `unit` (type `Unit`): one day, month or year of a period |
 | Timeline | — | `timeline` (type `Timeline`): a period, a grouping, today and the earliest posting |
 | Whole unit | hel enhed | `isWhole`; the rule is in [D16](decisions.md) |
 | Today | i dag | `today`: the day the data was read |

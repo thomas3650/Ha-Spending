@@ -5,13 +5,13 @@ describe("da", () => {
   it("words the average before", () => {
     expect(da.averageBefore(12, "month")).toBe("gns. de 12 måneder før");
     expect(da.averageBefore(7, "month")).toBe("gns. af 7 måneder før");
-    expect(da.averageBefore(1, "week")).toBe("gns. af 1 uge før");
+    expect(da.averageBefore(1, "month")).toBe("gns. af 1 måned før");
   });
   it("counts units", () => {
     expect(da.unitCount(1, "month")).toBe("1 måned");
     expect(da.unitCount(9, "month")).toBe("9 måneder");
     expect(da.unitCount(2, "year")).toBe("2 år");
-    expect(da.unitCount(3, "quarter")).toBe("3 kvartaler");
+    expect(da.unitCount(1, "year")).toBe("1 år");
   });
   it("counts accounts", () => {
     expect(da.allAccountsCount(2)).toBe("Alle konti (2)");

@@ -38,18 +38,6 @@ export function addMonths(date: string, months: number): string {
   return `${pad(targetYear, 4)}-${pad(targetMonth + 1)}-${pad(Math.min(day, lastDay))}`;
 }
 
-/** Monday 1, Sunday 7. */
-export function isoWeekday(date: string): number {
-  return new Date(toUtc(date)).getUTCDay() || 7;
-}
-
-export function isoWeek(date: string): { year: number; week: number } {
-  const thursday = toUtc(addDays(date, 4 - isoWeekday(date)));
-  const year = new Date(thursday).getUTCFullYear();
-  const week = Math.floor((thursday - Date.UTC(year, 0, 1)) / DAY_MS / 7) + 1;
-  return { year, week };
-}
-
 /** Today in the process's time zone (the container's `TZ`), unlike every other function here. */
 export function localToday(now: Date): string {
   return `${pad(now.getFullYear(), 4)}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;

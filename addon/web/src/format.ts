@@ -1,4 +1,4 @@
-import { isDate, isoWeek, type Grouping, type Period, type Unit } from "@ha-spending/shared";
+import { isDate, type Grouping, type Period, type Unit } from "@ha-spending/shared";
 import { da } from "./i18n/da";
 
 const whole = new Intl.NumberFormat("da-DK", { maximumFractionDigits: 0 });
@@ -43,10 +43,6 @@ function upperFirst(text: string): string {
 
 function monthName(date: string): string {
   return longMonth.format(utc(date));
-}
-
-function quarterOf(date: string): number {
-  return Math.ceil(parts(date).month / 3);
 }
 
 function isZero(text: string): boolean {
@@ -144,14 +140,8 @@ export function unitName(unit: Unit, g: Grouping): string {
   switch (g) {
     case "day":
       return tableDate(date);
-    case "week": {
-      const iso = isoWeek(date);
-      return `${da.groupings.week.label} ${iso.week} ${iso.year}`;
-    }
     case "month":
       return `${upperFirst(monthName(date))} ${year}`;
-    case "quarter":
-      return `${quarterOf(date)}. ${da.groupings.quarter.one} ${year}`;
     case "year":
       return String(year);
   }
@@ -163,12 +153,8 @@ export function unitAxis(unit: Unit, g: Grouping): string {
   switch (g) {
     case "day":
       return `${day}.${month}.`;
-    case "week":
-      return `${da.groupings.week.one} ${isoWeek(date).week}`;
     case "month":
       return da.months[month - 1];
-    case "quarter":
-      return da.quarterAxis(quarterOf(date));
     case "year":
       return String(year);
   }

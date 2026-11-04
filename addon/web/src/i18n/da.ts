@@ -96,26 +96,12 @@ export const da = {
       definite: "den dag",
       average: "en gennemsnitlig dag",
     },
-    week: {
-      label: "Uge",
-      one: "uge",
-      many: "uger",
-      definite: "den uge",
-      average: "en gennemsnitlig uge",
-    },
     month: {
       label: "Måned",
       one: "måned",
       many: "måneder",
       definite: "den måned",
       average: "en gennemsnitlig måned",
-    },
-    quarter: {
-      label: "Kvartal",
-      one: "kvartal",
-      many: "kvartaler",
-      definite: "det kvartal",
-      average: "et gennemsnitligt kvartal",
     },
     year: {
       label: "År",
@@ -125,7 +111,6 @@ export const da = {
       average: "et gennemsnitligt år",
     },
   } satisfies Record<Grouping, GroupingTexts>,
-  quarterAxis: (quarter: number) => `K${quarter}`,
 
   spendingInPeriod: "Forbrug i perioden",
   inPeriod: (name: string) => `${name} i perioden`,
