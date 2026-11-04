@@ -110,7 +110,7 @@ describe("a one-month period draws its days", () => {
     unmount();
     const postings = await mount("period=lastMonth&card=postings");
     const card = getByRole(postings.root, "region", { name: da.postingsTitle });
-    const lines = getAllByRole(card, "button").filter((b) => b.hasAttribute("aria-expanded"));
+    const lines = getAllByRole(getByRole(card, "table"), "button").filter((b) => b.hasAttribute("aria-expanded"));
     expect(lines).toHaveLength(1);
     expect(lines[0].textContent).toContain(SEPTEMBER);
   });

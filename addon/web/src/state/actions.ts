@@ -1,4 +1,5 @@
 import { groupingFor, type Level, type SpendingData, unitsOf } from "@ha-spending/shared";
+import type { AmountFilter } from "../model/amount";
 import { type Card, type DetailKey, type PeriodChoice, periodOf, type ViewState } from "./view";
 
 const ALL: Level = { kind: "all" };
@@ -99,6 +100,10 @@ export function openShop(s: ViewState, name: string): ViewState {
 
 export function removeShop(s: ViewState): ViewState {
   return { ...s, shop: null };
+}
+
+export function setAmount(s: ViewState, amount: AmountFilter | null): ViewState {
+  return { ...s, amount };
 }
 
 export function openDetail(s: ViewState, key: DetailKey): ViewState {

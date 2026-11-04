@@ -10,6 +10,7 @@ import {
 import { css, html, LitElement, nothing } from "lit";
 
 import "./components/accounts-picker";
+import { amountPillStyles } from "./components/amount-pill";
 import { dropdownStyles } from "./components/dropdown";
 import { keyNumbersStyles } from "./components/key-numbers";
 import { barsStyles, type UnitSelection } from "./components/bars";
@@ -26,6 +27,7 @@ import { type CategoryChoice, type LevelLists, topCardStyles } from "./component
 import { LoadError, type LoadErrorCode, loadData, loadHiddenShops, setHiddenShop } from "./data/api";
 import { unitName } from "./format";
 import { da } from "./i18n/da";
+import type { AmountFilter } from "./model/amount";
 import { levelRows } from "./model/circle";
 import { type ViewContext, viewContext } from "./model/context";
 import { keyCards, type KeyLink, objectGroupCards } from "./model/key-numbers";
@@ -51,6 +53,7 @@ import {
   removeShop,
   removeUnit,
   setAccounts,
+  setAmount,
   setCard,
   setCategory,
   setFullScreen,
@@ -148,6 +151,7 @@ export class SpendingApp extends LitElement {
     objectGroupMark,
     field,
     dropdownStyles,
+    amountPillStyles,
     periodPickerStyles,
     calendarStyles,
     topCardStyles,
@@ -654,6 +658,7 @@ export class SpendingApp extends LitElement {
           @search-input=${this.onSearch}
           @shop-choose=${this.onShopChoose}
           @shop-remove=${this.onShopRemove}
+          @amount-change=${(e: CustomEvent<AmountFilter | null>) => this.push(setAmount(this.state, e.detail))}
         ></hs-overview>
     `;
   }

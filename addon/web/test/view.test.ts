@@ -10,6 +10,7 @@ import {
   toHash,
   type ViewState,
 } from "../src/state/view";
+import type { AmountFilter } from "../src/model/amount";
 
 const LARGEST: Sort = { column: "amount", descending: true };
 
@@ -30,7 +31,7 @@ describe("the view state's hash", () => {
       fullScreen: true,
       search: "pizza",
       shop: "Netto",
-      amount: { min: 100, max: null },
+      amount: { kind: "about", value: 80_000 },
       detail: { kind: "posting", id: "p1" },
     };
     expect(parseHash("#" + toHash(s))).toEqual(s);
@@ -51,10 +52,10 @@ describe("the view state's hash", () => {
       card: "postings",
       fullScreen: true,
       search: "rema",
-      amount: { min: 500, max: null },
+      amount: { kind: "over", value: 500 },
       detail: { kind: "posting", id: "p 7" },
     };
-    expect(toHash(all)).toBe("card=postings&view=full&q=rema&min=5&detail=p%3Ap+7");
+    expect(toHash(all)).toBe("card=postings&view=full&q=rema&over=5&detail=p%3Ap+7");
     expect(parseHash(toHash(all))).toEqual(all);
     expect(parseHash("detail=p:p1").detail).toEqual({ kind: "posting", id: "p1" });
     expect(DEFAULT_STATE.detail).toBeNull();
@@ -85,12 +86,12 @@ describe("the view state's hash", () => {
     expect(parseHash("#" + toHash(s))).toEqual(s);
   });
 
-  it("round-trips a preset, several accounts and both amount bounds", () => {
+  it("round-trips a preset, several accounts and a Mellem amount", () => {
     const s: ViewState = {
       ...DEFAULT_STATE,
       period: { preset: "lastMonth" },
       accounts: ["1", "2"],
-      amount: { min: 0, max: 500 },
+      amount: { kind: "between", min: 0, max: 500 },
     };
     expect(parseHash(toHash(s))).toEqual(s);
   });
@@ -118,35 +119,64 @@ describe("the view state's hash", () => {
     expect(parseHash("unit=2026-13-01").unit).toBeNull();
     expect(parseHash("card=pie").card).toBe(DEFAULT_STATE.card);
     expect(parseHash("min=500&max=100").amount).toBeNull();
-    expect(parseHash("min=-5").amount).toBeNull();
-    expect(parseHash("min=1.5&max=10").amount).toEqual({ min: 150, max: 1000 });
-    expect(parseHash("min=99999999999999999999").amount).toBeNull();
+    expect(parseHash("under=-5").amount).toBeNull();
+    expect(parseHash("min=1.5&max=10").amount).toEqual({ kind: "between", min: 150, max: 1000 });
+    expect(parseHash("about=99999999999999999999").amount).toBeNull();
     expect(parseHash("view=elsewhere")).toEqual(DEFAULT_STATE);
   });
 
-  it("reads the amount bounds in kroner with a dot for øre, and writes them back (D47)", () => {
+  it("reads the amount in kroner with a dot for øre, and writes it back (D47)", () => {
     const amount = (hash: string) => parseHash(hash).amount;
-    expect(amount("max=1000.50")).toEqual({ min: null, max: 100050 });
-    expect(amount("max=1000.5")).toEqual({ min: null, max: 100050 });
-    expect(amount("max=1000")).toEqual({ min: null, max: 100000 });
-    expect(amount("min=0")).toEqual({ min: 0, max: null });
-    expect(amount("max=1000.505")).toBeNull();
-    expect(amount("max=1,50")).toBeNull();
-    expect(amount("max=.50")).toBeNull();
-    expect(amount("max=1000.")).toBeNull();
-    expect(amount("min=10.50&max=10.25")).toBeNull();
-    for (const range of [
-      { min: null, max: 100050 },
-      { min: 5, max: 100000 },
-      { min: 0, max: 7 },
-    ]) {
-      const s: ViewState = { ...DEFAULT_STATE, amount: range };
-      expect(parseHash(toHash(s))).toEqual(s);
+    expect(amount("under=1000.50")).toEqual({ kind: "under", value: 100050 });
+    expect(amount("under=1000.5")).toEqual({ kind: "under", value: 100050 });
+    expect(amount("under=1000")).toEqual({ kind: "under", value: 100000 });
+    expect(amount("over=0")).toEqual({ kind: "over", value: 0 });
+    for (const bad of ["1000.505", "1,50", ".50", "1000.", "1e3", ""]) {
+      expect(amount(`about=${bad}`)).toBeNull();
+      expect(amount(`under=${bad}`)).toBeNull();
+      expect(amount(`over=${bad}`)).toBeNull();
     }
-    const hash = (min: number | null, max: number | null) => toHash({ ...DEFAULT_STATE, amount: { min, max } });
-    expect(hash(null, 100050)).toBe("max=1000.50");
-    expect(hash(5, 100000)).toBe("min=0.05&max=1000");
-    expect(hash(0, null)).toBe("min=0");
+    expect(amount("min=10.50&max=10.25")).toBeNull();
+    const hash = (filter: AmountFilter) => toHash({ ...DEFAULT_STATE, amount: filter });
+    expect(hash({ kind: "under", value: 100050 })).toBe("under=1000.50");
+    expect(hash({ kind: "between", min: 5, max: 100000 })).toBe("min=0.05&max=1000");
+    expect(hash({ kind: "over", value: 0 })).toBe("over=0");
+  });
+
+  it("round-trips each amount kind", () => {
+    const kinds: AmountFilter[] = [
+      { kind: "about", value: 80_000 },
+      { kind: "under", value: 400_000 },
+      { kind: "over", value: 50_007 },
+      { kind: "between", min: 80_000, max: 120_000 },
+      { kind: "between", min: 0, max: 7 },
+    ];
+    for (const amount of kinds) {
+      const s: ViewState = { ...DEFAULT_STATE, card: "postings", amount };
+      expect(parseHash("#" + toHash(s))).toEqual(s);
+    }
+    expect(toHash({ ...DEFAULT_STATE, amount: { kind: "about", value: 80_000 } })).toBe("about=800");
+    expect(toHash({ ...DEFAULT_STATE, amount: { kind: "between", min: 80_000, max: 120_000 } })).toBe(
+      "min=800&max=1200",
+    );
+  });
+
+  it("reads an old min alone as Over and max alone as Under, and writes them back so", () => {
+    const over = parseHash("#min=500");
+    expect(over.amount).toEqual({ kind: "over", value: 50_000 });
+    expect(toHash(over)).toBe("over=500");
+    const under = parseHash("#max=4000");
+    expect(under.amount).toEqual({ kind: "under", value: 400_000 });
+    expect(toHash(under)).toBe("under=4000");
+  });
+
+  it("reads one amount kind: about, then under, then over, then min and max, the first that parses", () => {
+    expect(parseHash("#about=800&under=5").amount).toEqual({ kind: "about", value: 80_000 });
+    expect(toHash(parseHash("#about=800&under=5"))).toBe("about=800");
+    expect(parseHash("#over=5&under=7").amount).toEqual({ kind: "under", value: 700 });
+    expect(parseHash("#min=1&max=2&over=5").amount).toEqual({ kind: "over", value: 500 });
+    expect(parseHash("#about=x&under=5").amount).toEqual({ kind: "under", value: 500 });
+    expect(parseHash("#min=x&max=10").amount).toEqual({ kind: "under", value: 1_000 });
   });
 
   it("reads and writes the search in both widths", () => {
@@ -165,8 +195,8 @@ describe("the view state's hash", () => {
   });
 
   it("writes the shop right after the search and before the amount", () => {
-    const s: ViewState = { ...DEFAULT_STATE, search: "rema", shop: "Netto", amount: { min: 500, max: null } };
-    expect(toHash(s)).toBe("q=rema&shop=Netto&min=5");
+    const s: ViewState = { ...DEFAULT_STATE, search: "rema", shop: "Netto", amount: { kind: "over", value: 500 } };
+    expect(toHash(s)).toBe("q=rema&shop=Netto&over=5");
   });
 
   it("ignores an old link's sort and object group, and never writes them", () => {

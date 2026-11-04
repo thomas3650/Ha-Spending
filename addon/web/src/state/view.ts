@@ -6,6 +6,7 @@ import {
   PRESETS,
   presetPeriod,
 } from "@ha-spending/shared";
+import type { AmountFilter } from "../model/amount";
 
 export type PeriodChoice = { preset: Preset } | { preset: "custom"; start: string; end: string };
 export type Card = "bars" | "postings" | "subscriptions" | "shops";
@@ -21,12 +22,6 @@ export interface Sorted<C extends string> {
 
 export type Sort = Sorted<PostingColumn>;
 
-/** Whole øre, both bounds included. */
-export interface AmountRange {
-  min: number | null;
-  max: number | null;
-}
-
 export interface ViewState {
   period: PeriodChoice;
   /** null is all accounts, also those that appear later. */
@@ -40,7 +35,7 @@ export interface ViewState {
   /** The quick filter: shared choices that stay when the top filter or the tab changes. */
   search: string;
   shop: string | null;
-  amount: AmountRange | null;
+  amount: AmountFilter | null;
   /** The open detail of a bill or a posting (D44). */
   detail: DetailKey | null;
 }
@@ -114,12 +109,27 @@ function writeKroner(ore: number): string {
   return cents === 0 ? String(kroner) : `${kroner}.${String(cents).padStart(2, "0")}`;
 }
 
-function parseAmount(p: URLSearchParams): AmountRange | null {
+/** One kind only, the first that parses (top-filter spec §6); an old link's `min` or `max` alone is Over or Under. */
+function parseAmount(p: URLSearchParams): AmountFilter | null {
+  for (const kind of ["about", "under", "over"] as const) {
+    const value = readKroner(p.get(kind));
+    if (value !== null) return { kind, value };
+  }
   const min = readKroner(p.get("min"));
   const max = readKroner(p.get("max"));
-  if (min === null && max === null) return null;
-  if (min !== null && max !== null && min > max) return null;
-  return { min, max };
+  if (min !== null && max !== null) return min <= max ? { kind: "between", min, max } : null;
+  if (min !== null) return { kind: "over", value: min };
+  if (max !== null) return { kind: "under", value: max };
+  return null;
+}
+
+function writeAmount(p: URLSearchParams, amount: AmountFilter): void {
+  if (amount.kind === "between") {
+    p.set("min", writeKroner(amount.min));
+    p.set("max", writeKroner(amount.max));
+  } else {
+    p.set(amount.kind, writeKroner(amount.value));
+  }
 }
 
 function parseDetail(value: string | null): DetailKey | null {
@@ -170,8 +180,7 @@ export function toHash(s: ViewState): string {
   if (s.fullScreen) p.set("view", FULL);
   if (s.search !== "") p.set("q", s.search);
   if (s.shop !== null) p.set("shop", s.shop);
-  if (s.amount?.min != null) p.set("min", writeKroner(s.amount.min));
-  if (s.amount?.max != null) p.set("max", writeKroner(s.amount.max));
+  if (s.amount !== null) writeAmount(p, s.amount);
   if (s.detail !== null) p.set("detail", `${s.detail.kind === "subscription" ? "s" : "p"}:${s.detail.id}`);
   return p.toString();
 }

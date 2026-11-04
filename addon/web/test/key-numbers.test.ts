@@ -238,6 +238,38 @@ describe("the first key number's link to Posteringer in full screen", () => {
     expect(searchValue(root)).toBe("Netto");
   });
 
+  it("clears the amount, and ⤡ brings it back", async () => {
+    const under = da.amountName({ kind: "under", value: 450_000 });
+    const { app, root } = await mount("card=postings&under=4500");
+    getByRole(root, "group", { name: under });
+    await follow(app, postingsLink(root));
+    expect(location.hash).toBe("#card=postings&view=full");
+    expect(queryByRole(root, "group", { name: under })).toBeNull();
+    fireEvent.click(fullScreenButton(root));
+    await hashBecomes(app, "#card=postings&under=4500");
+    expect(isFullScreen(root)).toBe(false);
+    getByRole(root, "group", { name: under });
+  });
+
+  it("⤡ after the link keeps an amount set in full screen", async () => {
+    const { app, root } = await mount("card=postings&under=4500");
+    await follow(app, postingsLink(root));
+    const pill = getAllByRole(root, "button", { name: da.amountEmpty }).find((b) => b.hasAttribute("aria-haspopup"));
+    fireEvent.click(pill as HTMLElement);
+    await settle(app);
+    const kinds = getByRole(root, "group", { name: da.amountKindsLabel });
+    fireEvent.click(getByRole(kinds, "button", { name: da.amountKinds.over }));
+    await settle(app);
+    const input = getByRole(root, "textbox", { name: da.amountKinds.over });
+    fireEvent.input(input, { target: { value: "500" } });
+    fireEvent.keyDown(input, { key: "Enter" });
+    await settle(app);
+    expect(location.hash).toBe("#card=postings&view=full&over=500");
+    fireEvent.click(fullScreenButton(root));
+    await hashBecomes(app, "#card=postings&over=500");
+    getByRole(root, "group", { name: da.amountName({ kind: "over", value: 50_000 }) });
+  });
+
   it("⤡ after the link, a row and a search keeps the search typed in full screen", async () => {
     const { app, root } = await mount("card=postings&q=Netto");
     await follow(app, postingsLink(root));

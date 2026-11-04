@@ -90,7 +90,7 @@ describe("a detail's rows", () => {
       { unit },
       { search: "Netto" },
       { shop: "Q8" },
-      { amount: { min: 1, max: 2 } },
+      { amount: { kind: "between", min: 1, max: 2 } },
       { card: "postings", fullScreen: true },
     ];
     for (const state of narrowing) {

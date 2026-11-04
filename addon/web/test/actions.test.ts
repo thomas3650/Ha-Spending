@@ -24,7 +24,9 @@ import {
   setPeriod,
   setFullScreen,
   setSearch,
+  setAmount,
 } from "../src/state/actions";
+import type { AmountFilter } from "../src/model/amount";
 import { DEFAULT_STATE, type DetailKey, type ViewState } from "../src/state/view";
 import { answerFor, SUBSCRIPTIONS } from "./fixture";
 
@@ -106,7 +108,7 @@ describe("the actions", () => {
       card: "bars",
       search: "rema",
       shop: "Netto",
-      amount: { min: 1, max: null },
+      amount: { kind: "under", value: 400_000 },
       detail: { kind: "posting", id: "p23" },
     };
     expect(openPostingsFull(from)).toEqual({
@@ -173,6 +175,23 @@ describe("the actions", () => {
 
   it("sets the search", () => {
     expect(setSearch(DEFAULT_STATE, "pizza").search).toBe("pizza");
+  });
+
+  it("sets and clears the amount, the rest kept", () => {
+    const s: ViewState = { ...DEFAULT_STATE, card: "postings", search: "rema", shop: "Netto", unit: "2026-07-01" };
+    const under: AmountFilter = { kind: "under", value: 400_000 };
+    expect(setAmount(s, under)).toEqual({ ...s, amount: under });
+    expect(setAmount({ ...s, amount: under }, null)).toEqual(s);
+  });
+
+  it("keeps the amount through the tab, the period, the level, Alt forbrug and full screen", () => {
+    const amount: AmountFilter = { kind: "between", min: 80_000, max: 120_000 };
+    const s: ViewState = { ...DEFAULT_STATE, amount, unit: "2026-07-01", card: "postings" };
+    expect(setCard(s, "bars").amount).toEqual(amount);
+    expect(setPeriod(s, { preset: "lastMonth" }).amount).toEqual(amount);
+    expect(openPart(s, "Mad").amount).toEqual(amount);
+    expect(clearChoices({ ...s, level: cafe }).amount).toEqual(amount);
+    expect(setFullScreen(s, true).amount).toEqual(amount);
   });
 });
 

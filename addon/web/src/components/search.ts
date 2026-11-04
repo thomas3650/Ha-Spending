@@ -191,8 +191,17 @@ export const searchStyles = css`
     align-items: center;
     gap: 8px;
   }
+  /* As high as the Beløb pill beside it (top-filter spec §4). */
   hs-search .all-search {
     flex: 1 1 100%;
+    box-sizing: border-box;
+    height: 36px;
+    padding: 0 12px;
+    border: 1px solid var(--hs-field);
+    border-radius: 8px;
+    background: var(--hs-card);
+    color: var(--hs-text);
+    font: inherit;
   }
   .search-chip-row {
     flex-basis: 100%;

@@ -133,9 +133,10 @@ describe("screen 4, a chosen unit", () => {
   it("shows only the unit in Posteringer", async () => {
     const { root } = await mount("unit=2026-07-01&card=postings");
     const card = getByRole(root, "region", { name: da.postingsTitle });
-    const groups = getAllByRole(card, "button", { expanded: true });
+    const table = getByRole(card, "table");
+    const groups = getAllByRole(table, "button", { expanded: true });
     expect(groups).toHaveLength(1);
-    expect(queryByRole(card, "button", { expanded: false })).toBeNull();
+    expect(queryByRole(table, "button", { expanded: false })).toBeNull();
     expect(groups[0]).toBe(getByRole(card, "button", { name: new RegExp(`^${julyName()},`) }));
   });
 });

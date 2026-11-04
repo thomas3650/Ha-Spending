@@ -304,7 +304,7 @@ describe("the postings list", () => {
       const { root } = await mount("period=all&card=postings", { answer });
       try {
         const card = getByRole(root, "region", { name: da.postingsTitle });
-        const groups = groupButtons(card).map((b) => b.textContent?.trim() ?? "");
+        const groups = groupButtons(getByRole(card, "table")).map((b) => b.textContent?.trim() ?? "");
         expect(groups.length).toBeGreaterThan(0);
         for (const group of groups) expect(group).toMatch(/^\d{4}\s/);
         expect(rowOf(card, sep20).textContent).toContain("Abonnementer");

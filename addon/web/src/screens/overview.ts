@@ -1,5 +1,6 @@
 import { keyNumbers, total, within } from "@ha-spending/shared";
 import { css, html, LitElement, nothing } from "lit";
+import "../components/amount-pill";
 import "../components/bars";
 import { detailSplit } from "../components/detail";
 import { fire } from "../components/chip";
@@ -12,6 +13,7 @@ import { count, kr, unitName } from "../format";
 import { da } from "../i18n/da";
 import { barItems, categoryColours, circleItems, circleSpan, circleTotal, partColours } from "../model/circle";
 import { finerUnits, levelName, type ViewContext } from "../model/context";
+import { inAmount } from "../model/amount";
 import { detailView } from "../model/detail";
 import { matches, shopSuggestions } from "../model/filter";
 import { postingList, shownColumns, shownPostingSort, watchCategoryWidth } from "../model/postings";
@@ -147,12 +149,13 @@ export class Overview extends LitElement {
     const search = ctx.state.search;
     const chosen = ctx.chosen;
     const shop = ctx.state.shop;
+    const amount = ctx.state.amount;
     const base = within(ctx.shown, chosen ?? ctx.timeline.period);
-    const postings = base.filter((p) => matches(p, search, shop));
+    const postings = base.filter((p) => matches(p, search, shop) && inAmount(p, amount));
     const g = ctx.timeline.grouping;
     let body: unknown;
     if (postings.length === 0) {
-      const unfiltered = search.trim() === "" && shop === null;
+      const unfiltered = search.trim() === "" && shop === null && amount === null;
       body = html`<p class="empty">${unfiltered ? da.noSpending : da.noMatch}</p>`;
     } else {
       const units = chosen === null ? ctx.units : [chosen];
@@ -172,6 +175,7 @@ export class Overview extends LitElement {
     }
     const above = html`<div class="postings-search-row">
         <hs-search .search=${search} .shop=${shop} .suggestions=${shopSuggestions(base, search)}></hs-search>
+        <hs-amount-pill .amount=${amount}></hs-amount-pill>
       </div>
       <p class="postings-summary">${da.summary(count(postings.length), kr(total(postings)))}</p>`;
     return { above, list: body };
@@ -451,10 +455,11 @@ export const overviewStyles = css`
     color: var(--hs-muted);
     font-size: 12px;
   }
+  /* A chosen shop's chip wraps below the field, so the row aligns to the top and the pill keeps its height. */
   .postings-search-row {
     display: flex;
     gap: 8px;
-    align-items: stretch;
+    align-items: flex-start;
   }
   .postings-summary {
     margin: 12px 0;
