@@ -75,6 +75,8 @@ Claude in Chrome, on the fast loop's made-up data ([D45](decisions.md)).
 - **The real Home Assistant:** this project makes no changes there. A release reaches the house through the house
   session ([`releasing.md`](releasing.md#after-a-release)).
 - **Backlog:** GitHub issues. Anything found that won't be fixed now becomes an issue.
+- **Work on an issue:** an issue gets the `in progress` label when work on it starts, by whichever session or
+  agent takes it. The label comes off if the work stops before the issue is closed.
 - **Reading an issue:** always the whole issue, the body and every comment: `gh issue view <n>` and
   `gh issue view <n> --comments` (outside a terminal, `--comments` prints only the comments). The comments often hold
   the cause or the fix chosen since the issue was filed.
