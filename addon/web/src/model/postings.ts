@@ -7,7 +7,7 @@ import { byDate } from "./filter";
 const WIDE = "(min-width: 600px)";
 
 /** Whether the list shows the Kategori column: in full screen, on a viewport wide enough to hold it with the rest. */
-export function showsCategory(fullScreen: boolean): boolean {
+function showsCategory(fullScreen: boolean): boolean {
   return fullScreen && window.matchMedia(WIDE).matches;
 }
 

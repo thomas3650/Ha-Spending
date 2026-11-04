@@ -114,7 +114,7 @@ export class Postings extends LitElement {
         <div class="posting-name">
           <button type="button" class="row-name" data-detail=${`p:${p.id}`}>${p.shop ?? p.text}</button>${mark}
         </div>
-        ${textOnlyHit(p, this.query) ? html`<span class="posting-bank-text">${p.text}</span>` : nothing}
+        ${textOnlyHit(p, this.query) ? html`<span class="posting-bank-text" title=${p.text}>${p.text}</span>` : nothing}
       </td>
       ${this.showCategory
         ? html`<td class="posting-clip" title=${r.category}>

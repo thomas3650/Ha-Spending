@@ -335,6 +335,7 @@ describe("the search on Posteringer", () => {
       const { app, root } = await mount("card=postings");
       await type(app, root, "roma");
       expect(getAllByTitle(card(root), "Pizzeria Roma")).toHaveLength(2);
+      expect(card(root).textContent).not.toContain("MOBILEPAY 1234");
       summary(root, 2, 50000);
     });
 

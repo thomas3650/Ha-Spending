@@ -1,5 +1,5 @@
 import { type ClassifiedPosting, type Grouping, type Period, type SpendingData, unitsOf } from "@ha-spending/shared";
-import { fireEvent, getAllByRole, getByRole, queryAllByRole, queryByRole } from "@testing-library/dom";
+import { fireEvent, getAllByRole, getAllByTitle, getByRole, queryAllByRole, queryByRole } from "@testing-library/dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import "../src/components/postings";
@@ -33,10 +33,11 @@ function weekList(newestFirst = true): PostingList {
 
 async function render(
   list: PostingList,
-  opts: { showCategory?: boolean; showAccount?: boolean; grouping?: Grouping } = {},
+  opts: { showCategory?: boolean; showAccount?: boolean; grouping?: Grouping; query?: string } = {},
 ) {
   const el = document.createElement("hs-postings");
   el.list = list;
+  el.query = opts.query ?? "";
   el.showCategory = opts.showCategory ?? false;
   if (opts.showAccount !== undefined) el.showAccount = opts.showAccount;
   el.grouping = opts.grouping ?? "month";
@@ -161,6 +162,13 @@ describe("the postings list", () => {
   it("shows the shop, with the shop's name as its title", async () => {
     const el = await render(listOf());
     getAllByRole(el, "cell", { name: "Netto", description: "Netto" });
+  });
+
+  it("gives the bank text under a shop that only the text matched its full text as its title", async () => {
+    const el = await render(listOf(), { query: "4521" });
+    const lines = getAllByTitle(el, "DK NETTO 4521");
+    expect(lines.length).toBeGreaterThan(0);
+    for (const line of lines) expect(line.textContent).toBe("DK NETTO 4521");
   });
 
   it("shows the bank text of a posting with no shop, with its full text as its title", async () => {

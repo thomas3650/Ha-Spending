@@ -398,7 +398,9 @@ describe("the detail in full screen", () => {
     const card = postingsCard(root);
     getByRole(card, "group", { name: "Café Søde" });
     expect(queryByRole(card, "columnheader", { name: da.columns.account })).toBeNull();
-    const list = getByRole(card, "columnheader", { name: da.columns.category }).closest("table") as HTMLElement;
+    const tables = getAllByRole(card, "table");
+    const list = tables.find((t) => queryByRole(t, "columnheader", { name: da.columns.category }));
+    if (list === undefined) throw new Error("no table with Kategori");
     expect(queryAllByRole(list, "cell", { name: "Kreditkort" })).toEqual([]);
     fireEvent.click(getByRole(getByRole(card, "group", { name: "Café Søde" }), "button", { name: da.close }));
     await settle(app);
@@ -418,6 +420,22 @@ describe("the detail in full screen", () => {
     fireEvent.click(getByRole(getByRole(postingsCard(root), "group", { name: "Café Søde" }), "button", { name: da.close }));
     await settle(app);
     expect(sortOf(da.columns.account)).not.toBeNull();
+  });
+
+  it("closing with the row filtered out puts the focus on the card's heading", async () => {
+    const { app, root } = await mountWith("card=postings");
+    await press(app, root);
+    fireEvent.click(rowButton(root, "Café Søde", "2026-10-26"));
+    await settle(app);
+    const box = getByRole(postingsCard(root), "combobox", { name: da.searchLabel });
+    fireEvent.input(box, { target: { value: "netto" } });
+    await settle(app);
+    const cafe = getByRole(postingsCard(root), "group", { name: "Café Søde" });
+    expect(queryAllByRole(postingsCard(root), "button", { name: "Café Søde" })).toEqual([]);
+    fireEvent.click(getByRole(cafe, "button", { name: da.close }));
+    await settle(app);
+    const heading = getByRole(postingsCard(root), "heading", { level: 2, name: da.postingsTitle });
+    expect(app.shadowRoot?.activeElement).toBe(heading);
   });
 
   it("toggling full screen with a detail opened by a row leaves the focus on the button", async () => {

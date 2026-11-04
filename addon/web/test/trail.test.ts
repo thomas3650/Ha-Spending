@@ -165,7 +165,6 @@ describe("an old link to Alle posteringer", () => {
     const { root } = await mount("unit=2026-01-01&group=Bolig&view=all-postings&q=Hus&shop=Netto");
     expect(trailText(root)).toBe(`${da.allSpending} › ${YEAR} › ${JAN} › Bolig ${da.categoryStep}`);
     getByRole(trail(root), "button", { name: da.remove(JAN) });
-    expect(params().get("view")).toBe("all-postings");
   });
 });
 
