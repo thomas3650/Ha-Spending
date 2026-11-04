@@ -101,16 +101,12 @@ describe("screen 2, a main group", () => {
     expect(queryByRole(right, "button", { name: da.remove("Café") })).toBeNull();
   });
 
-  it("titles every tab by the chosen category", async () => {
-    const titles = {
-      postings: da.postingsOf("Café"),
-      shops: da.shopsIn("Café"),
-    };
-    for (const [card, title] of Object.entries(titles)) {
-      const { root } = await mount(`group=Mad&category=Café&card=${card}`);
-      getByRole(root, "region", { name: title });
-      unmount();
-    }
+  it("titles Posteringer and Butikker by the chosen category", async () => {
+    const postings = await mount("group=Mad&category=Café&card=postings");
+    getByRole(postings.root, "region", { name: da.postingsOf("Café") });
+    unmount();
+    const shops = await mount("group=Mad&category=Café&card=shops");
+    getByRole(shops.root, "region", { name: da.shopsIn("Café") });
   });
 
   it("titles the right card by the main group with no category chosen", async () => {

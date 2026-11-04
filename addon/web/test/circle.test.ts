@@ -199,8 +199,13 @@ describe("the circle", () => {
 
   it("shows the unit on its own line between the name and the amount", async () => {
     const el = await render({ items: itemsOf({ kind: "all" }, "mainGroup"), centreName: "Bolig og transport", centreUnit: "i oktober 2026" });
-    getByText(el, "Bolig og transport");
-    getByText(el, "i oktober 2026");
+    const text = getByText(el, "Bolig og transport").parentElement?.textContent ?? "";
+    const name = text.indexOf("Bolig og transport");
+    const unit = text.indexOf("i oktober 2026");
+    const amount = text.search(/kr/);
+    expect(name).toBeGreaterThanOrEqual(0);
+    expect(unit).toBeGreaterThan(name);
+    expect(amount).toBeGreaterThan(unit);
   });
 
   it("draws long leader lines only where the smallest ring leaves the labels their whole room", () => {

@@ -400,6 +400,7 @@ export const circleStyles = [
     .circle-centre-name {
       max-width: var(--hs-hole, none);
       overflow: hidden;
+      overflow-wrap: anywhere;
       display: -webkit-box;
       -webkit-box-orient: vertical;
       -webkit-line-clamp: 2;
