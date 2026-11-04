@@ -206,7 +206,6 @@ export class Overview extends LitElement {
     </p>`;
   }
 
-  /** A chosen category is named by the trail; the title names its main group, so it does not change. */
   private cardTitle(card: Card): string {
     const level = this.ctx.state.level;
     const g = finerUnits(this.ctx)?.grouping ?? this.ctx.timeline.grouping;
@@ -216,7 +215,7 @@ export class Overview extends LitElement {
       if (card === "shops") return da.shops;
       return da.per(g);
     }
-    const name = levelName({ kind: "mainGroup", mainGroup: level.mainGroup });
+    const name = levelName(level);
     if (card === "subscriptions") return da.subscriptionsIn(name);
     if (card === "postings") return da.postingsOf(name);
     if (card === "shops") return da.shopsIn(name);

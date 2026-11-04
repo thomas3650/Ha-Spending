@@ -76,7 +76,7 @@ describe("screen 2, a main group", () => {
     getByText(first, da.shareOf(percent(share(CAFE, MAD) ?? 0), "Mad"), KEEP_NBSP);
     expect(location.hash).toBe("#group=Mad&category=Caf%C3%A9");
     getByText(circleCard(root), da.chosenHint("Mad"));
-    getByRole(root, "region", { name: da.levelPer("Mad", "month") });
+    getByRole(root, "region", { name: da.levelPer("Café", "month") });
 
     fireEvent.click(cafeButton(root));
     await settle(app);
@@ -93,18 +93,37 @@ describe("screen 2, a main group", () => {
     expect(queryByRole(root, "button", { name: da.remove("Café") })).toBeNull();
   });
 
-  it("titles the right card by the main group with a category chosen, with no chip", async () => {
+  it("titles the right card by the chosen category, with no chip", async () => {
     const { root } = await mount("group=Mad&category=Café");
-    const right = getByRole(root, "region", { name: da.levelPer("Mad", "month") });
-    const heading = getByRole(right, "heading", { name: da.levelPer("Mad", "month") });
-    expect(heading.textContent).not.toContain("Café");
+    const right = getByRole(root, "region", { name: da.levelPer("Café", "month") });
+    const heading = getByRole(right, "heading", { name: da.levelPer("Café", "month") });
+    expect(heading.textContent).not.toContain("Mad");
     expect(queryByRole(right, "button", { name: da.remove("Café") })).toBeNull();
   });
 
-  it("titles the postings by the main group, with no chip", async () => {
-    const { root } = await mount("group=Mad&category=Café&card=postings");
-    const right = getByRole(root, "region", { name: da.postingsOf("Mad") });
-    expect(queryByRole(right, "button", { name: da.remove("Café") })).toBeNull();
+  it("titles every tab by the chosen category", async () => {
+    const titles = {
+      postings: da.postingsOf("Café"),
+      shops: da.shopsIn("Café"),
+    };
+    for (const [card, title] of Object.entries(titles)) {
+      const { root } = await mount(`group=Mad&category=Café&card=${card}`);
+      getByRole(root, "region", { name: title });
+      unmount();
+    }
+  });
+
+  it("titles the right card by the main group with no category chosen", async () => {
+    const { root } = await mount("group=Mad");
+    getByRole(root, "region", { name: da.levelPer("Mad", "month") });
+    unmount();
+    const postings = await mount("group=Mad&card=postings");
+    getByRole(postings.root, "region", { name: da.postingsOf("Mad") });
+  });
+
+  it("titles the right card by Uden kategori under a main group", async () => {
+    const { root } = await mount("group=Mad&category=");
+    getByRole(root, "region", { name: da.levelPer(da.noCategory, "month") });
   });
 
   it("shows the key numbers of the main group", async () => {
@@ -144,7 +163,7 @@ describe("screen 2, a main group", () => {
     expectHeading(root, da.noCategory);
     expect(button().getAttribute("aria-pressed")).toBe("true");
     expect(location.hash).toBe("#group=&category=");
-    getByRole(root, "region", { name: da.levelPer(da.noMainGroup, "month") });
+    getByRole(root, "region", { name: da.levelPer(da.noCategory, "month") });
     getByRole(trail(root), "button", { name: da.remove(da.noCategory) });
   });
 
