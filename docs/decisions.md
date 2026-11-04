@@ -770,7 +770,7 @@ to set their status to `superseded by D<n>`, or to name a part a later decision 
     among the short month names; the others do ("okt.").
   - A failed `/api/left-over` is asked again only for a new period or a reload.
 - **Why:** The view is the fixed-expenses view's sibling and uses its way in and out. A failure that is asked again
-  on every render would hammer the server.
+  on every render would put the busy card back and take it out again, moving the cards beside it.
 - **Source:** Thomas chose the table of months and the click on a month, 2026-11-04; [Til overs spec](superpowers/specs/2026-11-04-left-over.md) §2.2, §4.1,
   §4.3 and §6.3. The button in the cell, the hash, the status line, "maj" and the retry rule are Claude's call.
 
@@ -808,10 +808,10 @@ to set their status to `superseded by D<n>`, or to name a part a later decision 
   §5. The hidden columns, the liability and the once-only warnings are Claude's call.
 
 ### D76: `/api/data` and `/api/left-over` share one read
-- **Date:** 2026-11-04 · **Status:** active; the cache's parts extend [D49](#d49-the-server-keeps-the-span-free-parts-per-day-and-reads-a-lists-pages-4-at-a-time)
+- **Date:** 2026-11-04 · **Status:** active
 - **Decision:** The server reads a span's transactions once with `type=all` and keeps the raw groups per span for
   5 minutes, at most 4 spans. Both routes read from it. The span-free parts also hold the revenue and liability
-  accounts.
+  accounts; this extends the cache of [D49](#d49-the-server-keeps-the-span-free-parts-per-day-and-reads-a-lists-pages-4-at-a-time).
 - **Why:** One read for two routes costs Firefly III half as much when the spans are equal. When they differ, as for
   a one-unit period ([D53](#d53-the-key-numbers-have-no-comparisons)), it costs time, not correctness.
 - **Source:** Claude, 2026-11-04, [Til overs spec](superpowers/specs/2026-11-04-left-over.md) §5 and §6.2.
