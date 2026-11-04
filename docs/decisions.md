@@ -732,4 +732,4 @@ to set their status to `superseded by D<n>`, or to name a part a later decision 
 - **Date:** 2026-11-04 · **Status:** active
 - **Decision:** The fixed-expenses view takes the one chunk past 800 kB, so its `chunkSizeWarningLimit` is 900 kB.
 - **Why:** The build should not warn, and the view's own code is the growth.
-- **Source:** Claude, 2026-11-04, [fixed expenses over time spec](superpowers/specs/2026-11-04-fixed-expenses-over-time.md).
+- **Source:** Claude, 2026-11-04, a ruling during the build of the fixed-expenses view.

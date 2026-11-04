@@ -56,8 +56,7 @@ export class FixedList extends LitElement {
         <th scope="rowgroup" colspan=${this.columns() - (this.perBill ? 1 : 2)}>
           ${g.name}<span class="fixed-group-count">${g.count}</span>
         </th>
-        <td class="fixed-amount">${g.sum}</td>
-        ${this.perBill ? nothing : html`<td></td>`}
+        <td class="fixed-amount" colspan=${this.perBill ? 1 : 2}>${g.sum}</td>
       </tr>
       ${g.rows.map((r) => this.row(r))}
     </tbody>`;
@@ -128,11 +127,11 @@ export const fixedListStyles = css`
   }
   /* The badge gives way before the name does. */
   .fixed-list .fixed-name-line .fixed-clip {
-    flex: 0 1 auto;
-    min-width: 4em;
+    flex: none;
+    max-width: 100%;
   }
   .fixed-list .fixed-name-line .object-group-mark {
-    flex: 0 100 auto;
+    flex: 0 1 auto;
     min-width: 0;
     margin-left: 6px;
     overflow: hidden;

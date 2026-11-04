@@ -80,14 +80,24 @@ function husleje(p: Posting): Link {
 }
 
 function answer(
-  opts: { today?: string; bills?: Subscription[]; links?: (p: Posting) => Link; earliest?: string } = {},
+  opts: {
+    today?: string;
+    bills?: Subscription[];
+    links?: (p: Posting) => Link;
+    earliest?: string;
+    /** Made-up postings beside the fixture's, with their own links. */
+    extra?: Posting[];
+  } = {},
 ) {
   return (range: Period) => {
     const data = withSubscriptions(answerFor(range, opts.today ?? TODAY), opts.bills ?? BILLS);
     return json({
       ...data,
       earliestPostingDate: opts.earliest ?? data.earliestPostingDate,
-      postings: data.postings.map((p) => ({ ...p, subscription: (opts.links ?? husleje)(p) })),
+      postings: [
+        ...data.postings.map((p) => ({ ...p, subscription: (opts.links ?? husleje)(p) })),
+        ...(opts.extra ?? []).filter((p) => p.date >= range.start && p.date <= range.end),
+      ],
     });
   };
 }
@@ -535,6 +545,61 @@ describe("the bars' keyboard highlight (D19)", () => {
       expect(chart.calls.downplay.at(-1)).toBe(i);
       expect(chart.series.downplay.at(-1)).toEqual(series);
     }
+  });
+});
+
+describe("the accounts and refunds (spec §5.3)", () => {
+  /** Q8's July posting on Kreditkort, paid through Avis. */
+  const viaCard = (p: Posting): Link =>
+    p.text === "Q8" ? { id: "b2", name: "Avis", objectGroup: "Faste udgifter" } : husleje(p);
+
+  function refund(date: string, amount: number): Posting {
+    return {
+      id: `r-${date}`,
+      groupId: `rg-${date}`,
+      date,
+      text: "Husleje retur",
+      account: "1",
+      category: "Husleje",
+      shop: null,
+      kind: "refund",
+      amount,
+      subscription: { id: "b1", name: "Husleje", objectGroup: "Faste udgifter" },
+    };
+  }
+
+  function paidThisYear(root: HTMLElement): string {
+    return flat(getByRole(root, "group", { name: da.fixed.paidThisYear }).textContent);
+  }
+
+  it("one account narrows Betalt i år, the bars' names and the rows", async () => {
+    const both = await open(OPEN.slice(1), { answer: answer({ links: viaCard }) });
+    expect(barNames(both.root)[6]).toBe(flat(da.fixed.barPaid(month("2026-07-01"), barKr(890000))));
+    unmount();
+    const { root } = await open(`accounts=2&${OPEN.slice(1)}`, { answer: answer({ links: viaCard }) });
+    expect(paidThisYear(root).startsWith(flat(`${da.fixed.paidThisYear} ${kr(90000)} `))).toBe(true);
+    const names = barNames(root);
+    expect(names[6]).toBe(flat(da.fixed.barPaid(month("2026-07-01"), barKr(90000))));
+    expect(names[0]).toBe(flat(da.fixed.barNone(month("2026-01-01"))));
+    expect(names[11]).toBe(flat(da.fixed.barNone(month("2026-12-01"))));
+    const rows = getAllByRole(listRegion(root), "row").filter((r) => queryAllByRole(r, "cell").length > 2);
+    expect(rows.map((r) => flat(queryAllByRole(r, "cell")[0].textContent))).toEqual([shortDate("2026-07-03", TODAY)]);
+  });
+
+  it("a refund linked to a bill lowers its unit's sum and shows in its row", async () => {
+    const { root } = await open(OPEN.slice(1), {
+      answer: answer({ extra: [refund("2026-07-20", -100000), refund("2026-03-20", -100000)] }),
+    });
+    expect(paidThisYear(root).startsWith(flat(`${da.fixed.paidThisYear} ${kr(7000000)} `))).toBe(true);
+    const names = barNames(root);
+    expect(names[6]).toBe(flat(da.fixed.barPaid(month("2026-07-01"), barKr(700000))));
+    // March's Husleje is not linked, so its bar is the refund alone: below zero, as on the overview (D54).
+    expect(names[2]).toBe(flat(da.fixed.barPaid(month("2026-03-01"), barKr(-100000))));
+    const cells = getAllByRole(listRegion(root), "row").map((r) =>
+      queryAllByRole(r, "cell").map((c) => flat(c.textContent)),
+    );
+    const row = cells.find((c) => c[0] === shortDate("2026-07-20", TODAY));
+    expect(row?.slice(3)).toEqual([flat(barKr(-100000)), da.fixed.status.paid(shortDate("2026-07-20", TODAY))]);
   });
 });
 
