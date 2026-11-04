@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.14.0](https://github.com/thomas3650/Ha-Spending/compare/v0.13.0...v0.14.0) (2026-11-04)
+
+
+### Features
+
+* a one-unit period draws finer bars, and a refund below zero reads retur ([#122](https://github.com/thomas3650/Ha-Spending/issues/122)) ([3f8c78b](https://github.com/thomas3650/Ha-Spending/commit/3f8c78b37eac26ccc1d3653b81842af2d86030f2))
+* one filter in the trail, key cards that follow the unit, no Forskel ([#135](https://github.com/thomas3650/Ha-Spending/issues/135)) ([4c7531f](https://github.com/thomas3650/Ha-Spending/commit/4c7531f92fcd2c7037f151c61b18cb9d0e6bd272))
+
 ## [0.13.0](https://github.com/thomas3650/Ha-Spending/compare/v0.12.1...v0.13.0) (2026-11-03)
 
 
