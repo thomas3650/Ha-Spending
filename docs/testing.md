@@ -256,3 +256,13 @@ The page's list. Every screenshot is at 1440×960 with the console free of error
     A chosen unit, and the month step in the trail ([D70](decisions.md)) on the overview and in the view: the dashed
     "Måned", the list with its sums, a month without its year inside one year, and the cross. The colours at Alt
     forbrug, in a main group and in a category. The way out by ← and by Back.
+53. `68-fuld-skaerm-faste-udgifter`: the fixed-expenses view's full screen, tooltip and red Forfalden ([fixed view full
+    screen spec](superpowers/specs/2026-11-04-fixed-view-full-screen.md) §6, [D72](decisions.md)), at 1100, 1200, 1440
+    and 1728 px, at 900 px for the stacked halves, and in a window about 500 px high.
+    From 1200 px up the normal list fits with no sideways scroll, no badge and no cut status or sum, with one object
+    group and with "Alle". At 1100 px nothing is cut off or covered, and any sideways scroll stays inside the list.
+    Each card's "Fuld skærm: …" button: the list's badges in full screen, and the bars reaching the bottom edge, or
+    keeping 400 px and scrolling in the low window.
+    The tooltip on a mixed bar at Alt forbrug and in a main group. Forfalden red in the tab, in the detail's pill and
+    in the list, and the red outline and the legend lines in the bars.
+    Back, Escape twice, and ← out of full screen.

@@ -191,7 +191,7 @@ to set their status to `superseded by D<n>`, or to name a part a later decision 
 - **Source:** Claude, [page plan](superpowers/plans/2026-10-31-page.md)
 
 ### D20: The view state's hash
-- **Date:** 2026-10-31 · **Status:** active; key list superseded by D35, D42, D44, D60, D61 and D66
+- **Date:** 2026-10-31 · **Status:** active; key list superseded by D35, D42, D44, D60, D61, D66 and D72
 - **Decision:**
   - The keys are `period`, `from`, `to`, `by`, `accounts`, `group`, `category`, `unit`, `card`, `view`, `q`, `sort`,
     `min` and `max`, in a `URLSearchParams` string.
@@ -665,7 +665,7 @@ to set their status to `superseded by D<n>`, or to name a part a later decision 
   [small walkthrough fixes spec](superpowers/specs/2026-11-04-walkthrough-small-fixes.md) §1
 
 ### D64: A due payment says Forfalden
-- **Date:** 2026-11-04 · **Status:** active
+- **Date:** 2026-11-04 · **Status:** active; its colour superseded by D72
 - **Decision:**
   - A Forventes whose date is before today reads "Forfalden {date}". On today and later it reads "Forventes {date}".
   - Such a row shows no "næste {date}" under its name.
@@ -741,3 +741,19 @@ to set their status to `superseded by D<n>`, or to name a part a later decision 
 - **Decision:** The fixed-expenses view takes the one chunk past 800 kB, so its `chunkSizeWarningLimit` is 900 kB.
 - **Why:** The build should not warn, and the view's own code is the growth.
 - **Source:** Claude, 2026-11-04, a ruling during the build of the fixed-expenses view.
+
+### D72: Full screen in the fixed-expenses view, one-word statuses, and Forfalden in red
+- **Date:** 2026-11-04 · **Status:** active
+- **Decision:**
+  - Each of the fixed-expenses view's two cards can fill the page; the hash has `full=bars|list` with `view=fixed`.
+    It is a second full screen beside D60's, which it does not change.
+  - The view's payments list has no object-group badge in the normal card, and its status is one word (Betalt,
+    Forventes, Forfalden, Ikke set), since its Dato column holds the date.
+  - A bar's tooltip lists each part's paid and estimated sums.
+  - Forfalden is red in the Faste udgifter tab and in the view's list. In the bars a due estimate is its own segment
+    with a red outline.
+- **Why:** in a walkthrough the list was covered and cut off at a normal width, and Thomas missed room for the
+  payments, the sums per part of a bar, and an overdue payment that stands out.
+- **Source:** Thomas, 2026-11-04, [fixed view full screen spec](superpowers/specs/2026-11-04-fixed-view-full-screen.md).
+  The hash key, the red outline, the detail's red pill, the object group under "Alle", the tooltip's limit and how the
+  list's columns give way are Claude's call.
