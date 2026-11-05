@@ -1048,3 +1048,235 @@ describe("full screen (spec §3)", () => {
     });
   });
 });
+
+describe("the Alle faste udgifter tab (spec §3)", () => {
+  const ALL = `${OPEN}&tab=all`;
+  /** Ended on 31 May: it ran in I år and in May, and not in June. */
+  const ENDED = bill("b5", "Ugeblad", {
+    start: "2025-01-15",
+    end: "2026-05-31",
+    amountMin: 5000,
+    amountMax: 5000,
+    lastPayment: { date: "2026-05-15", amount: 5000, category: "Husleje", account: "1" },
+  });
+
+  function tabs(root: HTMLElement, title = da.fixed.inPeriod): HTMLElement {
+    return getByRole(listRegion(root, title), "group", { name: da.view });
+  }
+
+  function tab(root: HTMLElement, name: string, title?: string): HTMLElement {
+    return getByRole(tabs(root, title), "button", { name });
+  }
+
+  function pressedTab(root: HTMLElement, title?: string): string[] {
+    return getAllByRole(tabs(root, title), "button")
+      .filter((b) => b.getAttribute("aria-pressed") === "true")
+      .map((b) => flat(b.textContent));
+  }
+
+  function detail(root: HTMLElement, name: string): HTMLElement | null {
+    return queryByRole(root, "group", { name });
+  }
+
+  async function fromOverview(opts: MountOptions = {}) {
+    const opened = await open("", opts);
+    await click(opened.app, link(opened.root, FIXED_CARD));
+    expect(location.hash).toBe(OPEN);
+    return opened;
+  }
+
+  async function toAll(app: SpendingApp, root: HTMLElement, title?: string): Promise<void> {
+    await click(app, tab(root, da.allFixed, title));
+  }
+
+  it("the card has the tabs Poster i perioden and Alle faste udgifter, Poster i perioden pressed", async () => {
+    const { root } = await open(OPEN.slice(1));
+    const buttons = getAllByRole(tabs(root), "button");
+    expect(buttons.map((b) => flat(b.textContent))).toEqual([da.fixed.inPeriod, da.allFixed]);
+    expect(buttons.map((b) => b.getAttribute("aria-pressed"))).toEqual(["true", "false"]);
+  });
+
+  it("the heading and the full-screen button's name follow the open tab", async () => {
+    const { app, root } = await open(OPEN.slice(1));
+    getByRole(listRegion(root), "heading", { level: 2, name: da.fixed.inPeriod });
+    await toAll(app, root);
+    const region = listRegion(root, da.allFixed);
+    getByRole(region, "heading", { level: 2, name: da.allFixed });
+    getByRole(region, "button", { name: da.fullScreenOf(da.allFixed) });
+    expect(queryByRole(root, "region", { name: da.fixed.inPeriod })).toBeNull();
+    expect(pressedTab(root, da.allFixed)).toEqual([da.allFixed]);
+    getByRole(region, "button", { name: "Husleje" });
+  });
+
+  it("a tab press writes tab=all after og and replaces the entry, so Escape then leaves the view in one step and Back lands before it", async () => {
+    const { app, root } = await fromOverview();
+    const length = history.length;
+    await toAll(app, root);
+    expect(location.hash).toBe(ALL);
+    expect(history.length).toBe(length);
+    fireEvent.keyDown(window, { key: "Escape" });
+    await hashBecomes(app, "");
+    inOverview(root);
+    history.forward();
+    await hashBecomes(app, ALL);
+    listRegion(root, da.allFixed);
+    history.back();
+    await hashBecomes(app, "");
+    inOverview(root);
+  });
+
+  it("the tab stays when the object group, the period, the unit or the level changes, and in full screen", async () => {
+    const { app, root } = await fromOverview();
+    await toAll(app, root);
+    const groups = await openGroups(app, root, "Faste udgifter");
+    await click(app, getByRole(groups, "button", { name: /^Abonnementer,/ }));
+    expect(location.hash).toBe("#view=fixed&og=Abonnementer&tab=all");
+    expect(pressedTab(root, da.allFixed)).toEqual([da.allFixed]);
+    await click(app, barButtons(root, da.levelPer("Abonnementer", "month"))[9]);
+    expect(location.hash).toBe("#unit=2026-10-01&view=fixed&og=Abonnementer&tab=all");
+    expect(pressedTab(root, da.allFixed)).toEqual([da.allFixed]);
+    await click(app, getByRole(root, "button", { name: da.chooseMainGroup }));
+    await click(app, getByRole(getByRole(root, "group", { name: da.mainGroups }), "button", { name: /^Bolig/ }));
+    expect(location.hash).toBe("#group=Bolig&unit=2026-10-01&view=fixed&og=Abonnementer&tab=all");
+    expect(pressedTab(root, da.allFixed)).toEqual([da.allFixed]);
+    await click(app, getByRole(root, "button", { name: new RegExp(`^${da.period}`) }));
+    await click(app, getByRole(getByRole(root, "group", { name: da.period }), "button", { name: da.presets.lastYear }));
+    expect(location.hash).toBe("#period=lastYear&group=Bolig&view=fixed&tab=all");
+    expect(pressedTab(root, da.allFixed)).toEqual([da.allFixed]);
+    await click(app, getByRole(root, "button", { name: da.fullScreenOf(da.allFixed) }));
+    expect(location.hash).toBe("#period=lastYear&group=Bolig&view=fixed&tab=all&full=list");
+    expect(pressedTab(root, da.allFixed)).toEqual([da.allFixed]);
+    await click(app, tab(root, da.fixed.inPeriod, da.allFixed));
+    await click(app, tab(root, da.allFixed));
+    fireEvent.keyDown(window, { key: "Escape" });
+    await hashBecomes(app, "#period=lastYear&group=Bolig&view=fixed&tab=all");
+    expect(pressedTab(root, da.allFixed)).toEqual([da.allFixed]);
+  });
+
+  it("closing the list's full screen keeps a tab chosen in it", async () => {
+    const { app, root } = await fromOverview();
+    await click(app, getByRole(root, "button", { name: da.fullScreenOf(da.fixed.inPeriod) }));
+    await toAll(app, root);
+    expect(location.hash).toBe(`${ALL}&full=list`);
+    fireEvent.keyDown(window, { key: "Escape" });
+    await hashBecomes(app, ALL);
+    barsRegion(root);
+    expect(pressedTab(root, da.allFixed)).toEqual([da.allFixed]);
+    fireEvent.keyDown(window, { key: "Escape" });
+    await hashBecomes(app, "");
+    inOverview(root);
+  });
+
+  it("opening the view again starts on Poster i perioden", async () => {
+    const { app, root } = await fromOverview();
+    await toAll(app, root);
+    fireEvent.keyDown(window, { key: "Escape" });
+    await hashBecomes(app, "");
+    await click(app, link(root, FIXED_CARD));
+    expect(location.hash).toBe(OPEN);
+    expect(pressedTab(root)).toEqual([da.fixed.inPeriod]);
+  });
+
+  it("the focus stays on the tab's button", async () => {
+    const { app, root } = await open(OPEN.slice(1));
+    const active = () => app.shadowRoot?.activeElement;
+    const all = tab(root, da.allFixed);
+    all.focus();
+    await click(app, all);
+    expect(tab(root, da.allFixed, da.allFixed)).toBe(all);
+    expect(active()).toBe(all);
+    const payments = tab(root, da.fixed.inPeriod, da.allFixed);
+    payments.focus();
+    await click(app, payments);
+    expect(tab(root, da.fixed.inPeriod)).toBe(payments);
+    expect(active()).toBe(payments);
+  });
+
+  it("a row opens its detail with detail=s:<id> after tab=all, and its ← goes back to the list with the focus on the row", async () => {
+    const { app, root } = await fromOverview();
+    await toAll(app, root);
+    const length = history.length;
+    await click(app, getByRole(listRegion(root, da.allFixed), "button", { name: "Husleje" }));
+    expect(location.hash).toBe(`${ALL}&detail=s%3Ab1`);
+    expect(history.length).toBe(length + 1);
+    const region = listRegion(root, da.allFixed);
+    expect(app.shadowRoot?.activeElement).toBe(getByRole(detail(root, "Husleje") as HTMLElement, "heading", { level: 3 }));
+    expect(queryByRole(region, "button", { name: "Husleje" })).toBeNull();
+    getByRole(region, "group", { name: da.view });
+    await click(app, getByRole(region, "button", { name: da.backTo(da.allFixed) }));
+    await hashBecomes(app, ALL);
+    expect(detail(root, "Husleje")).toBeNull();
+    expect(app.shadowRoot?.activeElement).toBe(getByRole(listRegion(root, da.allFixed), "button", { name: "Husleje" }));
+  });
+
+  it("the detail closes when the tab changes, and no detail entry is left: Back then leaves the view", async () => {
+    const { app, root } = await fromOverview();
+    await toAll(app, root);
+    await click(app, getByRole(listRegion(root, da.allFixed), "button", { name: "Husleje" }));
+    const payments = tab(root, da.fixed.inPeriod, da.allFixed);
+    payments.focus();
+    await click(app, payments);
+    await hashBecomes(app, OPEN);
+    expect(detail(root, "Husleje")).toBeNull();
+    listRegion(root);
+    expect(app.shadowRoot?.activeElement).toBe(payments);
+    history.back();
+    await hashBecomes(app, "");
+    inOverview(root);
+  });
+
+  it("the detail closes when a later month takes its row away", async () => {
+    const { app, root } = await open(`${ALL}&detail=s%3Ab5`.slice(1), { answer: answer({ bills: [...BILLS, ENDED] }) });
+    expect(detail(root, "Ugeblad")).not.toBeNull();
+    await click(app, barButtons(root)[4]);
+    expect(location.hash).toBe(`#unit=2026-05-01&view=fixed&og=Faste+udgifter&tab=all&detail=s%3Ab5`);
+    expect(detail(root, "Ugeblad")).not.toBeNull();
+    await click(app, barButtons(root)[5]);
+    expect(location.hash).toBe("#unit=2026-06-01&view=fixed&og=Faste+udgifter&tab=all");
+    expect(detail(root, "Ugeblad")).toBeNull();
+    expect(queryByRole(listRegion(root, da.allFixed), "button", { name: "Ugeblad" })).toBeNull();
+  });
+
+  it("the detail's status reads as the row's in a past month", async () => {
+    const { root } = await open("unit=2026-03-01&view=fixed&og=Faste+udgifter&tab=all&full=list&detail=s%3Ab1");
+    const status = da.status.notSeen(shortDate("2026-03-01", TODAY));
+    const row = getByRole(listRegion(root, da.allFixed), "button", { name: "Husleje" }).closest("tr") as HTMLElement;
+    getByText(row, status);
+    getByText(detail(root, "Husleje") as HTMLElement, status);
+    expect(queryByText(detail(root, "Husleje") as HTMLElement, da.status.paid(shortDate("2026-10-01", TODAY)))).toBeNull();
+  });
+
+  it("Escape closes the detail, then full screen, then the view", async () => {
+    const { app, root } = await fromOverview();
+    await toAll(app, root);
+    await click(app, getByRole(root, "button", { name: da.fullScreenOf(da.allFixed) }));
+    await click(app, getByRole(listRegion(root, da.allFixed), "button", { name: "Husleje" }));
+    expect(location.hash).toBe(`${ALL}&full=list&detail=s%3Ab1`);
+    fireEvent.keyDown(window, { key: "Escape" });
+    await hashBecomes(app, `${ALL}&full=list`);
+    expect(detail(root, "Husleje")).toBeNull();
+    fireEvent.keyDown(window, { key: "Escape" });
+    await hashBecomes(app, ALL);
+    barsRegion(root);
+    fireEvent.keyDown(window, { key: "Escape" });
+    await hashBecomes(app, "");
+    inOverview(root);
+  });
+
+  it("in the list's full screen the tabs stay at its head and the detail stands beside the list", async () => {
+    const { app, root } = await open(`${ALL}&full=list`.slice(1));
+    await click(app, getByRole(listRegion(root, da.allFixed), "button", { name: "Husleje" }));
+    const region = listRegion(root, da.allFixed);
+    expect(pressedTab(root, da.allFixed)).toEqual([da.allFixed]);
+    expect(detail(root, "Husleje")).not.toBeNull();
+    getByRole(region, "button", { name: "Husleje" });
+    expect(queryByRole(region, "button", { name: da.backTo(da.allFixed) })).toBeNull();
+    getByRole(detail(root, "Husleje") as HTMLElement, "button", { name: da.close });
+  });
+
+  it("in I år an ended fixed expense's Om året carries why it is not in the sum", async () => {
+    const { root } = await open(ALL.slice(1), { answer: answer({ bills: [...BILLS, ENDED] }) });
+    const cell = getByTitle(listRegion(root, da.allFixed), da.notInSum(shortDate("2026-05-31", TODAY)));
+    expect(flat(cell.textContent)).toBe(kr(60000));
+  });
+});

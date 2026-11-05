@@ -47,15 +47,22 @@ import {
   objectGroupCards,
   showsLeftOver,
 } from "./model/key-numbers";
+import { detailView } from "./model/detail";
 import { shownColumns, shownPostingSort } from "./model/postings";
 import type { HiddenState } from "./model/shops";
-import { DEFAULT_SUBSCRIPTION_SORT, shownSubscriptionSort, subscriptionFirstDescending } from "./model/subscriptions";
+import {
+  DEFAULT_SUBSCRIPTION_SORT,
+  shownSubscriptionSort,
+  subscriptionFirstDescending,
+  subscriptionTable,
+  tabRows,
+} from "./model/subscriptions";
 import "./screens/fixed";
 import { fixedStyles } from "./screens/fixed";
 import "./screens/left-over";
 import { leftOverStyles } from "./screens/left-over";
 import "./screens/overview";
-import { overviewStyles } from "./screens/overview";
+import { cardSwitchStyles, overviewStyles } from "./screens/overview";
 import {
   chooseShop,
   chooseUnit,
@@ -84,6 +91,7 @@ import {
   setCard,
   setCategory,
   setFixedFull,
+  setFixedTab,
   setFullScreen,
   setMainGroup,
   setPeriod,
@@ -95,6 +103,7 @@ import {
   DEFAULT_STATE,
   type DetailKey,
   type FixedCard,
+  type FixedTab,
   nextSort,
   parseHash,
   type PeriodChoice,
@@ -218,6 +227,7 @@ export class SpendingApp extends LitElement {
     subscriptionsStyles,
     shopsStyles,
     overviewStyles,
+    cardSwitchStyles,
     fixedBarsStyles,
     fixedListStyles,
     fixedStyles,
@@ -358,6 +368,8 @@ export class SpendingApp extends LitElement {
   private afterBack: (() => void) | null = null;
   /** The quick filter a full-screen close had, put back on the entry its Back lands on, so none of it is lost. */
   private quickOnLanding: QuickFilter | null = null;
+  /** The tab the view's full screen had at its close, put back on the entry its Back lands on (spec §3.1). */
+  private tabOnLanding: FixedTab | null = null;
 
   constructor() {
     super();
@@ -379,7 +391,12 @@ export class SpendingApp extends LitElement {
     const next = parseHash(location.hash);
     if (toHash(next) === toHash(this.state)) return;
     const prev = this.state;
-    const same = prev.card === next.card && prev.fullScreen === next.fullScreen;
+    const same =
+      prev.card === next.card &&
+      prev.fullScreen === next.fullScreen &&
+      prev.fixed === next.fixed &&
+      prev.fixedTab === next.fixedTab &&
+      prev.fixedFull === next.fixedFull;
     if (prev.detail !== null && next.detail === null && same) {
       this.closed = prev.detail;
     }
@@ -397,6 +414,13 @@ export class SpendingApp extends LitElement {
     const quick = this.quickOnLanding;
     this.quickOnLanding = null;
     if (quick !== null) this.keepQuickFilter(quick);
+    const tab = this.tabOnLanding;
+    this.tabOnLanding = null;
+    if (tab !== null && this.state.fixed && this.state.fixedTab !== tab) {
+      const next = setFixedTab(this.state, tab);
+      replaceKeepingMarks(`#${toHash(next)}`, "drop");
+      this.change(next);
+    }
     const after = this.afterBack;
     this.afterBack = null;
     after?.();
@@ -568,12 +592,35 @@ export class SpendingApp extends LitElement {
       return;
     }
     if (marks().fixedFull === true) {
+      this.tabOnLanding = off.fixedTab;
       this.change(off);
       this.goBack(1);
       return;
     }
     replaceKeepingMarks(`#${toHash(off)}`, "drop");
     this.change(off);
+  }
+
+  /**
+   * A tab change replaces, so the view's way out stays one step (spec §3.1). A detail's own entry is gone back off
+   * first, so none is left behind. The state is set at once, without the detail's close focusing its row: the focus
+   * stays on the tab's button.
+   */
+  private changeFixedTab(tab: FixedTab): void {
+    if (this.backPending) {
+      this.afterBack = () => this.changeFixedTab(tab);
+      return;
+    }
+    if (!this.state.fixed || this.state.fixedTab === tab) return;
+    const next = closeDetail(setFixedTab(this.state, tab));
+    if (this.state.detail !== null && detailEntry()) {
+      this.change(next);
+      this.afterBack = () => this.changeFixedTab(tab);
+      this.goBack(1);
+      return;
+    }
+    replaceKeepingMarks(`#${toHash(next)}`, "drop");
+    this.change(next);
   }
 
   /** As closeFixed, by the Til overs view's own mark. */
@@ -725,24 +772,25 @@ export class SpendingApp extends LitElement {
 
   private async focusDetail(): Promise<void> {
     const root = this.renderRoot;
-    await root.querySelector<LitElement>("hs-overview")?.updateComplete;
+    await root.querySelector<LitElement>(this.state.fixed ? "hs-fixed" : "hs-overview")?.updateComplete;
     root.querySelector<HTMLElement>("hs-detail h3")?.focus({ preventScroll: this.besideList() });
   }
 
   /** In a split of 1024 px or wider the detail stands beside the list, so a focus must not scroll the page. */
   private besideList(): boolean {
-    return this.state.fullScreen && window.matchMedia("(min-width: 1024px)").matches;
+    const full = this.state.fullScreen || this.state.fixedFull === "list";
+    return full && window.matchMedia("(min-width: 1024px)").matches;
   }
 
   /** The row's button when its list shows it, else the card's heading (detail spec §1.3). */
   private async focusRow(key: DetailKey): Promise<void> {
     const root = this.renderRoot;
-    await root.querySelector<LitElement>("hs-overview")?.updateComplete;
+    await root.querySelector<LitElement>(this.state.fixed ? "hs-fixed" : "hs-overview")?.updateComplete;
     const wanted = `${key.kind === "subscription" ? "s" : "p"}:${key.id}`;
     const button = [...root.querySelectorAll<HTMLElement>("[data-detail]")].find(
       (b) => b.getAttribute("data-detail") === wanted,
     );
-    const heading = root.querySelector<HTMLElement>("#hs-right-title");
+    const heading = root.querySelector<HTMLElement>(this.state.fixed ? "#hs-fixed-list-title" : "#hs-right-title");
     (button ?? heading)?.focus({ preventScroll: this.besideList() });
   }
 
@@ -950,6 +998,11 @@ export class SpendingApp extends LitElement {
     this.postingsSort = nextSort(shownPostingSort(this.postingsSort, columns), column, postingFirstDescending);
   }
 
+  private onSubscriptionSort(event: CustomEvent<SubscriptionColumn>): void {
+    const kept = shownSubscriptionSort(this.subscriptionsSort, this.state.level.kind);
+    this.subscriptionsSort = nextSort(kept, event.detail, subscriptionFirstDescending);
+  }
+
   private ready(ctx: ViewContext) {
     return html`
       ${ctx.data.mainGroupsFound ? nothing : html`<p class="card line status" role="status">${da.noRuleGroup}</p>`}
@@ -963,12 +1016,7 @@ export class SpendingApp extends LitElement {
           .shopsAll=${this.shopsAll}
           .shopsHidden=${this.shopsHidden}
           @posting-sort=${(e: CustomEvent<PostingColumn>) => this.postingSort(e.detail)}
-          @subscription-sort=${(e: CustomEvent<SubscriptionColumn>) =>
-            (this.subscriptionsSort = nextSort(
-              shownSubscriptionSort(this.subscriptionsSort, this.state.level.kind),
-              e.detail,
-              subscriptionFirstDescending,
-            ))}
+          @subscription-sort=${this.onSubscriptionSort}
           @full-screen-toggle=${() => (this.state.fullScreen ? this.closeFullScreen() : this.openFullScreen())}
           @shops-all-toggle=${() => (this.shopsAll = !this.shopsAll)}
           @shops-hidden-toggle=${() => (this.shopsHidden = !this.shopsHidden)}
@@ -991,6 +1039,9 @@ export class SpendingApp extends LitElement {
     this.boxes = view.cards.length;
     const step = objectGroupStep(view.groups, this.state.objectGroup);
     const oneGroup = this.state.objectGroup !== null || step.single;
+    const all = this.state.fixedTab === "all";
+    const key = this.state.detail;
+    const row = all && key?.kind === "subscription" ? tabRows(ctx).find((r) => r.subscription.id === key.id) : undefined;
     return html`
       ${ctx.data.mainGroupsFound ? nothing : html`<p class="card line status" role="status">${da.noRuleGroup}</p>`}
       ${this.state.fixedFull === null
@@ -1001,6 +1052,13 @@ export class SpendingApp extends LitElement {
         .list=${fixedList(view, view.chosen, { full: this.state.fixedFull === "list", oneGroup })}
         .groupTitle=${step.title}
         .full=${this.state.fixedFull}
+        .tab=${this.state.fixedTab}
+        .table=${all ? subscriptionTable(ctx, this.subscriptionsSort) : null}
+        .level=${this.state.level}
+        .detail=${key === null || row === undefined ? null : detailView(key, ctx, row.status)}
+        .marked=${key}
+        @fixed-tab-change=${(e: CustomEvent<FixedTab>) => this.changeFixedTab(e.detail)}
+        @subscription-sort=${this.onSubscriptionSort}
         @unit-click=${(e: CustomEvent<UnitSelection>) => this.push(chooseFixedUnit(this.state, e.detail.fullStart))}
         @fixed-full-toggle=${(e: CustomEvent<FixedCard>) =>
           this.state.fixedFull === null ? this.openFixedFull(e.detail) : this.closeFixedFull()}

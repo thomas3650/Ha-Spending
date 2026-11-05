@@ -429,6 +429,36 @@ export const overviewStyles = css`
     outline: 2px solid var(--hs-accent-text);
     outline-offset: -2px;
   }
+  .half-foot {
+    margin: 12px 0 0;
+    color: var(--hs-muted);
+    font-size: 12px;
+  }
+  /* A chosen shop's chip wraps below the field, so the row aligns to the top and the pill keeps its height. */
+  .postings-search-row {
+    display: flex;
+    gap: 8px;
+    align-items: flex-start;
+  }
+  .postings-clear {
+    margin-left: 8px;
+    padding: 0;
+    font: inherit;
+    color: var(--hs-accent-text);
+    background: none;
+    border: 0;
+    cursor: pointer;
+  }
+  .postings-summary {
+    margin: 12px 0;
+    text-align: right;
+    color: var(--hs-muted);
+    font-variant-numeric: tabular-nums;
+  }
+`;
+
+/** The segmented control at a card's head, the overview's tabs and the fixed-expenses view's. */
+export const cardSwitchStyles = css`
   .card-switch {
     display: inline-flex;
     flex-wrap: wrap;
@@ -468,32 +498,6 @@ export const overviewStyles = css`
       padding: 6px 8px;
       font-size: 14px;
     }
-  }
-  .half-foot {
-    margin: 12px 0 0;
-    color: var(--hs-muted);
-    font-size: 12px;
-  }
-  /* A chosen shop's chip wraps below the field, so the row aligns to the top and the pill keeps its height. */
-  .postings-search-row {
-    display: flex;
-    gap: 8px;
-    align-items: flex-start;
-  }
-  .postings-clear {
-    margin-left: 8px;
-    padding: 0;
-    font: inherit;
-    color: var(--hs-accent-text);
-    background: none;
-    border: 0;
-    cursor: pointer;
-  }
-  .postings-summary {
-    margin: 12px 0;
-    text-align: right;
-    color: var(--hs-muted);
-    font-variant-numeric: tabular-nums;
   }
 `;
 
