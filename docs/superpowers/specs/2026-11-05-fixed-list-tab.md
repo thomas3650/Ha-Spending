@@ -63,6 +63,8 @@ the list it pointed to, and no state keeps a card that is gone.
 | `card=subscriptions` with `view=leftover` | Til overs, as the hash says |
 
 - In every case the state's `card` is `bars`, so leaving the view or Til overs lands on Søjler.
+- In the first row, when the answer has no fixed expenses, `normalise` sends the view back to the overview, as today,
+  and the page lands on Søjler.
 - In the first row, the period, Konti, the level and the quick filter are kept, and a `unit` is dropped: the
   overview's unit and the view's unit are not the same thing. A `detail=s:<id>` is kept and resolves by §3.5. A
   `detail=p:<id>` is dropped.
@@ -84,6 +86,8 @@ the list it pointed to, and no state keeps a card that is gone.
   - A tab change replaces the history entry and keeps the view's marks, so "Alt forbrug", Escape and Back still leave
     the view in one step (§6). Claude's call: the overview's card change pushes, but in the view a push would break
     the way out of D77.
+  - A tab change with a detail open first goes back off the detail's entry, when the detail's open pushed it, and then
+    replaces. So no detail entry is left behind.
 - After a tab change the focus stays on the tab's button.
 - Full screen (`full=list`, D77) fills the page with the right card. Its tabs stay at its head, and the tab chosen
   stays.
@@ -132,8 +136,14 @@ last payment's category, and a payment booked in another category is still the b
 amount) is not a payment here.
 
 **Matching.** A due date is **met** when a payment lies from `due − early` to `due + late` (the windows `nextDate`
-uses: 7 and 5 days, 2 and 2 for weekly). The payment may lie outside the tab's time. A due date is **open** when
-`due + late` is today or later, and it is not met. A due date is **missed** when it is neither met nor open.
+uses: 7 and 5 days, 2 and 2 for weekly). The payment may lie outside the tab's time, as long as it is in the fetched
+range. A due date that is not met is:
+
+- **open** when `due + late` is today or later;
+- **not judged** when its window runs past the fetched range's start or end, so its payment may lie outside the data
+  (a bill due 1 January, in "I år", whose window starts in December). Claude's call: the page does not widen the
+  fetched range for this. A not-judged due date is left out of the time, as if it fell outside it;
+- **missed** otherwise.
 
 **The status of a row**, in the tab's time, for a bill that has not ended before today and a time that ended before
 today (for example January, seen in November):
@@ -141,7 +151,7 @@ today (for example January, seen in November):
 | In the time | Status |
 | --- | --- |
 | A missed due date | **Ikke set** (red, no border) |
-| No missed due date, an open one | today's status for the bill: Forventes or Forfalden (D64, D77) |
+| No missed due date, an open one | **Forfalden** when the open date is before today, **Forventes** otherwise (D64, D77) |
 | Due dates, all met | **Betalt {date}**, the latest met payment's date (green) |
 | No due date | **Næste {date}**, the first due date after the time, by `dueDatesBetween` (grey) |
 
@@ -151,13 +161,18 @@ today (for example January, seen in November):
 **A time that holds today**, or starts after today: the status is today's status, as now (D63, D64, D77), from
 `subscriptionStatus`. Claude's call: a unit that holds today, such as the running month, is such a time.
 
-**A bill that ended before today**, in any time: its rows follow the past-time table over its due dates in the time,
-up to its end. Where that table would read Betalt or Næste, it reads **Sluttet {end}** (grey, no border, for example
-"Sluttet 31. maj"). So a missed last due date reads Ikke set, in the tab and in "Poster i perioden" alike, and an open
-one reads Forventes or Forfalden in both.
+**A bill that ended before today:**
 
-**The Status sort** sorts Ikke set, Forfalden, Steget, Forventes, Betalt, Næste, Sluttet. Steget and Forventes keep
-today's order between them (`STATUS_ORDER`). Claude's call.
+- In a time that ended before today, its row follows the past-time table, over its due dates up to its end. When its
+  end is on or before the time's last day, a Betalt or a Næste reads **Sluttet {end}** instead (grey, no border, for
+  example "Sluttet 31. maj"). In a month before its end, it reads as any other bill: January reads "Betalt {date}".
+- In a time that holds today, it is judged by today's functions, as "Poster i perioden" is (`nextDate`,
+  `subscriptionStatus`, `fixedPayments`). When `nextDate` still gives its last due date (not paid, up to its end),
+  the row reads today's status for it: Ikke set, Forventes or Forfalden. Otherwise it reads **Sluttet {end}**. So the
+  tab and "Poster i perioden" agree on it. An earlier miss of an ended bill shows in neither, as for an active bill.
+
+**The Status sort** keeps today's order (`STATUS_ORDER`, D64) and adds the new statuses after it: Ikke set, Steget,
+Forventes and Forfalden, Betalt, Næste, Sluttet. Claude's call.
 
 ### 3.5 The detail
 
@@ -195,8 +210,8 @@ Everything that reads `data.subscriptions` must allow for an ended bill. Each of
 
 - **No estimates after the end.** `nextDate` and `dueDatesUntil` already stop at `end`. "Resterende udgifter",
   "Estimat for hele …", the hatched bars and the "Forventes" rows of "Poster i perioden" get nothing after the end.
-- **One status in both lists.** The tab reads Ikke set, Forventes or Forfalden for a bill's last due date exactly when
-  "Poster i perioden" shows that due date as not seen or as an estimate (§3.4).
+- **One status in both lists.** In a time that holds today, an ended bill's row in the tab reads Ikke set, Forventes
+  or Forfalden exactly when "Poster i perioden" shows its last due date as not seen or as an estimate (§3.4).
 - **The key numbers' object-group cards.** `objectGroupNames` takes the groups of the bills that ran in the tab's time
   (§3.2), and the groups on the period's linked postings, as today. A kept bill that ended before the period (the
   web widens a one-unit period by 12 units, so this happens) adds no card. The view's object-group step takes its
@@ -247,8 +262,9 @@ right.
 - **On the fixed-expenses view and Til overs, "Alt forbrug" leaves the page** for the overview.
   - A click does what ← did (`closeFixed`, `closeLeftOver` in `app.ts`). It goes back in history when the current
     entry is one the page's open pushed (its marks), and it replaces the entry otherwise.
-  - With a detail open in the view, a click closes the detail and the view together. When the detail's entry was
-    pushed over the view's own, it goes back over both. Otherwise it replaces.
+  - With a detail or full screen open in the view, a click closes them and the view together. It goes back over
+    every entry pushed since the view's open, when all of them carry the view's marks (the view's, full screen's and
+    the detail's). Otherwise it replaces.
   - Its `href` is `#` plus `toHash` of the state the replace would write (`leaveFixed` or `leaveLeftOver`, with the
     card set to bars when it is not a card of the overview). A new tab or a copied link lands there.
   - Claude's call: the click and the `href` can land on different states, since Back returns to the entry before the
@@ -286,7 +302,7 @@ a monthly one whose end date is in the middle of a month, and a yearly one paid 
 
 - **§2:** the overview has the tabs Søjler, Posteringer and Butikker, and no Faste udgifter. The key numbers' links
   open the view on the "Poster i perioden" tab.
-- **§2.1:** each row of the table, with the state's card `bars`; in the first row the period, Konti, the level and a
+- **§2.1:** each row of the table, with the state's card `bars`; with no fixed expenses, the first row lands on Søjler; in the first row the period, Konti, the level and a
   `detail=s:<id>` kept, the unit and a `detail=p:<id>` dropped.
 - **§3.1:** the two tabs by their accessible names; the heading is the open tab's name; `tab=all` in the hash and
   back, read only with `view=fixed`, written after `og`; the tab stays when the object group, the period, the unit or
@@ -308,12 +324,19 @@ a monthly one whose end date is in the middle of a month, and a yearly one paid 
   - a yearly bill in a past month without a due date reads "Næste {date}";
   - a refund only does not meet a due date;
   - a payment booked in another category, at a main-group level, still meets the due date;
-  - an ended bill in "I år" reads "Sluttet {end}", or "Ikke set" when its last due date was missed;
+  - an ended bill reads "Betalt {date}" in a month before its end, and "Sluttet {end}" in its last month;
+  - in "I år", an ended bill reads "Sluttet {end}", or today's Ikke set, Forventes or Forfalden while `nextDate` still
+    gives its last due date, the same as "Poster i perioden";
+  - in "I år", a bill due 1 January and paid in late December: its January due date is not judged, so January reads
+    no Ikke set;
+  - an open due date reads Forfalden before today and Forventes from today;
   - a past time has no Steget;
   - the Status sort order.
 - **§3.5:** a row click opens the detail; ← in the detail goes back to the list, with the focus on the row; the hash
   has `detail=s:<id>` with `view=fixed` and `tab=all`; the detail closes when the tab changes, and when a later
-  month takes its row away; its status reads as the row's; Escape closes the detail, then full screen, then the view.
+  month takes its row away; a tab change with the detail open leaves no detail entry in history; its status reads as
+  the row's; Escape closes the detail, then full screen, then the view; "Alt forbrug" from full screen with a detail
+  open leaves the view in one click.
 - **§4.1:** server: `keepSubscriptions` keeps a bill whose end date is before today and on or after the range's
   start; it leaves out a bill that ended before the range's start, and an inactive bill with or without an end date.
 - **§4.2:** an ended bill adds nothing to "Resterende udgifter", "Estimat for hele …", the bars' estimates or the
