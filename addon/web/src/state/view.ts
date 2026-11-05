@@ -10,6 +10,7 @@ import type { AmountFilter } from "../model/amount";
 
 export type PeriodChoice = { preset: Preset } | { preset: "custom"; start: string; end: string };
 export type FixedCard = "bars" | "list";
+export type FixedTab = "payments" | "all";
 export type Card = "bars" | "postings" | "subscriptions" | "shops";
 export type PostingColumn = "date" | "text" | "category" | "account" | "amount";
 export type SubscriptionColumn = "name" | "category" | "amount" | "perYear" | "status";
@@ -39,6 +40,8 @@ export interface ViewState {
   objectGroup: string | null;
   /** The fixed-expenses view's card that fills the page. Only with `fixed`. */
   fixedFull: FixedCard | null;
+  /** The fixed-expenses view's right card tab. Only with `fixed`. */
+  fixedTab: FixedTab;
   /** The Til overs view replaces the overview; never with `fixed` or full screen. */
   leftOver: boolean;
   /** The quick filter: shared choices that stay when the top filter or the tab changes. */
@@ -59,6 +62,7 @@ export const DEFAULT_STATE: ViewState = {
   fixed: false,
   objectGroup: null,
   fixedFull: null,
+  fixedTab: "payments",
   leftOver: false,
   search: "",
   shop: null,
@@ -155,7 +159,7 @@ function parseDetail(value: string | null): DetailKey | null {
 }
 
 /**
- * What does not parse falls back to DEFAULT_STATE's value (D20); an old link's `sort` is ignored, and `og` and `full`
+ * What does not parse falls back to DEFAULT_STATE's value (D20); an old link's `sort` is ignored, and `og`, `tab` and `full`
  * only count with `view=fixed`. The Til overs view covers every account and all spending, so it drops the filter and
  * the unit.
  */
@@ -177,6 +181,7 @@ export function parseHash(hash: string): ViewState {
     fixed,
     objectGroup: fixed ? p.get("og") || null : null,
     fixedFull: fixed ? (FIXED_CARDS.find((c) => c === p.get("full")) ?? null) : null,
+    fixedTab: fixed && p.get("tab") === "all" ? "all" : "payments",
     leftOver,
     search: p.get("q") ?? DEFAULT_STATE.search,
     shop: p.get("shop") || DEFAULT_STATE.shop,
@@ -208,6 +213,7 @@ export function toHash(s: ViewState): string {
   } else if (s.fixed) {
     p.set("view", FIXED);
     if (s.objectGroup !== null) p.set("og", s.objectGroup);
+    if (s.fixedTab !== DEFAULT_STATE.fixedTab) p.set("tab", s.fixedTab);
     if (s.fixedFull !== null) p.set("full", s.fixedFull);
   } else if (s.fullScreen) {
     p.set("view", FULL);

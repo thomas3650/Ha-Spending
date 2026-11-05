@@ -3,7 +3,8 @@ import type { AmountFilter } from "../model/amount";
 import { viewContext } from "../model/context";
 import { fixedUnits } from "../model/fixed";
 import { objectGroupNames } from "../model/key-numbers";
-import { type Card, type DetailKey, type FixedCard, type PeriodChoice, periodOf, type ViewState } from "./view";
+import { tabRows } from "../model/subscriptions";
+import { type Card, type DetailKey, type FixedCard, type FixedTab, type PeriodChoice, periodOf, type ViewState } from "./view";
 
 const ALL: Level = { kind: "all" };
 
@@ -49,7 +50,7 @@ export function chooseFixedUnit(s: ViewState, fullStart: string): ViewState {
 }
 
 export function openFixed(s: ViewState, objectGroup: string): ViewState {
-  return { ...s, fixed: true, objectGroup, fullScreen: false, fixedFull: null, detail: null };
+  return { ...s, fixed: true, objectGroup, fullScreen: false, fixedFull: null, fixedTab: "payments", detail: null };
 }
 
 export function setObjectGroup(s: ViewState, objectGroup: string | null): ViewState {
@@ -57,7 +58,11 @@ export function setObjectGroup(s: ViewState, objectGroup: string | null): ViewSt
 }
 
 export function leaveFixed(s: ViewState): ViewState {
-  return { ...s, fixed: false, objectGroup: null, fixedFull: null };
+  return { ...s, fixed: false, objectGroup: null, fixedFull: null, fixedTab: "payments", detail: null };
+}
+
+export function setFixedTab(s: ViewState, tab: FixedTab): ViewState {
+  return { ...s, fixedTab: tab };
 }
 
 export function setFixedFull(s: ViewState, card: FixedCard | null): ViewState {
@@ -66,7 +71,7 @@ export function setFixedFull(s: ViewState, card: FixedCard | null): ViewState {
 
 /** Keeps the detail, so the way back finds the overview as it was (spec §6.3). */
 export function openLeftOver(s: ViewState): ViewState {
-  return { ...withoutUnit(s), leftOver: true, fullScreen: false, fixed: false, objectGroup: null, fixedFull: null };
+  return { ...withoutUnit(s), leftOver: true, fullScreen: false, fixed: false, objectGroup: null, fixedFull: null, fixedTab: "payments" };
 }
 
 export function leaveLeftOver(s: ViewState): ViewState {
@@ -170,6 +175,9 @@ export function keepDetail(prev: ViewState, next: ViewState): ViewState {
 export function detailResolves(s: ViewState, data: SpendingData, today: string): boolean {
   const key = s.detail;
   if (key === null) return true;
+  if (s.fixed) {
+    return key.kind === "subscription" && s.fixedTab === "all" && tabRows(viewContext(data, s, today)).some((r) => r.subscription.id === key.id);
+  }
   const listed = (id: string) => data.subscriptions.some((b) => b.id === id);
   if (key.kind === "subscription") return s.card === "subscriptions" && listed(key.id);
   const p = data.postings.find((q) => q.id === key.id);
@@ -221,7 +229,8 @@ export function normalise(s: ViewState, data: SpendingData, today: string): View
     if (data.subscriptions.length === 0) return normalise(leaveFixed(known), data, today);
     const names = objectGroupNames(viewContext(data, known, today));
     const objectGroup = names.length > 1 && known.objectGroup !== null && names.includes(known.objectGroup) ? known.objectGroup : null;
-    return closeDetail({ ...known, objectGroup });
+    const next = { ...known, objectGroup };
+    return detailResolves(next, data, today) ? next : closeDetail(next);
   }
   return detailResolves(known, data, today) ? known : closeDetail(known);
 }

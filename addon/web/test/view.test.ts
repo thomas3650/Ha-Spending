@@ -32,6 +32,7 @@ describe("the view state's hash", () => {
       fixed: false,
       objectGroup: null,
       fixedFull: null,
+      fixedTab: "payments",
       leftOver: false,
       search: "pizza",
       shop: "Netto",
@@ -48,6 +49,28 @@ describe("the view state's hash", () => {
     const list: ViewState = { ...DEFAULT_STATE, fixed: true, objectGroup: "Abonnementer", fixedFull: "list", search: "x" };
     expect(toHash(list)).toBe("view=fixed&og=Abonnementer&full=list&q=x");
     expect(parseHash("#" + toHash(list))).toEqual(list);
+  });
+
+  it("the fixed view's tab round-trips, written after og and before full", () => {
+    const all: ViewState = {
+      ...DEFAULT_STATE,
+      fixed: true,
+      objectGroup: "Abonnementer",
+      fixedTab: "all",
+      fixedFull: "list",
+    };
+    expect(toHash(all)).toBe("view=fixed&og=Abonnementer&tab=all&full=list");
+    expect(parseHash("#" + toHash(all))).toEqual(all);
+    const noGroup: ViewState = { ...DEFAULT_STATE, fixed: true, fixedTab: "all" };
+    expect(toHash(noGroup)).toBe("view=fixed&tab=all");
+    expect(parseHash("#view=fixed&tab=all")).toEqual(noGroup);
+  });
+
+  it("reads another tab value, or tab without view=fixed, as the payments tab", () => {
+    expect(parseHash("view=fixed&tab=other").fixedTab).toBe("payments");
+    expect(parseHash("tab=all").fixedTab).toBe("payments");
+    expect(parseHash("view=full&tab=all").fixedTab).toBe("payments");
+    expect(parseHash("view=leftover&tab=all").fixedTab).toBe("payments");
   });
 
   it("reads another full value, or full without view=fixed, as null", () => {

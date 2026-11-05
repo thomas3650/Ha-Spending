@@ -31,6 +31,7 @@ import {
   setSearch,
   setAmount,
   setObjectGroup,
+  setFixedTab,
 } from "../src/state/actions";
 import type { AmountFilter } from "../src/model/amount";
 import { DEFAULT_STATE, type DetailKey, type ViewState } from "../src/state/view";
@@ -520,10 +521,52 @@ describe("the fixed-expenses view", () => {
     expect(n.objectGroup).toBeNull();
   });
 
-  it("normalise drops the detail in the fixed view", () => {
-    const withDetail: ViewState = { ...fixed, card: "subscriptions", detail: { kind: "subscription", id: "b1" } };
-    expect(normalise({ ...withDetail, fixed: false, objectGroup: null }, withBills, today).detail).not.toBeNull();
-    expect(normalise(withDetail, withBills, today).detail).toBeNull();
+  describe("the Alle faste udgifter tab", () => {
+    const bill = { kind: "subscription", id: "b1" } as const;
+    const ended = { ...SUBSCRIPTIONS[0], id: "b9", name: "Avis", end: "2026-05-31" };
+    const withEnded = { ...withBills, subscriptions: [...SUBSCRIPTIONS, ended] };
+    const all: ViewState = { ...DEFAULT_STATE, fixed: true, fixedTab: "all", detail: bill };
+
+    it("openFixed and openLeftOver start on the payments tab", () => {
+      expect(openFixed({ ...DEFAULT_STATE, fixedTab: "all" }, "Abonnementer").fixedTab).toBe("payments");
+      expect(openLeftOver({ ...fixed, fixedTab: "all" }).fixedTab).toBe("payments");
+    });
+
+    it("leaveFixed drops the tab and the detail", () => {
+      expect(leaveFixed({ ...all, objectGroup: "Abonnementer", fixedFull: "list" })).toEqual(DEFAULT_STATE);
+    });
+
+    it("setFixedTab changes only the tab", () => {
+      const s: ViewState = {
+        ...fixed,
+        fixedFull: "list",
+        unit: "2026-07-01",
+        level: mad,
+        accounts: ["1"],
+      };
+      expect(setFixedTab(s, "all")).toEqual({ ...s, fixedTab: "all" });
+    });
+
+    it("normalise keeps the detail of a row of the tab", () => {
+      expect(normalise(all, withBills, today).detail).toEqual(bill);
+    });
+
+    it("normalise closes the detail on the payments tab and for a posting's key", () => {
+      expect(normalise({ ...all, fixedTab: "payments" }, withBills, today).detail).toBeNull();
+      expect(normalise({ ...all, detail: { kind: "posting", id: "p1" } }, withBills, today).detail).toBeNull();
+    });
+
+    it("normalise closes the detail when a later month takes the row away", () => {
+      const may: ViewState = { ...all, unit: "2026-05-01", detail: { kind: "subscription", id: "b9" } };
+      expect(normalise(may, withEnded, today).detail).toEqual({ kind: "subscription", id: "b9" });
+      expect(normalise({ ...may, unit: "2026-06-01" }, withEnded, today).detail).toBeNull();
+    });
+
+    it("an unknown og with detail=s: of a row under Alle keeps the detail", () => {
+      const n = normalise({ ...all, objectGroup: "Ukendt" }, withBills, today);
+      expect(n.objectGroup).toBeNull();
+      expect(n.detail).toEqual(bill);
+    });
   });
 });
 
