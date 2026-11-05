@@ -25,6 +25,8 @@ const TODAY = "2026-10-30";
 const FIXED_CARD = da.inPeriod("Faste udgifter");
 const SUBS_CARD = da.inPeriod("Abonnementer");
 const OPEN = "#view=fixed&og=Faste+udgifter";
+/** "stk.", the count's word without its number. */
+const COUNT_WORD = da.billCount(0).replace(/^0 /, "");
 
 function bill(id: string, name: string, extra: Partial<Subscription>): Subscription {
   return {
@@ -499,7 +501,7 @@ describe("the trail (spec §3.1, §3.4)", () => {
         ? { id: "b7", name: "Pizzaabonnement", objectGroup: "Abonnementer" }
         : husleje(p);
     const { app, root } = await open("", { answer: answer({ bills: [HUSLEJE, AVIS], links: pizza }) });
-    expect(getByRole(root, "group", { name: SUBS_CARD }).textContent).not.toContain(da.billCount(0).replace(/^0 /, ""));
+    expect(getByRole(root, "group", { name: SUBS_CARD }).textContent).not.toContain(COUNT_WORD);
     await click(app, link(root, SUBS_CARD));
     expect(location.hash).toBe("#view=fixed&og=Abonnementer");
     const list = await openGroups(app, root, "Abonnementer");
@@ -1412,9 +1414,11 @@ describe("the Alle faste udgifter tab (spec §3)", () => {
     expect(queryByRole(listRegion(february.root, da.allFixed), "button", { name: "Vand" })).toBeNull();
   });
 
-  it("in I år an ended fixed expense's Om året carries why it is not in the sum", async () => {
+  it("in I år an ended fixed expense's Om året carries why it is not in the sum, as its tooltip and as text", async () => {
     const { root } = await open(ALL.slice(1), { answer: answer({ bills: [...BILLS, ENDED] }) });
-    const cell = getByTitle(listRegion(root, da.allFixed), da.notInSum(shortDate("2026-05-31", TODAY)));
-    expect(flat(cell.textContent)).toBe(kr(60000));
+    const why = da.notInSum(shortDate("2026-05-31", TODAY));
+    const cell = getByTitle(listRegion(root, da.allFixed), why);
+    expect(flat(cell.textContent)).toBe(flat(`${kr(60000)} ${why}`));
+    getByText(cell, why);
   });
 });

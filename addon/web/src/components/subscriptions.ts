@@ -68,7 +68,7 @@ export class Subscriptions extends LitElement {
         class="subscription-amount subscription-nowrap ${r.notInSum === null ? "" : "subscription-not-in-sum"}"
         title=${r.notInSum ?? nothing}
       >
-        ${r.perYear}
+        ${r.perYear}${r.notInSum === null ? nothing : html` <span class="visually-hidden">${r.notInSum}</span>`}
       </td>
       <td><span class="subscription-status status-${r.status.due ? "due" : r.status.kind}">${r.status.text}</span></td>
     </tr>`;
@@ -206,6 +206,7 @@ export const subscriptionsStyles = css`
   }
   .subscription-status {
     display: inline-block;
+    white-space: nowrap;
     padding: 2px 8px;
     border-radius: 10px;
     font-size: 12px;
