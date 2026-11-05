@@ -72,7 +72,8 @@ paid and expected ([D66](decisions.md)). The list of every fixed expense is that
 | `GET /api/hidden-shops` | the shops hidden from the Butikker card, `{"shops": [...]}`, typed `HiddenShops` in `addon/shared/`, never cached |
 | `POST /api/hidden-shops` | hides or shows one shop, `{"shop": "…", "hidden": true}`, and answers the whole list as the GET does ([D43](decisions.md)) |
 | any other `/api/…` | 404 |
-| `GET /` and `GET /web/*` | the page's built files |
+| `GET /` | the page's `index.html`, `Cache-Control: no-cache`, so the browser asks again on every load |
+| `GET /web/*` | the page's hashed bundle files, `Cache-Control: public, max-age=31536000, immutable` on a `200` only |
 
 Only the `POST` above writes on port 8099, and only to its file ([D43](decisions.md)). Every URL the page uses is
 relative (`./web/…`, `api/data`, `api/left-over`, `api/hidden-shops`), so it works under the ingress path.
