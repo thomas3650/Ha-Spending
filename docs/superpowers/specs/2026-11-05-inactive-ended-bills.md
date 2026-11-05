@@ -57,6 +57,7 @@ Through `keepSubscriptions` and `/api/data` over the fake, with made-up data:
 - an inactive bill with an end date before today, and on or after the range's start, is kept with that end;
 - an inactive bill with an end date before the range's start is left out;
 - an inactive bill with no end date is left out;
+- an inactive bill whose end date is today is kept with that end;
 - an inactive bill with an end date after today is left out;
 - an active bill whose end date is after today is kept with that end date;
 - the fast loop's seed (`addon/dev/src/generate.ts`): Avisabonnement, which already matches the issue's example
