@@ -43,7 +43,7 @@ export const exampleSeed: SeedData = {
     subscription("Opsparingsaftale", "monthly", "2025-01-07", "1000.00", { objectGroup: FIXED_COSTS }),
     subscription("Avis", "monthly", "2025-01-15", "199.00", { active: false, objectGroup: FIXED_COSTS }),
     subscription("Fitness", "monthly", "2025-02-01", "299.00", { end: "2026-10-30", objectGroup: SUBSCRIPTIONS_GROUP }),
-    subscription("Gammel forsikring", "yearly", "2025-03-01", "1200.00", { end: "2026-10-29", objectGroup: FIXED_COSTS }),
+    subscription("Gammel forsikring", "yearly", "2025-03-01", "1200.00", { end: "2026-10-29", active: false, objectGroup: FIXED_COSTS }),
     subscription("Tandforsikring", "yearly", "2026-12-01", "600.00", { objectGroup: FIXED_COSTS }),
     subscription("Hver tredje år", "yearly", "2025-05-01", "3000.00", { skip: 2, objectGroup: FIXED_COSTS }),
     subscription("Billån", "monthly", "2026-08-01", "2500.00", { objectGroup: FIXED_COSTS }),

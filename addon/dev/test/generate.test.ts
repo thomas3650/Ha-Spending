@@ -103,7 +103,7 @@ describe("generateSeed", () => {
   it("has a bill that ended at a month's end, one that ended mid-month, and a yearly one paid earlier this year", () => {
     const sub = (name: string) => (s.subscriptions ?? []).find((x) => x.name === name)!;
     const paid = (name: string) => splits.filter((x) => x.subscription === name).map((x) => x.date).sort();
-    expect(sub("Avisabonnement")).toMatchObject({ repeat: "monthly", end: "2026-08-31", objectGroup: "Faste udgifter" });
+    expect(sub("Avisabonnement")).toMatchObject({ repeat: "monthly", end: "2026-08-31", active: false, objectGroup: "Faste udgifter" });
     expect(paid("Avisabonnement").length).toBeGreaterThan(0);
     expect(paid("Avisabonnement").at(-1)! <= "2026-08-31").toBe(true);
     expect(sub("Tidsskrift")).toMatchObject({ repeat: "monthly", end: "2026-09-15", objectGroup: "Abonnementer" });

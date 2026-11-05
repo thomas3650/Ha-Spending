@@ -517,7 +517,7 @@ describe("the link on each object group's key number", () => {
 });
 
 describe("the object-group card's line", () => {
-  /** Payments linked to a bill Firefly III no longer gives, as for an inactive one. */
+  /** Payments linked to a bill Firefly III no longer gives, as for an inactive one without an end date. */
   const inactive = tabBill("t11", "Gammel aftale", {
     objectGroup: "Medlemskaber",
     lastPayment: { date: "2026-10-01", amount: 10000, category: "Husleje", account: "1" },

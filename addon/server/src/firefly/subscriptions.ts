@@ -78,8 +78,9 @@ export function keepSubscriptions(
   const kept: Subscription[] = [];
   for (const { bill, objectGroup, lastPaid, split } of raw) {
     const a = bill.attributes;
-    if (!a.active) continue;
     const end = a.end_date === null ? null : day(a.end_date);
+    // An inactive bill does not run, so without an end date, or with one still ahead, the page cannot tell when it stopped.
+    if (!a.active && (end === null || end > today)) continue;
     if (end !== null && end < today && end < rangeStart) continue;
     const repeat = a.repeat_freq;
     if (!isRepeat(repeat)) {

@@ -274,7 +274,7 @@ export function generateSeed(options: { today: string; seed: number }): SeedData
   };
   const aviserEnd = addDays(addMonths(thisMonth, -1), -1);
   subscriptions.push({ name: "Avisabonnement", amountMin: "149.00", amountMax: "149.00", start: firstMonth,
-    end: aviserEnd, repeat: "monthly", objectGroup: FIXED_COSTS });
+    end: aviserEnd, repeat: "monthly", objectGroup: FIXED_COSTS, active: false });
   monthlyUpTo(1, aviserEnd, "Avisabonnement", "Avisen", "Streaming", "149.00");
   const journalEnd = addDays(addMonths(thisMonth, -1), 14);
   subscriptions.push({ name: "Tidsskrift", amountMin: "89.00", amountMax: "89.00", start: firstMonth,
