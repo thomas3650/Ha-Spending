@@ -145,6 +145,8 @@ const FIXED_ENTRY = { fixed: true };
  */
 const FIXED_FULL_ENTRY = { fixedFull: true };
 const FIXED_FULL_OVER_FIXED = { fixedFull: true, overFixed: true };
+/** Marks a detail pushed right over the view's full-screen open, as DETAIL_OVER_FULL does for the overview's. */
+const DETAIL_OVER_FIXED_FULL = { detail: true, overFixedFull: true };
 /** Marks the entry that opening the Til overs view pushed, as FIXED_ENTRY does (spec §2.2). */
 const LEFT_OVER_ENTRY = { leftOver: true };
 
@@ -155,6 +157,7 @@ interface Marks {
   fixed?: unknown;
   fixedFull?: unknown;
   overFixed?: unknown;
+  overFixedFull?: unknown;
   leftOver?: unknown;
   /** The full-screen open's quick filter, so a close can tell whether it changed in full screen. */
   quick?: unknown;
@@ -445,7 +448,12 @@ export class SpendingApp extends LitElement {
     }
     const hash = `#${toHash(next)}`;
     const entry = marks();
-    const pushed = entry.full === true ? { ...DETAIL_OVER_FULL, quick: entry.quick } : DETAIL_ENTRY;
+    const pushed =
+      entry.full === true
+        ? { ...DETAIL_OVER_FULL, quick: entry.quick }
+        : entry.fixedFull === true
+          ? DETAIL_OVER_FIXED_FULL
+          : DETAIL_ENTRY;
     if (this.state.detail === null) history.pushState(pushed, "", hash);
     else replaceKeepingMarks(hash, "keep");
     this.openedByRow = true;
@@ -591,10 +599,11 @@ export class SpendingApp extends LitElement {
       this.change(off);
       return;
     }
-    if (marks().fixedFull === true) {
+    const entry = marks();
+    if (entry.fixedFull === true || entry.overFixedFull === true) {
       this.tabOnLanding = off.fixedTab;
-      this.change(off);
-      this.goBack(1);
+      this.change(entry.fixedFull === true ? off : closeDetail(off));
+      this.goBack(entry.fixedFull === true ? 1 : 2);
       return;
     }
     replaceKeepingMarks(`#${toHash(off)}`, "drop");
@@ -611,7 +620,7 @@ export class SpendingApp extends LitElement {
       this.afterBack = () => this.changeFixedTab(tab);
       return;
     }
-    if (!this.state.fixed || this.state.fixedTab === tab) return;
+    if (!this.state.fixed) return;
     const next = closeDetail(setFixedTab(this.state, tab));
     if (this.state.detail !== null && detailEntry()) {
       this.change(next);

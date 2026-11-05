@@ -88,7 +88,9 @@ export class Fixed extends LitElement {
     return html`<button
       type="button"
       aria-pressed=${String(pressed)}
-      @click=${() => (pressed ? undefined : fire(this, "fixed-tab-change", tab))}
+      @click=${() => {
+        if (!pressed) fire(this, "fixed-tab-change", tab);
+      }}
     >
       ${label}
     </button>`;

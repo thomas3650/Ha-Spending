@@ -1139,17 +1139,21 @@ describe("the Alle faste udgifter tab (spec §3)", () => {
     await click(app, getByRole(getByRole(root, "group", { name: da.mainGroups }), "button", { name: /^Bolig/ }));
     expect(location.hash).toBe("#group=Bolig&unit=2026-10-01&view=fixed&og=Abonnementer&tab=all");
     expect(pressedTab(root, da.allFixed)).toEqual([da.allFixed]);
+    await click(app, getByRole(root, "button", { name: new RegExp(`^${da.accounts}`) }));
+    await click(app, getByRole(root, "checkbox", { name: "Kreditkort" }));
+    expect(location.hash).toBe("#accounts=1&group=Bolig&unit=2026-10-01&view=fixed&og=Abonnementer&tab=all");
+    expect(pressedTab(root, da.allFixed)).toEqual([da.allFixed]);
     await click(app, getByRole(root, "button", { name: new RegExp(`^${da.period}`) }));
     await click(app, getByRole(getByRole(root, "group", { name: da.period }), "button", { name: da.presets.lastYear }));
-    expect(location.hash).toBe("#period=lastYear&group=Bolig&view=fixed&tab=all");
+    expect(location.hash).toBe("#period=lastYear&accounts=1&group=Bolig&view=fixed&tab=all");
     expect(pressedTab(root, da.allFixed)).toEqual([da.allFixed]);
     await click(app, getByRole(root, "button", { name: da.fullScreenOf(da.allFixed) }));
-    expect(location.hash).toBe("#period=lastYear&group=Bolig&view=fixed&tab=all&full=list");
+    expect(location.hash).toBe("#period=lastYear&accounts=1&group=Bolig&view=fixed&tab=all&full=list");
     expect(pressedTab(root, da.allFixed)).toEqual([da.allFixed]);
     await click(app, tab(root, da.fixed.inPeriod, da.allFixed));
     await click(app, tab(root, da.allFixed));
     fireEvent.keyDown(window, { key: "Escape" });
-    await hashBecomes(app, "#period=lastYear&group=Bolig&view=fixed&tab=all");
+    await hashBecomes(app, "#period=lastYear&accounts=1&group=Bolig&view=fixed&tab=all");
     expect(pressedTab(root, da.allFixed)).toEqual([da.allFixed]);
   });
 
@@ -1163,6 +1167,26 @@ describe("the Alle faste udgifter tab (spec §3)", () => {
     barsRegion(root);
     expect(pressedTab(root, da.allFixed)).toEqual([da.allFixed]);
     fireEvent.keyDown(window, { key: "Escape" });
+    await hashBecomes(app, "");
+    inOverview(root);
+  });
+
+  it("a detail opened in the list's full screen, then ⤢: Escape leaves the view, and Back lands before it", async () => {
+    const { app, root } = await open("");
+    await click(app, getByRole(getByRole(root, "group", { name: da.view }), "button", { name: da.postings }));
+    await click(app, link(root, FIXED_CARD));
+    await click(app, getByRole(root, "button", { name: da.fullScreenOf(da.fixed.inPeriod) }));
+    await toAll(app, root);
+    await click(app, getByRole(listRegion(root, da.allFixed), "button", { name: "Husleje" }));
+    expect(location.hash).toBe("#card=postings&view=fixed&og=Faste+udgifter&tab=all&full=list&detail=s%3Ab1");
+    await click(app, getByRole(root, "button", { name: da.fullScreenOf(da.allFixed) }));
+    await hashBecomes(app, "#card=postings&view=fixed&og=Faste+udgifter&tab=all");
+    barsRegion(root);
+    expect(detail(root, "Husleje")).toBeNull();
+    fireEvent.keyDown(window, { key: "Escape" });
+    await hashBecomes(app, "#card=postings");
+    getByRole(root, "region", { name: da.postingsTitle });
+    history.back();
     await hashBecomes(app, "");
     inOverview(root);
   });
@@ -1240,7 +1264,7 @@ describe("the Alle faste udgifter tab (spec §3)", () => {
   it("the detail's status reads as the row's in a past month", async () => {
     const { root } = await open("unit=2026-03-01&view=fixed&og=Faste+udgifter&tab=all&full=list&detail=s%3Ab1");
     const status = da.status.notSeen(shortDate("2026-03-01", TODAY));
-    const row = getByRole(listRegion(root, da.allFixed), "button", { name: "Husleje" }).closest("tr") as HTMLElement;
+    const row = getByRole(listRegion(root, da.allFixed), "row", { name: new RegExp("^Husleje ") });
     getByText(row, status);
     getByText(detail(root, "Husleje") as HTMLElement, status);
     expect(queryByText(detail(root, "Husleje") as HTMLElement, da.status.paid(shortDate("2026-10-01", TODAY)))).toBeNull();
