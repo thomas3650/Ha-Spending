@@ -107,6 +107,9 @@ the list it pointed to, and no state keeps a card that is gone.
   itself ends today.
 - A fixed expense shows when it **ran in the tab's time**. Its start (Firefly III's first due date) is on or before the
   time's last day. Its end is empty, or it is on or after the time's first day.
+- A fixed expense also ran in the time when one of its payments (§3.4) lies in it, whatever its start. Claude's call,
+  from the branch review: a bill made in Firefly III after it began, with its old payments linked to it, starts after
+  its own payments, and would otherwise be missing from the months it was paid in.
 - Example: a monthly fixed expense started on 1 March 2025, with an end date of 31 May 2026. It shows in January to May
   2026, and in "I år". It does not show in June 2026 or later. A fixed expense that starts on 1 December 2026 shows in
   "I år" seen on 5 November, and in December, and not in November.
@@ -155,7 +158,8 @@ today (for example January, seen in November):
 | A missed due date | **Ikke set** (red, no border) |
 | No missed due date, an open one | **Forfalden** when the open date is before today, **Forventes** otherwise (D64, D77) |
 | Due dates, all met | **Betalt {date}**, the latest met payment's date (green) |
-| No due date | **Næste {date}**, the first due date after the time, by `dueDatesBetween` (grey) |
+| No due date, a payment in the time | **Betalt {date}**, the latest payment's date (green) |
+| No due date, no payment | **Næste {date}**, the first due date after the time, by `dueDatesBetween` (grey) |
 
 - A weekly bill with four due dates in a month and three payments reads Ikke set: one due date is missed.
 - A past time has no Steget (§1).
