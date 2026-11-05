@@ -89,7 +89,10 @@ Model: sonnet · Review: yes
   that ended mid-month, and a yearly one paid earlier this year`. Assert `Avisabonnement` ends 2026-08-31 with its
   last payment on or before that date, and `Tidsskrift` ends 2026-09-15. Assert `Vejhjælp` repeats yearly and has
   one payment, on 2026-05-10.
-- [ ] Run them and see them fail; implement; gates pass.
+- [ ] Run them and see them fail; implement.
+- [ ] Run the server's tests over the fake (`data.test.ts`, `read.test.ts`, `app.test.ts`, `loader.test.ts`). Any count,
+  name list or sum that changes because `Gammel forsikring` is now kept is changed on purpose and named in the report.
+  Then the gates pass.
 - [ ] Commit `feat: the server keeps a fixed expense that ended in the asked range`.
 
 ## Task 2: The due dates between two days and the status in a time
@@ -105,10 +108,11 @@ Model: opus · Review: yes
 - Produces `dueDatesBetween(s: Subscription, from: string, to: string): string[]`. These are the due dates
   `dueDate(s, k)` from k = 0 with `from ≤ date ≤ to`, and `date ≤ s.end` when there is an end.
 - Produces `type TimeStatus = SubscriptionStatus | { kind: "next"; date: string } | { kind: "ended"; end: string }`.
-- Produces `statusInTime(s: Subscription, payments: readonly { date: string; amount: number }[], time: Period,
+- Produces `statusInTime(s: Subscription, payments: readonly Pick<Posting, "date" | "amount" | "kind">[], time: Period,
   fetched: Period, today: string): TimeStatus`:
-  - `payments` are the bill's linked postings. Only `amount > 0` is a payment. A refund is negative in `Posting`
-    (`shared/src/types.ts:17`).
+  - `payments` are the bill's linked postings, as `{ date, amount, kind }` with `kind: Posting["kind"]`. Only a
+    posting with `kind === "spending"` (so `amount > 0`) is a payment, as spec §3.4 means by "a refund is not a
+    payment". A refund is negative in `Posting` (`shared/src/types.ts:17`).
   - When `time.end >= today`: if `s.end !== null && s.end < today && nextDate(s, today) === null`, it returns
     `{ kind: "ended", end: s.end }`. Otherwise it returns `subscriptionStatus(s, today)`.
   - When `time.end < today`, the past table applies. The dates are `dueDatesBetween(s, time.start, time.end)`. Each
@@ -123,8 +127,10 @@ Model: opus · Review: yes
     - any open date: `{ kind: "expected", date: <the first open date> }`;
     - any date at all: `{ kind: "paid", date: <the latest met payment's date> }`;
     - no date: `{ kind: "next", date: <the first of dueDatesBetween(s, time.end + 1 day, time.end + 25 months)> }`.
-  - When the bill has ended (`s.end !== null && s.end <= time.end`), a `paid` or a `next` (or no next date at all)
-    becomes `{ kind: "ended", end: s.end }`.
+  - When the bill has ended (`s.end !== null && s.end <= time.end`), a `paid` or a `next` becomes
+    `{ kind: "ended", end: s.end }`.
+  - When no date is left and that search finds no due date, the bill ends after the time but before its next due
+    date (a yearly bill due in June, ended in March, seen in January). It returns `{ kind: "ended", end: s.end }`.
 - No `risen` in a past time: the past table never returns it.
 
 - [ ] Write the failing tests, one per spec §7 §3.4 case. Use made-up bills and `today` 2026-11-05.
@@ -140,7 +146,9 @@ Model: opus · Review: yes
     - `a weekly bill with three payments for four due dates reads notSeen`;
     - `an open due date reads expected, before today as well` (time October 2026 seen on 2 November, due 31 October);
     - `a yearly bill with no due date in the time reads next with its next due date`;
-    - `a refund alone does not meet a due date`;
+    - `a refund alone does not meet a due date` (a posting of kind `refund` in the window);
+    - `a bill that ends after the time but before its next due date reads ended` (yearly, due 1 June, end 2026-03-31,
+      time January 2026: `{ kind: "ended", end: "2026-03-31" }`);
     - `has no risen in a past time` (a last payment above the max, all met: paid);
     - `an ended bill reads paid in a month before its end and ended in its last month` (end 2026-05-31; April paid;
       May ended `2026-05-31`);
@@ -186,6 +194,9 @@ greyed Om året and the two new status classes), `addon/web/src/i18n/da.ts`; tes
     which is `da.notInSum(shortDate(end))` for a row left out of the sums and `null` otherwise. The object-group sums
     and the group sums skip such rows, and a group's count counts every row. `next` is `null` when the status
     carries a date: `notSeen`, a due `expected`, `next` or `ended`.
+  - In a time that ended before today, `TabRow.next` is `null`, so no row has a "næste" under its name. There the
+    sort's second key is only the status's date (`date` of `notSeen`'s `expected`, `expected`, `paid` and `next`;
+    `end` of `ended`), never today's next date.
   - `statusCell(status: TimeStatus, today: string)`: `next` gives `da.status.next(date)` and `ended` gives
     `da.status.ended(end)`, both written with `shortDate`. `SubscriptionRow.status.kind` becomes
     `TimeStatus["kind"]`.
@@ -216,7 +227,8 @@ greyed Om året and the two new status classes), `addon/web/src/i18n/da.ts`; tes
   - `in I år an ended bill's Om året is left out of the sums, with its tooltip`. Its `notInSum` is
     `da.notInSum(…)`, and the object-group sum and the group sum leave it out, while the group's count keeps it;
   - `in its last month, a bill that ends at the month's end counts in the sums, and one that ends mid-month does not`;
-  - `a past month's rows read their past statuses, and the Status sort puts Næste and then Sluttet last`;
+  - `a past month's rows read their past statuses, with no næste under a name, and the Status sort puts Næste and then
+    Sluttet last, by the status's date`;
   - `an ended bill adds no estimate to Resterende udgifter, Estimat for hele, the bars or Poster i perioden`, through
     `fixedView` cards, bars and payments;
   - `with its last due date missed, an ended bill reads Ikke set in the tab and in Poster i perioden`;
@@ -229,8 +241,10 @@ greyed Om året and the two new status classes), `addon/web/src/i18n/da.ts`; tes
 - [ ] Change on purpose, and name in the report:
   - `subscriptions.test.ts` "does not follow a chosen unit or the period" becomes `follows the chosen unit and the
     period`;
-  - `fixed-view.test.ts` "an object group found only on postings opens from its card and reads 0 stk." keeps the step's
-    "0 stk." and asserts that the card's line has no "stk." (§5's third row);
+  - `fixed-view.test.ts` "an object group found only on postings opens from its card and reads 0 stk." (near line
+    413) is renamed `an object group found only on postings opens from its card, with no stk. on the card and 0 stk.
+    in the step`. It keeps the step's "0 stk." and asserts that the card's line has no "stk." (§5's third row). Later
+    tasks name it by exactly this text;
   - every `key-numbers.test.ts` count that came from distinct bill names among payments.
 - [ ] Run them and see them fail; implement; gates pass.
 - [ ] Commit `feat: the fixed-expenses list follows the chosen time, and X stk. counts its rows`.
@@ -257,7 +271,8 @@ Model: sonnet · Review: yes
     `href` of Task 7 needs a state with no dead key;
   - `openLeftOver` sets `fixedTab: "payments"`.
 - `detailResolves(s, data, today)`. In the view, a bill's key resolves when `s.fixedTab === "all"` and the bill is one
-  of `tabRows(viewContext(data, s, today))`. A posting's key never resolves in the view. On the overview nothing
+  of `tabRows(viewContext(data, s, today))`. `normalise` calls it on the state after it has resolved `og` and `unit`
+  (the `known` state with its resolved `objectGroup`), never on the raw hash's. A posting's key never resolves in the view. On the overview nothing
   changes yet; Task 6 drops the overview's subscription case.
 - `normalise` in the view keeps a detail that `detailResolves` gives, and closes it otherwise. It no longer always
   calls `closeDetail`.
@@ -268,7 +283,9 @@ Model: sonnet · Review: yes
   - `openFixed` and `leaveFixed` give `"payments"`, and `leaveFixed` drops the detail;
   - `setFixedTab` keeps `objectGroup`, `fixedFull`, `unit`, `level` and `accounts`;
   - `normalise` keeps `detail=s:<id>` with `tab=all` while the bill is a row, and closes it when the tab is
-    `payments`, when a later month takes the row away (a bill ended in May, June chosen), and for a `p:` key.
+    `payments`, when a later month takes the row away (a bill ended in May, June chosen), and for a `p:` key;
+  - `an unknown og with detail=s: of a row under Alle keeps the detail`: `og` falls back to Alle (`null`), and the
+    detail of a bill that is a row under Alle stays.
 - [ ] Change on purpose: `view.test.ts`'s "round-trips every field" state literal gets `fixedTab: "payments"`, and
   `actions.test.ts` near line 524 ("closes the detail in the view") becomes `keeps a resolving detail on the
   Alle faste udgifter tab`.
@@ -457,6 +474,8 @@ Model: sonnet · Review: no
 **Files:** `addon/DOCS.md`, `docs/domain-language.md`, `docs/architecture.md`, `docs/testing.md`, `docs/decisions.md`.
 
 - [ ] `addon/DOCS.md`, `docs/domain-language.md` and `docs/architecture.md` as spec §8 lists.
+- [ ] `docs/README.md` already links this spec and this plan (the plan's own commit added it). It needs no change;
+  only `node scripts/check-links.mjs` checks it.
 - [ ] `docs/testing.md`: the Chrome check loses the overview's Faste udgifter tab steps (steps 29, 34 and 45 name
   it; reword them to the view's tab). It gets step 55, `70-faste-udgifter-fane`, with spec §7's Chrome steps and
   widths.
