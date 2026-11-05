@@ -197,7 +197,6 @@ describe("the right card in full screen", () => {
   it.each([
     ["Søjler", "", da.per("month")],
     ["Posteringer", "card=postings", da.postingsTitle],
-    ["Faste udgifter", "card=subscriptions", da.subscriptions],
   ])("offers the button in the right card on %s", async (_, hash, title) => {
     const { root } = await mountWith(hash);
     const card = getByRole(root, "region", { name: title });
@@ -280,13 +279,29 @@ describe("the right card in full screen", () => {
   });
 
   it("stays on, with the same button, when the card's view changes", async () => {
-    const { app, root } = await mountWith("card=subscriptions");
+    const { app, root } = await mountWith("card=postings");
     const button = await press(app, root);
     fireEvent.click(getByRole(getByRole(root, "group", { name: da.view }), "button", { name: da.bars }));
     await settle(app);
     getByRole(root, "region", { name: da.per("month") });
     expect(fullScreen(root)).toBe(button);
     expectOn(root);
+  });
+
+  it("stays on in the view, with the same button, when the list's tab changes", async () => {
+    const { app, root } = await mountWith("view=fixed&tab=all");
+    const button = getByRole(root, "button", { name: da.fullScreenOf(da.allFixed) });
+    fireEvent.click(button);
+    await settle(app);
+    expect(location.hash).toBe("#view=fixed&tab=all&full=list");
+    const list = getByRole(root, "region", { name: da.allFixed });
+    fireEvent.click(getByRole(getByRole(list, "group", { name: da.view }), "button", { name: da.fixed.inPeriod }));
+    await settle(app);
+    expect(location.hash).toBe("#view=fixed&full=list");
+    getByRole(root, "region", { name: da.fixed.inPeriod });
+    expect(getByRole(root, "button", { name: da.fullScreenOf(da.fixed.inPeriod) })).toBe(button);
+    expect(button.getAttribute("aria-pressed")).toBe("true");
+    expect(keyNumbers(root)).toBeNull();
   });
 
   it("stays on through a period change, with one placeholder while loading", async () => {

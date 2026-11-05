@@ -72,6 +72,7 @@ export function keepSubscriptions(
   mainGroupOf: (category: string | null) => string | null,
   excluded: ReadonlySet<string>,
   today: string,
+  rangeStart: string,
   warn: (message: string) => void,
 ): Subscription[] {
   const kept: Subscription[] = [];
@@ -79,7 +80,7 @@ export function keepSubscriptions(
     const a = bill.attributes;
     if (!a.active) continue;
     const end = a.end_date === null ? null : day(a.end_date);
-    if (end !== null && end < today) continue;
+    if (end !== null && end < today && end < rangeStart) continue;
     const repeat = a.repeat_freq;
     if (!isRepeat(repeat)) {
       warn(`The subscription ${bill.id} repeats in a way the page does not know; it is left out`);

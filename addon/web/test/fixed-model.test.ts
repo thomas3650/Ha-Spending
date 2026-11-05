@@ -19,7 +19,20 @@ import { fixedList } from "../src/model/fixed-list";
 import { objectGroupCards } from "../src/model/key-numbers";
 import { leaveFixed, normalise } from "../src/state/actions";
 import { DEFAULT_STATE, parseHash, type ViewState } from "../src/state/view";
-import { answerFor, SUBSCRIPTIONS, withSubscriptions } from "./fixture";
+import { DEFAULT_SUBSCRIPTION_SORT, subscriptionTable } from "../src/model/subscriptions";
+import {
+  answerFor,
+  billPayment,
+  SUBSCRIPTIONS,
+  TAB_AVIS,
+  TAB_BILLS,
+  TAB_POSTINGS,
+  TAB_TIDSSKRIFT,
+  TAB_TODAY,
+  tabBill,
+  tabData,
+  withSubscriptions,
+} from "./fixture";
 
 const TODAY = "2026-10-30";
 const FETCHED: Period = { start: "2025-01-01", end: TODAY };
@@ -545,5 +558,58 @@ describe("normalise in the view", () => {
       unit: "2026-10-05",
     };
     expect(normalise(s, linked(), TODAY).unit).toBeNull();
+  });
+});
+
+describe("ended bills in the view", () => {
+  const tabView = (hash: string, data: SpendingData) => fixedView(viewContext(data, parseHash(hash), TAB_TODAY));
+
+  it("an ended bill adds no estimate to Resterende udgifter, Estimat for hele, the bars or Poster i perioden", () => {
+    const withEnded = tabView("view=fixed", tabData());
+    const without = tabView("view=fixed", tabData(TAB_BILLS.filter((b) => b !== TAB_AVIS && b !== TAB_TIDSSKRIFT)));
+    const ended = new Set([TAB_AVIS.name, TAB_TIDSSKRIFT.name]);
+    expect(withEnded.payments.filter((p) => p.kind !== "paid" && ended.has(p.name))).toEqual([]);
+    expect(withEnded.payments).toEqual(without.payments);
+    expect(withEnded.cards).toEqual(without.cards);
+    const estimates = (v: FixedView) => v.bars.map((b) => [b.estimateSum, b.label]);
+    expect(estimates(withEnded)).toEqual(estimates(without));
+  });
+
+  it("in Denne måned a kept bill that ended months ago adds no object-group card and no step row", () => {
+    const medlemskab = tabBill("t10", "Medlemskab", {
+      objectGroup: "Medlemskaber",
+      end: "2026-03-31",
+      lastPayment: { date: "2026-03-01", amount: 10000, category: "Husleje", account: "1" },
+    });
+    const paid = ["01", "02", "03"].map((m) => billPayment(medlemskab, `2026-${m}-01`));
+    const data = tabData([...TAB_BILLS, medlemskab], [...TAB_POSTINGS, ...paid]);
+    const ctx = viewContext(data, parseHash("period=thisMonth"), TAB_TODAY);
+    expect(objectGroupCards(ctx, (g) => g).map((c) => c.label)).not.toContain(da.inPeriod("Medlemskaber"));
+    expect(tabView("view=fixed&period=thisMonth", data).groups.map((g) => g.name)).not.toContain("Medlemskaber");
+  });
+
+  it("X stk. is the tab's rows for the same group", () => {
+    const data = tabData();
+    const card = objectGroupCards(viewContext(data, parseHash(""), TAB_TODAY), (g) => g).find(
+      (c) => c.label === da.inPeriod("Faste udgifter"),
+    );
+    const rows = subscriptionTable(
+      viewContext(data, parseHash("view=fixed&og=Faste%20udgifter"), TAB_TODAY),
+      DEFAULT_SUBSCRIPTION_SORT,
+    ).rows;
+    // Avisabonnement ended in May, Licens has no payment in I år, and Vandabonnement starts in December.
+    expect(rows.map((r) => r.name).sort()).toEqual(["Avisabonnement", "Husleje", "Licens", "Vandabonnement"]);
+    expect(card?.sub).toMatch(new RegExp(` · ${da.billCount(rows.length)}$`));
+    expect(tabView("view=fixed", data).groups.find((g) => g.name === "Faste udgifter")?.count).toBe(rows.length);
+  });
+
+  it("the object-group step counts the chosen unit's rows", () => {
+    const groups = tabView("view=fixed&unit=2026-08-01", tabData()).groups;
+    expect(groups.map((g) => [g.name, g.count])).toEqual([
+      ["Abonnementer", 1],
+      ["Bil", 1],
+      ["Faste udgifter", 2],
+      [null, 4],
+    ]);
   });
 });

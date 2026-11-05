@@ -122,9 +122,9 @@ The page's list. Every screenshot is at 1440×960 with the console free of error
     the circle and the key numbers do not. Also at 1728 px. Back after typing returns to the view before the first key.
 20. `34-posteringer-ingen-match`: a search nothing matches on the overview: the summary at 0 and `da.noMatch`, with the
     search row still there.
-21. `35-abonnementer`, `36-abonnementer-hovedgruppe`: the right card's Faste udgifter choice, so the card shows on Alt
-    forbrug, then on a main group (the key numbers are not buttons). Every status shows, the order within each group is
-    Ikke set, Steget, Forventes, Betalt, and the names link to the fake. Also at 1728 px; compare `docs/mockups/v3/`.
+21. `35-abonnementer`, `36-abonnementer-hovedgruppe`: the fixed-expenses view's Alle faste udgifter tab, on Alt
+    forbrug, then on a main group (the object-group step). Every status shows, the order within each group is
+    Ikke set, Steget, Forventes and Forfalden, Betalt, Næste, Sluttet, and the names link to the fake. Also at 1728 px; compare `docs/mockups/v3/`.
 22. `37-butik-forslag`: screen 1 on Posteringer with part of a shop's name typed. The suggestions open under the field,
     over the list. Names that start with the typed text come first, then the rest, each group biggest sum first, and
     each row shows its sum; a mouse-over shows the bank text. Also at 1728 px.
@@ -133,11 +133,11 @@ The page's list. Every screenshot is at 1440×960 with the console free of error
     are its own. The ✕ and Back undo it. The same in full screen.
 24. `39-fuld-skaerm`: screen 1 on Posteringer with "Fuld skærm" pressed. The right card alone, the full width; the
     button sits on the title's row at every width. The view switch moves under the title when the card is under 700 px
-    wide. Escape and the button bring the circle and the key numbers back. Also on Søjler and Faste udgifter, at 1440
+    wide. Escape and the button bring the circle and the key numbers back. Also on Søjler, at 1440
     and 1728 px.
-25. `40-faste-udgifter-grupper`: Faste udgifter at Alt forbrug, grouped by main group with a Kategori column, each
+25. `40-faste-udgifter-grupper`: The Alle faste udgifter tab at Alt forbrug, grouped by main group with a Kategori column, each
     group's dot the same colour as its part in the circle; then at a main group, grouped by category.
-26. `41-objektgrupper`: Faste udgifter at Alt forbrug and at the main group Abonnementer. Each row carries the pill with
+26. `41-objektgrupper`: The Alle faste udgifter tab at Alt forbrug and at the main group Abonnementer. Each row carries the pill with
     its object group's title, and the boxes under the head show one yearly sum per object group. Also at 1440 and 1728
     px.
 27. `42-posteringer-maerke`: Posteringer, normal and in full screen, with marked rows. A posting linked to a bill carries the
@@ -150,7 +150,7 @@ The page's list. Every screenshot is at 1440×960 with the console free of error
     "Alt" with the dates. The open menu stays inside the frame at 1440, 1728, 1024 and 900 px. Do this in Safari as well
     as Chrome; Safari is where the typed year failed.
 29. `44-sorter`: Posteringer, normal and in full screen, sorted by each column: one click and a second click; the sorted header
-    is bold with its arrow; sorted by the date the groups return. Faste udgifter sorts inside each group, with Status
+    is bold with its arrow; sorted by the date the groups return. The Alle faste udgifter tab sorts inside each group, with Status
     ascending at the start. The card's sort survives a switch to Søjler and back, and is gone after a reload.
 30. `45-noegletal`: the first key number with "N posteringer →" at Alt forbrug, a main group, a category and a chosen
     unit; a click opens Posteringer in full screen with no search, shop or amount. The object group key numbers show the sum, the sum per
@@ -169,7 +169,7 @@ The page's list. Every screenshot is at 1440×960 with the console free of error
     grey with "Vis"; "Vis" brings it back. After a reload the hidden shops are as they were, and the circle and the
     shares are unchanged. Stop the server for a moment to see "Kunne ikke gemme. Prøv igen." on a write and "Skjulte
     butikker kunne ikke hentes." on a start.
-34. `49-detalje`: the detail of a fixed expense, a subscription and a shop (a row on Posteringer and Faste udgifter),
+34. `49-detalje`: the detail of a fixed expense, a subscription and a shop (a row on Posteringer and on the Alle faste udgifter tab),
     on the normal page and in full screen. At 1440, 1728 and 1000 px. Tab to a
     row's name and press Enter: the detail opens and the focus is on its heading; "Luk" and Escape close it and the
     focus is back on the row. The amounts in the detail's rows have the same sign as the list beside it (spending minus,
@@ -200,7 +200,7 @@ The page's list. Every screenshot is at 1440×960 with the console free of error
     marked. "Uden hovedgruppe" and "Uden kategori" show when they have a piece. Tab reaches every row in order.
 45. `60-gennemgang-rettelser`: the fixes from the 0.11.0 walkthrough ([walkthrough fixes
     spec](superpowers/specs/2026-11-03-walkthrough-fixes.md)), at 1440 and 1728 px, on the normal page and in full
-    screen. The full-screen button sits on the title's row on Søjler, Posteringer and Faste udgifter. The title still
+    screen. The full-screen button sits on the title's row on Søjler and Posteringer. The title still
     ends in "…" when long. No key-number card has a hover border or a ring, as none is a button. "Vis alle" is not on
     the Posteringer search row, in the normal card or in full screen. A chosen shop's chip sits under the search field.
     With the suggestion list open, Tab chooses the highlighted suggestion, or the first one when none is highlighted;
@@ -220,7 +220,7 @@ The page's list. Every screenshot is at 1440×960 with the console free of error
     step 50 and D68.
 48. `63-smaa-rettelser`: the small fixes from the walkthrough ([small walkthrough fixes
     spec](superpowers/specs/2026-11-04-walkthrough-small-fixes.md)), at 1440 and 1728 px, normal and full screen.
-    Faste udgifter: a Steget row reads in whole kroner with no øre, and its Beløb shows the same number as the
+    The Alle faste udgifter tab: a Steget row reads in whole kroner with no øre, and its Beløb shows the same number as the
     latest payment. The Fitnessabonnement row reads Forfalden with no "næste" under its name. The repeat ("pr.
     måned") sits on its own line in every row. Every group header keeps its name and count on one line. The circle's
     small labels are apart, and each leader line runs to its piece. Butikker: every track starts and ends at the same
@@ -255,13 +255,13 @@ The page's list. Every screenshot is at 1440×960 with the console free of error
     and "Alt": the four key numbers, the hatched estimates and the "i dag" line only where the span runs past today.
     A chosen unit, and the month step in the trail ([D70](decisions.md)) on the overview and in the view: the dashed
     "Måned", the list with its sums, a month without its year inside one year, and the cross. The colours at Alt
-    forbrug, in a main group and in a category. The way out by ← and by Back.
+    forbrug, in a main group and in a category. The way out by "Alt forbrug" and by Back.
 53. `68-til-overs`: the Til overs card and view ([Til overs spec](superpowers/specs/2026-11-04-left-over.md) §2 and
     §4), at 1440 and 1728 px, in the example data with the three options set. On the overview the card sits after the
     period's own cards and before the object groups' cards, with no colour and no "+"; with a main group, a category or
     an account chosen it is gone. "Vis måneder →" opens the view. A row adds up from left to right: Til overs is Ind,
     Tilbage and Forbrug as shown, and Ændring på konti is Til overs, Kreditten, Opsparing and Øvrigt; so does "I alt",
-    and its Til overs is the card's number. A month's button opens the overview for that month. ← and Escape leave the
+    and its Til overs is the card's number. A month's button opens the overview for that month. "Alt forbrug" and Escape leave the
     view.
 54. `69-fuld-skaerm-faste-udgifter`: the fixed-expenses view's full screen, tooltip and red Forfalden ([fixed view full
     screen spec](superpowers/specs/2026-11-04-fixed-view-full-screen.md) §6, [D77](decisions.md)), at 1100, 1200, 1440
@@ -272,4 +272,14 @@ The page's list. Every screenshot is at 1440×960 with the console free of error
     keeping 400 px and scrolling in the low window.
     The tooltip on a mixed bar at Alt forbrug and in a main group. Forfalden red in the tab, in the detail's pill and
     in the list, and the red outline and the legend lines in the bars.
-    Back, Escape twice, and ← out of full screen.
+    Back, Escape twice, and "Alt forbrug" out of full screen.
+55. `70-faste-udgifter-fane`: the "Alle faste udgifter" tab and the one top bar ([fixed list tab
+    spec](superpowers/specs/2026-11-05-fixed-list-tab.md) §7, [D78](decisions.md)), at 1200, 1440 and 1728 px.
+    The overview has the tabs Søjler, Posteringer and Butikker, and no Faste udgifter.
+    The view has two tabs. In "I år", click a month in the bars where the bill that ended is still there: the list shows
+    it. After its end month it is gone. A past month's statuses read Betalt with a date, Ikke set or Næste. The ended
+    bills' Om året is greyed with its tooltip. A row's detail opens, and its ← goes back to the list. Full screen keeps
+    the tab. Opening the view again starts on "Poster i perioden".
+    The same bar on the overview, the view and Til overs. "Alt forbrug" leaves the view and Til overs, also from full
+    screen and with a detail open. On Til overs, Konti, the unit word and Hovedgruppe are greyed and show their
+    tooltips.

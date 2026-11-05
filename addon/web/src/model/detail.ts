@@ -3,8 +3,8 @@ import {
   type ClassifiedPosting,
   isRunning,
   type Subscription,
-  type SubscriptionStatus,
   subscriptionStatus,
+  type TimeStatus,
   total,
   unitTotals,
   within,
@@ -50,7 +50,7 @@ export interface DetailView {
   title: string;
   amount: string;
   /** A subscription's only. */
-  status: { kind: SubscriptionStatus["kind"]; due: boolean; text: string } | null;
+  status: { kind: TimeStatus["kind"]; due: boolean; text: string } | null;
   /** A shop's only: the date and, with a shop, the bank's text. */
   aside: string | null;
   boxes: [DetailBox, DetailBox, DetailBox];
@@ -115,6 +115,7 @@ function subscriptionView(
   marked: string | null,
   inPeriod: ClassifiedPosting[],
   ctx: ViewContext,
+  status: TimeStatus | null,
 ): DetailView {
   const c = common(
     ctx,
@@ -131,7 +132,7 @@ function subscriptionView(
     context: last === null || group === s.objectGroup ? s.objectGroup : `${group} · ${s.objectGroup}`,
     title: s.name,
     amount: paymentText(s),
-    status: statusCell(subscriptionStatus(s, ctx.data.today), ctx.data.today),
+    status: statusCell(status ?? subscriptionStatus(s, ctx.data.today), ctx.data.today),
     aside: null,
     boxes: [
       c.first,
@@ -168,17 +169,20 @@ function shopView(p: ClassifiedPosting, key: DetailKey, inPeriod: ClassifiedPost
   };
 }
 
-/** null when the key finds nothing: an unknown bill, or a posting outside the period or the ticked accounts. */
-export function detailView(key: DetailKey, ctx: ViewContext): DetailView | null {
+/**
+ * null when the key finds nothing: an unknown bill, or a posting outside the period or the ticked accounts. A given
+ * status, such as the tab's row's for its time, replaces a bill's status of today.
+ */
+export function detailView(key: DetailKey, ctx: ViewContext, status: TimeStatus | null = null): DetailView | null {
   // The period, never the chosen unit, and every level: the detail is about the whole bill or shop (spec §3).
   const inPeriod = within(ctx.postings, ctx.timeline.period);
   const bill = (id: string) => ctx.data.subscriptions.find((s) => s.id === id);
   if (key.kind === "subscription") {
     const s = bill(key.id);
-    return s === undefined ? null : subscriptionView(s, key, null, inPeriod, ctx);
+    return s === undefined ? null : subscriptionView(s, key, null, inPeriod, ctx, status);
   }
   const p = inPeriod.find((q) => q.id === key.id);
   if (p === undefined) return null;
   const s = p.subscription === null ? undefined : bill(p.subscription.id);
-  return s === undefined ? shopView(p, key, inPeriod, ctx) : subscriptionView(s, key, p.id, inPeriod, ctx);
+  return s === undefined ? shopView(p, key, inPeriod, ctx) : subscriptionView(s, key, p.id, inPeriod, ctx, status);
 }

@@ -10,7 +10,8 @@ import type { AmountFilter } from "../model/amount";
 
 export type PeriodChoice = { preset: Preset } | { preset: "custom"; start: string; end: string };
 export type FixedCard = "bars" | "list";
-export type Card = "bars" | "postings" | "subscriptions" | "shops";
+export type FixedTab = "payments" | "all";
+export type Card = "bars" | "postings" | "shops";
 export type PostingColumn = "date" | "text" | "category" | "account" | "amount";
 export type SubscriptionColumn = "name" | "category" | "amount" | "perYear" | "status";
 
@@ -39,6 +40,8 @@ export interface ViewState {
   objectGroup: string | null;
   /** The fixed-expenses view's card that fills the page. Only with `fixed`. */
   fixedFull: FixedCard | null;
+  /** The fixed-expenses view's right card tab. Only with `fixed`. */
+  fixedTab: FixedTab;
   /** The Til overs view replaces the overview; never with `fixed` or full screen. */
   leftOver: boolean;
   /** The quick filter: shared choices that stay when the top filter or the tab changes. */
@@ -59,6 +62,7 @@ export const DEFAULT_STATE: ViewState = {
   fixed: false,
   objectGroup: null,
   fixedFull: null,
+  fixedTab: "payments",
   leftOver: false,
   search: "",
   shop: null,
@@ -69,7 +73,9 @@ export const DEFAULT_STATE: ViewState = {
 /** Held by the app, not in the hash (top-filter spec §3.4). */
 export const DEFAULT_POSTING_SORT: Sort = { column: "date", descending: true };
 
-const CARDS: readonly Card[] = ["bars", "postings", "subscriptions", "shops"];
+const CARDS: readonly Card[] = ["bars", "postings", "shops"];
+/** The overview's old Faste udgifter tab; its links open the view's Alle faste udgifter tab (spec §2.1). */
+const OLD_SUBSCRIPTIONS = "subscriptions";
 /** The old Alle posteringer screen; its links open Posteringer in full screen. */
 const ALL_POSTINGS = "all-postings";
 const FULL = "full";
@@ -155,15 +161,30 @@ function parseDetail(value: string | null): DetailKey | null {
 }
 
 /**
- * What does not parse falls back to DEFAULT_STATE's value (D20); an old link's `sort` is ignored, and `og` and `full`
+ * What does not parse falls back to DEFAULT_STATE's value (D20); an old link's `sort` is ignored, and `og`, `tab` and `full`
  * only count with `view=fixed`. The Til overs view covers every account and all spending, so it drops the filter and
  * the unit.
  */
 export function parseHash(hash: string): ViewState {
   const p = new URLSearchParams(hash.startsWith("#") ? hash.slice(1) : hash);
+  const view = p.get("view");
+  const oldList = p.get("card") === OLD_SUBSCRIPTIONS && view !== FIXED && view !== LEFT_OVER && view !== ALL_POSTINGS;
+  if (!oldList) return parseState(p, view);
+  // The overview's unit is not the view's, and a posting's detail has no place on the tab.
+  const s = parseState(p, FIXED);
+  return {
+    ...s,
+    unit: null,
+    objectGroup: null,
+    fixedFull: null,
+    fixedTab: "all",
+    detail: s.detail?.kind === "subscription" ? s.detail : null,
+  };
+}
+
+function parseState(p: URLSearchParams, view: string | null): ViewState {
   const accounts = p.get("accounts");
   const unit = p.get("unit") ?? undefined;
-  const view = p.get("view");
   const allPostings = view === ALL_POSTINGS;
   const fixed = view === FIXED;
   const leftOver = view === LEFT_OVER;
@@ -177,6 +198,7 @@ export function parseHash(hash: string): ViewState {
     fixed,
     objectGroup: fixed ? p.get("og") || null : null,
     fixedFull: fixed ? (FIXED_CARDS.find((c) => c === p.get("full")) ?? null) : null,
+    fixedTab: fixed && p.get("tab") === "all" ? "all" : "payments",
     leftOver,
     search: p.get("q") ?? DEFAULT_STATE.search,
     shop: p.get("shop") || DEFAULT_STATE.shop,
@@ -208,6 +230,7 @@ export function toHash(s: ViewState): string {
   } else if (s.fixed) {
     p.set("view", FIXED);
     if (s.objectGroup !== null) p.set("og", s.objectGroup);
+    if (s.fixedTab !== DEFAULT_STATE.fixedTab) p.set("tab", s.fixedTab);
     if (s.fixedFull !== null) p.set("full", s.fixedFull);
   } else if (s.fullScreen) {
     p.set("view", FULL);

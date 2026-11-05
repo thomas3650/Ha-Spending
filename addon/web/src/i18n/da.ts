@@ -39,7 +39,6 @@ export const da = {
   all: "Alle",
   objectGroups: "Objektgrupper",
   billsInPeriod: (n: number, sum: string) => `${n} stk. · ${sum} i perioden`,
-  backToOverview: "Tilbage til overblikket",
 
   period: "Periode",
   presets: {
@@ -252,11 +251,11 @@ export const da = {
   perMonth: (value: string) => `${value} pr. måned`,
   billCount: (n: number) => `${n} stk.`,
   noPayments: "ingen betalinger",
+  noPaymentsCount: (n: number) => `${da.noPayments} · ${da.billCount(n)}`,
+  notInSum: (end: string) => `Ikke med i summen: sluttet ${end}`,
   postingsLink: (counted: string) => `${counted} →`,
   showSubscriptions: "Vis faste udgifter",
   subscriptionCount: (n: number) => `${n} ${n === 1 ? "fast udgift" : "faste udgifter"}`,
-  subscriptions: "Faste udgifter",
-  subscriptionsIn: (name: string) => `Faste udgifter i ${name}`,
   perYear: (value: string) => `${value} om året`,
   objectGroupSums: (title: string) => `${title} om året`,
   subscriptionColumns: {
@@ -276,6 +275,8 @@ export const da = {
     expected: (date: string | null) => (date === null ? "Forventes ikke" : `Forventes ${date}`),
     paid: (date: string) => `Betalt ${date}`,
     due: (date: string) => `Forfalden ${date}`,
+    next: (date: string) => `Næste ${date}`,
+    ended: (date: string) => `Sluttet ${date}`,
   },
   fixed: {
     /** Before an estimate's amount. */
@@ -354,6 +355,8 @@ export const da = {
     table: "Til overs pr. måned",
     /** The cells carry no "kr.", so the table says it once. */
     note: "Alle beløb i kr.",
+    allAccountsNote: "Til overs regner på alle konti",
+    wholePeriodNote: "Til overs viser hele perioden måned for måned",
   },
   backTo: (title: string) => `Tilbage til ${title}`,
   close: "Luk",

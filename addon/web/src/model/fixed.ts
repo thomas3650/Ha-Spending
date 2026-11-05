@@ -23,7 +23,7 @@ import { type PeriodChoice, periodOf, type ViewState } from "../state/view";
 import { partColours } from "./circle";
 import { levelName, partName, type ViewContext } from "./context";
 import { type KeyCard, objectGroupNames, perMonth } from "./key-numbers";
-import { shown } from "./subscriptions";
+import { shown, tabRows } from "./subscriptions";
 
 export interface FixedUnits {
   /** The period's grouping, as on the overview. */
@@ -70,6 +70,16 @@ export function fixedUnits(
     buttons: !days && units.length > 1,
     days,
   };
+}
+
+/**
+ * The time the Alle faste udgifter tab lists, and the object groups count by: the chosen unit, or the view's span.
+ * The overview counts by it too, so its cards and the view give one number (spec §3.2, §5).
+ */
+export function tabTime(data: Pick<SpendingData, "earliestPostingDate">, state: ViewState, today: string): Period {
+  const f = fixedUnits(data, state, today);
+  const unit = f.buttons ? f.units.find((u) => u.fullStart === state.unit) : undefined;
+  return unit === undefined ? f.span : { start: unit.start, end: unit.end };
 }
 
 export type Kind = "paid" | "estimate" | "notSeen";
@@ -392,15 +402,14 @@ function fixedCards(ctx: ViewContext, f: FixedUnits, unitYear: boolean, payments
   }
 }
 
-/** §3.4's rows: the overview's object groups by name, then Alle; each paid sum is the period's. */
+/** §3.4's rows: the overview's object groups by name, then Alle; each counts the tab's rows and sums the period's paid. */
 function objectGroupRows(ctx: ViewContext): ObjectGroupRow[] {
-  const bills = shown(ctx);
   const linked = within(ctx.shown, ctx.timeline.period);
   const row = (name: string | null): ObjectGroupRow => {
     const of = (group: string) => name === null || group === name;
     return {
       name,
-      count: bills.filter((b) => of(b.subscription.objectGroup)).length,
+      count: tabRows({ ...ctx, state: { ...ctx.state, objectGroup: name } }).length,
       sum: linked.reduce(
         (sum, p) => (p.subscription !== null && of(p.subscription.objectGroup) ? sum + p.amount : sum),
         0,

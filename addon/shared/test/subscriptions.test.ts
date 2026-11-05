@@ -1,12 +1,14 @@
 import { describe, expect, it } from "vitest";
-import type { Subscription } from "../src/types";
+import type { Period, Posting, Subscription } from "../src/types";
 import {
   PAYMENTS_PER_YEAR,
   amountPerPayment,
   amountPerYear,
   gapMonths,
+  dueDatesBetween,
   dueDatesUntil,
   nextDate,
+  statusInTime,
   subscriptionStatus,
 } from "../src/subscriptions";
 
@@ -240,5 +242,195 @@ describe("dueDatesUntil", () => {
   it("is empty when there is no next date", () => {
     const s = subscription({ start: "2026-01-15", end: "2026-10-31", lastPayment: paid("2026-10-15") });
     expect(dueDatesUntil(s, "2026-11-01", "2026-12-31")).toEqual([]);
+  });
+});
+
+describe("dueDatesBetween", () => {
+  it("lists the monthly dates between two days, counting from the start", () => {
+    const s = subscription({ start: "2025-01-31" });
+    expect(dueDatesBetween(s, "2026-02-01", "2026-04-15")).toEqual(["2026-02-28", "2026-03-31"]);
+  });
+
+  it("stops at the end date", () => {
+    const s = subscription({ start: "2026-01-15", end: "2026-04-30" });
+    expect(dueDatesBetween(s, "2026-02-01", "2026-12-31")).toEqual(["2026-02-15", "2026-03-15", "2026-04-15"]);
+  });
+
+  it("steps weekly with a skip", () => {
+    const s = subscription({ repeat: "weekly", skip: 1, start: "2026-11-02" });
+    expect(dueDatesBetween(s, "2026-11-10", "2026-12-31")).toEqual([
+      "2026-11-16",
+      "2026-11-30",
+      "2026-12-14",
+      "2026-12-28",
+    ]);
+  });
+});
+
+type Payment = Pick<Posting, "date" | "amount" | "kind">;
+
+function payment(date: string, amount = 10000): Payment {
+  return { date, amount, kind: "spending" };
+}
+
+describe("statusInTime in a past time", () => {
+  const today = "2026-11-05";
+  const fetched: Period = { start: "2025-01-01", end: today };
+  const january: Period = { start: "2026-01-01", end: "2026-01-31" };
+  const weekly = subscription({ repeat: "weekly", start: "2026-01-05" });
+
+  it("a past month with every due date met reads paid with the latest met payment's date", () => {
+    const payments = ["2026-01-05", "2026-01-12", "2026-01-19", "2026-01-27"].map((date) => payment(date));
+    expect(statusInTime(weekly, payments, january, fetched, today)).toEqual({ kind: "paid", date: "2026-01-27" });
+  });
+
+  it("a payment a few days early, in the month before, meets the due date", () => {
+    const s = subscription({ start: "2025-02-01" });
+    const february: Period = { start: "2026-02-01", end: "2026-02-28" };
+    expect(statusInTime(s, [payment("2026-01-27")], february, fetched, today)).toEqual({
+      kind: "paid",
+      date: "2026-01-27",
+    });
+  });
+
+  it("a payment a few days late, in the next month, meets the due date", () => {
+    const s = subscription({ start: "2025-01-30" });
+    expect(statusInTime(s, [payment("2026-02-03")], january, fetched, today)).toEqual({
+      kind: "paid",
+      date: "2026-02-03",
+    });
+  });
+
+  it("a missed due date reads notSeen", () => {
+    const s = subscription({ start: "2025-01-15" });
+    expect(statusInTime(s, [payment("2025-12-15")], january, fetched, today)).toEqual({
+      kind: "notSeen",
+      expected: "2026-01-15",
+    });
+  });
+
+  it("a weekly bill with three payments for four due dates reads notSeen", () => {
+    const payments = ["2026-01-05", "2026-01-19", "2026-01-26"].map((date) => payment(date));
+    expect(statusInTime(weekly, payments, january, fetched, today)).toEqual({
+      kind: "notSeen",
+      expected: "2026-01-12",
+    });
+  });
+
+  it("an open due date reads expected, before today as well", () => {
+    const s = subscription({ start: "2025-01-31" });
+    const october: Period = { start: "2026-10-01", end: "2026-10-31" };
+    const seenOn = "2026-11-02";
+    expect(statusInTime(s, [], october, { start: "2025-01-01", end: seenOn }, seenOn)).toEqual({
+      kind: "expected",
+      date: "2026-10-31",
+    });
+  });
+
+  it("a yearly bill with no due date in the time reads next with its next due date", () => {
+    const s = subscription({ repeat: "yearly", start: "2025-06-01" });
+    expect(statusInTime(s, [payment("2025-06-01")], january, fetched, today)).toEqual({
+      kind: "next",
+      date: "2026-06-01",
+    });
+  });
+
+  it("a refund alone does not meet a due date", () => {
+    const s = subscription({ start: "2025-01-15" });
+    const refund: Payment = { date: "2026-01-15", amount: -10000, kind: "refund" };
+    expect(statusInTime(s, [refund], january, fetched, today)).toEqual({ kind: "notSeen", expected: "2026-01-15" });
+  });
+
+  it("a bill that ends after the time but before its next due date reads ended", () => {
+    const s = subscription({ repeat: "yearly", start: "2025-06-01", end: "2026-03-31" });
+    expect(statusInTime(s, [payment("2025-06-01")], january, fetched, today)).toEqual({
+      kind: "ended",
+      end: "2026-03-31",
+    });
+  });
+
+  it("has no risen in a past time", () => {
+    const s = subscription({ start: "2025-01-15", lastPayment: paid("2026-01-15", 20000) });
+    expect(statusInTime(s, [payment("2026-01-15", 20000)], january, fetched, today)).toEqual({
+      kind: "paid",
+      date: "2026-01-15",
+    });
+  });
+
+  it("an ended bill reads paid in a month before its end and ended in its last month", () => {
+    const s = subscription({ start: "2025-01-15", end: "2026-05-31", lastPayment: paid("2026-05-15") });
+    const payments = [payment("2026-04-15"), payment("2026-05-15")];
+    const april: Period = { start: "2026-04-01", end: "2026-04-30" };
+    const may: Period = { start: "2026-05-01", end: "2026-05-31" };
+    expect(statusInTime(s, payments, april, fetched, today)).toEqual({ kind: "paid", date: "2026-04-15" });
+    expect(statusInTime(s, payments, may, fetched, today)).toEqual({ kind: "ended", end: "2026-05-31" });
+  });
+
+  it("an ended bill in its last month with its last due date unpaid reads notSeen, not ended", () => {
+    const s = subscription({ start: "2025-01-15", end: "2026-05-31", lastPayment: paid("2026-04-15") });
+    const may: Period = { start: "2026-05-01", end: "2026-05-31" };
+    expect(statusInTime(s, [payment("2026-04-15")], may, fetched, today)).toEqual({
+      kind: "notSeen",
+      expected: "2026-05-15",
+    });
+  });
+
+  it("an ended bill in its last month with its last due date open reads expected, not ended", () => {
+    const s = subscription({ start: "2025-01-31", end: "2026-10-31" });
+    const october: Period = { start: "2026-10-01", end: "2026-10-31" };
+    const seenOn = "2026-11-02";
+    expect(statusInTime(s, [], october, { start: "2025-01-01", end: seenOn }, seenOn)).toEqual({
+      kind: "expected",
+      date: "2026-10-31",
+    });
+  });
+
+  it("a due date whose window ends after the fetched range is not judged, so the time reads next", () => {
+    const s = subscription({ start: "2025-01-30" });
+    const fetchedToJanuary: Period = { start: "2025-01-01", end: "2026-01-31" };
+    expect(statusInTime(s, [], january, fetchedToJanuary, today)).toEqual({ kind: "next", date: "2026-02-28" });
+  });
+
+  it("a bill due 1 January, paid in late December, with the fetched range from 1 January: January's date is not judged, so January reads next 1 February", () => {
+    const s = subscription({ start: "2025-01-01", lastPayment: paid("2026-10-01") });
+    const thisYear: Period = { start: "2026-01-01", end: today };
+    const payments = ["2026-02-01", "2026-03-01"].map((date) => payment(date));
+    expect(statusInTime(s, payments, january, thisYear, today)).toEqual({ kind: "next", date: "2026-02-01" });
+  });
+
+  it("a bill that starts after its payments, with no due date in the time, reads paid with the latest payment in it", () => {
+    const s = subscription({ start: "2026-06-10" });
+    const payments = [payment("2026-01-10"), payment("2026-01-20"), payment("2026-02-10")];
+    expect(statusInTime(s, payments, january, fetched, today)).toEqual({ kind: "paid", date: "2026-01-20" });
+  });
+
+  it("a refund in the time alone, with no due date in it, does not read paid", () => {
+    const s = subscription({ start: "2026-06-10" });
+    const refund: Payment = { date: "2026-01-10", amount: -10000, kind: "refund" };
+    expect(statusInTime(s, [refund], january, fetched, today)).toEqual({ kind: "next", date: "2026-06-10" });
+  });
+});
+
+describe("statusInTime in a time that holds today", () => {
+  const today = "2026-11-05";
+  const thisYear: Period = { start: "2026-01-01", end: "2026-12-31" };
+  const fetched: Period = { start: "2026-01-01", end: "2026-12-31" };
+
+  it("a time that holds today reads today's status", () => {
+    const s = subscription({ start: "2025-01-15", lastPayment: paid("2026-09-15") });
+    expect(statusInTime(s, [payment("2026-09-15")], thisYear, fetched, today)).toEqual(subscriptionStatus(s, today));
+  });
+
+  it("an ended bill reads ended, or today's status while nextDate still gives its last due date", () => {
+    const unpaid = subscription({ start: "2025-01-10", end: "2026-10-15", lastPayment: paid("2026-09-10") });
+    const settled = subscription({ start: "2025-01-10", end: "2026-10-15", lastPayment: paid("2026-10-10") });
+    expect(statusInTime(unpaid, [payment("2026-09-10")], thisYear, fetched, today)).toEqual(
+      subscriptionStatus(unpaid, today),
+    );
+    expect(subscriptionStatus(unpaid, today).kind).toBe("notSeen");
+    expect(statusInTime(settled, [payment("2026-10-10")], thisYear, fetched, today)).toEqual({
+      kind: "ended",
+      end: "2026-10-15",
+    });
   });
 });

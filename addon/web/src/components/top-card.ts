@@ -28,10 +28,6 @@ export interface LevelLists {
 
 const SEP = html` <span class="top-sep" aria-hidden="true">›</span> `;
 
-const BACK = html`<svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" focusable="false">
-  <path d="M13 8H3M7.5 3.5 3 8l4.5 4.5" />
-</svg>`;
-
 const X = html`<svg viewBox="0 0 10 10" width="10" height="10" aria-hidden="true" focusable="false">
   <path d="M1 1 9 9M9 1 1 9" />
 </svg>`;
@@ -42,9 +38,10 @@ type Last = "period" | "unit" | "mainGroup" | "category";
  * The trail and Konti. The trail is the top filter: "Alt forbrug", the period, the unit, the main group and the
  * category, then a dashed button for the next level. Fires `hs-period`, `hs-accounts`, `set-unit` with a unit's
  * `fullStart`, `set-main-group`, `set-category`, and from the trail's × `remove-unit`, `remove-main-group` and
- * `remove-category`. In the fixed-expenses view the trail has the object group after "Alt forbrug" and a ← before it;
- * they fire `set-object-group` (null is Alle) and `back`. The Til overs view's trail is "Alt forbrug", "Til overs" and
- * the period, with the same ← and without Konti.
+ * `remove-category`. In the fixed-expenses view the trail has the object group after "Alt forbrug", which fires
+ * `set-object-group` (null is Alle). The Til overs view's trail is "Alt forbrug", "Til overs" and the period, then the
+ * unit word and Hovedgruppe greyed, with Konti greyed. In both views "Alt forbrug" is a link to `leaveHref` whose plain
+ * click fires `leave`.
  */
 export class TopCard extends LitElement {
   static override properties = {
@@ -58,6 +55,7 @@ export class TopCard extends LitElement {
     leftOver: { attribute: false },
     objectGroups: { attribute: false },
     objectGroupStep: { attribute: false },
+    leaveHref: { attribute: false },
   };
 
   declare state: ViewState;
@@ -74,6 +72,8 @@ export class TopCard extends LitElement {
   /** The object-group step's rows, Alle last; null while the answer loads and on an error. */
   declare objectGroups: ObjectGroupRow[] | null;
   declare objectGroupStep: ObjectGroupStep;
+  /** Where "Alt forbrug" leads in a view: a new tab or a copied link lands on the overview. */
+  declare leaveHref: string;
 
   constructor() {
     super();
@@ -84,6 +84,7 @@ export class TopCard extends LitElement {
     this.leftOver = false;
     this.objectGroups = null;
     this.objectGroupStep = { title: "", single: false };
+    this.leaveHref = "#";
   }
 
   protected override createRenderRoot(): HTMLElement {
@@ -111,9 +112,22 @@ export class TopCard extends LitElement {
     return html`<a href=${`#${toHash(keepDetail(this.state, next))}`}>${da.allSpending}</a>`;
   }
 
+  /** A click with a modifier or another button follows the href, so a new tab opens on the overview. */
+  private leave() {
+    const onClick = (e: MouseEvent) => {
+      if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+      e.preventDefault();
+      fire(this, "leave");
+    };
+    return html`<a href=${this.leaveHref} @click=${onClick}>${da.allSpending}</a>`;
+  }
+
   private trail() {
     if (this.leftOver) {
-      return html`<span>${da.allSpending}</span>${SEP}<span>${da.leftOver.name}</span>${SEP}${this.period(true)}`;
+      const note = da.leftOver.wholePeriodNote;
+      const unit = this.unitStep === null ? nothing : html` <hs-unit-menu .step=${this.unitStep} .greyed=${note}></hs-unit-menu>`;
+      return html`${this.leave()}${SEP}<span>${da.leftOver.name}</span>${SEP}${this.period(true)}${unit}
+        <hs-level-menu .level=${"mainGroup"} .name=${null} .greyed=${note}></hs-level-menu>`;
     }
     const state = this.state;
     const level = state.level;
@@ -122,7 +136,11 @@ export class TopCard extends LitElement {
     const category = level.kind === "category" ? level.category : undefined;
     const last: Last =
       category !== undefined ? "category" : mainGroup !== undefined ? "mainGroup" : unit !== null ? "unit" : "period";
-    const root = last === "period" ? html`<span>${da.allSpending}</span>` : this.home(clearChoices(state));
+    const root = this.fixed
+      ? this.leave()
+      : last === "period"
+        ? html`<span>${da.allSpending}</span>`
+        : this.home(clearChoices(state));
     const unitStep = this.unit(last === "unit");
     const mainGroupStep =
       mainGroup === undefined ? nothing : html`${SEP}${this.levelStep("mainGroup", mainGroup, last === "mainGroup")}`;
@@ -195,27 +213,15 @@ export class TopCard extends LitElement {
   }
 
   override render() {
-    const nav = html`<nav class="top-trail" aria-label=${da.trail}>${this.trail()}</nav>`;
     return html`<div class="card top-card">
-      ${this.fixed || this.leftOver
-        ? html`<div class="top-start">
-            <button
-              type="button"
-              class="top-back"
-              aria-label=${da.backToOverview}
-              title=${da.backToOverview}
-              @click=${() => fire(this, "back")}
-            >
-              ${BACK}
-            </button>
-            ${nav}
-          </div>`
-        : nav}
-      ${this.leftOver
-        ? nothing
-        : html`<div class="top-filters">
-            <hs-accounts-picker .accounts=${this.accounts} .chosen=${this.state.accounts}></hs-accounts-picker>
-          </div>`}
+      <nav class="top-trail" aria-label=${da.trail}>${this.trail()}</nav>
+      <div class="top-filters">
+        <hs-accounts-picker
+          .accounts=${this.accounts}
+          .chosen=${this.state.accounts}
+          .greyed=${this.leftOver ? da.leftOver.allAccountsNote : null}
+        ></hs-accounts-picker>
+      </div>
     </div>`;
   }
 }
@@ -227,40 +233,6 @@ export const topCardStyles = css`
     gap: 12px;
     align-items: center;
     justify-content: space-between;
-  }
-  .top-start {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    min-width: 0;
-  }
-  .top-back {
-    display: inline-grid;
-    place-items: center;
-    flex: none;
-    width: 28px;
-    height: 28px;
-    padding: 0;
-    border: 0;
-    border-radius: 50%;
-    color: var(--hs-text);
-    background: transparent;
-    cursor: pointer;
-  }
-  .top-back svg {
-    fill: none;
-    stroke: currentColor;
-    stroke-width: 1.6;
-    stroke-linecap: round;
-    stroke-linejoin: round;
-  }
-  .top-back:hover,
-  .top-back:focus-visible {
-    background: var(--hs-soft);
-  }
-  .top-back:focus-visible {
-    outline: 2px solid var(--hs-accent-text);
-    outline-offset: 1px;
   }
   .top-trail {
     display: flex;
@@ -337,6 +309,16 @@ export const topCardStyles = css`
   }
   .trail-add:disabled {
     color: var(--hs-leader);
+  }
+  .top-card [aria-disabled="true"],
+  .top-card [aria-disabled="true"] small {
+    color: var(--hs-muted);
+    cursor: default;
+  }
+  .trail-add[aria-disabled="true"],
+  .trail-add[aria-disabled="true"]:hover {
+    color: var(--hs-leader);
+    border-color: var(--hs-leader);
   }
   .trail-dd:disabled .trail-caret {
     stroke: var(--hs-leader);

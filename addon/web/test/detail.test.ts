@@ -82,17 +82,17 @@ function detailRows(d: HTMLElement): HTMLElement[] {
 }
 
 describe("the detail on the normal page", () => {
-  it("a Faste udgifter row opens its detail and the focus is on its heading", async () => {
-    const { app, root } = await mountLinked("card=subscriptions");
-    await click(app, rowButton(region(root, da.subscriptions), "Husleje"));
-    expect(location.hash).toBe("#card=subscriptions&detail=s%3Ab1");
+  it("an Alle faste udgifter row in the view opens its detail and the focus is on its heading", async () => {
+    const { app, root } = await mountLinked("view=fixed&tab=all");
+    await click(app, rowButton(region(root, da.allFixed), "Husleje"));
+    expect(location.hash).toBe("#view=fixed&tab=all&detail=s%3Ab1");
 
-    const card = region(root, da.subscriptions);
+    const card = region(root, da.allFixed);
     const heading = getByRole(card, "heading", { level: 3, name: "Husleje" });
     expect(focused(app)).toBe(heading);
     const d = detail(card, "Husleje");
     expect(text(d)).toContain("Bolig · Faste udgifter");
-    const ctx = viewContext(linked(THIS_YEAR), { ...DEFAULT_STATE, card: "subscriptions" }, TODAY);
+    const ctx = viewContext(linked(THIS_YEAR), { ...DEFAULT_STATE, fixed: true, fixedTab: "all" }, TODAY);
     const status = subscriptionRows(ctx).find((r) => r.name === "Husleje")?.status.text ?? "";
     expect(status).not.toBe("");
     expect(text(d)).toContain(status);
@@ -108,18 +108,18 @@ describe("the detail on the normal page", () => {
       ),
     );
     expect(rows.some((r) => r.getAttribute("aria-current") === "true")).toBe(false);
-    expect(queryByRole(card, "table", { name: da.subscriptions })).toBeNull();
+    expect(queryByRole(card, "table", { name: da.allFixed })).toBeNull();
     expect(queryByRole(card, "button", { name: "Husleje" })).toBeNull();
   });
 
-  it("Tilbage til Faste udgifter closes it and the focus is back on the row's button", async () => {
-    const { app, root } = await mountLinked("card=subscriptions");
-    await click(app, rowButton(region(root, da.subscriptions), "Husleje"));
-    const card = region(root, da.subscriptions);
-    await click(app, getByRole(card, "button", { name: da.backTo(da.subscriptions) }));
-    expect(location.hash).toBe("#card=subscriptions");
+  it("Tilbage til Alle faste udgifter closes it and the focus is back on the row's button", async () => {
+    const { app, root } = await mountLinked("view=fixed&tab=all");
+    await click(app, rowButton(region(root, da.allFixed), "Husleje"));
+    const card = region(root, da.allFixed);
+    await click(app, getByRole(card, "button", { name: da.backTo(da.allFixed) }));
+    expect(location.hash).toBe("#view=fixed&tab=all");
     expect(queryByRole(root, "heading", { level: 3, name: "Husleje" })).toBeNull();
-    expect(focused(app)).toBe(rowButton(region(root, da.subscriptions), "Husleje"));
+    expect(focused(app)).toBe(rowButton(region(root, da.allFixed), "Husleje"));
   });
 
   it("a row in a fold opened by hand gets the focus back after a close", async () => {
@@ -197,8 +197,8 @@ describe("the detail on the normal page", () => {
   });
 
   it("the bars' text alternatives name each unit and its sum", async () => {
-    const { app, root } = await mountLinked("card=subscriptions");
-    await click(app, rowButton(region(root, da.subscriptions), "Husleje"));
+    const { app, root } = await mountLinked("view=fixed&tab=all");
+    await click(app, rowButton(region(root, da.allFixed), "Husleje"));
     const d = detail(root, "Husleje");
     const bars = getByRole(d, "list", { name: da.detailPer("month") });
     const units = viewContext(linked(THIS_YEAR), DEFAULT_STATE, TODAY).units;
@@ -215,7 +215,7 @@ describe("the detail on the normal page", () => {
     const NAME = /^\d{1,2}\.\d{1,2}\.$/;
 
     it("a month draws its days, thinned to 8 names", async () => {
-      const { root } = await mountLinked("period=lastMonth&card=subscriptions&detail=s%3Ab1");
+      const { root } = await mountLinked("period=lastMonth&view=fixed&tab=all&detail=s%3Ab1");
       const items = getAllByRole(getByRole(detail(root, "Husleje"), "list", { name: da.detailPer("day") }), "listitem");
       expect(items).toHaveLength(30);
       items.forEach((item, i) => within(item).getByText(new RegExp(`^${i + 1}\\. september: `)));
@@ -224,7 +224,7 @@ describe("the detail on the normal page", () => {
     });
 
     it("a year draws its 12 months, every name shown", async () => {
-      const { root } = await mountLinked("period=lastYear&card=subscriptions&detail=s%3Ab1");
+      const { root } = await mountLinked("period=lastYear&view=fixed&tab=all&detail=s%3Ab1");
       const items = getAllByRole(getByRole(detail(root, "Husleje"), "list", { name: da.detailPer("month") }), "listitem");
       expect(items).toHaveLength(12);
       within(items[0]).getByText(/^Januar: /);
@@ -233,7 +233,7 @@ describe("the detail on the normal page", () => {
 
     it("a week with no posting keeps its 7 days at 0 kr., every name shown", async () => {
       const { root } = await mountLinked(
-        "period=custom&from=2026-10-19&to=2026-10-25&card=subscriptions&detail=s%3Ab1",
+        "period=custom&from=2026-10-19&to=2026-10-25&view=fixed&tab=all&detail=s%3Ab1",
       );
       const items = getAllByRole(getByRole(detail(root, "Husleje"), "list", { name: da.detailPer("day") }), "listitem");
       expect(items).toHaveLength(7);
@@ -245,7 +245,7 @@ describe("the detail on the normal page", () => {
   });
 
   it("the running unit's item says i gang, a finished unit's does not, and each title is its label", async () => {
-    const { root } = await mountLinked("card=subscriptions&detail=s%3Ab1");
+    const { root } = await mountLinked("view=fixed&tab=all&detail=s%3Ab1");
     const items = getAllByRole(getByRole(detail(root, "Husleje"), "list", { name: da.detailPer("month") }), "listitem");
     expect(text(items[items.length - 1])).toContain(da.inProgress);
     expect(text(items[0])).not.toContain(da.inProgress);
@@ -331,7 +331,7 @@ describe("the detail on the normal page", () => {
     });
 
     it("a detail with no marked row and 15 rows shows the newest 10", async () => {
-      const { root } = await mount("card=subscriptions&detail=s%3Ab1", {
+      const { root } = await mount("view=fixed&tab=all&detail=s%3Ab1", {
         answer: (r) => {
           const a = answerFor(r);
           const linkedBakery = (i: number): Posting => ({
@@ -357,8 +357,8 @@ describe("the detail on the normal page", () => {
   });
 
   it("Ingen posteringer i perioden for a subscription not paid in the period, and 0 kr. in the first box", async () => {
-    const { app, root } = await mountLinked("card=subscriptions");
-    await click(app, rowButton(region(root, da.subscriptions), "Avis"));
+    const { app, root } = await mountLinked("view=fixed&tab=all");
+    await click(app, rowButton(region(root, da.allFixed), "Avis"));
     const d = detail(root, "Avis");
     expect(text(d)).toContain(da.noDetailRows);
     expect(queryByRole(d, "table")).toBeNull();
@@ -366,8 +366,8 @@ describe("the detail on the normal page", () => {
   });
 
   it("Konto reads – with no last payment", async () => {
-    const { app, root } = await mountLinked("card=subscriptions");
-    await click(app, rowButton(region(root, da.subscriptions), "Avis"));
+    const { app, root } = await mountLinked("view=fixed&tab=all");
+    await click(app, rowButton(region(root, da.allFixed), "Avis"));
     const d = detail(root, "Avis");
     expect(boxes(d)[2]).toBe(`${da.columns.account} = ${da.noAccount}`);
     expect(text(d)).toContain("Faste udgifter");
@@ -375,13 +375,13 @@ describe("the detail on the normal page", () => {
   });
 
   it("Åbn i Firefly III links the bill or the posting, and is absent without fireflyLinkUrl", async () => {
-    const { app, root } = await mountLinked("card=subscriptions&detail=s%3Ab1");
+    const { app, root } = await mountLinked("view=fixed&tab=all&detail=s%3Ab1");
     const bill = getByRole(detail(root, "Husleje"), "link", { name: da.openInFirefly });
     expect(bill.getAttribute("href")).toBe(`${LINK}/bills/show/b1`);
     expect(bill.getAttribute("target")).toBe("_blank");
     expect(bill.getAttribute("rel")).toBe("noopener noreferrer");
-    await click(app, getByRole(root, "button", { name: da.backTo(da.subscriptions) }));
-    expect(queryByRole(region(root, da.subscriptions), "link")).toBeNull();
+    await click(app, getByRole(root, "button", { name: da.backTo(da.allFixed) }));
+    expect(queryByRole(region(root, da.allFixed), "link")).toBeNull();
     unmount();
 
     const shop = await mountLinked("card=postings&detail=p%3Ap25");
@@ -391,7 +391,7 @@ describe("the detail on the normal page", () => {
     expect(queryByRole(region(shop.root, da.postingsTitle), "link", { name: "Pizzeria Roma" })).toBeNull();
     unmount();
 
-    const none = await mountLinked("card=subscriptions&detail=s%3Ab1", null);
+    const none = await mountLinked("view=fixed&tab=all&detail=s%3Ab1", null);
     expect(queryByRole(detail(none.root, "Husleje"), "link")).toBeNull();
     unmount();
 
@@ -470,20 +470,52 @@ describe("the detail on the normal page", () => {
   });
 
   it("the first box reads I perioden with no date", async () => {
-    const { root } = await mountLinked("card=subscriptions&detail=s%3Ab1");
+    const { root } = await mountLinked("view=fixed&tab=all&detail=s%3Ab1");
     const first = getAllByRole(detail(root, "Husleje"), "term")[0] as HTMLElement;
     expect(text(first)).toBe("I perioden");
   });
 
   it("the first box's count reads exactly N posteringer, with no leading dot", async () => {
-    const { root } = await mountLinked("card=subscriptions&detail=s%3Ab1");
+    const { root } = await mountLinked("view=fixed&tab=all&detail=s%3Ab1");
     const first = getAllByRole(detail(root, "Husleje"), "term")[0] as HTMLElement;
     expect(text(first.nextElementSibling as Element)).toBe(`80.000 kr. ${count(10)}`);
     expect(text(first.nextElementSibling as Element)).not.toContain("·");
   });
 
-  it("the period and the accounts change the sums; the search does not", async () => {
-    const { app, root } = await mountLinked("card=subscriptions&detail=s%3Ab1");
+  it("Konti changes a bill's sums while its row stays", async () => {
+    const shared: Subscription = {
+      ...PIZZA,
+      id: "b8",
+      name: "Delt abonnement",
+      lastPayment: { date: "2026-10-10", amount: 20000, category: "Café", account: "2" },
+    };
+    const payment = (id: string, date: string, account: string, amount: number): Posting => ({
+      id,
+      groupId: `g${id}`,
+      date,
+      text: "DELT",
+      account,
+      category: "Café",
+      shop: null,
+      kind: "spending",
+      amount,
+      subscription: { id: "b8", name: "Delt abonnement", objectGroup: "Abonnementer" },
+    });
+    const answer = (range: Period) => {
+      const a = answerFor(range);
+      const paid = [payment("d1", "2026-09-10", "1", 10000), payment("d2", "2026-10-10", "2", 20000)];
+      return json(withSubscriptions({ ...a, postings: [...paid, ...a.postings] }, [...SUBSCRIPTIONS, shared]));
+    };
+    const all = await mount("view=fixed&tab=all&detail=s%3Ab8", { answer });
+    expect(boxes(detail(all.root, "Delt abonnement"))[0]).toBe(`${da.detailInPeriod} = 300 kr. ${count(2)}`);
+    unmount();
+    const ticked = await mount("accounts=2&view=fixed&tab=all&detail=s%3Ab8", { answer });
+    expect(boxes(detail(ticked.root, "Delt abonnement"))[0]).toBe(`${da.detailInPeriod} = 200 kr. ${count(1)}`);
+    expect(location.hash).toBe("#accounts=2&view=fixed&tab=all&detail=s%3Ab8");
+  });
+
+  it("the period changes the sums, Konti that takes the row away closes it, and the search does nothing", async () => {
+    const { app, root } = await mountLinked("view=fixed&tab=all&detail=s%3Ab1");
     expect(boxes(detail(root, "Husleje"))[0]).toContain(`80.000 kr. ${count(10)}`);
     fireEvent.click(getByRole(root, "button", { name: new RegExp(`^${da.period}`) }));
     await app.updateComplete;
@@ -492,8 +524,9 @@ describe("the detail on the normal page", () => {
     expect(boxes(detail(root, "Husleje"))[0]).toContain(`8.000 kr. ${count(1)}`);
     unmount();
 
-    const ticked = await mountLinked("accounts=2&card=subscriptions&detail=s%3Ab1");
-    expect(boxes(detail(ticked.root, "Husleje"))[0]).toContain(`0 kr. ${count(0)}`);
+    const ticked = await mountLinked("accounts=2&view=fixed&tab=all&detail=s%3Ab1");
+    expect(queryByRole(ticked.root, "group", { name: "Husleje" })).toBeNull();
+    expect(location.hash).toBe("#accounts=2&view=fixed&tab=all");
     unmount();
 
     const plain = await mountLinked("card=postings&detail=p%3Ap25");
@@ -511,14 +544,14 @@ describe("the detail on the normal page", () => {
     }
 
     it("carry the year when Sidste 12 måneder crosses a new year", async () => {
-      const labels = await barLabels("period=last12Months&card=subscriptions&detail=s%3Ab1");
+      const labels = await barLabels("period=last12Months&view=fixed&tab=all&detail=s%3Ab1");
       expect(labels).toHaveLength(12);
       expect(labels[0]).toContain("Oktober 2025: ");
       expect(labels[11]).toContain("September 2026: ");
     });
 
     it("leave the year off with I år", async () => {
-      const labels = await barLabels("card=subscriptions&detail=s%3Ab1");
+      const labels = await barLabels("view=fixed&tab=all&detail=s%3Ab1");
       expect(labels[0]).toContain("Januar: ");
       expect(labels.some((l) => /\b20\d\d: /.test(l))).toBe(false);
     });

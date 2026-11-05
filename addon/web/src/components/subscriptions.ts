@@ -52,19 +52,30 @@ export class Subscriptions extends LitElement {
       aria-current=${marked ? "true" : nothing}
       @click=${() => fire(this, "detail-open", { kind: "subscription", id: r.id })}
     >
-      <td>
+      <td class="subscription-gives-way">
         <span class="subscription-name"
-          ><button type="button" class="row-name" data-detail=${`s:${r.id}`}>${r.name}</button>
+          ><span class="subscription-fit" title=${r.name}
+            ><button type="button" class="row-name subscription-clip" data-detail=${`s:${r.id}`}>${r.name}</button></span
+          >
           <span class="object-group-mark">${r.objectGroup}</span></span
         >
         ${r.next === null ? nothing : html`<span class="subscription-next">${da.nextOn(r.next)}</span>`}
       </td>
-      ${showCategory ? html`<td>${r.category}</td>` : nothing}
+      ${showCategory
+        ? html`<td class="subscription-gives-way">
+            <span class="subscription-fit" title=${r.category}><span class="subscription-clip">${r.category}</span></span>
+          </td>`
+        : nothing}
       <td class="subscription-amount">
         <span class="subscription-payment">${r.amount}</span>
         <span class="subscription-repeat">${r.repeat}</span>
       </td>
-      <td class="subscription-amount subscription-nowrap">${r.perYear}</td>
+      <td
+        class="subscription-amount subscription-nowrap ${r.notInSum === null ? "" : "subscription-not-in-sum"}"
+        title=${r.notInSum ?? nothing}
+      >
+        ${r.perYear}${r.notInSum === null ? nothing : html` <span class="visually-hidden">${r.notInSum}</span>`}
+      </td>
       <td><span class="subscription-status status-${r.status.due ? "due" : r.status.kind}">${r.status.text}</span></td>
     </tr>`;
   }
@@ -193,6 +204,23 @@ export const subscriptionsStyles = css`
     color: var(--hs-muted);
     font-size: 12px;
   }
+  /* The status pill keeps one line, so when the card is narrow the name and the category end in "…" instead, with
+     their tooltip, each down to 6em. A track of minmax(0, max-content) asks for its text's width but takes less. */
+  .subscriptions td.subscription-gives-way {
+    min-width: 6em;
+  }
+  .subscriptions .subscription-fit {
+    display: inline-grid;
+    grid-template-columns: minmax(0, max-content);
+    max-width: 100%;
+    vertical-align: top;
+  }
+  .subscriptions .subscription-clip {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
   .subscriptions tr.subscription-row {
     cursor: pointer;
   }
@@ -201,6 +229,7 @@ export const subscriptionsStyles = css`
   }
   .subscription-status {
     display: inline-block;
+    white-space: nowrap;
     padding: 2px 8px;
     border-radius: 10px;
     font-size: 12px;
@@ -224,6 +253,13 @@ export const subscriptionsStyles = css`
   .subscription-status.status-paid {
     color: var(--hs-paid);
     background: var(--hs-paid-soft);
+  }
+  .subscription-status.status-next,
+  .subscription-status.status-ended {
+    color: var(--hs-muted);
+  }
+  .subscription-not-in-sum {
+    color: var(--hs-muted);
   }
 `;
 

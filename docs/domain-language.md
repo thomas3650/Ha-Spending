@@ -28,15 +28,17 @@ its name in code, so the same thing has one name everywhere. The Danish word is 
 | Last payment | seneste betaling | `lastPayment`: the latest posting linked to a subscription on or before today |
 | Amount per payment | beløb | the middle of the subscription's amount range, or the latest payment when it has risen ([D63](decisions.md)) |
 | Amount per year | om året | the cost of a subscription over a year; the rule is in [the spec](superpowers/specs/2026-11-01-subscriptions.md#21-amount-per-payment-and-per-year) |
-| Subscription status | status | Ikke set, Steget, Forventes or Betalt, and a Forventes past its date reads Forfalden, in red ([D64](decisions.md), [D77](decisions.md)); the rules are in [the spec](superpowers/specs/2026-11-01-subscriptions.md#23-the-status) |
+| Subscription status | status | Ikke set, Steget, Forventes or Betalt, and a Forventes past its date reads Forfalden, in red ([D64](decisions.md), [D77](decisions.md)). The "Alle faste udgifter" tab also reads "Betalt {date}" and "Næste {date}" in a past time, and "Sluttet {date}" for a bill that has ended, in a past time and in one that holds today ([D78](decisions.md)); the rules are in [the fixed list tab spec](superpowers/specs/2026-11-05-fixed-list-tab.md#34-status) |
 | Object group | objektgruppe | `objectGroup`: the title of the group Firefly III puts a bill in; the page shows it as the pill on a row, as a sum per group and as a key number for the period, whose link opens the fixed-expenses view ([D38](decisions.md), [D41](decisions.md), [D66](decisions.md)) |
 | Posting's subscription | — | `Posting.subscription`: the bill a posting is linked to, with its id, name and object group, or `null` |
 | Detail | detalje | `detail` in the view state (`DetailKey`): the open detail of a fixed expense (`s:<id>`) or a posting (`p:<id>`), kept in the hash ([D44](decisions.md)) |
-| Card | kort | `card` in the view state: which card the second half shows, Søjler, Posteringer, Faste udgifter or Butikker (`"bars"` \| `"postings"` \| `"subscriptions"` \| `"shops"`) |
+| Card | kort | `card` in the view state: which card the second half shows, Søjler, Posteringer or Butikker (`"bars"` \| `"postings"` \| `"shops"`) |
 | Sort | sortér | a table sorted by a column header: a click sorts by the column, a second click reverses it; `aria-sort` marks the column ([D40](decisions.md)) |
 | Top filter | øverste filter | the trail and Konti: period, chosen unit, main group, category and accounts; it decides which data the page uses ([D59](decisions.md)) |
 | Quick filter | hurtigfilter | the search (text or shop) and the Beløb pill on the Posteringer tab; it narrows that list only ([D61](decisions.md)) |
 | Beløb kind | beløbstype | Omkring (±20 %), Under, Over or Mellem; the hash writes them as `about`, `under`, `over`, or `min` and `max` ([D61](decisions.md)) |
+| Alle faste udgifter tab | alle faste udgifter | `tab=all` in the hash, read only with `view=fixed`: the view's right card lists every fixed expense that ran in the chosen time; no `tab` is "Poster i perioden" ([D78](decisions.md)) |
+| Ran in the time | — | a fixed expense that starts on or before the time's last day and has no end date, or one on or after its first day ([D78](decisions.md)) |
 | Fixed-expenses view | faste udgifter over tid | `view=fixed` in the hash: the fixed expenses as bars per unit, paid and expected, with the payments beside them ([D66](decisions.md)) |
 | Estimate | estimat | `estimate`: a payment still to come, drawn hatched and written "ca."; its amount is `amountPerPayment` ([D66](decisions.md)) |
 | Drawn span | — | the dates the fixed-expenses view draws: the period's first day to its own last day, or for "I år", "Denne måned" and "Alt" on to the end of the year, month or running unit ([D66](decisions.md)) |
@@ -57,6 +59,6 @@ its name in code, so the same thing has one name everywhere. The Danish word is 
 | Ændring på konti | Ændring på konti | `change`: the change in the daily accounts' balance |
 | Til overs view | Til overs | `leftOver` in `ViewState`, `view=leftover` in the hash: a table of months, opened from the Til overs card ([D72](decisions.md), [D73](decisions.md)) |
 
-The hash keys are listed in [D20](decisions.md), [D35](decisions.md), [D44](decisions.md), [D60](decisions.md), [D61](decisions.md), [D66](decisions.md), [D73](decisions.md) and [D77](decisions.md). `Posting`, `kind` and the `null` category are fixed by technical spec §3.2
+The hash keys are listed in [D20](decisions.md), [D35](decisions.md), [D44](decisions.md), [D60](decisions.md), [D61](decisions.md), [D66](decisions.md), [D73](decisions.md), [D77](decisions.md) and [D78](decisions.md). `Posting`, `kind` and the `null` category are fixed by technical spec §3.2
 ([technical spec](superpowers/specs/2026-10-30-technical-design.md)). The other names are chosen here; they are in
 `addon/shared/src/`. Their texts, such as Uden kategori, belong to the page.

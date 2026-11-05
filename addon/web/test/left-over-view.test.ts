@@ -48,8 +48,13 @@ function monthsLink(root: HTMLElement): HTMLElement {
   return getByRole(getByRole(root, "group", { name: CARD }), "link", { name: da.leftOver.showMonths });
 }
 
-function back(root: HTMLElement): HTMLElement {
-  return getByRole(root, "button", { name: da.backToOverview });
+function trail(root: HTMLElement): HTMLElement {
+  return getByRole(root, "navigation", { name: da.trail });
+}
+
+/** The trail's "Alt forbrug", which on Til overs leaves it. */
+function leave(root: HTMLElement): HTMLElement {
+  return getByRole(trail(root), "link", { name: da.allSpending });
 }
 
 function heads(root: HTMLElement): string[] {
@@ -85,10 +90,9 @@ function monthNames(root: HTMLElement): string[] {
   });
 }
 
-function inOverview(root: HTMLElement): void {
-  getByRole(root, "region", { name: da.per("month") });
+function inOverview(root: HTMLElement, g: "month" | "day" = "month"): void {
+  getByRole(root, "region", { name: da.per(g) });
   expect(queryByRole(root, "table", { name: da.leftOver.table })).toBeNull();
-  expect(queryByRole(root, "button", { name: da.backToOverview })).toBeNull();
 }
 
 describe("the Til overs view (spec §2.2, §4)", () => {
@@ -197,16 +201,42 @@ describe("the Til overs view (spec §2.2, §4)", () => {
 });
 
 describe("the trail (spec §4.1)", () => {
-  it("is ← Alt forbrug › Til overs › the period, with no unit, no main group and no Konti", async () => {
+  it("is Alt forbrug › Til overs › the period, then the unit word and Hovedgruppe, with Konti", async () => {
     const { root } = await open("view=leftover");
-    const nav = getByRole(root, "navigation", { name: da.trail });
-    expect(flat(nav)).toBe(`${da.allSpending} › ${da.leftOver.name} › ${da.presets.thisYear}`);
-    expect(queryAllByRole(nav, "link")).toHaveLength(0);
-    expect(getAllByRole(nav, "button")).toHaveLength(1);
+    const nav = trail(root);
+    expect(flat(nav)).toBe(`${da.allSpending} › ${da.leftOver.name} › ${da.presets.thisYear} ${da.monthStep} ${da.mainGroupStep}`);
+    expect(queryAllByRole(nav, "link")).toEqual([leave(root)]);
+    expect(getAllByRole(nav, "button")).toHaveLength(3);
     expect(flat(getByRole(nav, "heading", { level: 1 }))).toBe(da.presets.thisYear);
-    expect(queryByRole(root, "button", { name: new RegExp(`^${da.accounts}`) })).toBeNull();
-    expect(queryByRole(nav, "button", { name: da.backToOverview })).toBeNull();
-    back(root);
+    expect(flat(getByRole(root, "button", { name: new RegExp(`^${da.accounts}`) }))).toContain(da.allAccountsCount(2));
+  });
+
+  it("Konti, the unit word and Hovedgruppe are greyed, reachable by Tab, and do not open", async () => {
+    const { app, root } = await open("view=leftover");
+    const parts = [
+      { name: new RegExp(`^${da.accounts}`), description: da.leftOver.allAccountsNote },
+      { name: da.chooseMonth, description: da.leftOver.wholePeriodNote },
+      { name: da.chooseMainGroup, description: da.leftOver.wholePeriodNote },
+    ];
+    for (const part of parts) {
+      const button = getByRole(root, "button", part) as HTMLButtonElement;
+      expect(button.getAttribute("aria-disabled")).toBe("true");
+      expect(button.disabled).toBe(false);
+      expect(button.tabIndex).toBeGreaterThanOrEqual(0);
+      await click(app, button);
+      expect(button.getAttribute("aria-expanded")).not.toBe("true");
+    }
+    expect(queryByRole(root, "group", { name: da.accounts })).toBeNull();
+    expect(queryByRole(root, "group", { name: da.units })).toBeNull();
+    expect(queryByRole(root, "group", { name: da.mainGroups })).toBeNull();
+    expect(flat(getByRole(root, "button", { name: new RegExp(`^${da.accounts}`) }))).toContain(da.allAccountsCount(2));
+    expect(location.hash).toBe("#view=leftover");
+  });
+
+  it("Denne måned has no unit word", async () => {
+    const { root } = await open("period=thisMonth&view=leftover");
+    expect(flat(trail(root))).toBe(`${da.allSpending} › ${da.leftOver.name} › ${da.presets.thisMonth} ${da.mainGroupStep}`);
+    expect(queryByRole(root, "button", { name: da.chooseMonth })).toBeNull();
   });
 
   it("a new period asks for its months and stays in the view", async () => {
@@ -223,14 +253,26 @@ describe("the trail (spec §4.1)", () => {
 });
 
 describe("the way in and out (spec §2.2)", () => {
-  it("← right after the open goes back, and the focus goes from the caption to the overview's heading", async () => {
+  it("has no Tilbage til overblikket button and has an Alt forbrug link", async () => {
+    const { root } = await open("view=leftover");
+    expect(queryByRole(root, "button", { name: "Tilbage til overblikket" })).toBeNull();
+    expect(leave(root).tagName).toBe("A");
+  });
+
+  it("the link's href is the overview's hash", async () => {
+    const { root } = await open("card=postings&detail=p:p23&view=leftover");
+    expect(leave(root).getAttribute("href")).toBe("#card=postings&detail=p%3Ap23");
+    expect(fireEvent.click(leave(root), { metaKey: true })).toBe(true);
+  });
+
+  it("the link right after the open goes back, so Forward reopens the page", async () => {
     const { app, root } = await open("");
     const active = () => app.shadowRoot?.activeElement;
     const length = history.length;
     await click(app, monthsLink(root));
     expect(history.length).toBe(length + 1);
     expect(active()).toBe(table(root).caption);
-    await click(app, back(root));
+    await click(app, leave(root));
     await hashBecomes(app, "");
     expect(history.length).toBe(length + 1);
     inOverview(root);
@@ -249,11 +291,36 @@ describe("the way in and out (spec §2.2)", () => {
     expect(app.shadowRoot?.activeElement).toBe(getByRole(root, "heading", { level: 2, name: da.per("month") }));
   });
 
-  it("← and Escape on a link to the view replace the entry with the overview's", async () => {
-    for (const leave of [(root: HTMLElement) => fireEvent.click(back(root)), () => fireEvent.keyDown(window, { key: "Escape" })]) {
+  it("the link after another choice replaces, and Back lands on the first view entry", async () => {
+    const { app, root } = await open("");
+    await click(app, monthsLink(root));
+    await click(app, getByRole(root, "button", { name: new RegExp(`^${da.period}`) }));
+    await click(app, getByRole(getByRole(root, "group", { name: da.period }), "button", { name: da.presets.lastMonth }));
+    expect(location.hash).toBe("#period=lastMonth&view=leftover");
+    const length = history.length;
+    await click(app, leave(root));
+    expect(location.hash).toBe("#period=lastMonth");
+    expect(history.length).toBe(length);
+    inOverview(root, "day");
+    history.back();
+    await hashBecomes(app, "#view=leftover");
+    table(root);
+  });
+
+  it("after the link the focus is on the overview's heading", async () => {
+    const { app, root } = await open("view=leftover");
+    const alt = leave(root);
+    alt.focus();
+    await click(app, alt);
+    expect(location.hash).toBe("");
+    expect(app.shadowRoot?.activeElement).toBe(getByRole(root, "heading", { level: 2, name: da.per("month") }));
+  });
+
+  it("the link and Escape on a link to the view replace the entry with the overview's", async () => {
+    for (const out of [(root: HTMLElement) => fireEvent.click(leave(root)), () => fireEvent.keyDown(window, { key: "Escape" })]) {
       const { app, root } = await open("card=postings&view=leftover");
       const length = history.length;
-      leave(root);
+      out(root);
       await settle(app);
       expect(location.hash).toBe("#card=postings");
       expect(history.length).toBe(length);
@@ -349,13 +416,28 @@ describe("loading and errors (spec §4.3)", () => {
     expect(cardNames(root)).toEqual([]);
   });
 
-  it("when the months fail, the page's error card shows under the trail and ← still works", async () => {
+  it("the link works while loading and on an error", async () => {
+    for (const answer of [() => new Promise<Response>(() => {}), () => json({ error: "unreachable" }, 502)]) {
+      const { app, root } = await open("period=lastMonth&view=leftover", { answer });
+      const length = history.length;
+      const alt = leave(root);
+      alt.focus();
+      await click(app, alt);
+      expect(location.hash).toBe("#period=lastMonth");
+      expect(history.length).toBe(length);
+      expect(queryByRole(root, "table", { name: da.leftOver.table })).toBeNull();
+      expect(app.shadowRoot?.activeElement).toBe(getByRole(trail(root), "heading", { level: 1 }));
+      unmount();
+    }
+  });
+
+  it("when the months fail, the page's error card shows under the trail and the link still works", async () => {
     const { app, root } = await open("view=leftover", { leftOver: () => json({ error: "unreachable" }, 502) });
     expect(flat(getByRole(root, "alert"))).toBe(da.errors.unreachable);
     getByRole(root, "navigation", { name: da.trail });
     expect(queryByRole(root, "table", { name: da.leftOver.table })).toBeNull();
     expect(cardNames(root)).toEqual([]);
-    await click(app, back(root));
+    await click(app, leave(root));
     expect(location.hash).toBe("");
     inOverview(root);
   });

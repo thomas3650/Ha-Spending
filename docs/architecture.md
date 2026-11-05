@@ -18,15 +18,15 @@ The server and the page reach each other only through the routes below.
 ## What exists now
 
 The server reads Firefly III and answers `/api/data`; the page fetches it and shows screens 1 to 4 of the
-[UI spec](superpowers/specs/2026-10-30-ui-ux-design.md) and the subscriptions card of the
+[UI spec](superpowers/specs/2026-10-30-ui-ux-design.md) and the fixed expenses of the
 [subscriptions spec](superpowers/specs/2026-11-01-subscriptions.md) and the
 [object groups spec](superpowers/specs/2026-11-01-object-groups.md). The Butikker card of the
 [top shops spec](superpowers/specs/2026-11-02-top-shops.md) lists the shops with the most spending and hides some.
 The detail of a fixed expense, a posting or a shop, in the
-[detail view spec](superpowers/specs/2026-11-02-detail-view.md), opens from a row on the Posteringer and Faste udgifter
-cards, in the normal card and in full screen ([D44](decisions.md), [D60](decisions.md)). The fixed-expenses view of the
+[detail view spec](superpowers/specs/2026-11-02-detail-view.md), opens from a row on the Posteringer card and on the fixed-expenses view's "Alle faste udgifter" tab, in the normal card and in full screen ([D44](decisions.md), [D60](decisions.md)). The fixed-expenses view of the
 [fixed expenses over time spec](superpowers/specs/2026-11-04-fixed-expenses-over-time.md) shows them as bars per unit,
-paid and expected ([D66](decisions.md)). The Til overs card and view of the
+paid and expected ([D66](decisions.md)). The list of every fixed expense is that view's second tab, and every page has one top bar, in the
+[fixed list tab spec](superpowers/specs/2026-11-05-fixed-list-tab.md) ([D78](decisions.md)). The Til overs card and view of the
 [Til overs spec](superpowers/specs/2026-11-04-left-over.md) show a table of months from `/api/left-over`
 ([D72](decisions.md), [D73](decisions.md)).
 
@@ -67,7 +67,7 @@ paid and expected ([D66](decisions.md)). The Til overs card and view of the
 | Route | Answers |
 | --- | --- |
 | `GET /api/health` | `{"status": "ok", "version": "<version>"}`, typed `Health` in `addon/shared/` |
-| `GET /api/data?start=YYYY-MM-DD&end=YYYY-MM-DD` | the postings of the period, the household's subscriptions with their object groups and last payments (the server reads all bills of the 760 days before today; only a bill with an object group is a subscription, and only for it does the server read the posting of its last payment), each posting with the bill it is linked to and what the page needs around them, typed `SpendingData` in `addon/shared/`; errors are the codes of `DataError` ([D18](decisions.md)) |
+| `GET /api/data?start=YYYY-MM-DD&end=YYYY-MM-DD` | the postings of the period, the household's subscriptions with their object groups and last payments (the server reads all bills of the 760 days before today; only a bill with an object group is a subscription, an inactive one is left out, and one that ended before the range's start is left out, and only for it does the server read the posting of its last payment), each posting with the bill it is linked to and what the page needs around them, typed `SpendingData` in `addon/shared/`; errors are the codes of `DataError` ([D18](decisions.md)) |
 | `GET /api/left-over?start=YYYY-MM-DD&end=YYYY-MM-DD` | the household's money per calendar month of the period: Ind, Tilbage, Forbrug, Kreditten, Opsparing, Øvrigt and Ændring på konti, with the members' parts, typed `LeftOverData` in `addon/shared/`; errors are the codes of `DataError` ([D74](decisions.md), [D76](decisions.md)) |
 | `GET /api/hidden-shops` | the shops hidden from the Butikker card, `{"shops": [...]}`, typed `HiddenShops` in `addon/shared/`, never cached |
 | `POST /api/hidden-shops` | hides or shows one shop, `{"shop": "…", "hidden": true}`, and answers the whole list as the GET does ([D43](decisions.md)) |

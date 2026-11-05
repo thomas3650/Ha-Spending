@@ -64,17 +64,24 @@ A click on a fixed expense or on a posting shows its detail: the sums, the bars 
 `firefly_link_url` is set, the detail has the link "Åbn i Firefly III", each posting's date links to it in Firefly III,
 and a click on a posting's row opens it; without it the detail has no link.
 
-The overview also shows your Firefly III subscriptions, which the page calls "Faste udgifter": a key number for each
-object group with its payments in the period, and a card with each subscription's amount, its cost per year and a
-status, grouped by main group with its category. The card needs subscriptions in Firefly III with their postings linked
-to them, for example by Firefly III's rules. A subscription without a payment reads "Forfalden" for a few days after a
-due date and "Ikke set" after that; it reads "Forventes" while its start is in the future. Inactive and ended
-subscriptions are left out, as are those last paid from a liability or into a main group in `excluded_main_groups`.
+The page also shows your Firefly III subscriptions, which it calls "Faste udgifter": a key number on the overview for
+each object group with its payments in the period, and, in the fixed-expenses view, the tab "Alle faste udgifter" with
+each subscription's amount, its cost per year and a status, grouped by main group with its category. The tab needs
+subscriptions in Firefly III with their postings linked to them, for example by Firefly III's rules.
 
-The card shows only the subscriptions that are in an object group in Firefly III; one with no object group is left
-out. Each row carries its object group's title, and the card shows the cost per year of each object group. A posting
-that is linked to a subscription carries the same mark, with the subscription's name as its tooltip, in the postings
-card.
+The tab lists the subscriptions that ran in the chosen time, so a past month shows what ran then. A subscription paid in
+the time shows there too, even before its start date in Firefly III, as when it was made after its first payments. The
+status is the one the subscription had then: "Betalt" with the date, "Ikke set" when a due date passed with no payment,
+or "Næste" with the next date when neither a due date nor a payment fell in the time. Today's time reads "Forfalden" for
+a few days after a due date and "Ikke set" after that, and "Forventes" while its start is in the future. A subscription
+that has an end date in Firefly III reads "Sluttet" with that date, and shows only in the times up to its end: set an
+end date in Firefly III to stop one. Its cost per year is greyed, with a tooltip, once it no longer counts in the sums.
+Inactive subscriptions are left out, as are those last paid from a liability or into a main group in
+`excluded_main_groups`.
+
+The tab shows only the subscriptions that are in an object group in Firefly III; one with no object group is left out.
+Each row carries its object group's title, and the tab shows the cost per year of each object group. A posting that is
+linked to a subscription carries the same mark, with the subscription's name as its tooltip, in the postings card.
 
 The period step in the trail opens a menu with the presets, among them "Alt" from your earliest posting to today, and a
 calendar. Click a start day and an end day, or type them in Fra and Til as `3.1.2024`, and press Vis. The page picks the
@@ -85,9 +92,13 @@ groups; sorted by another column they are one list. The first key number shows h
 a click on that count opens the Posteringer card in full screen, with no quick filter.
 
 The key number for an object group shows the payments of that group in the period, with the sum per month and the
-number of subscriptions paid. With a unit chosen it shows the payments in that unit, as "<group> i <unit>", with the
-number of subscriptions paid and no sum per month. The key numbers are not buttons; the Faste udgifter choice in the
-right card shows that view. Under each one, the link "Vis faste udgifter →" opens the fixed-expenses view.
+number of subscriptions ("X stk."), which is the number of rows of the "Alle faste udgifter" tab for that group. With a
+unit chosen it shows the payments in that unit, as "<group> i <unit>", with that number and no sum per month. The key
+numbers are not buttons. Under each one, the link "Vis faste udgifter →" opens the fixed-expenses view.
+
+Every page has the same bar over the cards. "Alt forbrug" in it is a link back to the overview on every other page. On
+the *Til overs* page the accounts, the unit and the main group are greyed, since it covers all accounts and the whole
+period, and a tooltip says so.
 
 The fixed-expenses view shows what the fixed expenses cost per month, with that object group chosen in the first step
 of the trail ("Alle faste udgifter" for all of them). The bars on the left are the months of the period, stacked by
@@ -96,10 +107,10 @@ still to come is a hatched estimate in the same colour, marked "ca.", and is the
 its amount range, or its latest payment when that has risen. "I år", "Denne måned" and "Alt" run on past today to the
 end of the year, month or running unit, so they show the estimates; other periods show only what was paid. A fixed
 expense that was not seen on its date is listed with no amount and is left out of every sum. Press a bar to see only
-that month's payments.
+that month's payments. The right card has two tabs: "Poster i perioden", the payments, and "Alle faste udgifter". The overview's right card has the tabs Søjler, Posteringer and Butikker.
 
 In the payments list a status is one word: Betalt, Forventes, Forfalden or Ikke set, and the Dato column holds the
-date. Forfalden is red here and in the Faste udgifter tab. With one object group chosen the rows have no object-group
+date. Forfalden is red here and in the "Alle faste udgifter" tab. With one object group chosen the rows have no object-group
 badge. With "Alle" the group is in the tooltip of a fixed expense's name and at the start of a year row's line. In the
 bars a due estimate is its own hatched segment with a red outline, and the legend says "Skraveret: estimat" and "Rød
 kant: forfalden".
@@ -110,7 +121,7 @@ parts lists the nine biggest and folds the rest into "n andre".
 Each of the two cards has the button "Fuld skærm: <card title>". It gives that card the page's whole width (the bars
 also its height), and hides the other card and the key numbers. In the list's full screen the rows show the object-group
 badge again. In full screen, Escape and the browser's Back button close full screen first and stay in the view; then
-they leave the view, as does the ← button before the trail (in one press). A very narrow window may scroll the list
+they leave the view, as does "Alt forbrug" in the trail (in one press). A very narrow window may scroll the list
 sideways in full screen.
 
 On the Posteringer card the quick filter sits over the list: a search field and the Beløb pill. The search matches the

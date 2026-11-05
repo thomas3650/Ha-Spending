@@ -1,4 +1,4 @@
-import type { Level, SpendingData, Subscription } from "@ha-spending/shared";
+import type { Level, SpendingData } from "@ha-spending/shared";
 import { describe, expect, it } from "vitest";
 import {
   chooseShop,
@@ -31,6 +31,7 @@ import {
   setSearch,
   setAmount,
   setObjectGroup,
+  setFixedTab,
 } from "../src/state/actions";
 import type { AmountFilter } from "../src/model/amount";
 import { DEFAULT_STATE, type DetailKey, type ViewState } from "../src/state/view";
@@ -196,27 +197,6 @@ describe("the actions", () => {
   });
 });
 
-describe("the subscriptions card", () => {
-  const subs: ViewState = { ...DEFAULT_STATE, card: "subscriptions" };
-
-  it("survives the period, the accounts and the level", () => {
-    expect(setPeriod(subs, { preset: "lastMonth" }).card).toBe("subscriptions");
-    expect(setAccounts(subs, ["1"], ["1", "2"]).card).toBe("subscriptions");
-    expect(openPart(subs, "Mad").card).toBe("subscriptions");
-    expect(clearChoices(at(cafe)).card).toBe("bars");
-    expect(clearChoices({ ...subs, level: cafe }).card).toBe("subscriptions");
-    expect(removeMainGroup({ ...subs, level: cafe }).card).toBe("subscriptions");
-    expect(removeCategory({ ...subs, level: cafe }).card).toBe("subscriptions");
-  });
-
-  it("survives a unit toggled off, and a chosen unit gives the postings", () => {
-    const withUnit: ViewState = { ...subs, unit: "2026-07-01" };
-    expect(removeUnit(withUnit).card).toBe("subscriptions");
-    expect(chooseUnit(withUnit, "2026-07-01").card).toBe("subscriptions");
-    expect(chooseUnit(subs, "2026-07-01").card).toBe("postings");
-  });
-});
-
 describe("the chosen shop", () => {
   const netto: ViewState = { ...DEFAULT_STATE, search: "net", shop: "Netto" };
 
@@ -330,32 +310,6 @@ describe("normalise", () => {
     expect(norm({ period: { preset: "lastMonth" }, unit: "2026-09-01" }).unit).toBeNull();
     expect(normalise({ ...DEFAULT_STATE, unit: "2026-01-01" }, data, "2026-01-20").unit).toBeNull();
   });
-
-  describe("the subscriptions card", () => {
-    const one: Subscription = {
-      id: "1",
-      name: "Streaming",
-      objectGroup: "Abonnementer",
-      repeat: "monthly",
-      skip: 0,
-      start: "2026-01-05",
-      end: null,
-      amountMin: 9900,
-      amountMax: 9900,
-      lastPayment: null,
-    };
-    const range = { start: "2026-01-01", end: today };
-    const withOne = { ...answerFor(range), subscriptions: [one] };
-    const state: ViewState = { ...DEFAULT_STATE, card: "subscriptions" };
-
-    it("falls back to the bars without subscriptions", () => {
-      expect(normalise(state, answerFor(range), today).card).toBe("bars");
-    });
-
-    it("keeps the card with a subscription", () => {
-      expect(normalise(state, withOne, today).card).toBe("subscriptions");
-    });
-  });
 });
 
 describe("the detail", () => {
@@ -380,25 +334,27 @@ describe("the detail", () => {
   });
 
   it.each<[string, Partial<ViewState>]>([
-    ["a bill on Faste udgifter, whatever the accounts", { card: "subscriptions", accounts: ["2"], detail: bill }],
     ["a posting on Posteringer", { card: "postings", detail: posting("p23") }],
     ["a posting on Posteringer in full screen", { card: "postings", fullScreen: true, detail: posting("p23") }],
-    ["a bill on Faste udgifter in full screen", { card: "subscriptions", fullScreen: true, detail: bill }],
-    ["a posting of a listed bill on Faste udgifter", { card: "subscriptions", detail: posting("p11") }],
+    ["a bill on the view's Alle faste udgifter", { fixed: true, fixedTab: "all", detail: bill }],
+    ["a bill on the view's Alle faste udgifter in full screen", { fixed: true, fixedTab: "all", fixedFull: "list", detail: bill }],
   ])("normalise keeps a detail that resolves: %s", (_, s) => {
     expect(kept(s)).toEqual(s.detail);
     expect(detailResolves(state(s), data, today)).toBe(true);
   });
 
   it.each<[string, Partial<ViewState>]>([
-    ["an unknown bill", { card: "subscriptions", detail: { kind: "subscription", id: "b99" } }],
+    ["an unknown bill in the view", { fixed: true, fixedTab: "all", detail: { kind: "subscription", id: "b99" } }],
+    ["a bill in the view on Poster i perioden", { fixed: true, detail: bill }],
+    ["a bill in the view off its row's account", { fixed: true, fixedTab: "all", accounts: ["2"], detail: bill }],
     ["an unknown posting", { card: "postings", detail: posting("p999") }],
+    ["s: on Søjler", { card: "bars", detail: bill }],
     ["s: on Posteringer", { card: "postings", detail: bill }],
     ["s: on Posteringer in full screen", { card: "postings", fullScreen: true, detail: bill }],
+    ["s: on Butikker", { card: "shops", detail: bill }],
     ["p: on Søjler", { card: "bars", detail: posting("p23") }],
     ["p: on Butikker", { card: "shops", detail: posting("p23") }],
-    ["p: of an unlinked posting on Faste udgifter", { card: "subscriptions", detail: posting("p23") }],
-    ["p: of a bill not listed on Faste udgifter", { card: "subscriptions", detail: posting("p24") }],
+    ["p: of a bill's payment on Søjler", { card: "bars", detail: posting("p11") }],
     ["a posting before the period", { card: "postings", detail: posting("p1") }],
     ["a posting on an unticked account", { card: "postings", accounts: ["1"], detail: posting("p23") }],
   ])("and drops it: %s", (_, s) => {
@@ -406,17 +362,18 @@ describe("the detail", () => {
     expect(detailResolves(state(s), data, today)).toBe(false);
   });
 
-  it("normalise drops a bill's detail when Faste udgifter falls back to the bars", () => {
-    const s = normalise(state({ card: "subscriptions", detail: bill }), { ...data, subscriptions: [] }, today);
+  it("normalise drops a bill's detail when the view gives way to the overview without subscriptions", () => {
+    const s = normalise(state({ fixed: true, fixedTab: "all", detail: bill }), { ...data, subscriptions: [] }, today);
+    expect(s.fixed).toBe(false);
     expect(s.card).toBe("bars");
     expect(s.detail).toBeNull();
   });
 
   it("keepDetail closes the detail when the card changes", () => {
-    const onSubs = state({ card: "subscriptions", detail: bill });
+    const onPostings = state({ card: "postings", detail: posting("p23") });
     const onBars = state({ card: "bars", detail: posting("p23") });
     const onShops = state({ card: "shops", detail: posting("p23") });
-    expect(keepDetail(onSubs, setCard(onSubs, "bars")).detail).toBeNull();
+    expect(keepDetail(onPostings, setCard(onPostings, "bars")).detail).toBeNull();
     expect(keepDetail(onBars, chooseUnit(onBars, "2026-07-01")).detail).toBeNull();
     expect(keepDetail(onShops, openShop(onShops, "Netto")).detail).toBeNull();
   });
@@ -429,7 +386,7 @@ describe("the detail", () => {
     const off = setFullScreen(on, false);
     expect(off).toEqual(s);
     expect(keepDetail(on, off).detail).toBeNull();
-    expect(keepDetail(on, setCard(on, "subscriptions")).detail).toBeNull();
+    expect(keepDetail(on, setCard(on, "shops")).detail).toBeNull();
   });
 
   it("the period, the accounts, the level, the unit and the search keep it, in both widths", () => {
@@ -520,10 +477,52 @@ describe("the fixed-expenses view", () => {
     expect(n.objectGroup).toBeNull();
   });
 
-  it("normalise drops the detail in the fixed view", () => {
-    const withDetail: ViewState = { ...fixed, card: "subscriptions", detail: { kind: "subscription", id: "b1" } };
-    expect(normalise({ ...withDetail, fixed: false, objectGroup: null }, withBills, today).detail).not.toBeNull();
-    expect(normalise(withDetail, withBills, today).detail).toBeNull();
+  describe("the Alle faste udgifter tab", () => {
+    const bill = { kind: "subscription", id: "b1" } as const;
+    const ended = { ...SUBSCRIPTIONS[0], id: "b9", name: "Avis", end: "2026-05-31" };
+    const withEnded = { ...withBills, subscriptions: [...SUBSCRIPTIONS, ended] };
+    const all: ViewState = { ...DEFAULT_STATE, fixed: true, fixedTab: "all", detail: bill };
+
+    it("openFixed and openLeftOver start on the payments tab", () => {
+      expect(openFixed({ ...DEFAULT_STATE, fixedTab: "all" }, "Abonnementer").fixedTab).toBe("payments");
+      expect(openLeftOver({ ...fixed, fixedTab: "all" }).fixedTab).toBe("payments");
+    });
+
+    it("leaveFixed drops the tab and the detail", () => {
+      expect(leaveFixed({ ...all, objectGroup: "Abonnementer", fixedFull: "list" })).toEqual(DEFAULT_STATE);
+    });
+
+    it("setFixedTab changes only the tab", () => {
+      const s: ViewState = {
+        ...fixed,
+        fixedFull: "list",
+        unit: "2026-07-01",
+        level: mad,
+        accounts: ["1"],
+      };
+      expect(setFixedTab(s, "all")).toEqual({ ...s, fixedTab: "all" });
+    });
+
+    it("normalise keeps the detail of a row of the tab", () => {
+      expect(normalise(all, withBills, today).detail).toEqual(bill);
+    });
+
+    it("normalise closes the detail on the payments tab and for a posting's key", () => {
+      expect(normalise({ ...all, fixedTab: "payments" }, withBills, today).detail).toBeNull();
+      expect(normalise({ ...all, detail: { kind: "posting", id: "p1" } }, withBills, today).detail).toBeNull();
+    });
+
+    it("normalise closes the detail when a later month takes the row away", () => {
+      const may: ViewState = { ...all, unit: "2026-05-01", detail: { kind: "subscription", id: "b9" } };
+      expect(normalise(may, withEnded, today).detail).toEqual({ kind: "subscription", id: "b9" });
+      expect(normalise({ ...may, unit: "2026-06-01" }, withEnded, today).detail).toBeNull();
+    });
+
+    it("an unknown og with detail=s: of a row under Alle keeps the detail", () => {
+      const n = normalise({ ...all, objectGroup: "Ukendt" }, withBills, today);
+      expect(n.objectGroup).toBeNull();
+      expect(n.detail).toEqual(bill);
+    });
   });
 });
 
