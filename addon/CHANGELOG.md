@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.20.0](https://github.com/thomas3650/Ha-Spending/compare/v0.19.0...v0.20.0) (2026-11-05)
+
+
+### Features
+
+* the fixed-expenses list as a tab in the view, ended fixed expenses, and one top bar ([#181](https://github.com/thomas3650/Ha-Spending/issues/181)) ([753a902](https://github.com/thomas3650/Ha-Spending/commit/753a90220b4fbdebd31173b16949086fb4af762d))
+
 ## [0.19.0](https://github.com/thomas3650/Ha-Spending/compare/v0.18.0...v0.19.0) (2026-11-05)
 
 
