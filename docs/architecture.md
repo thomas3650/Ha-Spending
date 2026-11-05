@@ -67,12 +67,13 @@ paid and expected ([D66](decisions.md)). The list of every fixed expense is that
 | Route | Answers |
 | --- | --- |
 | `GET /api/health` | `{"status": "ok", "version": "<version>"}`, typed `Health` in `addon/shared/` |
-| `GET /api/data?start=YYYY-MM-DD&end=YYYY-MM-DD` | the postings of the period, the household's subscriptions with their object groups and last payments (the server reads all bills of the 760 days before today; only a bill with an object group is a subscription, an inactive one is left out, and one that ended before the range's start is left out, and only for it does the server read the posting of its last payment), each posting with the bill it is linked to and what the page needs around them, typed `SpendingData` in `addon/shared/`; errors are the codes of `DataError` ([D18](decisions.md)) |
+| `GET /api/data?start=YYYY-MM-DD&end=YYYY-MM-DD` | the postings of the period, the household's subscriptions with their object groups and last payments (the server reads all bills of the 760 days before today; only a bill with an object group is a subscription, an inactive one without an end date, or with one after today, is left out, and one that ended before the range's start is left out, and only for it does the server read the posting of its last payment), each posting with the bill it is linked to and what the page needs around them, typed `SpendingData` in `addon/shared/`; errors are the codes of `DataError` ([D18](decisions.md)) |
 | `GET /api/left-over?start=YYYY-MM-DD&end=YYYY-MM-DD` | the household's money per calendar month of the period: Ind, Tilbage, Forbrug, Kreditten, Opsparing, Øvrigt and Ændring på konti, with the members' parts, typed `LeftOverData` in `addon/shared/`; errors are the codes of `DataError` ([D74](decisions.md), [D76](decisions.md)) |
 | `GET /api/hidden-shops` | the shops hidden from the Butikker card, `{"shops": [...]}`, typed `HiddenShops` in `addon/shared/`, never cached |
 | `POST /api/hidden-shops` | hides or shows one shop, `{"shop": "…", "hidden": true}`, and answers the whole list as the GET does ([D43](decisions.md)) |
 | any other `/api/…` | 404 |
-| `GET /` and `GET /web/*` | the page's built files |
+| `GET /` | the page's `index.html`, `Cache-Control: no-cache`, so the browser asks again on every load |
+| `GET /web/*` | the page's hashed bundle files, `Cache-Control: public, max-age=31536000, immutable` on a `200` only |
 
 Only the `POST` above writes on port 8099, and only to its file ([D43](decisions.md)). Every URL the page uses is
 relative (`./web/…`, `api/data`, `api/left-over`, `api/hidden-shops`), so it works under the ingress path.

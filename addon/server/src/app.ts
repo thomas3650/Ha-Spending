@@ -1,4 +1,4 @@
-import type { Context } from "hono";
+import type { Context, MiddlewareHandler } from "hono";
 import { Hono } from "hono";
 import { bodyLimit } from "hono/body-limit";
 import { getConnInfo } from "@hono/node-server/conninfo";
@@ -142,8 +142,12 @@ export function createApp(options: {
   app.all("/api/*", (c) => c.notFound());
 
   const files = serveStatic({ root: options.webDir });
-  app.get("/", files);
-  app.get("/web/*", files);
+  const cacheOnSuccess = (value: string): MiddlewareHandler => async (c, next) => {
+    await next();
+    if (c.res.status === 200) c.res.headers.set("Cache-Control", value);
+  };
+  app.get("/", cacheOnSuccess("no-cache"), files);
+  app.get("/web/*", cacheOnSuccess("public, max-age=31536000, immutable"), files);
 
   return app;
 }

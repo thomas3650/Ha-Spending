@@ -833,7 +833,7 @@ to set their status to `superseded by D<n>`, or to name a part a later decision 
   list's columns give way are Claude's call.
 
 ### D78: The fixed-expenses list is a tab of the view, follows the time, keeps ended bills, and one top bar
-- **Date:** 2026-11-05 · **Status:** active
+- **Date:** 2026-11-05 · **Status:** active; "It still leaves out an inactive bill" superseded by D79
 - **Decision:**
   - The list of every fixed expense leaves the overview. It is the "Alle faste udgifter" tab of the fixed-expenses
     view's right card (`tab=all`). It shows the bills that ran in the chosen time, with the status as it stood then.
@@ -848,3 +848,14 @@ to set their status to `superseded by D<n>`, or to name a part a later decision 
 - **Source:** Thomas, 2026-11-05, [fixed list tab spec](superpowers/specs/2026-11-05-fixed-list-tab.md). The past
   status rules, the sums leaving out ended bills, the count rule, the `tab` key, the old-hash landing and the greyed
   texts are Claude's call.
+
+### D79: An inactive bill with an end date is kept as an ended one
+- **Date:** 2026-11-05 · **Status:** active
+- **Decision:** the server keeps an inactive bill with an end date on or before today by the same rule as an ended
+  active bill: kept when its end date is on or after the asked range's start. An inactive bill without an end date,
+  or with one after today, is still left out.
+- **Why:** the household ends a bill by setting an end date and making it inactive. With the end date, the page knows
+  when it ran.
+- **Source:** Thomas, 2026-11-05, #183; [inactive ended bills
+  spec](superpowers/specs/2026-11-05-inactive-ended-bills.md). Leaving out an inactive bill whose end date is after
+  today is Claude's call.

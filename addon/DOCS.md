@@ -76,8 +76,8 @@ or "Næste" with the next date when neither a due date nor a payment fell in the
 a few days after a due date and "Ikke set" after that, and "Forventes" while its start is in the future. A subscription
 that has an end date in Firefly III reads "Sluttet" with that date, and shows only in the times up to its end: set an
 end date in Firefly III to stop one. Its cost per year is greyed, with a tooltip, once it no longer counts in the sums.
-Inactive subscriptions are left out, as are those last paid from a liability or into a main group in
-`excluded_main_groups`.
+An inactive subscription without an end date is left out. One with an end date shows up to its end, as an ended one.
+Subscriptions last paid from a liability or into a main group in `excluded_main_groups` are left out too.
 
 The tab shows only the subscriptions that are in an object group in Firefly III; one with no object group is left out.
 Each row carries its object group's title, and the tab shows the cost per year of each object group. A posting that is

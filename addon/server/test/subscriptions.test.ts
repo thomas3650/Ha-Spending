@@ -156,6 +156,7 @@ describe("/api/data's subscriptions over the fake Firefly III", () => {
     expect(named("Indboforsikring")!.lastPayment!.date).toBe("2026-09-15");
     expect(named("Tandforsikring")!.lastPayment).toBeNull();
     expect(named("Fitness")).toMatchObject({ end: "2026-10-30", lastPayment: null });
+    expect(named("Gammel forsikring")).toMatchObject({ end: "2026-10-29" });
   });
 
   it("leaves out inactive, saved and liability-paid subscriptions", async () => {
@@ -374,9 +375,32 @@ describe("keepSubscriptions", () => {
     expect(keep([raw(bill({ end_date: "2025-12-31T00:00:00+01:00" }), null)])).toEqual([]);
   });
 
-  it("leaves out an inactive bill, with or without an end date", () => {
+  const at = (end: string) => `${end}T00:00:00+01:00`;
+
+  it("keeps an inactive bill whose end date is before today and on or after the range's start, with that end", () => {
+    expect(keep([raw(bill({ active: false, end_date: at("2026-05-31") }), null)]).map((s) => s.end)).toEqual([
+      "2026-05-31",
+    ]);
+  });
+
+  it("keeps an inactive bill whose end date is today, with that end", () => {
+    expect(keep([raw(bill({ active: false, end_date: at(today) }), null)]).map((s) => s.end)).toEqual([today]);
+  });
+
+  it("leaves out an inactive bill whose end date is before the range's start", () => {
+    expect(keep([raw(bill({ active: false, end_date: at("2025-12-31") }), null)])).toEqual([]);
+  });
+
+  it("leaves out an inactive bill with no end date", () => {
     expect(keep([raw(bill({ active: false }), null)])).toEqual([]);
-    expect(keep([raw(bill({ active: false, end_date: "2026-05-31T00:00:00+01:00" }), null)])).toEqual([]);
+  });
+
+  it("leaves out an inactive bill whose end date is after today", () => {
+    expect(keep([raw(bill({ active: false, end_date: at("2026-12-31") }), null)])).toEqual([]);
+  });
+
+  it("keeps an active bill whose end date is after today, with that end", () => {
+    expect(keep([raw(bill({ end_date: at("2026-12-31") }), null)]).map((s) => s.end)).toEqual(["2026-12-31"]);
   });
 
   it("ignores a last payment after today", () => {

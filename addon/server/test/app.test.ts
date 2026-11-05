@@ -106,6 +106,24 @@ describe("createApp", () => {
     expect((await app.request("/web/a.js", {}, ingress)).status).toBe(200);
   });
 
+  it("makes the browser ask for the page again on every load", async () => {
+    const res = await createApp({ webDir, dev: false }).request("/", {}, ingress);
+    expect(res.status).toBe(200);
+    expect(res.headers.get("Cache-Control")).toBe("no-cache");
+  });
+
+  it("lets the browser keep a file under /web/ for good", async () => {
+    const res = await createApp({ webDir, dev: false }).request("/web/a.js", {}, ingress);
+    expect(res.status).toBe(200);
+    expect(res.headers.get("Cache-Control")).toBe("public, max-age=31536000, immutable");
+  });
+
+  it("does not let the browser keep a missing file under /web/", async () => {
+    const res = await createApp({ webDir, dev: false }).request("/web/missing.js", {}, ingress);
+    expect(res.status).toBe(404);
+    expect(res.headers.get("Cache-Control") ?? "").not.toContain("immutable");
+  });
+
   it("answers 404 to a POST on a read route and to an unknown route", async () => {
     const app = createApp({ webDir, dev: false });
     expect((await app.request("/api/health", { method: "POST" }, ingress)).status).toBe(404);
