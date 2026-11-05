@@ -3,7 +3,7 @@ import type { AmountFilter } from "../model/amount";
 import { viewContext } from "../model/context";
 import { fixedUnits } from "../model/fixed";
 import { objectGroupNames } from "../model/key-numbers";
-import { type Card, type DetailKey, type PeriodChoice, periodOf, type ViewState } from "./view";
+import { type Card, type DetailKey, type FixedCard, type PeriodChoice, periodOf, type ViewState } from "./view";
 
 const ALL: Level = { kind: "all" };
 
@@ -49,7 +49,7 @@ export function chooseFixedUnit(s: ViewState, fullStart: string): ViewState {
 }
 
 export function openFixed(s: ViewState, objectGroup: string): ViewState {
-  return { ...s, fixed: true, objectGroup, fullScreen: false, detail: null };
+  return { ...s, fixed: true, objectGroup, fullScreen: false, fixedFull: null, detail: null };
 }
 
 export function setObjectGroup(s: ViewState, objectGroup: string | null): ViewState {
@@ -57,12 +57,16 @@ export function setObjectGroup(s: ViewState, objectGroup: string | null): ViewSt
 }
 
 export function leaveFixed(s: ViewState): ViewState {
-  return { ...s, fixed: false, objectGroup: null };
+  return { ...s, fixed: false, objectGroup: null, fixedFull: null };
+}
+
+export function setFixedFull(s: ViewState, card: FixedCard | null): ViewState {
+  return { ...s, fixedFull: card };
 }
 
 /** Keeps the detail, so the way back finds the overview as it was (spec §6.3). */
 export function openLeftOver(s: ViewState): ViewState {
-  return { ...withoutUnit(s), leftOver: true, fullScreen: false, fixed: false, objectGroup: null };
+  return { ...withoutUnit(s), leftOver: true, fullScreen: false, fixed: false, objectGroup: null, fixedFull: null };
 }
 
 export function leaveLeftOver(s: ViewState): ViewState {

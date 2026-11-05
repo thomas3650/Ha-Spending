@@ -43,7 +43,7 @@ export interface SubscriptionRow {
   perYearOre: number;
   /** The category when it is a known one; null shows as "Uden kategori". */
   categoryName: string | null;
-  status: { kind: SubscriptionStatus["kind"]; text: string };
+  status: { kind: SubscriptionStatus["kind"]; due: boolean; text: string };
 }
 
 function unbroken(text: string): string {
@@ -95,7 +95,7 @@ export function paymentText(s: Subscription): string {
 }
 
 export function statusCell(status: SubscriptionStatus, today: string): SubscriptionRow["status"] {
-  return { kind: status.kind, text: statusText(status, today) };
+  return { kind: status.kind, due: isDue(status, today), text: statusText(status, today) };
 }
 
 export function billHref(base: string | null, id: string): string | null {

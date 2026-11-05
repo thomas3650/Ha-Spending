@@ -3,9 +3,10 @@ import { css, html, LitElement, nothing, type PropertyValues } from "lit";
 import { createRef, ref } from "lit/directives/ref.js";
 import { styleMap } from "lit/directives/style-map.js";
 import { type Chart, createChart, type EChartsCoreOption } from "../charts/echarts";
-import { axisTickKr, barKr, kr, unitAxis } from "../format";
+import { axisTickKr, unitAxis } from "../format";
 import { da } from "../i18n/da";
 import type { FixedBar, FixedPart } from "../model/fixed";
+import { tooltipHtml, tooltipLines } from "../model/fixed-tooltip";
 import type { UnitSelection } from "./bars";
 
 const FADED = 0.3;
@@ -18,22 +19,21 @@ const HATCH = {
   color: "rgba(255, 255, 255, 0.75)",
 };
 
-function escapeHtml(text: string): string {
-  return text.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
-}
+const KINDS = ["paid", "due", "estimate"] as const;
+type Kind = (typeof KINDS)[number];
 
-function tooltip(bar: FixedBar): string {
-  const lines = [bar.name, da.fixed.tooltipPaid(barKr(bar.paidSum))];
-  if (bar.estimate.size > 0) {
-    lines.push(da.fixed.tooltipEstimate(kr(bar.estimateSum)), da.fixed.tooltipTotal(kr(bar.paidSum + bar.estimateSum)));
-  }
-  return lines.map(escapeHtml).join("<br>");
+/** What a part's series of this kind draws in the bar; the estimate series holds what is not due. */
+function valueOf(kind: Kind, bar: FixedBar, key: string | null): number | null {
+  if (kind === "paid") return bar.paid.get(key) ?? null;
+  if (kind === "due") return bar.due.get(key) ?? null;
+  const rest = (bar.estimate.get(key) ?? 0) - (bar.due.get(key) ?? 0);
+  return rest === 0 ? null : rest;
 }
 
 /**
- * The fixed expenses per unit, stacked by part: paid solid, the estimates hatched above them (spec §5.4). ECharts draws
- * them; a hidden button per bar names each (D19), or a plain list item when the bars choose nothing. The legend is in
- * the DOM. Fires `unit-click` with the bar's unit.
+ * The fixed expenses per unit, stacked by part: paid solid, the estimates hatched above them, a due estimate outlined
+ * in red (spec §5.3 of the fixed view's full screen). ECharts draws them; a hidden button per bar names each (D19), or
+ * a plain list item when the bars choose nothing. The legend is in the DOM. Fires `unit-click` with the bar's unit.
  */
 export class FixedBars extends LitElement {
   static override properties = {
@@ -122,17 +122,20 @@ export class FixedBars extends LitElement {
     this.chart.setOption(this.option(), { notMerge: true });
   }
 
-  /** Every series with a segment in the bar: the paid ones come first, then the estimates, in the parts' order. */
+  /** Every series that draws a value in the bar: per part its paid, due and estimate series, in the parts' order. */
   private segments(bar: FixedBar): number[] {
     const n = this.parts.length;
-    return this.parts.flatMap((part, i) => [
-      ...(bar.paid.has(part.key) ? [i] : []),
-      ...(bar.estimate.has(part.key) ? [n + i] : []),
-    ]).sort((a, b) => a - b);
+    return KINDS.flatMap((kind, k) =>
+      this.parts.flatMap((part, i) => (valueOf(kind, bar, part.key) === null ? [] : [k * n + i])),
+    );
   }
 
   private hasEstimates(): boolean {
     return this.bars.some((b) => b.estimate.size > 0);
+  }
+
+  private hasDue(): boolean {
+    return this.bars.some((b) => b.due.size > 0);
   }
 
   /** ECharts draws outside CSS, so it gets the theme's tokens as values. */
@@ -142,21 +145,24 @@ export class FixedBars extends LitElement {
     const muted = token("--hs-muted");
     const bars = this.bars;
     const faded = (bar: FixedBar) => this.chosen !== null && bar.unit.fullStart !== this.chosen;
-    const series = (kind: "paid" | "estimate") =>
+    const series = (kind: Kind) =>
       this.parts.map((part) => ({
         type: "bar",
         stack: "fixed",
         barCategoryGap: "35%",
         barMaxWidth: 48,
         cursor: this.buttons ? "pointer" : "default",
-        itemStyle: { color: part.colour, decal: kind === "estimate" ? HATCH : undefined },
+        itemStyle: {
+          color: part.colour,
+          decal: kind === "paid" ? undefined : HATCH,
+          ...(kind === "due" ? { borderColor: token("--hs-not-seen"), borderWidth: 2 } : {}),
+        },
         data: bars.map((bar) => {
-          const value = (kind === "paid" ? bar.paid : bar.estimate).get(part.key);
-          const opacity = (faded(bar) ? FADED : 1) * (kind === "estimate" ? ESTIMATE_OPACITY : 1);
-          return { value: value === undefined ? null : value, itemStyle: { opacity } };
+          const opacity = (faded(bar) ? FADED : 1) * (kind === "paid" ? 1 : ESTIMATE_OPACITY);
+          return { value: valueOf(kind, bar, part.key), itemStyle: { opacity } };
         }),
       }));
-    const all: Record<string, unknown>[] = [...series("paid"), ...series("estimate")];
+    const all: Record<string, unknown>[] = KINDS.flatMap((kind) => series(kind));
     const running = bars.find((b) => b.running);
     const last = bars.at(-1);
     if (all.length > 0 && running !== undefined && last !== undefined && last.unit.end > this.today) {
@@ -179,7 +185,7 @@ export class FixedBars extends LitElement {
         confine: true,
         formatter: (params: { dataIndex: number }[]) => {
           const bar = bars[params[0]?.dataIndex ?? -1];
-          return bar ? tooltip(bar) : "";
+          return bar ? tooltipHtml(tooltipLines(bar, this.parts)) : "";
         },
       },
       xAxis: {
@@ -218,6 +224,11 @@ export class FixedBars extends LitElement {
       ${this.hasEstimates()
         ? html`<span class="fixed-legend-item"
             ><span class="fixed-swatch hatched" aria-hidden="true"></span>${da.fixed.hatched}</span
+          >`
+        : nothing}
+      ${this.hasDue()
+        ? html`<span class="fixed-legend-item"
+            ><span class="fixed-swatch hatched due" aria-hidden="true"></span>${da.fixed.dueOutline}</span
           >`
         : nothing}
     </div>`;
@@ -278,8 +289,26 @@ export const fixedBarsStyles = css`
     );
     opacity: 0.6;
   }
+  .fixed-swatch.hatched.due {
+    box-sizing: border-box;
+    border: 2px solid var(--hs-not-seen);
+  }
   .fixed-bars .chart {
     height: 400px;
+  }
+  /* Full screen's bars reach the window's bottom edge, under the legend, as the overview's do (D67). */
+  .fill > hs-fixed-bars,
+  .fill .fixed-bars {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+    min-height: 0;
+  }
+  .fill .fixed-bars .chart {
+    flex: 1 1 0;
+    height: auto;
+    min-height: 400px;
+    overflow: hidden;
   }
 `;
 

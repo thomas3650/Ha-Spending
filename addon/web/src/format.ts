@@ -190,3 +190,8 @@ export function shortDate(date: string, today: string): string {
 export function stepAmounts(max: number, paid: number): [string, string] {
   return [whole.format(max / 100), whole.format(paid / 100)];
 }
+
+/** Names from Firefly III are data, so they never reach a tooltip's HTML as markup. */
+export function escapeHtml(text: string): string {
+  return text.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
+}

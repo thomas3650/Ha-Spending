@@ -65,7 +65,7 @@ export class Subscriptions extends LitElement {
         <span class="subscription-repeat">${r.repeat}</span>
       </td>
       <td class="subscription-amount subscription-nowrap">${r.perYear}</td>
-      <td><span class="subscription-status status-${r.status.kind}">${r.status.text}</span></td>
+      <td><span class="subscription-status status-${r.status.due ? "due" : r.status.kind}">${r.status.text}</span></td>
     </tr>`;
   }
 
@@ -216,6 +216,10 @@ export const subscriptionsStyles = css`
   .subscription-status.status-expected {
     color: var(--hs-expected);
     background: var(--hs-expected-soft);
+  }
+  .subscription-status.status-due {
+    color: var(--hs-not-seen);
+    background: var(--hs-not-seen-soft);
   }
   .subscription-status.status-paid {
     color: var(--hs-paid);

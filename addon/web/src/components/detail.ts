@@ -132,7 +132,7 @@ export class Detail extends LitElement {
         <span class="detail-big">${v.amount}</span>
         ${v.status === null
           ? nothing
-          : html`<span class="subscription-status status-${v.status.kind}">${v.status.text}</span>`}
+          : html`<span class="subscription-status status-${v.status.due ? "due" : v.status.kind}">${v.status.text}</span>`}
         ${v.aside === null ? nothing : html`<span class="detail-aside">${v.aside}</span>`}
       </p>
       <dl class="detail-boxes">

@@ -96,7 +96,22 @@ still to come is a hatched estimate in the same colour, marked "ca.", and is the
 its amount range, or its latest payment when that has risen. "I år", "Denne måned" and "Alt" run on past today to the
 end of the year, month or running unit, so they show the estimates; other periods show only what was paid. A fixed
 expense that was not seen on its date is listed with no amount and is left out of every sum. Press a bar to see only
-that month's payments. The ← button before the trail, Escape and the browser's Back button leave the view.
+that month's payments.
+
+In the payments list a status is one word: Betalt, Forventes, Forfalden or Ikke set, and the Dato column holds the
+date. Forfalden is red here and in the Faste udgifter tab. With one object group chosen the rows have no object-group
+badge. With "Alle" the group is in the tooltip of a fixed expense's name and at the start of a year row's line. In the
+bars a due estimate is its own hatched segment with a red outline, and the legend says "Skraveret: estimat" and "Rød
+kant: forfalden".
+
+Hover a bar to see each part's paid and estimated sums, and "I alt" with the two kept apart. A bar with more than ten
+parts lists the nine biggest and folds the rest into "n andre".
+
+Each of the two cards has the button "Fuld skærm: <card title>". It gives that card the page's whole width (the bars
+also its height), and hides the other card and the key numbers. In the list's full screen the rows show the object-group
+badge again. In full screen, Escape and the browser's Back button close full screen first and stay in the view; then
+they leave the view, as does the ← button before the trail (in one press). A very narrow window may scroll the list
+sideways in full screen.
 
 On the Posteringer card the quick filter sits over the list: a search field and the Beløb pill. The search matches the
 text or a shop; the suggestions show each shop's count and sum. The Beløb pill offers four kinds: Omkring (the amount
@@ -112,7 +127,8 @@ the hidden shops again. Hiding changes nothing else on the page, and nothing in 
 hidden shops in a file in its `/data`, so they are the same on every device and are in Home Assistant's backups.
 
 The button "Fuld skærm" in the right card's title gives that card the page's whole width; the same button or Escape
-brings the circle and the key numbers back. Full screen is a step in the browser's history, so Back leaves it. With a
+brings the circle and the key numbers back. The fixed-expenses view has its own full screen, per card, described
+above. Full screen is a step in the browser's history, so Back leaves it. With a
 posting open in full screen the list hides its Konto column, since the detail shows the account.
 
 ## The sorter's endpoint

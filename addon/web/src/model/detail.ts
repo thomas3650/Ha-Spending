@@ -50,7 +50,7 @@ export interface DetailView {
   title: string;
   amount: string;
   /** A subscription's only. */
-  status: { kind: SubscriptionStatus["kind"]; text: string } | null;
+  status: { kind: SubscriptionStatus["kind"]; due: boolean; text: string } | null;
   /** A shop's only: the date and, with a shop, the bank's text. */
   aside: string | null;
   boxes: [DetailBox, DetailBox, DetailBox];
