@@ -124,7 +124,7 @@ The page's list. Every screenshot is at 1440×960 with the console free of error
     search row still there.
 21. `35-abonnementer`, `36-abonnementer-hovedgruppe`: the fixed-expenses view's Alle faste udgifter tab, on Alt
     forbrug, then on a main group (the object-group step). Every status shows, the order within each group is
-    Ikke set, Steget, Forventes, Betalt, and the names link to the fake. Also at 1728 px; compare `docs/mockups/v3/`.
+    Ikke set, Steget, Forventes and Forfalden, Betalt, Næste, Sluttet, and the names link to the fake. Also at 1728 px; compare `docs/mockups/v3/`.
 22. `37-butik-forslag`: screen 1 on Posteringer with part of a shop's name typed. The suggestions open under the field,
     over the list. Names that start with the typed text come first, then the rest, each group biggest sum first, and
     each row shows its sum; a mouse-over shows the bank text. Also at 1728 px.

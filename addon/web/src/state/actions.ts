@@ -171,7 +171,11 @@ export function keepDetail(prev: ViewState, next: ViewState): ViewState {
   return next.card === prev.card && width ? next : closeDetail(next);
 }
 
-/** Spec §5's "Where it resolves", on the answer as it came; the detail itself ignores the level and the unit. */
+/**
+ * Spec §5's "Where it resolves", on the answer as it came; there the detail ignores the level and the unit. In the
+ * fixed-expenses view it resolves only while its bill is a row of the Alle faste udgifter tab, which follows the
+ * level, the unit, Konti and the object group (fixed list tab spec §3.5).
+ */
 export function detailResolves(s: ViewState, data: SpendingData, today: string): boolean {
   const key = s.detail;
   if (key === null) return true;

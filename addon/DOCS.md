@@ -69,13 +69,15 @@ each object group with its payments in the period, and, in the fixed-expenses vi
 each subscription's amount, its cost per year and a status, grouped by main group with its category. The tab needs
 subscriptions in Firefly III with their postings linked to them, for example by Firefly III's rules.
 
-The tab lists the subscriptions that ran in the chosen time, so a past month shows what ran then. The status is the one
-the subscription had then: "Betalt" with the date, "Ikke set" when a due date passed with no payment, or "Næste" with
-the next date when no due date fell in the time. Today's time reads "Forfalden" for a few days after a due date and
-"Ikke set" after that, and "Forventes" while its start is in the future. A subscription that has an end date in
-Firefly III reads "Sluttet" with that date, and shows only in the times up to its end: set an end date in Firefly III to
-stop one. Its cost per year is greyed, with a tooltip, once it no longer counts in the sums. Inactive subscriptions are
-left out, as are those last paid from a liability or into a main group in `excluded_main_groups`.
+The tab lists the subscriptions that ran in the chosen time, so a past month shows what ran then. A subscription paid in
+the time shows there too, even before its start date in Firefly III, as when it was made after its first payments. The
+status is the one the subscription had then: "Betalt" with the date, "Ikke set" when a due date passed with no payment,
+or "Næste" with the next date when neither a due date nor a payment fell in the time. Today's time reads "Forfalden" for
+a few days after a due date and "Ikke set" after that, and "Forventes" while its start is in the future. A subscription
+that has an end date in Firefly III reads "Sluttet" with that date, and shows only in the times up to its end: set an
+end date in Firefly III to stop one. Its cost per year is greyed, with a tooltip, once it no longer counts in the sums.
+Inactive subscriptions are left out, as are those last paid from a liability or into a main group in
+`excluded_main_groups`.
 
 The tab shows only the subscriptions that are in an object group in Firefly III; one with no object group is left out.
 Each row carries its object group's title, and the tab shows the cost per year of each object group. A posting that is

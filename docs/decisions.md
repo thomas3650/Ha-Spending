@@ -833,7 +833,6 @@ to set their status to `superseded by D<n>`, or to name a part a later decision 
   list's columns give way are Claude's call.
 
 ### D78: The fixed-expenses list is a tab of the view, follows the time, keeps ended bills, and one top bar
-
 - **Date:** 2026-11-05 · **Status:** active
 - **Decision:**
   - The list of every fixed expense leaves the overview. It is the "Alle faste udgifter" tab of the fixed-expenses
