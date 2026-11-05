@@ -144,6 +144,8 @@ export function statusInTime(
   if (open !== null) return { kind: "expected", date: open };
   if (s.end !== null && s.end <= time.end) return { kind: "ended", end: s.end };
   if (latestMet !== null) return { kind: "paid", date: latestMet };
+  const inTime = paidDates.filter((date) => date >= time.start && date <= time.end);
+  if (inTime.length > 0) return { kind: "paid", date: inTime.reduce((a, b) => (a > b ? a : b)) };
   const next = dueDatesBetween(s, addDays(time.end, 1), addMonths(time.end, MAX_GAP_MONTHS + 1))[0];
   if (next !== undefined) return { kind: "next", date: next };
   if (s.end !== null) return { kind: "ended", end: s.end };

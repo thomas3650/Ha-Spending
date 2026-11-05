@@ -211,20 +211,20 @@ export function generateSeed(options: { today: string; seed: number }): SeedData
     }
   }
 
+  const firstMonth = firstOfMonth(Math.floor(startMonth / 12), (startMonth % 12) + 1);
   // Each one's last payment is placed relative to today, so every status shows on any day.
   const subscriptions: SeedSubscription[] = [
-    { name: "Husleje", amountMin: "9500.00", amountMax: "9500.00",
-      start: firstOfMonth(Math.floor(startMonth / 12), (startMonth % 12) + 1), repeat: "monthly",
+    { name: "Husleje", amountMin: "9500.00", amountMax: "9500.00", start: firstMonth, repeat: "monthly",
       objectGroup: FIXED_COSTS },
   ];
+  // Each starts on its first payment, so the months it was paid in show it.
   const recurring = (
     sub: Omit<SeedSubscription, "start">,
-    last: string,
     shop: string,
     category: string,
     payments: { date: string; amount: string }[],
   ) => {
-    subscriptions.push({ ...sub, start: last });
+    subscriptions.push({ ...sub, start: payments.map((p) => p.date).reduce((a, b) => (a < b ? a : b)) });
     for (const p of payments) withdrawal(p.date, BUDGET, shop, p.amount, category, sub.name);
   };
   const monthsBack = (date: string, amounts: string[]) =>
@@ -232,40 +232,39 @@ export function generateSeed(options: { today: string; seed: number }): SeedData
   const soon = (days: number) => addMonths(addDays(options.today, days), -1);
 
   recurring({ name: "Netflix", amountMin: "99.00", amountMax: "129.00", repeat: "monthly",
-    objectGroup: SUBSCRIPTIONS_GROUP }, soon(3), "Netflix", "Streaming",
+    objectGroup: SUBSCRIPTIONS_GROUP }, "Netflix", "Streaming",
     monthsBack(soon(3), ["119.00", "119.00", "99.00"]));
   recurring({ name: "Mobilabonnement", amountMin: "149.00", amountMax: "199.00", repeat: "monthly",
-    objectGroup: FIXED_COSTS }, soon(1), "Teleselskabet", "Mobil", monthsBack(soon(1), ["179.00", "179.00"]));
+    objectGroup: FIXED_COSTS }, "Teleselskabet", "Mobil", monthsBack(soon(1), ["179.00", "179.00"]));
   recurring({ name: "Fitnessabonnement", amountMin: "249.00", amountMax: "299.00", repeat: "monthly",
-    objectGroup: SUBSCRIPTIONS_GROUP }, soon(-2), "Sportsklubben", "Sport",
+    objectGroup: SUBSCRIPTIONS_GROUP }, "Sportsklubben", "Sport",
     monthsBack(soon(-2), ["279.00", "279.00"]));
   recurring({ name: "Spotify", amountMin: "99.00", amountMax: "119.00", repeat: "monthly",
     objectGroup: SUBSCRIPTIONS_GROUP },
-    addDays(options.today, -10), "Spotify", "Streaming",
+    "Spotify", "Streaming",
     monthsBack(addDays(options.today, -10), ["149.00", "109.00", "109.00"]));
   recurring({ name: "Alarmselskabet", amountMin: "450.00", amountMax: "550.00", repeat: "quarterly",
     objectGroup: FIXED_COSTS },
-    addMonths(options.today, -4), "Forsikringsselskabet", "Forsikring", [
+    "Forsikringsselskabet", "Forsikring", [
       { date: addMonths(options.today, -4), amount: "495.00" },
       { date: addMonths(options.today, -7), amount: "495.00" },
     ]);
   recurring({ name: "Indboforsikring", amountMin: "2800.00", amountMax: "3400.00", repeat: "yearly",
     objectGroup: FIXED_COSTS },
-    addMonths(options.today, -3), "Forsikringsselskabet", "Forsikring", [
+    "Forsikringsselskabet", "Forsikring", [
       { date: addMonths(options.today, -3), amount: "3100.00" },
     ]);
   recurring({ name: "Madkasse", amountMin: "250.00", amountMax: "350.00", repeat: "weekly",
     objectGroup: FIXED_COSTS },
-    addDays(options.today, -1), "Netto", "Dagligvarer",
+    "Netto", "Dagligvarer",
     [1, 8, 15, 22].map((back) => ({ date: addDays(options.today, -back), amount: "299.00" })));
   recurring({ name: "Havehjælp", amountMin: "700.00", amountMax: "900.00", repeat: "monthly", skip: 1 },
-    addDays(options.today, -40), "Byggemarkedet", "Vedligehold", [
+    "Byggemarkedet", "Vedligehold", [
       { date: addDays(options.today, -40), amount: "800.00" },
       { date: addMonths(addDays(options.today, -40), -2), amount: "800.00" },
     ]);
 
-  // Three bills for the fixed list's ended and yearly cases; all dates follow today.
-  const firstMonth = firstOfMonth(Math.floor(startMonth / 12), (startMonth % 12) + 1);
+  // Three bills for the fixed list's ended and yearly cases; all dates are relative to today.
   const thisMonth = firstOfMonth(year, month);
   const monthlyUpTo = (dayOfMonth: number, end: string, name: string, shop: string, category: string, amount: string) => {
     for (let m = startMonth; m <= year * 12 + month - 1; m++) {
@@ -283,7 +282,7 @@ export function generateSeed(options: { today: string; seed: number }): SeedData
   monthlyUpTo(3, journalEnd, "Tidsskrift", "Avisen", "Streaming", "89.00");
   const roadside = addDays(addMonths(thisMonth, -5), 9);
   recurring({ name: "Vejhjælp", amountMin: "1195.00", amountMax: "1195.00", repeat: "yearly",
-    objectGroup: FIXED_COSTS }, roadside, "Forsikringsselskabet", "Forsikring",
+    objectGroup: FIXED_COSTS }, "Forsikringsselskabet", "Forsikring",
     [{ date: roadside, amount: "1195.00" }]);
 
   transactions.sort((a, b) => (a.splits[0].date < b.splits[0].date ? -1 : a.splits[0].date > b.splits[0].date ? 1 : 0));

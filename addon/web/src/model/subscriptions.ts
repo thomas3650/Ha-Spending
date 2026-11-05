@@ -101,8 +101,24 @@ export function shown(ctx: ViewContext): Shown[] {
     );
 }
 
-export function ranIn(s: Subscription, time: Period): boolean {
-  return s.start <= time.end && (s.end === null || s.end >= time.start);
+/** The bills' payments by bill id: the postings linked to them, from the chosen accounts (spec §3.4). */
+export function paymentsByBill(postings: readonly Posting[]): Map<string, Posting[]> {
+  const payments = new Map<string, Posting[]>();
+  for (const p of postings) {
+    if (p.subscription === null) continue;
+    const list = payments.get(p.subscription.id) ?? [];
+    list.push(p);
+    payments.set(p.subscription.id, list);
+  }
+  return payments;
+}
+
+/** Between its start and end, or paid in the time: a bill made after it began starts after its own payments. */
+export function ranIn(s: Subscription, time: Period, payments: readonly Posting[]): boolean {
+  return (
+    (s.start <= time.end && (s.end === null || s.end >= time.start)) ||
+    payments.some((p) => p.kind === "spending" && p.date >= time.start && p.date <= time.end)
+  );
 }
 
 export interface TabRow {
@@ -139,15 +155,9 @@ export function tabRows(ctx: ViewContext): TabRow[] {
   const past = time.end < today;
   const sumDay = past ? time.end : today;
   const group = ctx.state.objectGroup;
-  const payments = new Map<string, Posting[]>();
-  for (const p of ctx.postings) {
-    if (p.subscription === null) continue;
-    const list = payments.get(p.subscription.id) ?? [];
-    list.push(p);
-    payments.set(p.subscription.id, list);
-  }
+  const payments = paymentsByBill(ctx.postings);
   return levelled(ctx)
-    .filter((s) => ranIn(s, time) && (group === null || s.objectGroup === group))
+    .filter((s) => ranIn(s, time, payments.get(s.id) ?? []) && (group === null || s.objectGroup === group))
     .map((s): TabRow => {
       const status = statusInTime(s, payments.get(s.id) ?? [], time, ctx.data.range, today);
       const next = past ? null : nextDate(s, today);

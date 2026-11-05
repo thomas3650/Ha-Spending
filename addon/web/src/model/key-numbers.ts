@@ -13,7 +13,7 @@ import type { ViewState } from "../state/view";
 import { levelName, type ViewContext } from "./context";
 import { tabTime } from "./fixed";
 import { leftOverCard, MINUS } from "./left-over";
-import { ranIn, tabRows } from "./subscriptions";
+import { paymentsByBill, ranIn, tabRows } from "./subscriptions";
 
 /** The line under a key number's value; `href` is the hash it opens, and the app handles the click itself. */
 export type KeyLink =
@@ -130,7 +130,8 @@ export function perMonth(sum: number, period: Period): number | null {
  */
 export function objectGroupNames(ctx: ViewContext): string[] {
   const time = tabTime(ctx.data, { ...ctx.state, unit: null }, ctx.today);
-  const ran = ctx.data.subscriptions.filter((s) => ranIn(s, time)).map((s) => s.objectGroup);
+  const payments = paymentsByBill(ctx.postings);
+  const ran = ctx.data.subscriptions.filter((s) => ranIn(s, time, payments.get(s.id) ?? [])).map((s) => s.objectGroup);
   const inPeriod = within(ctx.shown, ctx.timeline.period).flatMap((p) =>
     p.subscription === null ? [] : [p.subscription.objectGroup],
   );

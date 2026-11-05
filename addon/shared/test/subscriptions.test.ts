@@ -397,6 +397,18 @@ describe("statusInTime in a past time", () => {
     const payments = ["2026-02-01", "2026-03-01"].map((date) => payment(date));
     expect(statusInTime(s, payments, january, thisYear, today)).toEqual({ kind: "next", date: "2026-02-01" });
   });
+
+  it("a bill that starts after its payments, with no due date in the time, reads paid with the latest payment in it", () => {
+    const s = subscription({ start: "2026-06-10" });
+    const payments = [payment("2026-01-10"), payment("2026-01-20"), payment("2026-02-10")];
+    expect(statusInTime(s, payments, january, fetched, today)).toEqual({ kind: "paid", date: "2026-01-20" });
+  });
+
+  it("a refund in the time alone, with no due date in it, does not read paid", () => {
+    const s = subscription({ start: "2026-06-10" });
+    const refund: Payment = { date: "2026-01-10", amount: -10000, kind: "refund" };
+    expect(statusInTime(s, [refund], january, fetched, today)).toEqual({ kind: "next", date: "2026-06-10" });
+  });
 });
 
 describe("statusInTime in a time that holds today", () => {

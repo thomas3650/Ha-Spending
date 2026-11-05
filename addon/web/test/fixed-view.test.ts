@@ -1381,6 +1381,37 @@ describe("the Alle faste udgifter tab (spec §3)", () => {
     getByRole(detail(root, "Husleje") as HTMLElement, "button", { name: da.close });
   });
 
+  it("a bill that starts after its payments shows in a past month it was paid in, reads Betalt and counts in X stk.", async () => {
+    const vand = bill("b6", "Vand", {
+      objectGroup: "Forsyning",
+      start: "2026-09-15",
+      lastPayment: { date: "2026-10-15", amount: 10000, category: "Husleje", account: "1" },
+    });
+    const paidOn = (date: string): Posting => ({
+      id: `v-${date}`,
+      groupId: `vg-${date}`,
+      date,
+      text: "Vandværket",
+      account: "1",
+      category: "Husleje",
+      shop: null,
+      kind: "spending",
+      amount: 10000,
+      subscription: { id: "b6", name: "Vand", objectGroup: "Forsyning" },
+    });
+    const opts = { answer: answer({ bills: [...BILLS, vand], extra: ["2026-03-15", "2026-09-15", "2026-10-15"].map(paidOn) }) };
+    const march = await open("unit=2026-03-01&view=fixed&og=Forsyning&tab=all", opts);
+    const row = getByRole(listRegion(march.root, da.allFixed), "row", { name: new RegExp("^Vand ") });
+    getByText(row, da.status.paid(shortDate("2026-03-15", TODAY)));
+    unmount();
+    const overview = await open("unit=2026-03-01", opts);
+    const card = getByRole(overview.root, "group", { name: da.levelInUnit("Forsyning", month("2026-03-01")) });
+    expect(flat(card.textContent)).toContain(flat(da.billCount(1)));
+    unmount();
+    const february = await open("unit=2026-02-01&view=fixed&og=Forsyning&tab=all", opts);
+    expect(queryByRole(listRegion(february.root, da.allFixed), "button", { name: "Vand" })).toBeNull();
+  });
+
   it("in I år an ended fixed expense's Om året carries why it is not in the sum", async () => {
     const { root } = await open(ALL.slice(1), { answer: answer({ bills: [...BILLS, ENDED] }) });
     const cell = getByTitle(listRegion(root, da.allFixed), da.notInSum(shortDate("2026-05-31", TODAY)));
