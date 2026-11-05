@@ -134,11 +134,6 @@ describe("the subscriptions key number", () => {
     const pressed = getAllByRole(tabs, "button").filter((b) => b.getAttribute("aria-pressed") === "true");
     expect(pressed.map((b) => text(b))).toEqual([da.fixed.inPeriod]);
   });
-
-  it("counts one subscription in the singular", async () => {
-    const { root } = await mountWith("view=fixed&tab=all", [SUBSCRIPTIONS[0]]);
-    expect(text(groupRow(card(root, da.allFixed), "Bolig"))).toContain(da.subscriptionCount(1));
-  });
 });
 
 describe("an old card=subscriptions link (spec §2.1)", () => {
@@ -151,6 +146,7 @@ describe("an old card=subscriptions link (spec §2.1)", () => {
 
   it("opens the view on Alle faste udgifter under Alle, and leaving it lands on Søjler", async () => {
     const { app, root } = await mountWith("card=subscriptions");
+    expect(location.hash).toBe("#card=subscriptions");
     expect(pressedTab(root)).toEqual([da.allFixed]);
     getByRole(root, "button", { name: da.switchObjectGroup(da.allFixed) });
     getByRole(card(root, da.allFixed), "button", { name: "Husleje" });
@@ -170,7 +166,12 @@ describe("an old card=subscriptions link (spec §2.1)", () => {
   });
 });
 
-describe("the subscriptions card", () => {
+describe("the Alle faste udgifter tab", () => {
+  it("counts one subscription in the singular", async () => {
+    const { root } = await mountWith("view=fixed&tab=all", [SUBSCRIPTIONS[0]]);
+    expect(text(groupRow(card(root, da.allFixed), "Bolig"))).toContain(da.subscriptionCount(1));
+  });
+
   it("shows a payment under 1 kr. above the max as no rise, and a larger one as what is paid now", async () => {
     const base = SUBSCRIPTIONS[1];
     const small = { ...base, amountMin: 9800, amountMax: 9900, lastPayment: { ...base.lastPayment!, amount: 9950 } };
@@ -304,7 +305,7 @@ describe("the subscriptions card", () => {
   });
 });
 
-describe("the object groups in the card", () => {
+describe("the object groups in the Alle faste udgifter tab", () => {
   function sums(region: HTMLElement, title = da.allFixed): string[] {
     return getAllByRole(getByRole(region, "list", { name: da.objectGroupSums(title) }), "listitem").map(text);
   }
@@ -377,7 +378,7 @@ describe("the object groups in the card", () => {
   });
 });
 
-describe("the subscriptions card grouped", () => {
+describe("the Alle faste udgifter tab grouped", () => {
   const FITNESS: Subscription = {
     ...SUBSCRIPTIONS[0],
     id: "b9",

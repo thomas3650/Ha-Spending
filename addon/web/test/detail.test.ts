@@ -82,7 +82,7 @@ function detailRows(d: HTMLElement): HTMLElement[] {
 }
 
 describe("the detail on the normal page", () => {
-  it("a Faste udgifter row opens its detail and the focus is on its heading", async () => {
+  it("an Alle faste udgifter row in the view opens its detail and the focus is on its heading", async () => {
     const { app, root } = await mountLinked("view=fixed&tab=all");
     await click(app, rowButton(region(root, da.allFixed), "Husleje"));
     expect(location.hash).toBe("#view=fixed&tab=all&detail=s%3Ab1");
@@ -112,7 +112,7 @@ describe("the detail on the normal page", () => {
     expect(queryByRole(card, "button", { name: "Husleje" })).toBeNull();
   });
 
-  it("Tilbage til Faste udgifter closes it and the focus is back on the row's button", async () => {
+  it("Tilbage til Alle faste udgifter closes it and the focus is back on the row's button", async () => {
     const { app, root } = await mountLinked("view=fixed&tab=all");
     await click(app, rowButton(region(root, da.allFixed), "Husleje"));
     const card = region(root, da.allFixed);

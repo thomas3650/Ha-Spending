@@ -278,14 +278,20 @@ describe("the right card in full screen", () => {
     expectOn(root);
   });
 
-  it("stays on, with the same button, when the card's view changes", async () => {
-    const { app, root } = await mountWith("card=postings");
-    const button = await press(app, root);
-    fireEvent.click(getByRole(getByRole(root, "group", { name: da.view }), "button", { name: da.bars }));
+  it("stays on in the view, with the same button, when the list's tab changes", async () => {
+    const { app, root } = await mountWith("view=fixed&tab=all");
+    const button = getByRole(root, "button", { name: da.fullScreenOf(da.allFixed) });
+    fireEvent.click(button);
     await settle(app);
-    getByRole(root, "region", { name: da.per("month") });
-    expect(fullScreen(root)).toBe(button);
-    expectOn(root);
+    expect(location.hash).toBe("#view=fixed&tab=all&full=list");
+    const list = getByRole(root, "region", { name: da.allFixed });
+    fireEvent.click(getByRole(getByRole(list, "group", { name: da.view }), "button", { name: da.fixed.inPeriod }));
+    await settle(app);
+    expect(location.hash).toBe("#view=fixed&full=list");
+    getByRole(root, "region", { name: da.fixed.inPeriod });
+    expect(getByRole(root, "button", { name: da.fullScreenOf(da.fixed.inPeriod) })).toBe(button);
+    expect(button.getAttribute("aria-pressed")).toBe("true");
+    expect(keyNumbers(root)).toBeNull();
   });
 
   it("stays on through a period change, with one placeholder while loading", async () => {
