@@ -264,6 +264,28 @@ export function generateSeed(options: { today: string; seed: number }): SeedData
       { date: addMonths(addDays(options.today, -40), -2), amount: "800.00" },
     ]);
 
+  // Three bills for the fixed list's ended and yearly cases; all dates follow today.
+  const firstMonth = firstOfMonth(Math.floor(startMonth / 12), (startMonth % 12) + 1);
+  const thisMonth = firstOfMonth(year, month);
+  const monthlyUpTo = (dayOfMonth: number, end: string, name: string, shop: string, category: string, amount: string) => {
+    for (let m = startMonth; m <= year * 12 + month - 1; m++) {
+      const date = addDays(firstOfMonth(Math.floor(m / 12), (m % 12) + 1), dayOfMonth - 1);
+      if (date <= end) withdrawal(date, BUDGET, shop, amount, category, name);
+    }
+  };
+  const aviserEnd = addDays(addMonths(thisMonth, -1), -1);
+  subscriptions.push({ name: "Avisabonnement", amountMin: "149.00", amountMax: "149.00", start: firstMonth,
+    end: aviserEnd, repeat: "monthly", objectGroup: FIXED_COSTS });
+  monthlyUpTo(1, aviserEnd, "Avisabonnement", "Avisen", "Streaming", "149.00");
+  const journalEnd = addDays(addMonths(thisMonth, -1), 14);
+  subscriptions.push({ name: "Tidsskrift", amountMin: "89.00", amountMax: "89.00", start: firstMonth,
+    end: journalEnd, repeat: "monthly", objectGroup: SUBSCRIPTIONS_GROUP });
+  monthlyUpTo(3, journalEnd, "Tidsskrift", "Avisen", "Streaming", "89.00");
+  const roadside = addDays(addMonths(thisMonth, -5), 9);
+  recurring({ name: "Vejhjælp", amountMin: "1195.00", amountMax: "1195.00", repeat: "yearly",
+    objectGroup: FIXED_COSTS }, roadside, "Forsikringsselskabet", "Forsikring",
+    [{ date: roadside, amount: "1195.00" }]);
+
   transactions.sort((a, b) => (a.splits[0].date < b.splits[0].date ? -1 : a.splits[0].date > b.splits[0].date ? 1 : 0));
 
   return {

@@ -76,6 +76,7 @@ describe("/api/data's subscriptions over the fake Firefly III", () => {
     const { data } = await answer();
     expect(data.subscriptions.map((s) => s.name)).toEqual([
       "Fitness",
+      "Gammel forsikring",
       "Gavekasse",
       "Husleje",
       "Indboforsikring",
@@ -157,10 +158,19 @@ describe("/api/data's subscriptions over the fake Firefly III", () => {
     expect(named("Fitness")).toMatchObject({ end: "2026-10-30", lastPayment: null });
   });
 
-  it("leaves out inactive, ended, saved and liability-paid subscriptions", async () => {
+  it("leaves out inactive, saved and liability-paid subscriptions", async () => {
     const { data } = await answer();
     const names = data.subscriptions.map((s) => s.name);
-    for (const name of ["Opsparingsaftale", "Billån", "Avis", "Gammel forsikring"]) expect(names).not.toContain(name);
+    for (const name of ["Opsparingsaftale", "Billån", "Avis"]) expect(names).not.toContain(name);
+  });
+
+  it("leaves out a bill that ended before a range that starts later", async () => {
+    const { app } = setup();
+    const res = await app.request("/api/data?start=2026-10-30&end=2026-10-30", {}, ingress);
+    expect(res.status).toBe(200);
+    const names = ((await res.json()) as SpendingData).subscriptions.map((s) => s.name);
+    expect(names).not.toContain("Gammel forsikring");
+    expect(names).toContain("Fitness");
   });
 
   it("leaves out a gap over 24 months and warns with the id, not the name", async () => {
@@ -348,10 +358,26 @@ describe("subscriptionLinks", () => {
 
 describe("keepSubscriptions", () => {
   const none = () => null;
+  const rangeStart = "2026-01-01";
   const keep = (raw: RawSubscription[], warn: (message: string) => void = () => {}) =>
-    keepSubscriptions(raw, none, new Set(), today, warn);
+    keepSubscriptions(raw, none, new Set(), today, rangeStart, warn);
   const raw = (b: RawSubscription["bill"], lastPaid: RawSubscription["lastPaid"]): RawSubscription =>
     ({ bill: b, objectGroup: "Made-up group", lastPaid, split: null });
+
+  it("keeps a bill that ended before today on or after the range's start", () => {
+    for (const end of ["2026-05-31", "2026-01-01"]) {
+      expect(keep([raw(bill({ end_date: `${end}T00:00:00+01:00` }), null)]).map((s) => s.end)).toEqual([end]);
+    }
+  });
+
+  it("leaves out a bill that ended before the range's start", () => {
+    expect(keep([raw(bill({ end_date: "2025-12-31T00:00:00+01:00" }), null)])).toEqual([]);
+  });
+
+  it("leaves out an inactive bill, with or without an end date", () => {
+    expect(keep([raw(bill({ active: false }), null)])).toEqual([]);
+    expect(keep([raw(bill({ active: false, end_date: "2026-05-31T00:00:00+01:00" }), null)])).toEqual([]);
+  });
 
   it("ignores a last payment after today", () => {
     const later = paidDate("2026-11-05", "203", "303");

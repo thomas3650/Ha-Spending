@@ -165,7 +165,7 @@ export async function readSpendingData(
   const mainGroupOf = mainGroupLookup(mainGroups);
   const excluded = new Set(settings.excludedMainGroups);
   const postings = toPostings(groups, mainGroupOf, excluded, subscriptionLinks(rawSubscriptions.bills));
-  const subscriptions = keepSubscriptions(rawSubscriptions.kept, mainGroupOf, excluded, context.today, context.warn);
+  const subscriptions = keepSubscriptions(rawSubscriptions.kept, mainGroupOf, excluded, context.today, range.start, context.warn);
 
   const accounts = new Map<string, Account>(listed.map((a) => [a.id, { id: a.id, name: a.attributes.name }]));
   const names = assetNames(groups);
