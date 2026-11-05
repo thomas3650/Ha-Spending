@@ -33,6 +33,10 @@ Every task reads its sections there.
 4. The fast loop still shows both an inactive (Avisabonnement) and an active (Tidsskrift) ended bill (Task 1).
 5. The docs no longer say every inactive bill is left out (Task 2).
 
+The real Firefly III check is the integration test "gives the same subscriptions as the fake does for the same seed",
+which runs in `scripts/integration` and the CI job `integration`, not in the local gates. It must pass in CI before the
+merge.
+
 ---
 
 ## Task 1: Keep an inactive bill with an end date
@@ -61,9 +65,11 @@ rule (`end < today && end < rangeStart` → left out).
 - [ ] **Step 2:** run `npm test --prefix addon -w server -- test/subscriptions.test.ts`; the keep cases fail.
 - [ ] **Step 3:** change the rule in `keepSubscriptions`.
 - [ ] **Step 4:** set `active: false` on Avisabonnement in `generate.ts` and on Gammel forsikring in `example.ts`.
-  Add `active: false` to Avisabonnement's assertions in `generate.test.ts`. Run the server and dev tests; change on
-  purpose, and name, any kept-names list or count that now includes Gammel forsikring (for example the list in
-  `subscriptions.test.ts` ~79). Narrow the `key-numbers.test.ts` comment to an inactive bill without an end date.
+  Add `active: false` to Avisabonnement's assertions in `generate.test.ts`. The kept-names list in
+  `subscriptions.test.ts` (~75-86) already holds Gammel forsikring and stays exactly as it is: it now proves over
+  `/api/data` that an inactive ended bill is kept, and goes red if the seed changes without the rule. Add to that test
+  (or one beside it) `expect(named("Gammel forsikring")).toMatchObject({ end: "2026-10-29" })`. No other count should
+  move; name any that does. Narrow the `key-numbers.test.ts` comment to an inactive bill without an end date.
 - [ ] **Step 5:** the full gates pass; commit `fix: keep an inactive bill with an end date as an ended one`.
 
 ## Task 2: Docs and D79
