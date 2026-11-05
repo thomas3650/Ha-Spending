@@ -27,8 +27,10 @@ In `addon/server/src/app.ts`, where `serveStatic` serves the page:
   server's `serveStatic` answers a full `200`, never a `304`, which is fine for a file under a kilobyte.
 - `GET /web/*` answers with `Cache-Control: public, max-age=31536000, immutable`. Every file under `web/` is a Vite
   bundle with a content hash in its name (`assetsDir: "web"` in `addon/web/vite.config.ts`), so a new version has a
-  new name. `addon/web/scripts/check-dist.mjs` already checks that every URL in `index.html` starts with `./web/`; it
-  now also checks that each such file name carries a hash, so an unhashed file can never be cached for a year.
+  new name. `addon/web/scripts/check-dist.mjs` already checks that every URL in `index.html` starts with `./web/`.
+  It now also reads every file in `dist/web/` and fails when one has no hash: Vite's default `-[hash]` part, eight or
+  more letters, digits, `_` or `-`, right before the extension (as in `index-lqul4oWa.js`). So an unhashed file can
+  never be cached for a year.
 - A path under `/web/` that does not exist answers `404` as today, with no `immutable` header. Claude's call: a
   missing file must not be cached for a year.
 - The ingress check runs before these routes, as today.
@@ -49,7 +51,13 @@ Through the HTTP answers, in `addon/server/test/app.test.ts`, with a made-up web
 
 ## 5. Plan
 
-Claude's call: the plan is this section, not a file in `docs/superpowers/plans/`, for a fix of this size. One task, `Model: sonnet · Review: yes`. Write the three tests and see them fail. Then set the headers in `app.ts`
-around the two `serveStatic` routes, only on a `200` from `/web/*`. Extend `addon/web/scripts/check-dist.mjs` with the hash check. Update
-`docs/architecture.md`. Run the gates and
-commit `fix: the page revalidates after an update, and its bundle is cached for good`.
+Claude's call: the plan is this section, not a file in `docs/superpowers/plans/`, for a fix of this size.
+
+One task, `Model: sonnet · Review: yes`:
+
+1. Write the three tests and see them fail.
+2. Set the headers in `app.ts` around the two `serveStatic` routes, `immutable` only on a `200` from `/web/*`.
+3. Extend `check-dist.mjs` with the hash check over `dist/web/`. Show it fails once, with an unhashed file placed in
+   `dist/web/` by hand, and say so in the report.
+4. Update `docs/architecture.md`.
+5. Run the gates and commit `fix: the page revalidates after an update, and its bundle is cached for good`.
