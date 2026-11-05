@@ -315,8 +315,10 @@ export const topCardStyles = css`
     color: var(--hs-muted);
     cursor: default;
   }
+  .trail-add[aria-disabled="true"],
   .trail-add[aria-disabled="true"]:hover {
-    border-color: var(--hs-field);
+    color: var(--hs-leader);
+    border-color: var(--hs-leader);
   }
   .trail-dd:disabled .trail-caret {
     stroke: var(--hs-leader);

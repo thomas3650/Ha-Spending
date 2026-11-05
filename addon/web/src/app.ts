@@ -859,6 +859,7 @@ export class SpendingApp extends LitElement {
     else if (fullChanged) this.fixedFocusCard = next.fixedFull ?? prev.fixedFull;
     if (this.hasUpdated && (entered || fullChanged)) this.enteredFixed = true;
     if (this.hasUpdated && !prev.leftOver && next.leftOver) this.enteredLeftOver = true;
+    if ((entered || (!prev.leftOver && next.leftOver)) && this.focusAfterLeave === "waiting") this.focusAfterLeave = null;
     this.state = next;
     this.ensureData();
     this.normaliseState();
