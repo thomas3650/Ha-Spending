@@ -1,5 +1,6 @@
 import type { Grouping, Preset, Repeat } from "@ha-spending/shared";
 import { aboutBounds, type AmountFilter, type AmountKind, amountText } from "../model/amount";
+import type { Column } from "../model/left-over";
 
 interface GroupingTexts {
   label: string;
@@ -320,6 +321,33 @@ export const da = {
     },
     ofWhichEstimates: (n: number, next: string) => `heraf ${n} estimat, næste forventes ${next}`,
     empty: (level: string) => `Ingen faste udgifter i ${level} i perioden`,
+  },
+  leftOver: {
+    name: "Til overs",
+    /** The chosen unit's name, or null for the whole period. */
+    label: (unit: string | null) =>
+      unit === null ? da.inPeriod(da.leftOver.name) : da.levelInUnit(da.leftOver.name, unit),
+    showMonths: "Vis måneder",
+    paidInSub: (amount: string) => `ind ${amount}`,
+    borrowedSub: (amount: string) => `, lånt ${amount}`,
+    monthColumn: "Måned",
+    columns: {
+      paidIn: "Ind",
+      back: "Tilbage",
+      spending: "Forbrug",
+      leftOver: "Til overs",
+      credit: "Kreditten",
+      savings: "Opsparing",
+      other: "Øvrigt",
+      change: "Ændring på konti",
+    } satisfies Record<Column, string>,
+    running: "(i gang)",
+    total: "I alt",
+    borrowed: "lånt",
+    paidOff: "betalt af",
+    table: "Til overs pr. måned",
+    /** The cells carry no "kr.", so the table says it once. */
+    note: "Alle beløb i kr.",
   },
   backTo: (title: string) => `Tilbage til ${title}`,
   close: "Luk",

@@ -1,12 +1,23 @@
-import { chosenUnitNumbers, keyNumbers, type Period, share, type Unit, within } from "@ha-spending/shared";
+import {
+  chosenUnitNumbers,
+  keyNumbers,
+  type LeftOverData,
+  type Period,
+  share,
+  type Unit,
+  within,
+} from "@ha-spending/shared";
 import { kr, percent, rangeText, unitName } from "../format";
 import { da } from "../i18n/da";
+import type { ViewState } from "../state/view";
 import { levelName, type ViewContext } from "./context";
+import { leftOverCard, MINUS } from "./left-over";
 
 /** The line under a key number's value; `href` is the hash it opens, and the app handles the click itself. */
 export type KeyLink =
   | { kind: "postings"; count: number; href: string }
-  | { kind: "subscriptions"; objectGroup: string; href: string };
+  | { kind: "subscriptions"; objectGroup: string; href: string }
+  | { kind: "leftOver"; href: string };
 
 export interface KeyCard {
   label: string;
@@ -15,6 +26,8 @@ export interface KeyCard {
   link?: KeyLink;
   /** The value is an estimate, which the card marks with "ca.". */
   estimate?: boolean;
+  /** The card's own answer is still loading, so only its label is known. */
+  busy?: true;
 }
 
 /** ctx.parentTotal is already the chosen unit's when one is chosen. */
@@ -72,6 +85,28 @@ export function keyCards(ctx: ViewContext, href: string): KeyCard[] {
   const [first, ...rest] = ctx.chosen === null ? periodCards(ctx) : unitCards(ctx, ctx.chosen);
   const count = within(ctx.shown, ctx.chosen ?? ctx.timeline.period).length;
   return [{ ...first, link: { kind: "postings", count, href } }, ...rest];
+}
+
+/**
+ * Til overs is about the household's accounts as a whole; a main group, a category or chosen accounts narrow the
+ * spending only, so Ind and Forbrug would disagree (spec §2.1).
+ */
+export function showsLeftOver(s: ViewState): boolean {
+  return s.level.kind === "all" && s.accounts === null;
+}
+
+/** Busy while `data` is null. Like every key number its value has no colour and no "+" (D53). */
+export function leftOverKeyCard(ctx: ViewContext, data: LeftOverData | null, href: string): KeyCard {
+  const chosen = ctx.chosen;
+  const label = da.leftOver.label(chosen === null ? null : unitName(chosen, ctx.timeline.grouping, ctx.unitYear));
+  if (data === null) return { label, value: "", sub: "", busy: true };
+  const { leftOver, paidIn, borrowed } = leftOverCard(data, chosen ?? ctx.timeline.period);
+  return {
+    label,
+    value: leftOver < 0 ? `${MINUS}${kr(leftOver)}` : kr(leftOver),
+    sub: da.leftOver.paidInSub(kr(paidIn)) + (borrowed === null ? "" : da.leftOver.borrowedSub(kr(borrowed))),
+    link: { kind: "leftOver", href },
+  };
 }
 
 const DAY = 24 * 60 * 60 * 1000;

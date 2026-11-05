@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { toPostings } from "../src/firefly/normalise";
+import { spendingKind, toPostings } from "../src/firefly/normalise";
 import type { WireGroup, WireSplit } from "../src/firefly/wire";
 
 const mainGroups: Record<string, string> = {
@@ -147,5 +147,23 @@ describe("toPostings", () => {
     const asset = deposit({ source_name: "Konto B", source_type: "Asset account" });
     const postings = toPostings([group("1", cash), group("2", asset)], mainGroupOf, excluded, noLinks);
     expect(postings.map((p) => p.shop)).toEqual([null, null]);
+  });
+});
+
+describe("spendingKind", () => {
+  const kindOf = (s: WireSplit) => spendingKind(s, mainGroupOf, excluded);
+
+  it("names what the overview counts, as toPostings does", () => {
+    expect(kindOf(split({}))).toBe("spending");
+    expect(kindOf(split({ category_id: null, category_name: null }))).toBe("spending");
+    expect(kindOf(deposit({}))).toBe("refund");
+  });
+
+  it("is null for what the overview leaves out", () => {
+    expect(kindOf(split({ category_name: "Opsparing" }))).toBeNull();
+    expect(kindOf(deposit({ category_name: "Indskud" }))).toBeNull();
+    expect(kindOf(deposit({ category_id: null, category_name: null }))).toBeNull();
+    expect(kindOf(split({ type: "transfer", destination_type: "Asset account" }))).toBeNull();
+    expect(kindOf(split({ source_type: "Loan" }))).toBeNull();
   });
 });

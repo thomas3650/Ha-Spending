@@ -3,11 +3,13 @@ import { vi } from "vitest";
 
 import "../src/app";
 import type { SpendingApp } from "../src/app";
-import { answerFor } from "./fixture";
+import { answerFor, leftOverFor } from "./fixture";
 
 export interface MountOptions {
   now?: string;
   answer?: (range: Period, n: number) => Response | Promise<Response>;
+  /** Answers `api/left-over`, counting its own calls; the default is `leftOverFor(range)`. */
+  leftOver?: (range: Period, n: number) => Response | Promise<Response>;
   /** Answers `api/hidden-shops`; the default keeps a list in memory, empty at the start. */
   hidden?: (init: RequestInit | undefined) => Response | Promise<Response>;
 }
@@ -31,12 +33,19 @@ export async function settle(app: SpendingApp, rounds = 5): Promise<void> {
 
 export async function mount(hash: string, opts: MountOptions = {}) {
   vi.useFakeTimers({ toFake: ["Date"] });
-  vi.setSystemTime(opts.now ?? "2026-10-30T10:00:00Z");
+  const now = opts.now ?? "2026-10-30T10:00:00Z";
+  vi.setSystemTime(now);
   let n = 0;
   const fetch = vi.fn(async (...[url]: [url: string, init?: RequestInit]) => {
     n += 1;
     const range = rangeOf(url);
     return opts.answer ? opts.answer(range, n) : json(answerFor(range));
+  });
+  let leftOverCalls = 0;
+  const leftOver = vi.fn(async (...[url]: [url: string, init?: RequestInit]) => {
+    leftOverCalls += 1;
+    const range = rangeOf(url);
+    return opts.leftOver ? opts.leftOver(range, leftOverCalls) : json(leftOverFor(range, now.slice(0, 10)));
   });
   let shops: string[] = [];
   const hidden = vi.fn(async (init: RequestInit | undefined) => {
@@ -48,14 +57,16 @@ export async function mount(hash: string, opts: MountOptions = {}) {
     }
     return json({ shops });
   });
-  vi.stubGlobal("fetch", (url: string, init?: RequestInit) =>
-    url.startsWith("api/hidden-shops") ? hidden(init) : fetch(url, init),
-  );
+  vi.stubGlobal("fetch", (url: string, init?: RequestInit) => {
+    if (url.startsWith("api/hidden-shops")) return hidden(init);
+    if (url.startsWith("api/left-over")) return leftOver(url, init);
+    return fetch(url, init);
+  });
   history.replaceState(null, "", hash === "" ? location.pathname : `#${hash}`);
   const app = document.createElement("hs-app");
   document.body.append(app);
   await settle(app);
-  return { app, root: app.shadowRoot as unknown as HTMLElement, fetch, hidden };
+  return { app, root: app.shadowRoot as unknown as HTMLElement, fetch, hidden, leftOver };
 }
 
 export function unmount(): void {

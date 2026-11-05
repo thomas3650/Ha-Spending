@@ -62,6 +62,7 @@ describe("/api/data over the fake Firefly III", () => {
     expect(res.status).toBe(200);
     const data = (await res.json()) as SpendingData;
     expect(data.postings).toHaveLength(15);
+    expect(data.leftOver).toBe(false);
     expect(data.postings.reduce((s, p) => s + p.amount, 0)).toBe(1199858);
   });
 

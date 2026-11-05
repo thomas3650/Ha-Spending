@@ -1,4 +1,11 @@
-import type { DataError, HiddenShopChange, HiddenShops, Period, SpendingData } from "@ha-spending/shared";
+import type {
+  DataError,
+  HiddenShopChange,
+  HiddenShops,
+  LeftOverData,
+  Period,
+  SpendingData,
+} from "@ha-spending/shared";
 
 export type LoadErrorCode = "unreachable" | "refused" | "failed";
 
@@ -20,16 +27,24 @@ async function codeOf(response: Response): Promise<LoadErrorCode> {
 }
 
 /** An abort rethrows the AbortError; every other failure is a LoadError. */
-export async function loadData(range: Period, signal: AbortSignal): Promise<SpendingData> {
+async function loadRange<T>(path: string, range: Period, signal: AbortSignal): Promise<T> {
   try {
     // Relative, so the request stays under Ingress's prefix.
-    const response = await fetch(`api/data?start=${range.start}&end=${range.end}`, { signal });
+    const response = await fetch(`${path}?start=${range.start}&end=${range.end}`, { signal });
     if (!response.ok) throw new LoadError(await codeOf(response));
-    return (await response.json()) as SpendingData;
+    return (await response.json()) as T;
   } catch (error) {
     if (signal.aborted || error instanceof LoadError) throw error;
     throw new LoadError("failed");
   }
+}
+
+export function loadData(range: Period, signal: AbortSignal): Promise<SpendingData> {
+  return loadRange("api/data", range, signal);
+}
+
+export function loadLeftOver(range: Period, signal: AbortSignal): Promise<LeftOverData> {
+  return loadRange("api/left-over", range, signal);
 }
 
 async function hiddenShopsOf(response: Response): Promise<string[]> {

@@ -43,7 +43,20 @@ its name in code, so the same thing has one name everywhere. The Danish word is 
 | Full screen | fuld skærm | `view=full` in the hash: the right card alone, the page's whole width, for every tab ([D60](decisions.md)) |
 | Shop | butik | `shop` (`Posting.shop`): the name of the shop a posting was made at, null when it has none |
 | Hidden shop | skjult butik | `hiddenShops` (type `HiddenShops`): a shop the user has hidden from the Butikker card ([D43](decisions.md)) |
+| Member | medlem | a name in the `members` option: a revenue account for the money a person puts in, and the expense account of the same name for the money back |
+| Credit line | kredit | an asset account named in `credit_accounts` ([D75](decisions.md)) |
+| Daily account | daglig konto | an asset account that is not a credit line; savings accounts count as daily ([D75](decisions.md)) |
+| Bucket | — | the one place a withdrawal or deposit on a household account goes: Forbrug, Ind, Tilbage, Opsparing or Øvrigt ([D74](decisions.md)) |
+| Ind | Ind | `paidIn`: the members' deposits into the household's accounts |
+| Tilbage | Tilbage | `back`: money moved back to the members' private accounts |
+| Forbrug | Forbrug | `spending`: the overview's spending, in the Til overs view |
+| Til overs | Til overs | `leftOver`: Ind minus Tilbage minus Forbrug; computed by the page from rounded parts ([D74](decisions.md)) |
+| Kreditten | Kreditten | `credit`: the change in the credit lines' balance; "betalt af" when paid down, "lånt" when drawn on |
+| Opsparing | Opsparing | `savings`: money to savings, from the categories in `savings_categories` |
+| Øvrigt | Øvrigt | `other`: everything else on the household's accounts, such as interest |
+| Ændring på konti | Ændring på konti | `change`: the change in the daily accounts' balance |
+| Til overs view | Til overs | `leftOver` in `ViewState`, `view=leftover` in the hash: a table of months, opened from the Til overs card ([D72](decisions.md), [D73](decisions.md)) |
 
-The hash keys are listed in [D20](decisions.md), [D35](decisions.md), [D44](decisions.md), [D60](decisions.md), [D61](decisions.md) and [D66](decisions.md). `Posting`, `kind` and the `null` category are fixed by technical spec §3.2
+The hash keys are listed in [D20](decisions.md), [D35](decisions.md), [D44](decisions.md), [D60](decisions.md), [D61](decisions.md), [D66](decisions.md) and [D73](decisions.md). `Posting`, `kind` and the `null` category are fixed by technical spec §3.2
 ([technical spec](superpowers/specs/2026-10-30-technical-design.md)). The other names are chosen here; they are in
 `addon/shared/src/`. Their texts, such as Uden kategori, belong to the page.

@@ -33,7 +33,13 @@ interface FakeAccount {
 
 const ACCOUNT_TYPES = new Set(["all", "asset", "expense", "revenue", "liabilities"]);
 
-type AccountType = "Asset account" | "Expense account" | "Revenue account" | "Loan";
+type AccountType =
+  | "Asset account"
+  | "Expense account"
+  | "Revenue account"
+  | "Loan"
+  | "Initial balance account"
+  | "Reconciliation account";
 
 interface Item {
   id: string;
@@ -118,6 +124,8 @@ function buildData(data: SeedData) {
     if (paidFromLiability(split)) return ["Loan", "Expense account"];
     if (split.type === "withdrawal") return ["Asset account", "Expense account"];
     if (split.type === "deposit") return ["Revenue account", "Asset account"];
+    if (split.type === "opening balance") return ["Initial balance account", "Asset account"];
+    if (split.type === "reconciliation") return ["Reconciliation account", "Asset account"];
     return ["Asset account", "Asset account"];
   }
 
@@ -195,9 +203,11 @@ function buildData(data: SeedData) {
 
   const accounts: FakeAccount[] = [
     ...assets.map((a) => ({ id: a.id, name: a.name, type: "asset" as const, active: a.active })),
-    ...[...others].map(([key, id]) => {
+    // Firefly III's initial balance and reconciliation accounts are in no listing.
+    ...[...others].flatMap(([key, id]) => {
       const [type, name] = key.split("\u0000");
-      return { id, name, type: type === "Expense account" ? ("expense" as const) : ("revenue" as const), active: true };
+      if (type === "Initial balance account" || type === "Reconciliation account") return [];
+      return [{ id, name, type: type === "Expense account" ? ("expense" as const) : ("revenue" as const), active: true }];
     }),
     ...extra,
   ].sort((a, b) => Number(a.id) - Number(b.id));

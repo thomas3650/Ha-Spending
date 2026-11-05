@@ -741,3 +741,77 @@ to set their status to `superseded by D<n>`, or to name a part a later decision 
 - **Decision:** The fixed-expenses view takes the one chunk past 800 kB, so its `chunkSizeWarningLimit` is 900 kB.
 - **Why:** The build should not warn, and the view's own code is the growth.
 - **Source:** Claude, 2026-11-04, a ruling during the build of the fixed-expenses view.
+
+### D72: The Til overs card
+- **Date:** 2026-11-04 · **Status:** active
+- **Decision:**
+  - The overview has a key-number card "Til overs" right after the period's own cards and before the object groups'
+    cards. Its number is the sum of the months' Til overs, over the chosen unit or else the period. It has no colour
+    and no "+", as every key number ([D53](#d53-the-key-numbers-have-no-comparisons)).
+  - Under it are "ind <Ind>" and, for a draw on the credit line, ", lånt <amount>". Its link "Vis måneder →" opens
+    the Til overs view.
+  - It shows only when `SpendingData.leftOver` is true and the top filter has no main group, no category and all
+    accounts. While its answer loads it is a placeholder; if the answer fails it is left out and the rest of the
+    overview stays.
+- **Why:** The household wants to see whether a month went in plus (#173).
+  A filter that narrows the spending would make Ind and Forbrug disagree.
+- **Source:** Thomas chose the card and its link, 2026-11-04; [Til overs spec](superpowers/specs/2026-11-04-left-over.md) §2.1. The place, the label, the
+  rule for showing and the wording "Vis" are Claude's call.
+
+### D73: The Til overs view and its hash
+- **Date:** 2026-11-04 · **Status:** active
+- **Decision:**
+  - `view=leftover` joins `view=full` and `view=fixed` in the hash ([D20](#d20-the-view-states-hash)). On open
+    `unit` is removed; reading it drops `group`, `category` and `accounts`. `card`, `detail` and the quick filters
+    stay for the way back. `leftOver` false with `view=leftover` in the hash shows the overview and replaces the entry.
+  - The trail is `← Alt forbrug › Til overs › <period> ▾`, with no unit step. ← and Escape leave the view. The page's
+    status line "no rule group" shows in the view, because the buckets depend on the excluded main groups.
+  - A month's name is a button that opens the overview for that whole calendar month. "maj" takes no full stop
+    among the short month names; the others do ("okt.").
+  - A failed `/api/left-over` is asked again only for a new period or a reload.
+- **Why:** The view is the fixed-expenses view's sibling and uses its way in and out. A failure that is asked again
+  on every render would put the busy card back and take it out again, moving the cards beside it.
+- **Source:** Thomas chose the table of months and the click on a month, 2026-11-04; [Til overs spec](superpowers/specs/2026-11-04-left-over.md) §2.2, §4.1,
+  §4.3 and §6.3. The button in the cell, the hash, the status line, "maj" and the retry rule are Claude's call.
+
+### D74: The buckets, the signs and the sum rules
+- **Date:** 2026-11-04 · **Status:** active
+- **Decision:**
+  - Every withdrawal from and deposit to a household account goes into exactly one bucket, the first that takes it:
+    Forbrug, Ind, Tilbage, Opsparing, Øvrigt. A transfer between two household accounts is in none.
+  - Til overs is Ind minus Tilbage minus Forbrug. Neither the credit line nor savings is in it.
+  - Every amount shows its effect on the daily accounts, so Til overs = Ind + Tilbage + Forbrug and Ændring på konti
+    = Til overs + Kreditten + Opsparing + Øvrigt hold on every row and on "I alt".
+  - Each month's parts are rounded once to whole kroner. Ind, Tilbage, Til overs, Ændring på konti, "I alt" and the
+    card are built from the rounded parts.
+  - Bucket 4 takes withdrawals and deposits only, so a transfer with one household side in a savings category is
+    Øvrigt.
+  - A liability is paid by a withdrawal in Firefly III, so the rule "a payment to a liability" is tested as
+    withdrawals.
+- **Why:** A posting counted twice, or a row that does not add up, would make the view worthless. A draw on the
+  credit line should show as an overspend ("et overforbrug det måned", Thomas).
+- **Source:** Thomas, of the draw and the sums, 2026-11-04; [Til overs spec](superpowers/specs/2026-11-04-left-over.md) §3.2, §3.4 and §4.2. The buckets,
+  the signs, the rounding and the two rulings above (the liability, the transfer) are Claude's call.
+
+### D75: The options, the hidden columns and what is ignored
+- **Date:** 2026-11-04 · **Status:** active
+- **Decision:**
+  - The options `members`, `savings_categories` and `credit_accounts` are lists of names, empty by default. The
+    credit lines are asset accounts; a liability named there is ignored with a warning, and savings are held outside
+    Firefly III or count as daily accounts.
+  - `leftOver` is true when a member name matches a revenue account. Kreditten is left out of the table when
+    `hasCredit` is false, and Opsparing when `hasSavings` is false.
+  - The warnings (a name that matches nothing, a credit line that is a liability, a split in Forbrug that should have
+    been in an excluded category) are logged once per process and hold no amount, date or posting text.
+- **Why:** A column of zeros the household never set up says nothing, and a warning on every read would fill the log.
+- **Source:** Thomas, of the members, the credit line and the savings, 2026-11-04; [Til overs spec](superpowers/specs/2026-11-04-left-over.md) §1, §4.2 and
+  §5. The hidden columns, the liability and the once-only warnings are Claude's call.
+
+### D76: `/api/data` and `/api/left-over` share one read
+- **Date:** 2026-11-04 · **Status:** active
+- **Decision:** The server reads a span's transactions once with `type=all` and keeps the raw groups per span for
+  5 minutes, at most 4 spans. Both routes read from it. The span-free parts also hold the revenue and liability
+  accounts; this extends the cache of [D49](#d49-the-server-keeps-the-span-free-parts-per-day-and-reads-a-lists-pages-4-at-a-time).
+- **Why:** One read for two routes costs Firefly III half as much when the spans are equal. When they differ, as for
+  a one-unit period ([D53](#d53-the-key-numbers-have-no-comparisons)), it costs time, not correctness.
+- **Source:** Claude, 2026-11-04, [Til overs spec](superpowers/specs/2026-11-04-left-over.md) §5 and §6.2.

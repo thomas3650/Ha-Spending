@@ -26,7 +26,9 @@ The detail of a fixed expense, a posting or a shop, in the
 [detail view spec](superpowers/specs/2026-11-02-detail-view.md), opens from a row on the Posteringer and Faste udgifter
 cards, in the normal card and in full screen ([D44](decisions.md), [D60](decisions.md)). The fixed-expenses view of the
 [fixed expenses over time spec](superpowers/specs/2026-11-04-fixed-expenses-over-time.md) shows them as bars per unit,
-paid and expected ([D66](decisions.md)).
+paid and expected ([D66](decisions.md)). The Til overs card and view of the
+[Til overs spec](superpowers/specs/2026-11-04-left-over.md) show a table of months from `/api/left-over`
+([D72](decisions.md), [D73](decisions.md)).
 
 - **The server** is Hono on `@hono/node-server` ([D3](decisions.md)), in `addon/server/src/`. In the image it is one
   bundle at `/opt/ha-spending/server.mjs`, run by `node:24-alpine` ([D4](decisions.md)).
@@ -37,7 +39,7 @@ paid and expected ([D66](decisions.md)).
     filters);
   - `screens/` and `components/`: the screens and the cards, dropdowns and lists they use;
   - `charts/echarts.ts`: the one wrapper around ECharts, which the component tests mock ([D19](decisions.md));
-  - `data/api.ts`: the fetch of `api/data` and of the hidden shops.
+  - `data/api.ts`: the fetch of `api/data` (`loadData`), of `api/left-over` (`loadLeftOver`) and of the hidden shops.
   The build is one JS chunk ([D19](decisions.md)).
 - **The Firefly III client** (`addon/server/src/firefly/`) has a `get`, a `put` and a `post`. It pages through the
   answers and maps them to postings and subscriptions ([D12](decisions.md), [D15](decisions.md)). Only the sorter's
@@ -53,9 +55,10 @@ paid and expected ([D66](decisions.md)).
 - **The hidden shops** are a file, `/data/hidden-shops.json` or `HA_SPENDING_HIDDEN_SHOPS`, read on every request and
   replaced whole on a write (`addon/server/src/hidden-shops.ts`, [D43](decisions.md)).
 - **The cache** keeps an answer per day and period for 5 minutes. It keeps the parts that do not depend on the
-  period for 5 minutes per day, so a new day reads them again: the main-group rules, the categories, the asset
-  accounts, the earliest posting date and the subscriptions (`addon/server/src/loader.ts`,
-  `addon/server/src/cache.ts`, [D49](decisions.md)).
+  period for 5 minutes per day, so a new day reads them again: the main-group rules, the categories, the asset,
+  revenue and liability accounts, the earliest posting date and the subscriptions. Another cache keeps the raw
+  transactions per span, which `/api/data` and `/api/left-over` share ([D76](decisions.md)); one more keeps the
+  left-over answers (`addon/server/src/loader.ts`, `addon/server/src/cache.ts`, [D49](decisions.md)).
 - **The version** comes from `addon/server/src/version.ts`, which release-please bumps
   ([`releasing.md`](releasing.md#versions)).
 
@@ -65,13 +68,14 @@ paid and expected ([D66](decisions.md)).
 | --- | --- |
 | `GET /api/health` | `{"status": "ok", "version": "<version>"}`, typed `Health` in `addon/shared/` |
 | `GET /api/data?start=YYYY-MM-DD&end=YYYY-MM-DD` | the postings of the period, the household's subscriptions with their object groups and last payments (the server reads all bills of the 760 days before today; only a bill with an object group is a subscription, and only for it does the server read the posting of its last payment), each posting with the bill it is linked to and what the page needs around them, typed `SpendingData` in `addon/shared/`; errors are the codes of `DataError` ([D18](decisions.md)) |
+| `GET /api/left-over?start=YYYY-MM-DD&end=YYYY-MM-DD` | the household's money per calendar month of the period: Ind, Tilbage, Forbrug, Kreditten, Opsparing, Øvrigt and Ændring på konti, with the members' parts, typed `LeftOverData` in `addon/shared/`; errors are the codes of `DataError` ([D74](decisions.md), [D76](decisions.md)) |
 | `GET /api/hidden-shops` | the shops hidden from the Butikker card, `{"shops": [...]}`, typed `HiddenShops` in `addon/shared/`, never cached |
 | `POST /api/hidden-shops` | hides or shows one shop, `{"shop": "…", "hidden": true}`, and answers the whole list as the GET does ([D43](decisions.md)) |
 | any other `/api/…` | 404 |
 | `GET /` and `GET /web/*` | the page's built files |
 
 Only the `POST` above writes on port 8099, and only to its file ([D43](decisions.md)). Every URL the page uses is
-relative (`./web/…`, `api/data`, `api/hidden-shops`), so it works under the ingress path.
+relative (`./web/…`, `api/data`, `api/left-over`, `api/hidden-shops`), so it works under the ingress path.
 
 ## Ingress
 

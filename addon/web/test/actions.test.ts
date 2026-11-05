@@ -9,9 +9,12 @@ import {
   detailResolves,
   keepDetail,
   leaveFixed,
+  leaveLeftOver,
   normalise,
   openDetail,
   openFixed,
+  openLeftOver,
+  openMonth,
   openPart,
   openPostingsFull,
   openShop,
@@ -258,6 +261,7 @@ describe("normalise", () => {
     mainGroupsFound: true,
     fireflyLinkUrl: null,
     subscriptions: [],
+    leftOver: false,
   };
   const norm = (s: Partial<ViewState>) => normalise({ ...DEFAULT_STATE, ...s }, data, today);
 
@@ -513,5 +517,46 @@ describe("the fixed-expenses view", () => {
     const withDetail: ViewState = { ...fixed, card: "subscriptions", detail: { kind: "subscription", id: "b1" } };
     expect(normalise({ ...withDetail, fixed: false, objectGroup: null }, withBills, today).detail).not.toBeNull();
     expect(normalise(withDetail, withBills, today).detail).toBeNull();
+  });
+});
+
+describe("the Til overs view", () => {
+  const today = "2026-10-30";
+
+  it("opens without the unit, full screen or the fixed-expenses view, and keeps the rest", () => {
+    const from: ViewState = {
+      ...DEFAULT_STATE,
+      period: { preset: "lastYear" },
+      card: "postings",
+      fullScreen: true,
+      unit: "2025-07-01",
+      search: "rema",
+      shop: "Netto",
+      amount: { kind: "over", value: 500 },
+      detail: { kind: "posting", id: "p1" },
+    };
+    expect(openLeftOver(from)).toEqual({ ...from, leftOver: true, unit: null, fullScreen: false });
+    const fixed: ViewState = { ...DEFAULT_STATE, fixed: true, objectGroup: "Faste udgifter" };
+    expect(openLeftOver(fixed)).toEqual({ ...DEFAULT_STATE, leftOver: true });
+  });
+
+  it("leaves with the rest as it was", () => {
+    const s: ViewState = { ...DEFAULT_STATE, leftOver: true, search: "x", detail: { kind: "posting", id: "p1" } };
+    expect(leaveLeftOver(s)).toEqual({ ...s, leftOver: false });
+  });
+
+  it("opens today's month as Denne måned", () => {
+    const s: ViewState = { ...DEFAULT_STATE, leftOver: true, search: "x" };
+    expect(openMonth(s, "2026-10", today)).toEqual({ ...s, leftOver: false, period: { preset: "thisMonth" } });
+  });
+
+  it("opens another month whole, from its first day to its last", () => {
+    const s: ViewState = { ...DEFAULT_STATE, leftOver: true, unit: "2026-09-01" };
+    expect(openMonth(s, "2026-09", today)).toEqual({
+      ...DEFAULT_STATE,
+      period: { preset: "custom", start: "2026-09-01", end: "2026-09-30" },
+    });
+    expect(openMonth(s, "2024-02", today).period).toEqual({ preset: "custom", start: "2024-02-01", end: "2024-02-29" });
+    expect(openMonth(s, "2025-12", today).period).toEqual({ preset: "custom", start: "2025-12-01", end: "2025-12-31" });
   });
 });

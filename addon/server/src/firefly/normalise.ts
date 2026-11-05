@@ -30,6 +30,19 @@ function posting(
   };
 }
 
+/** Whether the overview counts the split as spending or a refund (D12, D15); null when it leaves it out. */
+export function spendingKind(
+  split: WireSplit,
+  mainGroupOf: (category: string | null) => string | null,
+  excluded: ReadonlySet<string>,
+): Posting["kind"] | null {
+  const mainGroup = mainGroupOf(split.category_name);
+  if (mainGroup !== null && excluded.has(mainGroup)) return null;
+  if (split.type === "withdrawal" && split.source_type === ASSET) return "spending";
+  if (split.type === "deposit" && split.destination_type === ASSET && split.category_name !== null) return "refund";
+  return null;
+}
+
 export function toPostings(
   groups: WireGroup[],
   mainGroupOf: (category: string | null) => string | null,
@@ -39,13 +52,12 @@ export function toPostings(
   const postings: Posting[] = [];
   for (const group of groups) {
     for (const split of group.attributes.transactions) {
-      const mainGroup = mainGroupOf(split.category_name);
-      if (mainGroup !== null && excluded.has(mainGroup)) continue;
-      if (split.type === "withdrawal" && split.source_type === ASSET) {
-        postings.push(posting(group.id, split, "spending", split.source_id,
+      const kind = spendingKind(split, mainGroupOf, excluded);
+      if (kind === "spending") {
+        postings.push(posting(group.id, split, kind, split.source_id,
           shopName(split.destination_name, split.destination_type, EXPENSE), linkOf));
-      } else if (split.type === "deposit" && split.destination_type === ASSET && split.category_name !== null) {
-        postings.push(posting(group.id, split, "refund", split.destination_id,
+      } else if (kind === "refund") {
+        postings.push(posting(group.id, split, kind, split.destination_id,
           shopName(split.source_name, split.source_type, REVENUE), linkOf));
       }
     }

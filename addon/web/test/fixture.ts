@@ -1,4 +1,12 @@
-import type { Period, Posting, SpendingData, Subscription } from "@ha-spending/shared";
+import {
+  addMonths,
+  type LeftOverData,
+  type LeftOverMonth,
+  type Period,
+  type Posting,
+  type SpendingData,
+  type Subscription,
+} from "@ha-spending/shared";
 
 import { da } from "../src/i18n/da";
 
@@ -65,6 +73,7 @@ export function answerFor(range: Period, today = "2026-10-30"): SpendingData {
     mainGroupsFound: true,
     fireflyLinkUrl: LINK,
     subscriptions: [],
+    leftOver: false,
   };
 }
 
@@ -149,3 +158,60 @@ export function withSubscriptions(answer: SpendingData, subscriptions = SUBSCRIP
 
 /** The key-number card the fixture's object group draws beside the period's own cards. */
 export const OBJECT_GROUP = da.inPeriod("Abonnementer");
+
+export function withLeftOver(answer: SpendingData): SpendingData {
+  return { ...answer, leftOver: true };
+}
+
+type LeftOverParts = Pick<LeftOverMonth, "members" | "spending" | "savings" | "credit" | "other">;
+
+const ANNA_AND_BO: LeftOverMonth["members"] = [
+  { name: "Anna", paidIn: 1_400_000, back: 0 },
+  { name: "Bo", paidIn: 1_100_000, back: 0 },
+];
+
+/** A month not listed is a plain one: both members pay in, and the spending is a little less. */
+const LEFT_OVER_MONTHS: Record<string, Partial<LeftOverParts>> = {
+  "2026-10": {
+    members: [
+      { name: "Anna", paidIn: 1_800_000, back: 200_000 },
+      { name: "Bo", paidIn: 1_300_000, back: 0 },
+    ],
+    spending: 2_750_000,
+  },
+  "2026-09": { spending: 3_380_050, credit: -1_000_000, savings: 120_000, other: 2_050 },
+  "2026-08": { spending: 2_200_000, credit: 300_000 },
+  "2026-07": { spending: -45_000, savings: -120_000 },
+  "2026-06": { members: [], spending: 0 },
+};
+
+function leftOverMonth(month: string): LeftOverMonth {
+  const { members = ANNA_AND_BO, spending = 2_412_345, savings = 0, credit = 0, other = 0 } =
+    LEFT_OVER_MONTHS[month] ?? {};
+  const paidIn = members.reduce((acc, m) => acc + m.paidIn, 0);
+  const back = members.reduce((acc, m) => acc + m.back, 0);
+  return {
+    month,
+    paidIn,
+    back,
+    members,
+    spending,
+    savings,
+    credit,
+    other,
+    change: paidIn - back - spending - credit - savings + other,
+  };
+}
+
+/**
+ * Every calendar month the range touches, newest first: two members, money back to one, a draw on the credit line
+ * and a payment, money to and from savings, a refund-heavy month and a month of zeros.
+ */
+export function leftOverFor(range: Period, today = "2026-10-30"): LeftOverData {
+  const start = range.start.slice(0, 7);
+  const months: LeftOverMonth[] = [];
+  for (let first = `${range.end.slice(0, 7)}-01`; first.slice(0, 7) >= start; first = addMonths(first, -1)) {
+    months.push(leftOverMonth(first.slice(0, 7)));
+  }
+  return { range, today, hasSavings: true, hasCredit: true, months };
+}

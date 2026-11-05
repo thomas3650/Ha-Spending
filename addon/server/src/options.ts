@@ -6,6 +6,12 @@ export interface Options {
   fireflyLinkUrl: string | null;
   mainGroupRuleGroup: string;
   excludedMainGroups: string[];
+  /** The household's members: their revenue accounts and the same-named expense accounts. */
+  members: string[];
+  /** The categories of money to or from savings. */
+  savingsCategories: string[];
+  /** The asset accounts that are credit lines. */
+  creditAccounts: string[];
   /** When set, the sorter's endpoint runs (D29). */
   sorterKey: string | null;
   sorterInboxCategory: string;
@@ -86,6 +92,9 @@ export function readOptions(path: string): Options {
     fireflyLinkUrl: link === null ? null : withoutTrailingSlash(link),
     mainGroupRuleGroup: optional(options, "main_group_rule_group") ?? "Hovedgrupper",
     excludedMainGroups: list(options, "excluded_main_groups") ?? ["Penge ind og ud"],
+    members: list(options, "members") ?? [],
+    savingsCategories: list(options, "savings_categories") ?? [],
+    creditAccounts: list(options, "credit_accounts") ?? [],
     sorterKey,
     sorterInboxCategory,
     movedTag: optional(options, "moved_tag") ?? "moved-by-assistant",

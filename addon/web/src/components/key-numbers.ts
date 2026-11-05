@@ -5,8 +5,9 @@ import type { KeyCard, KeyLink } from "../model/key-numbers";
 import { fire } from "./chip";
 
 /**
- * The period's key numbers, then one per object group; their placeholder while `cards` is null. A link's plain click
- * fires `key-link` with the link, so the app can mark the history entry it pushes; the href serves any other click.
+ * The period's key numbers, then one per object group; their placeholder while `cards` is null, and a card's own
+ * while it is `busy`. A link's plain click fires `key-link` with the link, so the app can mark the history entry it
+ * pushes; the href serves any other click.
  */
 export class KeyNumbers extends LitElement {
   static override properties = {
@@ -37,14 +38,29 @@ export class KeyNumbers extends LitElement {
     const link = c.link;
     if (link === undefined) return nothing;
     if (link.kind === "postings" && link.count === 0) return html`<div class="kpi-link">${count(0)}</div>`;
-    const text =
-      link.kind === "postings"
-        ? da.postingsLink(count(link.count))
-        : html`${da.showSubscriptions} <span aria-hidden="true">→</span>`;
+    const text = (() => {
+      switch (link.kind) {
+        case "postings":
+          return da.postingsLink(count(link.count));
+        case "subscriptions":
+          return html`${da.showSubscriptions} <span aria-hidden="true">→</span>`;
+        case "leftOver":
+          return html`${da.leftOver.showMonths} <span aria-hidden="true">→</span>`;
+      }
+    })();
     return html`<a class="kpi-link" href=${link.href} @click=${(e: MouseEvent) => this.follow(e, link)}>${text}</a>`;
   }
 
+  private bones() {
+    return html`<div class="kpi-bone short"></div>
+      <div class="kpi-bone tall"></div>
+      <div class="kpi-bone"></div>`;
+  }
+
   private plainCard(c: KeyCard) {
+    if (c.busy) {
+      return html`<div class="card kpi" role="group" aria-label=${c.label} aria-busy="true">${this.bones()}</div>`;
+    }
     return html`<div class="card kpi" role="group" aria-label=${c.label}>
       <div class="kpi-label">${c.label}</div>
       <div class="kpi-value">
@@ -65,11 +81,7 @@ export class KeyNumbers extends LitElement {
         <div role="list" class="kpis">
           ${Array.from(
             { length: this.boxes },
-            () => html`<div class="card kpi" role="listitem">
-              <div class="kpi-bone short"></div>
-              <div class="kpi-bone tall"></div>
-              <div class="kpi-bone"></div>
-            </div>`,
+            () => html`<div class="card kpi" role="listitem">${this.bones()}</div>`,
           )}
         </div>
       </div>`;

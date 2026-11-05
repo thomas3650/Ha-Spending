@@ -43,7 +43,8 @@ type Last = "period" | "unit" | "mainGroup" | "category";
  * category, then a dashed button for the next level. Fires `hs-period`, `hs-accounts`, `set-unit` with a unit's
  * `fullStart`, `set-main-group`, `set-category`, and from the trail's × `remove-unit`, `remove-main-group` and
  * `remove-category`. In the fixed-expenses view the trail has the object group after "Alt forbrug" and a ← before it;
- * they fire `set-object-group` (null is Alle) and `back`.
+ * they fire `set-object-group` (null is Alle) and `back`. The Til overs view's trail is "Alt forbrug", "Til overs" and
+ * the period, with the same ← and without Konti.
  */
 export class TopCard extends LitElement {
   static override properties = {
@@ -54,6 +55,7 @@ export class TopCard extends LitElement {
     unitStep: { attribute: false },
     lists: { attribute: false },
     fixed: { attribute: false },
+    leftOver: { attribute: false },
     objectGroups: { attribute: false },
     objectGroupStep: { attribute: false },
   };
@@ -67,6 +69,8 @@ export class TopCard extends LitElement {
   declare lists: LevelLists | null;
   /** The fixed-expenses view's trail. */
   declare fixed: boolean;
+  /** The Til overs view's trail: it covers every month of the period over all accounts (spec §4.1). */
+  declare leftOver: boolean;
   /** The object-group step's rows, Alle last; null while the answer loads and on an error. */
   declare objectGroups: ObjectGroupRow[] | null;
   declare objectGroupStep: ObjectGroupStep;
@@ -77,6 +81,7 @@ export class TopCard extends LitElement {
     this.unitStep = null;
     this.lists = null;
     this.fixed = false;
+    this.leftOver = false;
     this.objectGroups = null;
     this.objectGroupStep = { title: "", single: false };
   }
@@ -107,6 +112,9 @@ export class TopCard extends LitElement {
   }
 
   private trail() {
+    if (this.leftOver) {
+      return html`<span>${da.allSpending}</span>${SEP}<span>${da.leftOver.name}</span>${SEP}${this.period(true)}`;
+    }
     const state = this.state;
     const level = state.level;
     const unit = this.unitStep?.chosen ?? null;
@@ -189,7 +197,7 @@ export class TopCard extends LitElement {
   override render() {
     const nav = html`<nav class="top-trail" aria-label=${da.trail}>${this.trail()}</nav>`;
     return html`<div class="card top-card">
-      ${this.fixed
+      ${this.fixed || this.leftOver
         ? html`<div class="top-start">
             <button
               type="button"
@@ -203,9 +211,11 @@ export class TopCard extends LitElement {
             ${nav}
           </div>`
         : nav}
-      <div class="top-filters">
-        <hs-accounts-picker .accounts=${this.accounts} .chosen=${this.state.accounts}></hs-accounts-picker>
-      </div>
+      ${this.leftOver
+        ? nothing
+        : html`<div class="top-filters">
+            <hs-accounts-picker .accounts=${this.accounts} .chosen=${this.state.accounts}></hs-accounts-picker>
+          </div>`}
     </div>`;
   }
 }

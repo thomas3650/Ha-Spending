@@ -256,3 +256,10 @@ The page's list. Every screenshot is at 1440×960 with the console free of error
     A chosen unit, and the month step in the trail ([D70](decisions.md)) on the overview and in the view: the dashed
     "Måned", the list with its sums, a month without its year inside one year, and the cross. The colours at Alt
     forbrug, in a main group and in a category. The way out by ← and by Back.
+53. `68-til-overs`: the Til overs card and view ([Til overs spec](superpowers/specs/2026-11-04-left-over.md) §2 and
+    §4), at 1440 and 1728 px, in the example data with the three options set. On the overview the card sits after the
+    period's own cards and before the object groups' cards, with no colour and no "+"; with a main group, a category or
+    an account chosen it is gone. "Vis måneder →" opens the view. A row adds up from left to right: Til overs is Ind,
+    Tilbage and Forbrug as shown, and Ændring på konti is Til overs, Kreditten, Opsparing and Øvrigt; so does "I alt",
+    and its Til overs is the card's number. A month's button opens the overview for that month. ← and Escape leave the
+    view.

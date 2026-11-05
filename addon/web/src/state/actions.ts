@@ -1,4 +1,4 @@
-import { groupingFor, type Level, type SpendingData, unitsOf } from "@ha-spending/shared";
+import { addDays, addMonths, groupingFor, type Level, type SpendingData, unitsOf } from "@ha-spending/shared";
 import type { AmountFilter } from "../model/amount";
 import { viewContext } from "../model/context";
 import { fixedUnits } from "../model/fixed";
@@ -58,6 +58,25 @@ export function setObjectGroup(s: ViewState, objectGroup: string | null): ViewSt
 
 export function leaveFixed(s: ViewState): ViewState {
   return { ...s, fixed: false, objectGroup: null };
+}
+
+/** Keeps the detail, so the way back finds the overview as it was (spec §6.3). */
+export function openLeftOver(s: ViewState): ViewState {
+  return { ...withoutUnit(s), leftOver: true, fullScreen: false, fixed: false, objectGroup: null };
+}
+
+export function leaveLeftOver(s: ViewState): ViewState {
+  return { ...s, leftOver: false };
+}
+
+/** The whole calendar month `YYYY-MM`, also when the period cut it (spec §6.3). */
+export function openMonth(s: ViewState, month: string, today: string): ViewState {
+  const start = `${month}-01`;
+  const period: PeriodChoice =
+    month === today.slice(0, 7)
+      ? { preset: "thisMonth" }
+      : { preset: "custom", start, end: addDays(addMonths(start, 1), -1) };
+  return { ...withoutUnit(s), leftOver: false, period };
 }
 
 export function setCard(s: ViewState, card: Card): ViewState {
@@ -183,8 +202,9 @@ function fixedUnit(s: ViewState, data: SpendingData, today: string): string | nu
   return f.buttons && f.units.some((u) => u.fullStart === s.unit) ? s.unit : null;
 }
 
-/** Drops what the answer does not know. */
+/** Drops what the answer does not know; a link to the Til overs view of a household not set up shows the overview. */
 export function normalise(s: ViewState, data: SpendingData, today: string): ViewState {
+  if (s.leftOver && !data.leftOver) return normalise(leaveLeftOver(s), data, today);
   const accounts = s.accounts && s.accounts.filter((id) => data.accounts.some((a) => a.id === id));
   const unit = s.fixed && data.subscriptions.length > 0 ? fixedUnit(s, data, today) : overviewUnit(s, data, today);
   const card =
