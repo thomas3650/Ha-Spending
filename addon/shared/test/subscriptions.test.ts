@@ -366,6 +366,31 @@ describe("statusInTime in a past time", () => {
     expect(statusInTime(s, payments, may, fetched, today)).toEqual({ kind: "ended", end: "2026-05-31" });
   });
 
+  it("an ended bill in its last month with its last due date unpaid reads notSeen, not ended", () => {
+    const s = subscription({ start: "2025-01-15", end: "2026-05-31", lastPayment: paid("2026-04-15") });
+    const may: Period = { start: "2026-05-01", end: "2026-05-31" };
+    expect(statusInTime(s, [payment("2026-04-15")], may, fetched, today)).toEqual({
+      kind: "notSeen",
+      expected: "2026-05-15",
+    });
+  });
+
+  it("an ended bill in its last month with its last due date open reads expected, not ended", () => {
+    const s = subscription({ start: "2025-01-31", end: "2026-10-31" });
+    const october: Period = { start: "2026-10-01", end: "2026-10-31" };
+    const seenOn = "2026-11-02";
+    expect(statusInTime(s, [], october, { start: "2025-01-01", end: seenOn }, seenOn)).toEqual({
+      kind: "expected",
+      date: "2026-10-31",
+    });
+  });
+
+  it("a due date whose window ends after the fetched range is not judged, so the time reads next", () => {
+    const s = subscription({ start: "2025-01-30" });
+    const fetchedToJanuary: Period = { start: "2025-01-01", end: "2026-01-31" };
+    expect(statusInTime(s, [], january, fetchedToJanuary, today)).toEqual({ kind: "next", date: "2026-02-28" });
+  });
+
   it("a bill due 1 January, paid in late December, with the fetched range from 1 January: January's date is not judged, so January reads next 1 February", () => {
     const s = subscription({ start: "2025-01-01", lastPayment: paid("2026-10-01") });
     const thisYear: Period = { start: "2026-01-01", end: today };
