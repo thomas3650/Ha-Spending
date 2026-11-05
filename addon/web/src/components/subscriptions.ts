@@ -52,14 +52,20 @@ export class Subscriptions extends LitElement {
       aria-current=${marked ? "true" : nothing}
       @click=${() => fire(this, "detail-open", { kind: "subscription", id: r.id })}
     >
-      <td>
+      <td class="subscription-gives-way">
         <span class="subscription-name"
-          ><button type="button" class="row-name" data-detail=${`s:${r.id}`}>${r.name}</button>
+          ><span class="subscription-fit" title=${r.name}
+            ><button type="button" class="row-name subscription-clip" data-detail=${`s:${r.id}`}>${r.name}</button></span
+          >
           <span class="object-group-mark">${r.objectGroup}</span></span
         >
         ${r.next === null ? nothing : html`<span class="subscription-next">${da.nextOn(r.next)}</span>`}
       </td>
-      ${showCategory ? html`<td>${r.category}</td>` : nothing}
+      ${showCategory
+        ? html`<td class="subscription-gives-way">
+            <span class="subscription-fit" title=${r.category}><span class="subscription-clip">${r.category}</span></span>
+          </td>`
+        : nothing}
       <td class="subscription-amount">
         <span class="subscription-payment">${r.amount}</span>
         <span class="subscription-repeat">${r.repeat}</span>
@@ -197,6 +203,23 @@ export const subscriptionsStyles = css`
   .subscriptions .subscription-repeat {
     color: var(--hs-muted);
     font-size: 12px;
+  }
+  /* The status pill keeps one line, so when the card is narrow the name and the category end in "…" instead, with
+     their tooltip, each down to 6em. A track of minmax(0, max-content) asks for its text's width but takes less. */
+  .subscriptions td.subscription-gives-way {
+    min-width: 6em;
+  }
+  .subscriptions .subscription-fit {
+    display: inline-grid;
+    grid-template-columns: minmax(0, max-content);
+    max-width: 100%;
+    vertical-align: top;
+  }
+  .subscriptions .subscription-clip {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
   .subscriptions tr.subscription-row {
     cursor: pointer;
