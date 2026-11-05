@@ -12,6 +12,9 @@ export interface ReadSettings {
   fireflyLinkUrl: string | null;
   pageSize: number;
   timeoutMs: number;
+  members?: string[];
+  savingsCategories?: string[];
+  creditAccounts?: string[];
 }
 
 /** The add-on's timeout for one read (technical spec §3.3). */
@@ -65,6 +68,8 @@ function assetNames(groups: WireGroup[]): Map<string, string> {
 
 export interface SpanFree {
   accounts: WireAccount[];
+  revenue: WireAccount[];
+  liabilities: WireAccount[];
   categories: WireCategory[];
   mainGroups: Awaited<ReturnType<typeof readMainGroups>>;
   earliest: string | null;
@@ -98,39 +103,66 @@ export async function readSpanFree(
   const { signal, stopOnFailure } = firstFailure(settings.timeoutMs, outer);
   const all = <T>(path: string, query: Record<string, string> = {}) =>
     getAllPages<T>(client, path, query, settings.pageSize, signal);
-  const [accounts, categories, mainGroups, earliest, subscriptions] = await Promise.all([
+  const [accounts, revenue, liabilities, categories, mainGroups, earliest, subscriptions] = await Promise.all([
     stopOnFailure(all<WireAccount>("accounts", { type: "asset" })),
+    stopOnFailure(all<WireAccount>("accounts", { type: "revenue" })),
+    stopOnFailure(all<WireAccount>("accounts", { type: "liabilities" })),
     stopOnFailure(all<WireCategory>("categories")),
     stopOnFailure(readMainGroups(client, settings, signal)),
     stopOnFailure(earliestPostingDate(client, today, signal)),
     stopOnFailure(readSubscriptions(client, settings, today, signal)),
   ]);
-  return { accounts, categories, mainGroups, earliest, subscriptions };
+  return { accounts, revenue, liabilities, categories, mainGroups, earliest, subscriptions };
+}
+
+export function readTransactions(
+  client: FireflyClient,
+  settings: Pick<ReadSettings, "pageSize">,
+  range: Period,
+  signal: AbortSignal,
+): Promise<WireGroup[]> {
+  const query = { start: range.start, end: range.end, type: "all" };
+  return getAllPages<WireGroup>(client, "transactions", query, settings.pageSize, signal);
+}
+
+export interface SpanContext {
+  today: string;
+  spanFree?: () => Promise<SpanFree>;
+  groups?: () => Promise<WireGroup[]>;
+}
+
+/** The span's transactions and the span-free parts, each read here unless the context gives it. */
+export async function readSpan(
+  client: FireflyClient,
+  settings: ReadSettings,
+  range: Period,
+  context: SpanContext,
+): Promise<{ groups: WireGroup[]; spanFree: SpanFree }> {
+  const { signal, stopOnFailure } = firstFailure(settings.timeoutMs);
+  const spanFree = context.spanFree ?? (() => readSpanFree(client, settings, context.today, signal));
+  const groups = context.groups ?? (() => readTransactions(client, settings, range, signal));
+  const [read, kept] = await Promise.all([stopOnFailure(groups()), stopOnFailure(spanFree())]);
+  return { groups: read, spanFree: kept };
+}
+
+export function mainGroupLookup(mainGroups: SpanFree["mainGroups"]): (category: string | null) => string | null {
+  return (category) => (category === null ? null : (mainGroups.mapping.get(category) ?? null));
 }
 
 export async function readSpendingData(
   client: FireflyClient,
   settings: ReadSettings,
   range: Period,
-  context: { today: string; warn: (message: string) => void; spanFree?: () => Promise<SpanFree> },
+  context: SpanContext & { warn: (message: string) => void },
 ): Promise<SpendingData> {
-  const { signal, stopOnFailure } = firstFailure(settings.timeoutMs);
-  const spanFree = context.spanFree ?? (() => readSpanFree(client, settings, context.today, signal));
-  const [groups, kept] = await Promise.all([
-    stopOnFailure(
-      getAllPages<WireGroup>(client, "transactions", { start: range.start, end: range.end, type: "all" },
-        settings.pageSize, signal),
-    ),
-    stopOnFailure(spanFree()),
-  ]);
+  const { groups, spanFree: kept } = await readSpan(client, settings, range, context);
   const { accounts: listed, categories: wireCategories, mainGroups, earliest, subscriptions: rawSubscriptions } = kept;
 
   for (const category of mainGroups.conflicts) {
     context.warn(`The main group rules map the category "${category}" to more than one main group; the last rule wins`);
   }
 
-  const mainGroupOf = (category: string | null) =>
-    category === null ? null : (mainGroups.mapping.get(category) ?? null);
+  const mainGroupOf = mainGroupLookup(mainGroups);
   const excluded = new Set(settings.excludedMainGroups);
   const postings = toPostings(groups, mainGroupOf, excluded, subscriptionLinks(rawSubscriptions.bills));
   const subscriptions = keepSubscriptions(rawSubscriptions.kept, mainGroupOf, excluded, context.today, context.warn);
@@ -147,6 +179,8 @@ export async function readSpendingData(
     .sort((a, b) => compareKeys(a.name, b.name));
   const groupNames = new Set(categories.flatMap((c) => (c.mainGroup === null ? [] : [c.mainGroup])));
 
+  const members = new Set(settings.members ?? []);
+
   return {
     range,
     today: context.today,
@@ -158,6 +192,7 @@ export async function readSpendingData(
     mainGroupsFound: mainGroups.found,
     fireflyLinkUrl: settings.fireflyLinkUrl,
     subscriptions,
+    leftOver: kept.revenue.some((a) => members.has(a.attributes.name)),
   };
 }
 

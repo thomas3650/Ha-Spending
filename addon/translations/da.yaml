@@ -20,6 +20,19 @@ configuration:
     name: Udeladte hovedgrupper
     description: >-
       Hovedgrupper, der ikke er forbrug, for eksempel penge ind og ud. Deres posteringer er udeladt.
+  members:
+    name: Medlemmer
+    description: >-
+      Husstandens medlemmer, med navn. Hver er en indtægtskonto for de penge, der kommer ind, og en udgiftskonto med
+      samme navn for de penge, der gives tilbage.
+  savings_categories:
+    name: Kategorier for opsparing
+    description: >-
+      Kategorierne for penge, der flyttes til eller fra opsparing.
+  credit_accounts:
+    name: Kreditter
+    description: >-
+      De aktivkonti, der er kreditter.
   sorter_key:
     name: Sorteringens nøgle
     description: >-

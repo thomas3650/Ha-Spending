@@ -318,16 +318,16 @@ Changed in the same PR:
   - the tooltip per part; Forfalden in red; the legend's red outline;
   - the overview's "Fuld skærm" paragraph names the view's full screen as its sibling.
 - `docs/domain-language.md`:
-  - the Full screen row gets the view's `full=bars|list` with D72;
-  - the line on the hash keys gets D72;
-  - the Subscription status row notes that Forfalden is red, with D72.
+  - the Full screen row gets the view's `full=bars|list` with D77;
+  - the line on the hash keys gets D77;
+  - the Subscription status row notes that Forfalden is red, with D77.
 - `docs/testing.md`: the Chrome check gets §6's steps.
 - `docs/README.md`: the map gets this spec's plan. This branch already adds the spec to the map.
-- `docs/decisions.md`: D72 below, and the statuses it changes.
+- `docs/decisions.md`: D77 below, and the statuses it changes.
 
 ## 8. Decisions
 
-### D72: Full screen in the fixed-expenses view, one-word statuses, and Forfalden in red
+### D77: Full screen in the fixed-expenses view, one-word statuses, and Forfalden in red
 
 - **Date:** 2026-11-04 · **Status:** active
 - **Decision:**
@@ -346,5 +346,5 @@ Changed in the same PR:
 
 | Decision | Status after this change |
 | --- | --- |
-| D20 | active; key list superseded by D35, D42, D44, D60, D61, D66 and D72 |
-| D64 | active; its colour superseded by D72 |
+| D20 | active; key list superseded by D35, D42, D44, D60, D61, D66, D73 and D77 |
+| D64 | active; its colour superseded by D77 |

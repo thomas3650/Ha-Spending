@@ -32,10 +32,19 @@ describe("generateSeed", () => {
     expect(splits.some((x) => x.type === "transfer")).toBe(true);
     expect(splits.some((x) => x.type === "withdrawal" && !x.category)).toBe(true);
     expect(s.categories.some((c) => !mapped.includes(c))).toBe(true);
-    expect(s.accounts).toHaveLength(3);
+    expect(s.accounts).toHaveLength(4);
     expect(s.transactions.some((t) => t.splits.length === 2)).toBe(true);
     expect(splits.some((x) => x.foreignAmount)).toBe(true);
     expect(mapped.some((c, i) => mapped.indexOf(c) !== i)).toBe(true);
+  });
+
+  it("has a household for Til overs", () => {
+    expect(splits.some((x) => x.type === "deposit" && x.source === "Anna")).toBe(true);
+    expect(splits.some((x) => x.type === "deposit" && x.source === "Bo")).toBe(true);
+    expect(splits.some((x) => x.type === "transfer" && x.source === "Kassekredit")).toBe(true);
+    expect(splits.some((x) => x.type === "withdrawal" && x.destination === "Anna")).toBe(true);
+    expect(splits.some((x) => x.type === "withdrawal" && x.destination === "Billån")).toBe(true);
+    expect(s.otherAccounts).toContainEqual({ name: "Billån", type: "liabilities", active: true });
   });
 
   it("names only accounts and categories it lists", () => {

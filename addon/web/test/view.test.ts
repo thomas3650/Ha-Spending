@@ -32,6 +32,7 @@ describe("the view state's hash", () => {
       fixed: false,
       objectGroup: null,
       fixedFull: null,
+      leftOver: false,
       search: "pizza",
       shop: "Netto",
       amount: { kind: "about", value: 80_000 },
@@ -259,6 +260,29 @@ describe("the view state's hash", () => {
     expect(toHash({ ...DEFAULT_STATE, fixed: true })).toBe("view=fixed");
     expect(DEFAULT_STATE.fixed).toBe(false);
     expect(DEFAULT_STATE.objectGroup).toBeNull();
+  });
+
+  it("the Til overs view is view=leftover, over all accounts, all spending and no unit", () => {
+    const s = parseHash("#view=leftover&group=Mad&unit=2026-03-01&accounts=1");
+    expect(s).toEqual({ ...DEFAULT_STATE, leftOver: true });
+    expect(toHash(s)).toBe("view=leftover");
+    expect(DEFAULT_STATE.leftOver).toBe(false);
+  });
+
+  it("keeps the way back's choices in the Til overs view", () => {
+    const hash = "period=lastYear&card=postings&view=leftover&q=rema&shop=Netto&over=5&detail=p%3Ap1";
+    const s = parseHash(hash);
+    expect(s).toEqual({
+      ...DEFAULT_STATE,
+      period: { preset: "lastYear" },
+      card: "postings",
+      leftOver: true,
+      search: "rema",
+      shop: "Netto",
+      amount: { kind: "over", value: 500 },
+      detail: { kind: "posting", id: "p1" },
+    });
+    expect(toHash(s)).toBe(hash);
   });
 
   it("drops og without view=fixed and never writes it", () => {

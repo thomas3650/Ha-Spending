@@ -281,10 +281,10 @@ Model: sonnet · Review: no
 **Files:** `addon/DOCS.md`, `docs/domain-language.md`, `docs/testing.md`, `docs/decisions.md`, `docs/README.md`.
 
 - [ ] `addon/DOCS.md`, `docs/domain-language.md` and `docs/testing.md` as spec §7 lists. The Chrome check gets step
-  53, `68-fuld-skaerm-faste-udgifter`, with spec §6's Chrome steps and widths.
-- [ ] `docs/decisions.md`: D72 as spec §8 writes it (the link as `superpowers/specs/…`), with the detail's red pill
-  (Task 4) in its Claude's-call list; D20's status gets D72; D64's status becomes `active; its colour superseded by
-  D72`.
+  54, `69-fuld-skaerm-faste-udgifter`, with spec §6's Chrome steps and widths.
+- [ ] `docs/decisions.md`: D77 as spec §8 writes it (the link as `superpowers/specs/…`), with the detail's red pill
+  (Task 4) in its Claude's-call list; D20's status gets D77; D64's status becomes `active; its colour superseded by
+  D77`.
 - [ ] `docs/README.md`: the plans list gets this plan after "fixed expenses over time".
 - [ ] `node scripts/check-links.mjs` passes; gates pass; commit `docs: the fixed view's full screen, tooltip and red
   Forfalden`.

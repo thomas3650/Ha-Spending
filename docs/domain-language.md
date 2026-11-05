@@ -28,7 +28,7 @@ its name in code, so the same thing has one name everywhere. The Danish word is 
 | Last payment | seneste betaling | `lastPayment`: the latest posting linked to a subscription on or before today |
 | Amount per payment | beløb | the middle of the subscription's amount range, or the latest payment when it has risen ([D63](decisions.md)) |
 | Amount per year | om året | the cost of a subscription over a year; the rule is in [the spec](superpowers/specs/2026-11-01-subscriptions.md#21-amount-per-payment-and-per-year) |
-| Subscription status | status | Ikke set, Steget, Forventes or Betalt, and a Forventes past its date reads Forfalden, in red ([D64](decisions.md), [D72](decisions.md)); the rules are in [the spec](superpowers/specs/2026-11-01-subscriptions.md#23-the-status) |
+| Subscription status | status | Ikke set, Steget, Forventes or Betalt, and a Forventes past its date reads Forfalden, in red ([D64](decisions.md), [D77](decisions.md)); the rules are in [the spec](superpowers/specs/2026-11-01-subscriptions.md#23-the-status) |
 | Object group | objektgruppe | `objectGroup`: the title of the group Firefly III puts a bill in; the page shows it as the pill on a row, as a sum per group and as a key number for the period, whose link opens the fixed-expenses view ([D38](decisions.md), [D41](decisions.md), [D66](decisions.md)) |
 | Posting's subscription | — | `Posting.subscription`: the bill a posting is linked to, with its id, name and object group, or `null` |
 | Detail | detalje | `detail` in the view state (`DetailKey`): the open detail of a fixed expense (`s:<id>`) or a posting (`p:<id>`), kept in the hash ([D44](decisions.md)) |
@@ -40,10 +40,23 @@ its name in code, so the same thing has one name everywhere. The Danish word is 
 | Fixed-expenses view | faste udgifter over tid | `view=fixed` in the hash: the fixed expenses as bars per unit, paid and expected, with the payments beside them ([D66](decisions.md)) |
 | Estimate | estimat | `estimate`: a payment still to come, drawn hatched and written "ca."; its amount is `amountPerPayment` ([D66](decisions.md)) |
 | Drawn span | — | the dates the fixed-expenses view draws: the period's first day to its own last day, or for "I år", "Denne måned" and "Alt" on to the end of the year, month or running unit ([D66](decisions.md)) |
-| Full screen | fuld skærm | `view=full` in the hash: the right card alone, the page's whole width, for every tab ([D60](decisions.md)); the fixed-expenses view has its own, `full=bars` or `full=list` with `view=fixed`, per card ([D72](decisions.md)) |
+| Full screen | fuld skærm | `view=full` in the hash: the right card alone, the page's whole width, for every tab ([D60](decisions.md)); the fixed-expenses view has its own, `full=bars` or `full=list` with `view=fixed`, per card ([D77](decisions.md)) |
 | Shop | butik | `shop` (`Posting.shop`): the name of the shop a posting was made at, null when it has none |
 | Hidden shop | skjult butik | `hiddenShops` (type `HiddenShops`): a shop the user has hidden from the Butikker card ([D43](decisions.md)) |
+| Member | medlem | a name in the `members` option: a revenue account for the money a person puts in, and the expense account of the same name for the money back |
+| Credit line | kredit | an asset account named in `credit_accounts` ([D75](decisions.md)) |
+| Daily account | daglig konto | an asset account that is not a credit line; savings accounts count as daily ([D75](decisions.md)) |
+| Bucket | — | the one place a withdrawal or deposit on a household account goes: Forbrug, Ind, Tilbage, Opsparing or Øvrigt ([D74](decisions.md)) |
+| Ind | Ind | `paidIn`: the members' deposits into the household's accounts |
+| Tilbage | Tilbage | `back`: money moved back to the members' private accounts |
+| Forbrug | Forbrug | `spending`: the overview's spending, in the Til overs view |
+| Til overs | Til overs | `leftOver`: Ind minus Tilbage minus Forbrug; computed by the page from rounded parts ([D74](decisions.md)) |
+| Kreditten | Kreditten | `credit`: the change in the credit lines' balance; "betalt af" when paid down, "lånt" when drawn on |
+| Opsparing | Opsparing | `savings`: money to savings, from the categories in `savings_categories` |
+| Øvrigt | Øvrigt | `other`: everything else on the household's accounts, such as interest |
+| Ændring på konti | Ændring på konti | `change`: the change in the daily accounts' balance |
+| Til overs view | Til overs | `leftOver` in `ViewState`, `view=leftover` in the hash: a table of months, opened from the Til overs card ([D72](decisions.md), [D73](decisions.md)) |
 
-The hash keys are listed in [D20](decisions.md), [D35](decisions.md), [D44](decisions.md), [D60](decisions.md), [D61](decisions.md), [D66](decisions.md) and [D72](decisions.md). `Posting`, `kind` and the `null` category are fixed by technical spec §3.2
+The hash keys are listed in [D20](decisions.md), [D35](decisions.md), [D44](decisions.md), [D60](decisions.md), [D61](decisions.md), [D66](decisions.md), [D73](decisions.md) and [D77](decisions.md). `Posting`, `kind` and the `null` category are fixed by technical spec §3.2
 ([technical spec](superpowers/specs/2026-10-30-technical-design.md)). The other names are chosen here; they are in
 `addon/shared/src/`. Their texts, such as Uden kategori, belong to the page.

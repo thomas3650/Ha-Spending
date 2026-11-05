@@ -20,6 +20,19 @@ configuration:
     name: Excluded main groups
     description: >-
       Main groups that are not spending, such as money moved in and out. Their postings are left out.
+  members:
+    name: Members
+    description: >-
+      The household's members, by name. Each is a revenue account for the money paid in and an expense account of the
+      same name for the money paid back.
+  savings_categories:
+    name: Savings categories
+    description: >-
+      The categories of money moved to or from savings.
+  credit_accounts:
+    name: Credit lines
+    description: >-
+      The asset accounts that are credit lines.
   sorter_key:
     name: Sorter key
     description: >-
