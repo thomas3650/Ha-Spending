@@ -1,5 +1,5 @@
 import { addDays, addMonths } from "./dates";
-import type { Repeat, Subscription } from "./types";
+import type { Period, Posting, Repeat, Subscription } from "./types";
 
 export const PAYMENTS_PER_YEAR: Record<Repeat, number> = {
   weekly: 52,
@@ -97,4 +97,56 @@ export function subscriptionStatus(s: Subscription, today: string): Subscription
   if (risen(s)) return { kind: "risen", max: s.amountMax, paid: s.lastPayment.amount };
   if (!last || (next !== null && next <= addDays(today, ahead))) return { kind: "expected", date: next };
   return { kind: "paid", date: last.date };
+}
+
+export function dueDatesBetween(s: Subscription, from: string, to: string): string[] {
+  const dates: string[] = [];
+  for (let k = 0, date = dueDate(s, 0); date <= to && (s.end === null || date <= s.end); date = dueDate(s, ++k)) {
+    if (date >= from) dates.push(date);
+  }
+  return dates;
+}
+
+export type TimeStatus = SubscriptionStatus | { kind: "next"; date: string } | { kind: "ended"; end: string };
+
+export function statusInTime(
+  s: Subscription,
+  payments: readonly Pick<Posting, "date" | "amount" | "kind">[],
+  time: Period,
+  fetched: Period,
+  today: string,
+): TimeStatus {
+  if (time.end >= today) {
+    if (s.end !== null && s.end < today && nextDate(s, today) === null) return { kind: "ended", end: s.end };
+    return subscriptionStatus(s, today);
+  }
+
+  const { early, late } = days(s.repeat);
+  const paidDates = payments.filter((p) => p.kind === "spending").map((p) => p.date);
+  let missed: string | null = null;
+  let open: string | null = null;
+  let latestMet: string | null = null;
+  for (const due of dueDatesBetween(s, time.start, time.end)) {
+    const from = addDays(due, -early);
+    const to = addDays(due, late);
+    const met = paidDates.filter((date) => date >= from && date <= to);
+    if (met.length > 0) {
+      const latest = met.reduce((a, b) => (a > b ? a : b));
+      if (latestMet === null || latest > latestMet) latestMet = latest;
+    } else if (to >= today) {
+      open ??= due;
+    } else if (from >= fetched.start && to <= fetched.end) {
+      missed ??= due;
+    }
+  }
+
+  if (missed !== null) return { kind: "notSeen", expected: missed };
+  if (open !== null) return { kind: "expected", date: open };
+  if (s.end !== null && s.end <= time.end) return { kind: "ended", end: s.end };
+  if (latestMet !== null) return { kind: "paid", date: latestMet };
+  const next = dueDatesBetween(s, addDays(time.end, 1), addMonths(time.end, MAX_GAP_MONTHS + 1))[0];
+  if (next !== undefined) return { kind: "next", date: next };
+  if (s.end !== null) return { kind: "ended", end: s.end };
+  // The server leaves out a bill with more than MAX_GAP_MONTHS between payments, so one without an end has a next date.
+  return { kind: "expected", date: null };
 }
