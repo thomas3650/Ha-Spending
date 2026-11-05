@@ -178,15 +178,12 @@ export function detailResolves(s: ViewState, data: SpendingData, today: string):
   if (s.fixed) {
     return key.kind === "subscription" && s.fixedTab === "all" && tabRows(viewContext(data, s, today)).some((r) => r.subscription.id === key.id);
   }
-  const listed = (id: string) => data.subscriptions.some((b) => b.id === id);
-  if (key.kind === "subscription") return s.card === "subscriptions" && listed(key.id);
+  if (key.kind === "subscription" || s.card !== "postings") return false;
   const p = data.postings.find((q) => q.id === key.id);
   if (p === undefined) return false;
   const period = periodOf(s.period, today, data.earliestPostingDate);
   if (p.date < period.start || p.date > period.end) return false;
-  if (s.accounts !== null && !s.accounts.includes(p.account)) return false;
-  if (s.card === "postings") return true;
-  return s.card === "subscriptions" && p.subscription !== null && listed(p.subscription.id);
+  return s.accounts === null || s.accounts.includes(p.account);
 }
 
 function knownLevel(level: Level, data: SpendingData): Level {
@@ -219,11 +216,7 @@ export function normalise(s: ViewState, data: SpendingData, today: string): View
   if (s.leftOver && !data.leftOver) return normalise(leaveLeftOver(s), data, today);
   const accounts = s.accounts && s.accounts.filter((id) => data.accounts.some((a) => a.id === id));
   const unit = s.fixed && data.subscriptions.length > 0 ? fixedUnit(s, data, today) : overviewUnit(s, data, today);
-  const card =
-    (s.card === "subscriptions" && data.subscriptions.length === 0) ||
-    (s.card === "shops" && !hasShops(data))
-      ? "bars"
-      : s.card;
+  const card = s.card === "shops" && !hasShops(data) ? "bars" : s.card;
   const known = { ...s, accounts, level: knownLevel(s.level, data), unit, card };
   if (known.fixed) {
     if (data.subscriptions.length === 0) return normalise(leaveFixed(known), data, today);

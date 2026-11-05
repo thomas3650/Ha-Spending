@@ -1019,13 +1019,11 @@ export class SpendingApp extends LitElement {
         <hs-overview
           .ctx=${ctx}
           .postingsSort=${this.postingsSort}
-          .subscriptionsSort=${this.subscriptionsSort}
           .hiddenShops=${this.hiddenShops}
           .hiddenWriteFailed=${this.hiddenWriteFailed}
           .shopsAll=${this.shopsAll}
           .shopsHidden=${this.shopsHidden}
           @posting-sort=${(e: CustomEvent<PostingColumn>) => this.postingSort(e.detail)}
-          @subscription-sort=${this.onSubscriptionSort}
           @full-screen-toggle=${() => (this.state.fullScreen ? this.closeFullScreen() : this.openFullScreen())}
           @shops-all-toggle=${() => (this.shopsAll = !this.shopsAll)}
           @shops-hidden-toggle=${() => (this.shopsHidden = !this.shopsHidden)}

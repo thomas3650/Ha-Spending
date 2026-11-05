@@ -9,7 +9,6 @@ import "../components/circle";
 import "../components/postings";
 import "../components/search";
 import "../components/shops";
-import { objectGroupSums } from "../components/subscriptions";
 import { count, kr, plainCount, unitName } from "../format";
 import { da } from "../i18n/da";
 import { barItems, categoryColours, circleItems, circleSpan, circleTotal, partColours } from "../model/circle";
@@ -19,9 +18,8 @@ import { detailView } from "../model/detail";
 import { matches, shopSuggestions } from "../model/filter";
 import { postingList, shownColumns, shownPostingSort, watchCategoryWidth } from "../model/postings";
 import { type HiddenState, shopList } from "../model/shops";
-import { DEFAULT_SUBSCRIPTION_SORT, subscriptionTable } from "../model/subscriptions";
 import { hasShops } from "../state/actions";
-import { type Card, DEFAULT_POSTING_SORT, type Sort, type SubscriptionColumn, type Sorted } from "../state/view";
+import { type Card, DEFAULT_POSTING_SORT, type Sort } from "../state/view";
 
 const LEFT_TITLE = "hs-left-title";
 const RIGHT_TITLE = "hs-right-title";
@@ -31,7 +29,6 @@ export class Overview extends LitElement {
   static override properties = {
     ctx: { attribute: false },
     postingsSort: { attribute: false },
-    subscriptionsSort: { attribute: false },
     hiddenShops: { attribute: false },
     shopsAll: { attribute: false },
     shopsHidden: { attribute: false },
@@ -40,7 +37,6 @@ export class Overview extends LitElement {
 
   declare ctx: ViewContext;
   declare postingsSort: Sort;
-  declare subscriptionsSort: Sorted<SubscriptionColumn>;
   declare hiddenShops: HiddenState;
   declare shopsAll: boolean;
   declare shopsHidden: boolean;
@@ -49,7 +45,6 @@ export class Overview extends LitElement {
   constructor() {
     super();
     this.postingsSort = DEFAULT_POSTING_SORT;
-    this.subscriptionsSort = DEFAULT_SUBSCRIPTION_SORT;
     this.hiddenShops = { kind: "loading" };
     this.shopsAll = false;
     this.shopsHidden = false;
@@ -76,7 +71,7 @@ export class Overview extends LitElement {
   /** Waits for the lists too, so the app can focus a row's button once they show (detail spec §1.3). */
   protected override async getUpdateComplete(): Promise<boolean> {
     const done = await super.getUpdateComplete();
-    const children = [...this.querySelectorAll<LitElement>("hs-postings, hs-subscriptions, hs-detail")];
+    const children = [...this.querySelectorAll<LitElement>("hs-postings, hs-detail")];
     await Promise.all(children.map((c) => c.updateComplete));
     return done;
   }
@@ -211,28 +206,14 @@ export class Overview extends LitElement {
     const level = this.ctx.state.level;
     const g = finerUnits(this.ctx)?.grouping ?? this.ctx.timeline.grouping;
     if (level.kind === "all") {
-      if (card === "subscriptions") return da.subscriptions;
       if (card === "postings") return da.postingsTitle;
       if (card === "shops") return da.shops;
       return da.per(g);
     }
     const name = levelName(level);
-    if (card === "subscriptions") return da.subscriptionsIn(name);
     if (card === "postings") return da.postingsOf(name);
     if (card === "shops") return da.shopsIn(name);
     return da.levelPer(name, g);
-  }
-
-  private subscriptions(title: string) {
-    const table = subscriptionTable(this.ctx, this.subscriptionsSort);
-    if (table.rows.length === 0) {
-      return { above: nothing, list: html`<p class="empty">${da.noSubscriptions(levelName(this.ctx.state.level))}</p>` };
-    }
-    return {
-      above: objectGroupSums(table, da.objectGroupSums(title)),
-      list: html`<hs-subscriptions .table=${table} .label=${title} .marked=${this.ctx.state.detail}></hs-subscriptions>
-        <p class="half-foot">${da.subscriptionsFoot}</p>`,
-    };
   }
 
   /** Like Posteringer, the list follows a chosen unit but not the search or the chosen shop (top-shops spec §1). */
@@ -261,14 +242,14 @@ export class Overview extends LitElement {
     const inPeriod = within(ctx.shown, ctx.timeline.period);
     const title = this.cardTitle(card);
     const shops = hasShops(ctx.data);
-    const listed = card === "subscriptions" || card === "postings";
+    const listed = card === "postings";
     const view = listed && ctx.state.detail !== null ? detailView(ctx.state.detail, ctx) : null;
     // Full screen has the room to put the detail beside the list (detail spec §1.2).
     const inPlace = view !== null && !this.ctx.state.fullScreen;
     let body: unknown;
     let fill = false;
     if (listed) {
-      const { above, list } = card === "subscriptions" ? this.subscriptions(title) : this.postings();
+      const { above, list } = this.postings();
       body = detailSplit(above, list, view, !this.ctx.state.fullScreen);
     } else if (card === "shops") body = this.shops();
     else if (inPeriod.length === 0) body = this.empty();
@@ -294,7 +275,6 @@ export class Overview extends LitElement {
         <div class="card-tools">
           <div class="card-switch" role="group" aria-label=${da.view}>
             ${this.switchButton("bars", da.bars)} ${this.switchButton("postings", da.postings)}
-            ${ctx.data.subscriptions.length === 0 ? nothing : this.switchButton("subscriptions", da.subscriptions)}
             ${shops ? this.switchButton("shops", da.shops) : nothing}
           </div>
           ${fullScreenButton(da.fullScreen, this.ctx.state.fullScreen, () => fire(this, "full-screen-toggle"))}

@@ -326,13 +326,6 @@ describe("the way in and out (spec §2)", () => {
     expect(queryByRole(nav, "button", { name: da.backToOverview })).toBeNull();
   });
 
-  it("the Faste udgifter tab's ⤢ still opens its table in full screen", async () => {
-    const { app, root } = await open("card=subscriptions");
-    await click(app, getByRole(root, "button", { name: da.fullScreen }));
-    expect(location.hash).toBe("#card=subscriptions&view=full");
-    getByRole(root, "region", { name: da.subscriptions });
-  });
-
   it("view=fixed with no subscriptions shows the overview, not in full screen", async () => {
     const { root } = await mount("view=fixed&og=Faste%20udgifter&full=list");
     expect(location.hash).toBe("");

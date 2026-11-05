@@ -11,7 +11,7 @@ import type { AmountFilter } from "../model/amount";
 export type PeriodChoice = { preset: Preset } | { preset: "custom"; start: string; end: string };
 export type FixedCard = "bars" | "list";
 export type FixedTab = "payments" | "all";
-export type Card = "bars" | "postings" | "subscriptions" | "shops";
+export type Card = "bars" | "postings" | "shops";
 export type PostingColumn = "date" | "text" | "category" | "account" | "amount";
 export type SubscriptionColumn = "name" | "category" | "amount" | "perYear" | "status";
 
@@ -73,7 +73,9 @@ export const DEFAULT_STATE: ViewState = {
 /** Held by the app, not in the hash (top-filter spec §3.4). */
 export const DEFAULT_POSTING_SORT: Sort = { column: "date", descending: true };
 
-const CARDS: readonly Card[] = ["bars", "postings", "subscriptions", "shops"];
+const CARDS: readonly Card[] = ["bars", "postings", "shops"];
+/** The overview's old Faste udgifter tab; its links open the view's Alle faste udgifter tab (spec §2.1). */
+const OLD_SUBSCRIPTIONS = "subscriptions";
 /** The old Alle posteringer screen; its links open Posteringer in full screen. */
 const ALL_POSTINGS = "all-postings";
 const FULL = "full";
@@ -165,9 +167,24 @@ function parseDetail(value: string | null): DetailKey | null {
  */
 export function parseHash(hash: string): ViewState {
   const p = new URLSearchParams(hash.startsWith("#") ? hash.slice(1) : hash);
+  const view = p.get("view");
+  const oldList = p.get("card") === OLD_SUBSCRIPTIONS && view !== FIXED && view !== LEFT_OVER && view !== ALL_POSTINGS;
+  if (!oldList) return parseState(p, view);
+  // The overview's unit is not the view's, and a posting's detail has no place on the tab.
+  const s = parseState(p, FIXED);
+  return {
+    ...s,
+    unit: null,
+    objectGroup: null,
+    fixedFull: null,
+    fixedTab: "all",
+    detail: s.detail?.kind === "subscription" ? s.detail : null,
+  };
+}
+
+function parseState(p: URLSearchParams, view: string | null): ViewState {
   const accounts = p.get("accounts");
   const unit = p.get("unit") ?? undefined;
-  const view = p.get("view");
   const allPostings = view === ALL_POSTINGS;
   const fixed = view === FIXED;
   const leftOver = view === LEFT_OVER;

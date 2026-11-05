@@ -257,8 +257,6 @@ export const da = {
   postingsLink: (counted: string) => `${counted} →`,
   showSubscriptions: "Vis faste udgifter",
   subscriptionCount: (n: number) => `${n} ${n === 1 ? "fast udgift" : "faste udgifter"}`,
-  subscriptions: "Faste udgifter",
-  subscriptionsIn: (name: string) => `Faste udgifter i ${name}`,
   perYear: (value: string) => `${value} om året`,
   objectGroupSums: (title: string) => `${title} om året`,
   subscriptionColumns: {

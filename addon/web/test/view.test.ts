@@ -86,9 +86,9 @@ describe("the view state's hash", () => {
   });
 
   it("detail round-trips and is written last", () => {
-    const s: ViewState = { ...DEFAULT_STATE, card: "subscriptions", detail: { kind: "subscription", id: "b1" } };
-    expect(toHash(s)).toBe("card=subscriptions&detail=s%3Ab1");
-    expect(parseHash("#card=subscriptions&detail=s%3Ab1")).toEqual(s);
+    const s: ViewState = { ...DEFAULT_STATE, fixed: true, fixedTab: "all", detail: { kind: "subscription", id: "b1" } };
+    expect(toHash(s)).toBe("view=fixed&tab=all&detail=s%3Ab1");
+    expect(parseHash("#view=fixed&tab=all&detail=s%3Ab1")).toEqual(s);
     const all: ViewState = {
       ...DEFAULT_STATE,
       card: "postings",
@@ -110,11 +110,65 @@ describe("the view state's hash", () => {
     }
   });
 
-  it("round-trips the subscriptions card", () => {
-    expect(parseHash("card=subscriptions").card).toBe("subscriptions");
-    const s: ViewState = { ...DEFAULT_STATE, card: "subscriptions" };
-    expect(toHash(s)).toBe("card=subscriptions");
-    expect(parseHash("#" + toHash(s))).toEqual(s);
+  describe("an old card=subscriptions (spec §2.1)", () => {
+    const list: ViewState = { ...DEFAULT_STATE, fixed: true, fixedTab: "all" };
+
+    it("with no view opens the view's Alle faste udgifter tab under Alle, on the bars card", () => {
+      expect(parseHash("#card=subscriptions")).toEqual(list);
+      expect(toHash(parseHash("#card=subscriptions"))).toBe("view=fixed&tab=all");
+    });
+
+    it("with no view keeps the period, Konti, the level, the quick filter and a bill's detail, and drops the unit", () => {
+      const old =
+        "period=lastYear&accounts=1&group=Bolig&category=Husleje&unit=2025-03-01&card=subscriptions&q=leje&shop=Netto&over=5&detail=s%3Ab1";
+      expect(parseHash(old)).toEqual({
+        ...list,
+        period: { preset: "lastYear" },
+        accounts: ["1"],
+        level: { kind: "category", mainGroup: "Bolig", category: "Husleje" },
+        search: "leje",
+        shop: "Netto",
+        amount: { kind: "over", value: 500 },
+        detail: { kind: "subscription", id: "b1" },
+      });
+    });
+
+    it("with no view drops a posting's detail", () => {
+      expect(parseHash("card=subscriptions&detail=p%3Ap1")).toEqual(list);
+    });
+
+    it("with view=full opens the same tab, without the overview's full screen", () => {
+      expect(parseHash("card=subscriptions&view=full")).toEqual(list);
+      expect(parseHash("card=subscriptions&view=full&detail=s%3Ab1")).toEqual({
+        ...list,
+        detail: { kind: "subscription", id: "b1" },
+      });
+    });
+
+    it("with view=fixed opens the view as the hash says, on the bars card", () => {
+      const hash = "unit=2026-07-01&card=subscriptions&view=fixed&og=Abonnementer&full=list&detail=p%3Ap1";
+      expect(parseHash(hash)).toEqual({
+        ...DEFAULT_STATE,
+        unit: "2026-07-01",
+        fixed: true,
+        objectGroup: "Abonnementer",
+        fixedFull: "list",
+        detail: { kind: "posting", id: "p1" },
+      });
+      expect(parseHash("card=subscriptions&view=fixed&tab=all&detail=s%3Ab1")).toEqual({
+        ...list,
+        detail: { kind: "subscription", id: "b1" },
+      });
+    });
+
+    it("with view=leftover opens Til overs as the hash says, on the bars card", () => {
+      expect(parseHash("period=lastMonth&card=subscriptions&view=leftover&detail=s%3Ab1")).toEqual({
+        ...DEFAULT_STATE,
+        period: { preset: "lastMonth" },
+        leftOver: true,
+        detail: { kind: "subscription", id: "b1" },
+      });
+    });
   });
 
   it("an old link to Forskel opens the bars", () => {
@@ -255,7 +309,7 @@ describe("the view state's hash", () => {
   });
 
   it("view=full holds for every tab and keeps the detail", () => {
-    for (const card of ["bars", "postings", "subscriptions", "shops"] as const) {
+    for (const card of ["bars", "postings", "shops"] as const) {
       expect(parseHash(`card=${card}&view=full`)).toMatchObject({ card, fullScreen: true });
     }
     const s: ViewState = { ...DEFAULT_STATE, card: "postings", fullScreen: true, detail: { kind: "posting", id: "p1" } };

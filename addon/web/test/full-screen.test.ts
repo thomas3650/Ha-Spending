@@ -197,7 +197,6 @@ describe("the right card in full screen", () => {
   it.each([
     ["Søjler", "", da.per("month")],
     ["Posteringer", "card=postings", da.postingsTitle],
-    ["Faste udgifter", "card=subscriptions", da.subscriptions],
   ])("offers the button in the right card on %s", async (_, hash, title) => {
     const { root } = await mountWith(hash);
     const card = getByRole(root, "region", { name: title });
@@ -280,7 +279,7 @@ describe("the right card in full screen", () => {
   });
 
   it("stays on, with the same button, when the card's view changes", async () => {
-    const { app, root } = await mountWith("card=subscriptions");
+    const { app, root } = await mountWith("card=postings");
     const button = await press(app, root);
     fireEvent.click(getByRole(getByRole(root, "group", { name: da.view }), "button", { name: da.bars }));
     await settle(app);
