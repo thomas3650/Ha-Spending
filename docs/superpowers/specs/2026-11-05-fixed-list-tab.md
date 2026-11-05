@@ -132,8 +132,8 @@ stops at the bill's end. `dueDatesUntil` is not used for this: it starts after t
 
 **The payments.** A bill's payments are the postings linked to it by id (`posting.subscription.id`), from the
 postings of the chosen accounts (`ctx.postings`), whatever the level. Claude's call: the level places a row by its
-last payment's category, and a payment booked in another category is still the bill's payment. A refund (a positive
-amount) is not a payment here.
+last payment's category, and a payment booked in another category is still the bill's payment. A refund (a negative amount, `kind: "refund"`) is not a
+payment here.
 
 **Matching.** A due date is **met** when a payment lies from `due − early` to `due + late` (the windows `nextDate`
 uses: 7 and 5 days, 2 and 2 for weekly). The payment may lie outside the tab's time, as long as it is in the fetched
