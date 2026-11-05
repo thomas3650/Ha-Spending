@@ -142,7 +142,9 @@ range. A due date that is not met is:
 - **open** when `due + late` is today or later;
 - **not judged** when its window runs past the fetched range's start or end, so its payment may lie outside the data
   (a bill due 1 January, in "I år", whose window starts in December). Claude's call: the page does not widen the
-  fetched range for this. A not-judged due date is left out of the time, as if it fell outside it;
+  fetched range for this. A not-judged due date is left out of the time, as if it fell outside it. When it was the
+  time's only due date, the row reads "Næste {date}" (a monthly bill in January of "I år", paid in late December,
+  reads "Næste 1. feb");
 - **missed** otherwise.
 
 **The status of a row**, in the tab's time, for a bill that has not ended before today and a time that ended before
@@ -168,7 +170,7 @@ today (for example January, seen in November):
   example "Sluttet 31. maj"). In a month before its end, it reads as any other bill: January reads "Betalt {date}".
 - In a time that holds today, it is judged by today's functions, as "Poster i perioden" is (`nextDate`,
   `subscriptionStatus`, `fixedPayments`). When `nextDate` still gives its last due date (not paid, up to its end),
-  the row reads today's status for it: Ikke set, Forventes or Forfalden. Otherwise it reads **Sluttet {end}**. So the
+  the row reads today's status for it: Ikke set, Steget, Forventes or Forfalden. Otherwise it reads **Sluttet {end}**. So the
   tab and "Poster i perioden" agree on it. An earlier miss of an ended bill shows in neither, as for an active bill.
 
 **The Status sort** keeps today's order (`STATUS_ORDER`, D64) and adds the new statuses after it: Ikke set, Steget,
@@ -302,7 +304,8 @@ a monthly one whose end date is in the middle of a month, and a yearly one paid 
 
 - **§2:** the overview has the tabs Søjler, Posteringer and Butikker, and no Faste udgifter. The key numbers' links
   open the view on the "Poster i perioden" tab.
-- **§2.1:** each row of the table, with the state's card `bars`; with no fixed expenses, the first row lands on Søjler; in the first row the period, Konti, the level and a
+- **§2.1:** each row of the table, with the state's card `bars`; with no fixed expenses, the first row lands on
+  Søjler; in the first row the period, Konti, the level and a
   `detail=s:<id>` kept, the unit and a `detail=p:<id>` dropped.
 - **§3.1:** the two tabs by their accessible names; the heading is the open tab's name; `tab=all` in the hash and
   back, read only with `view=fixed`, written after `og`; the tab stays when the object group, the period, the unit or
@@ -328,7 +331,7 @@ a monthly one whose end date is in the middle of a month, and a yearly one paid 
   - in "I år", an ended bill reads "Sluttet {end}", or today's Ikke set, Forventes or Forfalden while `nextDate` still
     gives its last due date, the same as "Poster i perioden";
   - in "I år", a bill due 1 January and paid in late December: its January due date is not judged, so January reads
-    no Ikke set;
+    "Næste 1. feb";
   - an open due date reads Forfalden before today and Forventes from today;
   - a past time has no Steget;
   - the Status sort order.
