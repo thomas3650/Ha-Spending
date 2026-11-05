@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.20.1](https://github.com/thomas3650/Ha-Spending/compare/v0.20.0...v0.20.1) (2026-11-05)
+
+
+### Bug Fixes
+
+* keep inactive ended bills, and the page reloads after an update ([#185](https://github.com/thomas3650/Ha-Spending/issues/185)) ([f6a26af](https://github.com/thomas3650/Ha-Spending/commit/f6a26afdb9de3c2eef88307412abe04e90a0c249))
+
 ## [0.20.0](https://github.com/thomas3650/Ha-Spending/compare/v0.19.0...v0.20.0) (2026-11-05)
 
 
