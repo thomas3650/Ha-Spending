@@ -482,6 +482,38 @@ describe("the detail on the normal page", () => {
     expect(text(first.nextElementSibling as Element)).not.toContain("·");
   });
 
+  it("Konti changes a bill's sums while its row stays", async () => {
+    const shared: Subscription = {
+      ...PIZZA,
+      id: "b8",
+      name: "Delt abonnement",
+      lastPayment: { date: "2026-10-10", amount: 20000, category: "Café", account: "2" },
+    };
+    const payment = (id: string, date: string, account: string, amount: number): Posting => ({
+      id,
+      groupId: `g${id}`,
+      date,
+      text: "DELT",
+      account,
+      category: "Café",
+      shop: null,
+      kind: "spending",
+      amount,
+      subscription: { id: "b8", name: "Delt abonnement", objectGroup: "Abonnementer" },
+    });
+    const answer = (range: Period) => {
+      const a = answerFor(range);
+      const paid = [payment("d1", "2026-09-10", "1", 10000), payment("d2", "2026-10-10", "2", 20000)];
+      return json(withSubscriptions({ ...a, postings: [...paid, ...a.postings] }, [...SUBSCRIPTIONS, shared]));
+    };
+    const all = await mount("view=fixed&tab=all&detail=s%3Ab8", { answer });
+    expect(boxes(detail(all.root, "Delt abonnement"))[0]).toBe(`${da.detailInPeriod} = 300 kr. ${count(2)}`);
+    unmount();
+    const ticked = await mount("accounts=2&view=fixed&tab=all&detail=s%3Ab8", { answer });
+    expect(boxes(detail(ticked.root, "Delt abonnement"))[0]).toBe(`${da.detailInPeriod} = 200 kr. ${count(1)}`);
+    expect(location.hash).toBe("#accounts=2&view=fixed&tab=all&detail=s%3Ab8");
+  });
+
   it("the period changes the sums, Konti that takes the row away closes it, and the search does nothing", async () => {
     const { app, root } = await mountLinked("view=fixed&tab=all&detail=s%3Ab1");
     expect(boxes(detail(root, "Husleje"))[0]).toContain(`80.000 kr. ${count(10)}`);

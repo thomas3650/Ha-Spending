@@ -278,6 +278,16 @@ describe("the right card in full screen", () => {
     expectOn(root);
   });
 
+  it("stays on, with the same button, when the card's view changes", async () => {
+    const { app, root } = await mountWith("card=postings");
+    const button = await press(app, root);
+    fireEvent.click(getByRole(getByRole(root, "group", { name: da.view }), "button", { name: da.bars }));
+    await settle(app);
+    getByRole(root, "region", { name: da.per("month") });
+    expect(fullScreen(root)).toBe(button);
+    expectOn(root);
+  });
+
   it("stays on in the view, with the same button, when the list's tab changes", async () => {
     const { app, root } = await mountWith("view=fixed&tab=all");
     const button = getByRole(root, "button", { name: da.fullScreenOf(da.allFixed) });
