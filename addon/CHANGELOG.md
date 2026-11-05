@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.19.0](https://github.com/thomas3650/Ha-Spending/compare/v0.18.0...v0.19.0) (2026-11-05)
+
+
+### Features
+
+* full screen, a tooltip per part and room for the payments in the fixed-expenses view ([#176](https://github.com/thomas3650/Ha-Spending/issues/176)) ([a41da86](https://github.com/thomas3650/Ha-Spending/commit/a41da8693130b27d47214abc78a713424ce6dc53))
+
 ## [0.18.0](https://github.com/thomas3650/Ha-Spending/compare/v0.17.0...v0.18.0) (2026-11-05)
 
 
