@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.18.0](https://github.com/thomas3650/Ha-Spending/compare/v0.17.0...v0.18.0) (2026-11-05)
+
+
+### Features
+
+* a Til overs card and a view with one row per month ([#175](https://github.com/thomas3650/Ha-Spending/issues/175)) ([96325f3](https://github.com/thomas3650/Ha-Spending/commit/96325f36f0cb878251c5eb950315ddcd65577066))
+
 ## [0.17.0](https://github.com/thomas3650/Ha-Spending/compare/v0.16.1...v0.17.0) (2026-11-04)
 
 
