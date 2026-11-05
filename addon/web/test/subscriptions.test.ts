@@ -3,10 +3,29 @@ import { fireEvent, getAllByRole, getByRole, getByText, queryByRole, within } fr
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { da } from "../src/i18n/da";
+import { kr, shortDate } from "../src/format";
 import { viewContext } from "../src/model/context";
-import { subscriptionRows } from "../src/model/subscriptions";
-import { DEFAULT_STATE } from "../src/state/view";
-import { answerFor, LINK, SUBSCRIPTIONS, withSubscriptions } from "./fixture";
+import { fixedView } from "../src/model/fixed";
+import {
+  DEFAULT_SUBSCRIPTION_SORT,
+  subscriptionRows,
+  subscriptionTable,
+  type SubscriptionTable,
+} from "../src/model/subscriptions";
+import { DEFAULT_STATE, parseHash } from "../src/state/view";
+import {
+  answerFor,
+  billPayment,
+  LINK,
+  SUBSCRIPTIONS,
+  TAB_BILLS,
+  TAB_HUSLEJE,
+  TAB_POSTINGS,
+  TAB_TODAY,
+  tabBill,
+  tabData,
+  withSubscriptions,
+} from "./fixture";
 import { json, mount, settle, unmount } from "./mount";
 
 afterEach(unmount);
@@ -209,24 +228,25 @@ describe("the subscriptions card", () => {
     expect(location.hash).toBe("#q=Netto&card=subscriptions");
   });
 
-  it("does not follow a chosen unit or the period", async () => {
+  it("follows the chosen unit and the period", async () => {
     const { app, root } = await mountWith("unit=2026-07-01&card=subscriptions");
     const region = card(root, "Faste udgifter");
     expect(queryByRole(region, "button", { name: da.remove("Juli 2026") })).toBeNull();
-    expect(rowNames(region)).toHaveLength(6);
+    expect(rowNames(region)).not.toContain("Avis");
+    expect(rowNames(region)).toHaveLength(5);
 
     fireEvent.click(getByRole(root, "button", { name: new RegExp(`^${da.period}`) }));
     await app.updateComplete;
     fireEvent.click(getByRole(getByRole(root, "group", { name: da.period }), "button", { name: da.presets.lastMonth }));
     await settle(app);
     expect(location.hash).toBe("#period=lastMonth&card=subscriptions");
-    expect(rowNames(card(root, "Faste udgifter"))).toHaveLength(6);
+    expect(rowNames(card(root, "Faste udgifter"))).toHaveLength(5);
   });
 
   it("shows its rows in a period with no postings", async () => {
     const { root } = await mountWith("period=custom&from=2025-01-01&to=2025-01-31&card=subscriptions");
     const region = card(root, "Faste udgifter");
-    expect(rowNames(region)).toHaveLength(6);
+    expect(rowNames(region)).toEqual(["Husleje", "Indboforsikring", "Streaming"]);
     expect(within(region).queryByText(da.noSpending)).toBeNull();
   });
 
@@ -403,8 +423,8 @@ describe("the subscriptions card grouped", () => {
   it("shows the groups in a period with no postings", async () => {
     const { root } = await mountWith("period=custom&from=2025-01-01&to=2025-01-31&card=subscriptions");
     const region = card(root, "Faste udgifter");
-    expect(groupNames(region)).toEqual(["Bolig", "Bil", "Mad", da.noMainGroup]);
-    expect(rowNames(region)).toHaveLength(6);
+    expect(groupNames(region)).toEqual(["Bolig", "Mad"]);
+    expect(rowNames(region)).toHaveLength(3);
   });
 
   it("groups by category at a main group, with no Kategori column", async () => {
@@ -687,5 +707,139 @@ describe("sorting the subscriptions by their headers", () => {
     await sortBy(app, root, c.perYear);
     expect(location.hash).toBe("#card=subscriptions");
     expect(push).not.toHaveBeenCalled();
+  });
+});
+
+describe("the Alle faste udgifter tab's rows", () => {
+  function tab(hash: string, data = tabData()): SubscriptionTable {
+    return subscriptionTable(viewContext(data, parseHash(hash), TAB_TODAY), DEFAULT_SUBSCRIPTION_SORT);
+  }
+
+  function names(t: SubscriptionTable): string[] {
+    return t.rows.map((r) => r.name);
+  }
+
+  function rowOf(t: SubscriptionTable, name: string) {
+    const found = t.rows.find((r) => r.name === name);
+    if (found === undefined) throw new Error(`no row ${name}`);
+    return found;
+  }
+
+  function groupOf(t: SubscriptionTable, name: string) {
+    const found = t.groups?.find((g) => g.name === name);
+    if (found === undefined) throw new Error(`no group ${name}`);
+    return found;
+  }
+
+  const date = (d: string) => shortDate(d, TAB_TODAY);
+
+  it("a bill that ended at a month's end is a row in that month and in I år, and not in the month after", () => {
+    expect(names(tab("view=fixed&unit=2026-05-01"))).toContain("Avisabonnement");
+    expect(names(tab("view=fixed"))).toContain("Avisabonnement");
+    expect(names(tab("view=fixed&unit=2026-06-01"))).not.toContain("Avisabonnement");
+  });
+
+  it("a bill that starts after the time is no row, and one that starts later in I år is", () => {
+    expect(names(tab("view=fixed&unit=2026-11-01"))).not.toContain("Vandabonnement");
+    expect(names(tab("view=fixed&unit=2026-12-01"))).toContain("Vandabonnement");
+    expect(names(tab("view=fixed"))).toContain("Vandabonnement");
+  });
+
+  it("a unit after today has its rows with today's statuses", () => {
+    const december = tab("view=fixed&unit=2026-12-01");
+    const year = tab("view=fixed");
+    expect(names(december)).toEqual(["Vandabonnement", "Husleje", "Licens", "Vejhjælp"]);
+    for (const row of december.rows) expect(row.status).toEqual(rowOf(year, row.name).status);
+    expect(rowOf(december, "Vandabonnement").status.text).toBe(da.status.expected(date("2026-12-01")));
+  });
+
+  it("the object group, the level and Konti narrow the rows", () => {
+    expect(names(tab("view=fixed&og=Abonnementer"))).toEqual(["Tidsskrift"]);
+    expect(names(tab("view=fixed&og=Bil"))).toEqual(["Vejhjælp"]);
+    expect(names(tab("view=fixed&group=Bolig"))).toEqual(["Husleje", "Licens", "Avisabonnement"]);
+    expect(names(tab("view=fixed&accounts=2"))).toEqual(["Vandabonnement", "Vejhjælp", "Tidsskrift"]);
+  });
+
+  it("in I år an ended bill's Om året is left out of the sums, with its tooltip", () => {
+    const year = tab("view=fixed");
+    expect(rowOf(year, "Avisabonnement").notInSum).toBe(da.notInSum(date("2026-05-31")));
+    expect(rowOf(year, "Avisabonnement").perYear).toBe(kr(180000));
+    expect(rowOf(year, "Tidsskrift").notInSum).toBe(da.notInSum(date("2026-08-20")));
+    expect(rowOf(year, "Husleje").notInSum).toBeNull();
+    expect(rowOf(year, "Vandabonnement").notInSum).toBeNull();
+    expect(year.objectGroups).toEqual([
+      { name: "Faste udgifter", perYear: da.perYear(kr(9600000 + 120000 + 360000)) },
+      { name: "Bil", perYear: da.perYear(kr(60000)) },
+      { name: "Abonnementer", perYear: da.perYear(kr(0)) },
+    ]);
+    const bolig = groupOf(year, "Bolig");
+    expect(bolig.perYear).toBe(kr(9600000 + 120000));
+    expect(bolig.count).toBe(da.subscriptionCount(3));
+    expect(groupOf(year, "Mad")).toMatchObject({ perYear: kr(0), count: da.subscriptionCount(1) });
+  });
+
+  it("in its last month, a bill that ends at the month's end counts in the sums, and one that ends mid-month does not", () => {
+    const may = tab("view=fixed&unit=2026-05-01");
+    expect(rowOf(may, "Avisabonnement").notInSum).toBeNull();
+    expect(groupOf(may, "Bolig").perYear).toBe(kr(9600000 + 120000 + 180000));
+    const august = tab("view=fixed&unit=2026-08-01");
+    expect(rowOf(august, "Tidsskrift").notInSum).toBe(da.notInSum(date("2026-08-20")));
+    expect(groupOf(august, "Mad").perYear).toBe(kr(0));
+    expect(august.objectGroups).toContainEqual({ name: "Abonnementer", perYear: da.perYear(kr(0)) });
+  });
+
+  it("a past month's rows read their past statuses, with no næste under a name, and the Status sort puts Næste and then Sluttet last, by the status's date", () => {
+    const fitness = tabBill("t7", "Fitness", {
+      objectGroup: "Abonnementer",
+      start: "2026-01-05",
+      amountMin: 25000,
+      amountMax: 25000,
+      lastPayment: { date: "2026-10-05", amount: 25000, category: "Café", account: "2" },
+    });
+    const baadplads = tabBill("t8", "Bådplads", {
+      repeat: "yearly",
+      start: "2025-03-01",
+      lastPayment: { date: "2026-03-01", amount: 10000, category: "Husleje", account: "1" },
+    });
+    const fitnessPaid = ["01", "02", "03", "04", "05", "06", "07", "09", "10"].map((m) =>
+      billPayment(fitness, `2026-${m}-05`),
+    );
+    const data = tabData(
+      [...TAB_BILLS, fitness, baadplads],
+      [...TAB_POSTINGS, ...fitnessPaid, billPayment(baadplads, "2026-03-01")],
+    );
+    const august = tab("view=fixed&unit=2026-08-01", data);
+    expect(august.rows.map((r) => [r.name, r.status.text, r.next])).toEqual([
+      ["Fitness", da.status.notSeen(date("2026-08-05")), null],
+      ["Husleje", da.status.paid(date("2026-08-01")), null],
+      ["Licens", da.status.next(date("2026-12-15")), null],
+      ["Vejhjælp", da.status.next(date("2027-02-10")), null],
+      ["Bådplads", da.status.next(date("2027-03-01")), null],
+      ["Tidsskrift", da.status.ended(date("2026-08-20")), null],
+    ]);
+    expect(rowOf(august, "Tidsskrift").status.kind).toBe("ended");
+    expect(rowOf(august, "Licens").status.kind).toBe("next");
+  });
+
+  it("with its last due date missed, an ended bill reads Ikke set in the tab and in Poster i perioden", () => {
+    const magasin = tabBill("t9", "Magasin", {
+      start: "2025-01-20",
+      end: "2026-10-25",
+      lastPayment: { date: "2026-09-20", amount: 10000, category: "Husleje", account: "1" },
+    });
+    const data = tabData([...TAB_BILLS, magasin], [...TAB_POSTINGS, billPayment(magasin, "2026-09-20")]);
+    expect(rowOf(tab("view=fixed", data), "Magasin").status.text).toBe(da.status.notSeen(date("2026-10-20")));
+    const view = fixedView(viewContext(data, parseHash("view=fixed"), TAB_TODAY));
+    expect(view.payments.filter((p) => p.name === "Magasin" && p.kind !== "paid")).toEqual([
+      expect.objectContaining({ date: "2026-10-20", kind: "notSeen" }),
+    ]);
+  });
+
+  it("a payment booked in another category, at a main-group level, still meets the bill's due date", () => {
+    const postings = TAB_POSTINGS.map((p) =>
+      p.subscription?.id === TAB_HUSLEJE.id && p.date === "2026-08-01" ? { ...p, category: "Café" } : p,
+    );
+    const august = tab("view=fixed&group=Bolig&unit=2026-08-01", tabData(TAB_BILLS, postings));
+    expect(rowOf(august, "Husleje").status.text).toBe(da.status.paid(date("2026-08-01")));
   });
 });

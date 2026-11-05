@@ -410,12 +410,13 @@ describe("the trail (spec §3.1, §3.4)", () => {
     barsRegion(root);
   });
 
-  it("an object group found only on postings opens from its card and reads 0 stk.", async () => {
+  it("an object group found only on postings opens from its card, with no stk. on the card and 0 stk. in the step", async () => {
     const pizza = (p: Posting): Link =>
       p.text === "MOBILEPAY 1234" && p.date === "2026-09-20"
         ? { id: "b7", name: "Pizzaabonnement", objectGroup: "Abonnementer" }
         : husleje(p);
     const { app, root } = await open("", { answer: answer({ bills: [HUSLEJE, AVIS], links: pizza }) });
+    expect(getByRole(root, "group", { name: SUBS_CARD }).textContent).not.toContain(da.billCount(0).replace(/^0 /, ""));
     await click(app, link(root, SUBS_CARD));
     expect(location.hash).toBe("#view=fixed&og=Abonnementer");
     const list = await openGroups(app, root, "Abonnementer");

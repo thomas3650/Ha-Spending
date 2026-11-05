@@ -223,6 +223,19 @@ describe("a detail's head and boxes", () => {
     expect(v.boxes[2]).toEqual({ label: da.columns.account, value: "Fælleskonto" });
   });
 
+  it("the detail's status follows the given status", () => {
+    const ctx = viewContext(linkedRent(), DEFAULT_STATE, TODAY);
+    expect(detailView(sub("b1"), ctx, { kind: "next", date: "2026-12-01" })?.status).toEqual({
+      kind: "next",
+      due: false,
+      text: da.status.next("1. dec"),
+    });
+    expect(detailView(sub("b1"), ctx, { kind: "ended", end: "2026-05-31" })?.status?.text).toBe(
+      da.status.ended("31. maj"),
+    );
+    expect(detailView(sub("b1"), ctx)?.status?.kind).toBe("expected");
+  });
+
   it("a shop's head and boxes read as the clicked posting", () => {
     const v = shown(posting(PIZZA_PAID), answerFor(FETCHED));
     expect(v.amount).toBe("-700,00 kr.");

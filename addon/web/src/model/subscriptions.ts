@@ -5,14 +5,19 @@ import {
   type Level,
   NO_PIECE,
   nextDate,
+  type Period,
+  type Posting,
+  statusInTime,
   type Subscription,
   type SubscriptionStatus,
   subscriptionStatus,
+  type TimeStatus,
 } from "@ha-spending/shared";
 import { kr, shortDate, stepAmounts } from "../format";
 import { da } from "../i18n/da";
 import { partColours } from "./circle";
 import { partName, type ViewContext } from "./context";
+import { tabTime } from "./fixed";
 import type { Sorted, SubscriptionColumn } from "../state/view";
 
 export const DEFAULT_SUBSCRIPTION_SORT: Sorted<SubscriptionColumn> = { column: "status", descending: false };
@@ -43,14 +48,23 @@ export interface SubscriptionRow {
   perYearOre: number;
   /** The category when it is a known one; null shows as "Uden kategori". */
   categoryName: string | null;
-  status: { kind: SubscriptionStatus["kind"]; due: boolean; text: string };
+  status: { kind: TimeStatus["kind"]; due: boolean; text: string };
+  /** The Om året cell's tooltip when the row is left out of the sums: the bill ended before the time's last day. */
+  notInSum: string | null;
 }
 
 function unbroken(text: string): string {
   return text.replaceAll(" ", "\u00a0");
 }
 
-const STATUS_ORDER: Record<SubscriptionStatus["kind"], number> = { notSeen: 0, risen: 1, expected: 2, paid: 3 };
+const STATUS_ORDER: Record<TimeStatus["kind"], number> = {
+  notSeen: 0,
+  risen: 1,
+  expected: 2,
+  paid: 3,
+  next: 4,
+  ended: 5,
+};
 
 export interface Shown {
   subscription: Subscription;
@@ -58,27 +72,91 @@ export interface Shown {
   status: SubscriptionStatus;
 }
 
-/** The answer's today, the day the subscriptions were read, so the statuses match the data (spec §2). */
-export function shown(ctx: ViewContext): Shown[] {
-  const today = ctx.data.today;
+/** The bills of the level and Konti: the level by the last payment's category, Konti by its account. */
+function levelled(ctx: ViewContext): Subscription[] {
   const mainGroups = new Map(ctx.data.categories.map((c) => [c.name, c.mainGroup]));
   const accounts = ctx.state.accounts === null ? null : new Set(ctx.state.accounts);
   const level = ctx.state.level;
-  return ctx.data.subscriptions
-    .filter((s) => {
-      const last = s.lastPayment;
-      if (last !== null && accounts !== null && !accounts.has(last.account)) return false;
-      if (level.kind === "all") return true;
-      const category = last?.category ?? null;
-      const mainGroup = category === null ? null : (mainGroups.get(category) ?? null);
-      if (mainGroup !== level.mainGroup) return false;
-      return level.kind === "mainGroup" || category === level.category;
-    })
+  return ctx.data.subscriptions.filter((s) => {
+    const last = s.lastPayment;
+    if (last !== null && accounts !== null && !accounts.has(last.account)) return false;
+    if (level.kind === "all") return true;
+    const category = last?.category ?? null;
+    const mainGroup = category === null ? null : (mainGroups.get(category) ?? null);
+    if (mainGroup !== level.mainGroup) return false;
+    return level.kind === "mainGroup" || category === level.category;
+  });
+}
+
+/** The answer's today, the day the subscriptions were read, so the statuses match the data (spec §2). */
+export function shown(ctx: ViewContext): Shown[] {
+  const today = ctx.data.today;
+  return levelled(ctx)
     .map((s) => ({ subscription: s, next: nextDate(s, today), status: subscriptionStatus(s, today) }))
     .sort(
       (a, b) =>
         STATUS_ORDER[a.status.kind] - STATUS_ORDER[b.status.kind] ||
         compareKeys(a.next, b.next) ||
+        a.subscription.name.localeCompare(b.subscription.name, "da"),
+    );
+}
+
+export function ranIn(s: Subscription, time: Period): boolean {
+  return s.start <= time.end && (s.end === null || s.end >= time.start);
+}
+
+export interface TabRow {
+  subscription: Subscription;
+  /** Today's next date; null in a time that ended before today. */
+  next: string | null;
+  status: TimeStatus;
+  /** It still runs on the time's last day, or on today when that is earlier. */
+  inSum: boolean;
+}
+
+function statusDate(status: TimeStatus): string | null {
+  switch (status.kind) {
+    case "notSeen":
+      return status.expected;
+    case "risen":
+      return null;
+    case "expected":
+    case "paid":
+    case "next":
+      return status.date;
+    case "ended":
+      return status.end;
+  }
+}
+
+/**
+ * The Alle faste udgifter tab's rows: the bills of the level, Konti and object group that ran in the tab's time
+ * (spec §3.2). The payments are the bill's own on the chosen accounts, whatever the level (spec §3.4).
+ */
+export function tabRows(ctx: ViewContext): TabRow[] {
+  const today = ctx.data.today;
+  const time = tabTime(ctx.data, ctx.state, ctx.today);
+  const past = time.end < today;
+  const sumDay = past ? time.end : today;
+  const group = ctx.state.objectGroup;
+  const payments = new Map<string, Posting[]>();
+  for (const p of ctx.postings) {
+    if (p.subscription === null) continue;
+    const list = payments.get(p.subscription.id) ?? [];
+    list.push(p);
+    payments.set(p.subscription.id, list);
+  }
+  return levelled(ctx)
+    .filter((s) => ranIn(s, time) && (group === null || s.objectGroup === group))
+    .map((s): TabRow => {
+      const status = statusInTime(s, payments.get(s.id) ?? [], time, ctx.data.range, today);
+      const next = past ? null : nextDate(s, today);
+      return { subscription: s, next, status, inSum: s.end === null || s.end >= sumDay };
+    })
+    .sort(
+      (a, b) =>
+        STATUS_ORDER[a.status.kind] - STATUS_ORDER[b.status.kind] ||
+        compareKeys(a.next ?? statusDate(a.status), b.next ?? statusDate(b.status)) ||
         a.subscription.name.localeCompare(b.subscription.name, "da"),
     );
 }
@@ -94,7 +172,7 @@ export function paymentText(s: Subscription): string {
   return `${amount} ${repeat}`;
 }
 
-export function statusCell(status: SubscriptionStatus, today: string): SubscriptionRow["status"] {
+export function statusCell(status: TimeStatus, today: string): SubscriptionRow["status"] {
   return { kind: status.kind, due: isDue(status, today), text: statusText(status, today) };
 }
 
@@ -102,16 +180,16 @@ export function billHref(base: string | null, id: string): string | null {
   return base === null ? null : `${base}/bills/show/${encodeURIComponent(id)}`;
 }
 
-function isDue(status: SubscriptionStatus, today: string): boolean {
+function isDue(status: TimeStatus, today: string): boolean {
   return status.kind === "expected" && status.date !== null && status.date < today;
 }
 
-/** Ikke set and Forfalden carry the date in the status, so the name cell shows no "næste". */
-function statusShowsDate(status: SubscriptionStatus, today: string): boolean {
-  return status.kind === "notSeen" || isDue(status, today);
+/** Ikke set, Forfalden, Næste and Sluttet carry the date in the status, so the name cell shows no "næste". */
+function statusShowsDate(status: TimeStatus, today: string): boolean {
+  return status.kind === "notSeen" || status.kind === "next" || status.kind === "ended" || isDue(status, today);
 }
 
-function statusText(status: SubscriptionStatus, today: string): string {
+function statusText(status: TimeStatus, today: string): string {
   switch (status.kind) {
     case "notSeen":
       return da.status.notSeen(shortDate(status.expected, today));
@@ -122,6 +200,10 @@ function statusText(status: SubscriptionStatus, today: string): string {
       return (isDue(status, today) ? da.status.due : da.status.expected)(shortDate(status.date, today));
     case "paid":
       return da.status.paid(shortDate(status.date, today));
+    case "next":
+      return da.status.next(shortDate(status.date, today));
+    case "ended":
+      return da.status.ended(shortDate(status.end, today));
   }
 }
 
@@ -167,7 +249,7 @@ function compareBy(column: SubscriptionColumn, a: SubscriptionRow, b: Subscripti
   }
 }
 
-/** Ties keep today's order, which `shown` gives; the status column is that order, turned around when descending. */
+/** Ties keep the order `tabRows` gives; the status column is that order, turned around when descending. */
 function sortItems<T extends { row: SubscriptionRow }>(items: T[], sort: Sorted<SubscriptionColumn>): T[] {
   if (sort.column === "status") return sort.descending ? [...items].reverse() : items;
   return [...items].sort((a, b) => compareBy(sort.column, a.row, b.row, sort.descending));
@@ -178,7 +260,7 @@ export function subscriptionTable(ctx: ViewContext, kept: Sorted<SubscriptionCol
   const sort = shownSubscriptionSort(kept, kind);
   const today = ctx.data.today;
   const mainGroups = new Map(ctx.data.categories.map((c) => [c.name, c.mainGroup]));
-  const unsorted = shown(ctx).map(({ subscription: s, next, status }) => {
+  const unsorted = tabRows(ctx).map(({ subscription: s, next, status, inSum }) => {
     const last = s.lastPayment?.category ?? null;
     const known = last !== null && mainGroups.has(last);
     const row: SubscriptionRow = {
@@ -193,10 +275,11 @@ export function subscriptionTable(ctx: ViewContext, kept: Sorted<SubscriptionCol
       perYearOre: amountPerYear(s),
       categoryName: known ? last : null,
       status: statusCell(status, today),
+      notInSum: inSum || s.end === null ? null : da.notInSum(shortDate(s.end, today)),
     };
     return {
       row,
-      year: amountPerYear(s),
+      year: inSum ? amountPerYear(s) : 0,
       category: known ? last : null,
       mainGroup: known ? (mainGroups.get(last) ?? null) : null,
     };

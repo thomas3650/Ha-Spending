@@ -64,7 +64,12 @@ export class Subscriptions extends LitElement {
         <span class="subscription-payment">${r.amount}</span>
         <span class="subscription-repeat">${r.repeat}</span>
       </td>
-      <td class="subscription-amount subscription-nowrap">${r.perYear}</td>
+      <td
+        class="subscription-amount subscription-nowrap ${r.notInSum === null ? "" : "subscription-not-in-sum"}"
+        title=${r.notInSum ?? nothing}
+      >
+        ${r.perYear}
+      </td>
       <td><span class="subscription-status status-${r.status.due ? "due" : r.status.kind}">${r.status.text}</span></td>
     </tr>`;
   }
@@ -224,6 +229,13 @@ export const subscriptionsStyles = css`
   .subscription-status.status-paid {
     color: var(--hs-paid);
     background: var(--hs-paid-soft);
+  }
+  .subscription-status.status-next,
+  .subscription-status.status-ended {
+    color: var(--hs-muted);
+  }
+  .subscription-not-in-sum {
+    color: var(--hs-muted);
   }
 `;
 

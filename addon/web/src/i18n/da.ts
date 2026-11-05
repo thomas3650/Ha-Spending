@@ -252,6 +252,8 @@ export const da = {
   perMonth: (value: string) => `${value} pr. måned`,
   billCount: (n: number) => `${n} stk.`,
   noPayments: "ingen betalinger",
+  noPaymentsCount: (n: number) => `${da.noPayments} · ${da.billCount(n)}`,
+  notInSum: (end: string) => `Ikke med i summen: sluttet ${end}`,
   postingsLink: (counted: string) => `${counted} →`,
   showSubscriptions: "Vis faste udgifter",
   subscriptionCount: (n: number) => `${n} ${n === 1 ? "fast udgift" : "faste udgifter"}`,
@@ -276,6 +278,8 @@ export const da = {
     expected: (date: string | null) => (date === null ? "Forventes ikke" : `Forventes ${date}`),
     paid: (date: string) => `Betalt ${date}`,
     due: (date: string) => `Forfalden ${date}`,
+    next: (date: string) => `Næste ${date}`,
+    ended: (date: string) => `Sluttet ${date}`,
   },
   fixed: {
     /** Before an estimate's amount. */

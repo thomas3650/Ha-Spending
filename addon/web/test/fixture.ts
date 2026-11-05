@@ -215,3 +215,104 @@ export function leftOverFor(range: Period, today = "2026-10-30"): LeftOverData {
   }
   return { range, today, hasSavings: true, hasCredit: true, months };
 }
+
+/** The day the Alle faste udgifter tab's made-up bills are seen on. */
+export const TAB_TODAY = "2026-11-05";
+const TAB_FETCHED: Period = { start: "2025-01-01", end: TAB_TODAY };
+
+export function tabBill(id: string, name: string, extra: Partial<Subscription>): Subscription {
+  return {
+    id,
+    name,
+    objectGroup: "Faste udgifter",
+    repeat: "monthly",
+    skip: 0,
+    start: "2025-01-01",
+    end: null,
+    amountMin: 10000,
+    amountMax: 10000,
+    lastPayment: null,
+    ...extra,
+  };
+}
+
+/** A payment linked to the bill, in its last payment's category and account unless given. */
+export function billPayment(bill: Subscription, date: string, extra: Partial<Posting> = {}): Posting {
+  return {
+    id: `${bill.id}-${date}`,
+    groupId: `${bill.id}-${date}`,
+    date,
+    text: bill.name,
+    account: bill.lastPayment?.account ?? "1",
+    category: bill.lastPayment?.category ?? null,
+    shop: null,
+    kind: "spending",
+    amount: bill.amountMax,
+    subscription: { id: bill.id, name: bill.name, objectGroup: bill.objectGroup },
+    ...extra,
+  };
+}
+
+function monthlyDays(day: string, from: number, to: number): string[] {
+  return Array.from({ length: to - from + 1 }, (_, i) => `2026-${String(from + i).padStart(2, "0")}-${day}`);
+}
+
+export const TAB_HUSLEJE = tabBill("t1", "Husleje", {
+  amountMin: 800000,
+  amountMax: 800000,
+  lastPayment: { date: "2026-11-01", amount: 800000, category: "Husleje", account: "1" },
+});
+/** Ended at a month's end. */
+export const TAB_AVIS = tabBill("t2", "Avisabonnement", {
+  start: "2025-03-01",
+  end: "2026-05-31",
+  amountMin: 15000,
+  amountMax: 15000,
+  lastPayment: { date: "2026-05-01", amount: 15000, category: "Husleje", account: "1" },
+});
+/** Ended in the middle of a month. */
+export const TAB_TIDSSKRIFT = tabBill("t3", "Tidsskrift", {
+  objectGroup: "Abonnementer",
+  start: "2025-06-15",
+  end: "2026-08-20",
+  amountMin: 9900,
+  amountMax: 9900,
+  lastPayment: { date: "2026-08-15", amount: 9900, category: "Café", account: "2" },
+});
+export const TAB_VEJHJAELP = tabBill("t4", "Vejhjælp", {
+  objectGroup: "Bil",
+  repeat: "yearly",
+  start: "2025-02-10",
+  amountMin: 60000,
+  amountMax: 60000,
+  lastPayment: { date: "2026-02-10", amount: 60000, category: "Brændstof", account: "2" },
+});
+/** Paid last in the year before, so it has no payment in I år. */
+export const TAB_LICENS = tabBill("t5", "Licens", {
+  repeat: "yearly",
+  start: "2025-12-15",
+  amountMin: 120000,
+  amountMax: 120000,
+  lastPayment: { date: "2025-12-15", amount: 120000, category: "Husleje", account: "1" },
+});
+/** Starts after today, in I år. */
+export const TAB_VAND = tabBill("t6", "Vandabonnement", { start: "2026-12-01", amountMin: 30000, amountMax: 30000 });
+
+export const TAB_BILLS = [TAB_HUSLEJE, TAB_AVIS, TAB_TIDSSKRIFT, TAB_VEJHJAELP, TAB_LICENS, TAB_VAND];
+
+export const TAB_POSTINGS: Posting[] = [
+  ...monthlyDays("01", 1, 11).map((d) => billPayment(TAB_HUSLEJE, d)),
+  ...monthlyDays("01", 1, 5).map((d) => billPayment(TAB_AVIS, d)),
+  ...monthlyDays("15", 1, 8).map((d) => billPayment(TAB_TIDSSKRIFT, d)),
+  billPayment(TAB_VEJHJAELP, "2026-02-10"),
+  billPayment(TAB_LICENS, "2025-12-15"),
+];
+
+/** An answer seen on TAB_TODAY with only the given bills and their payments, newest first. */
+export function tabData(bills: Subscription[] = TAB_BILLS, postings: Posting[] = TAB_POSTINGS): SpendingData {
+  return {
+    ...answerFor(TAB_FETCHED, TAB_TODAY),
+    postings: [...postings].sort((a, b) => b.date.localeCompare(a.date)),
+    subscriptions: bills,
+  };
+}

@@ -161,11 +161,11 @@ describe("the object group cards in a chosen unit", () => {
     const { root } = await mount("unit=2026-09-01", { answer });
     const subscriptions = getByRole(root, "group", { name: da.levelInUnit("Abonnementer", SEPTEMBER) });
     getByText(subscriptions, kr(70000));
-    getByText(subscriptions, da.billCount(1));
+    getByText(subscriptions, da.billCount(2));
     expect(subscriptions.textContent).not.toContain("pr. måned");
     const fixed = getByRole(root, "group", { name: da.levelInUnit("Faste udgifter", SEPTEMBER) });
     getByText(fixed, kr(0));
-    getByText(fixed, da.noPayments);
+    getByText(fixed, da.noPaymentsCount(3));
   });
 
   it("the first key number's link keeps the unit and the main group, and the list counts the link's N", async () => {

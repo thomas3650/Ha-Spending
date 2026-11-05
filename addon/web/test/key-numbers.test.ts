@@ -5,7 +5,19 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import type { SpendingApp } from "../src/app";
 import { count, kr, unitName } from "../src/format";
 import { da } from "../src/i18n/da";
-import { answerFor, SUBSCRIPTIONS, withSubscriptions } from "./fixture";
+import { viewContext } from "../src/model/context";
+import { objectGroupCards, perMonth } from "../src/model/key-numbers";
+import { parseHash } from "../src/state/view";
+import {
+  answerFor,
+  billPayment,
+  SUBSCRIPTIONS,
+  TAB_POSTINGS,
+  TAB_TODAY,
+  tabBill,
+  tabData,
+  withSubscriptions,
+} from "./fixture";
 import { json, mount, settle, unmount } from "./mount";
 import { cardNames, hasArrow } from "./text";
 
@@ -325,29 +337,29 @@ describe("the key numbers of the object groups", () => {
 
   it("the value is the period's linked payments", async () => {
     const { app, root } = await mount("", { answer: BILLS });
-    expect(name(root, FIXED)).toBe(`${FIXED} ${kr(8090000)} ${line(812700, 2)}`);
-    expect(name(root, SUBS)).toBe(`${SUBS} ${kr(70000)} ${line(7000, 1)}`);
+    expect(name(root, FIXED)).toBe(`${FIXED} ${kr(8090000)} ${line(812700, 4)}`);
+    expect(name(root, SUBS)).toBe(`${SUBS} ${kr(70000)} ${line(7000, 2)}`);
 
     fireEvent.click(getByRole(root, "button", { name: new RegExp(`^${da.period}`) }));
     await app.updateComplete;
     fireEvent.click(getByRole(getByRole(root, "group", { name: da.period }), "button", { name: da.presets.lastMonth }));
     await settle(app);
-    expect(name(root, FIXED)).toBe(`${FIXED} ${kr(800000)} ${line(811700, 1)}`);
-    expect(name(root, SUBS)).toBe(`${SUBS} ${kr(70000)} ${line(71000, 1)}`);
+    expect(name(root, FIXED)).toBe(`${FIXED} ${kr(800000)} ${line(811700, 3)}`);
+    expect(name(root, SUBS)).toBe(`${SUBS} ${kr(70000)} ${line(71000, 2)}`);
     unmount();
 
     const bolig = await mount("group=Bolig", { answer: BILLS });
-    expect(name(bolig.root, FIXED)).toBe(`${FIXED} ${kr(8000000)} ${line(803600, 1)}`);
+    expect(name(bolig.root, FIXED)).toBe(`${FIXED} ${kr(8000000)} ${line(803600, 2)}`);
     expect(name(bolig.root, SUBS)).toBe(`${SUBS} ${kr(0)} ${da.noPayments}`);
     unmount();
 
     const account = await mount("accounts=2", { answer: BILLS });
-    expect(name(account.root, FIXED)).toBe(`${FIXED} ${kr(90000)} ${line(9000, 1)}`);
+    expect(name(account.root, FIXED)).toBe(`${FIXED} ${kr(90000)} ${line(9000, 2)}`);
     unmount();
 
     for (const hash of ["card=postings&q=Netto", "card=postings&shop=Q8"]) {
       const other = await mount(hash, { answer: BILLS });
-      expect(name(other.root, FIXED)).toBe(`${FIXED} ${kr(8090000)} ${line(812700, 2)}`);
+      expect(name(other.root, FIXED)).toBe(`${FIXED} ${kr(8090000)} ${line(812700, 4)}`);
       unmount();
     }
   });
@@ -366,11 +378,11 @@ describe("the key numbers of the object groups", () => {
   it("with a chosen unit the value is that unit's payments, and a group with none keeps its card", async () => {
     const { root } = await mount("unit=2026-07-01", { answer: BILLS });
     expect(objectCardNames(root, JULY)).toEqual([JULY_SUBS, JULY_FIXED]);
-    expect(name(root, JULY_FIXED)).toBe(`${JULY_FIXED} ${kr(890000)} ${da.billCount(2)}`);
-    expect(name(root, JULY_SUBS)).toBe(`${JULY_SUBS} ${kr(0)} ${da.noPayments}`);
+    expect(name(root, JULY_FIXED)).toBe(`${JULY_FIXED} ${kr(890000)} ${da.billCount(3)}`);
+    expect(name(root, JULY_SUBS)).toBe(`${JULY_SUBS} ${kr(0)} ${da.noPaymentsCount(2)}`);
   });
 
-  it("n counts different bills, not payments", async () => {
+  it("n counts the tab's rows, not the bills among the payments", async () => {
     const { root } = await mount("period=custom&from=2026-09-01&to=2026-10-30", {
       answer: linking((p) => {
         if (p.text === "DK NETTO 4521") return { id: "b9", name: "Madkasse", objectGroup: "Abonnementer" };
@@ -378,8 +390,15 @@ describe("the key numbers of the object groups", () => {
         return null;
       }),
     });
+    // Madkasse and Kaffeklub are paid but not bills; Streaming and Tennisklub are the rows.
     expect(name(root, SUBS)).toMatch(new RegExp(`· ${da.billCount(2)}$`));
     expect(name(root, SUBS)).toContain(kr(631012));
+    unmount();
+
+    const many = await mount("period=custom&from=2026-09-01&to=2026-10-30", {
+      answer: linking((p) => (p.text === "Husleje" ? bills(p) : null)),
+    });
+    expect(name(many.root, FIXED)).toMatch(new RegExp(`· ${da.billCount(3)}$`));
   });
 
   it("an ended bill's group shows when the period holds its payments, not when only the range before it does", async () => {
@@ -393,13 +412,13 @@ describe("the key numbers of the object groups", () => {
 
     const again = await mount("period=last3Months", { answer });
     expect(name(again.root, da.inPeriod("Medlemskaber"))).toBe(
-      `${da.inPeriod("Medlemskaber")} ${kr(300000)} ${line(99300, 1)}`,
+      `${da.inPeriod("Medlemskaber")} ${kr(300000)} ${da.perMonth(kr(99300))}`,
     );
   });
 
   it("the sub-line has the sum per month and the count of bills", async () => {
     const { root } = await mount("", { answer: (range) => json(withSubscriptions(answerFor(range))) });
-    getByText(card(root, SUBS), `${da.perMonth(kr(7000))} · ${da.billCount(1)}`);
+    getByText(card(root, SUBS), `${da.perMonth(kr(7000))} · ${da.billCount(2)}`);
   });
 
   it("under 28 days the line holds the count only", async () => {
@@ -407,7 +426,7 @@ describe("the key numbers of the object groups", () => {
       now: "2026-10-05T10:00:00Z",
       answer: linking(bills, "2026-10-05"),
     });
-    expect(name(root, FIXED)).toBe(`${FIXED} ${kr(800000)} ${da.billCount(1)}`);
+    expect(name(root, FIXED)).toBe(`${FIXED} ${kr(800000)} ${da.billCount(3)}`);
     expect(queryByText(card(root, FIXED), new RegExp(da.perMonth("")))).toBeNull();
   });
 
@@ -417,12 +436,12 @@ describe("the key numbers of the object groups", () => {
         p.text === "MOBILEPAY 1234" ? { id: "b7", name: "Pizzaabonnement", objectGroup: "Abonnementer" } : null,
       ),
     });
-    expect(name(root, SUBS)).toBe(`${SUBS} ${kr(50000)} ${line(5000, 1)}`);
+    expect(name(root, SUBS)).toBe(`${SUBS} ${kr(50000)} ${line(5000, 2)}`);
   });
 
-  it("no payment: 0 kr. and ingen betalinger", async () => {
+  it("no payment: 0 kr., ingen betalinger and the rows' count", async () => {
     const { root } = await mount("", { answer: (range) => json(withSubscriptions(answerFor(range))) });
-    expect(name(root, FIXED)).toBe(`${FIXED} ${kr(0)} ${da.noPayments}`);
+    expect(name(root, FIXED)).toBe(`${FIXED} ${kr(0)} ${da.noPaymentsCount(4)}`);
   });
 
   it("no object group at all: two key numbers", async () => {
@@ -435,7 +454,7 @@ describe("the key numbers of the object groups", () => {
     const { root } = await mount("");
     const plain = getByRole(root, "group", { name: SUBS });
     getByText(plain, kr(70000));
-    getByText(plain, line(7000, 1));
+    getByText(plain, da.perMonth(kr(7000)));
     expect(queryByRole(root, "button", { name: new RegExp(`^${SUBS}`) })).toBeNull();
   });
 });
@@ -487,12 +506,52 @@ describe("the link on each object group's key number", () => {
     await settle(app);
     expect(location.hash).toBe(before);
     getByRole(root, "region", { name: da.per("month") });
-    expect(name(root, FIXED)).toBe(`${FIXED} ${kr(8090000)} ${line(812700, 2)}`);
+    expect(name(root, FIXED)).toBe(`${FIXED} ${kr(8090000)} ${line(812700, 4)}`);
   });
 
   it("a plain card has no link, as there is no fixed-expenses view", async () => {
     const { root } = await mount("");
     expect(getAllByRole(root, "group", { name: SUBS })).toHaveLength(1);
     expect(queryByRole(objectCard(root, SUBS), "link")).toBeNull();
+  });
+});
+
+describe("the object-group card's line", () => {
+  /** Payments linked to a bill Firefly III no longer gives, as for an inactive one. */
+  const inactive = tabBill("t11", "Gammel aftale", {
+    objectGroup: "Medlemskaber",
+    lastPayment: { date: "2026-10-01", amount: 10000, category: "Husleje", account: "1" },
+  });
+  const data = tabData(undefined, [
+    ...TAB_POSTINGS,
+    ...["2026-09-01", "2026-10-01"].map((d) => billPayment(inactive, d)),
+  ]);
+
+  function sub(hash: string, group: string): string {
+    const ctx = viewContext(data, parseHash(hash), TAB_TODAY);
+    const found = objectGroupCards(ctx, (g) => g).find((c) => c.label.startsWith(group));
+    if (found === undefined) throw new Error(`no card ${group}`);
+    return found.sub;
+  }
+
+  it("with payments and rows: the sum per month and the rows' count, or the count alone in a unit", () => {
+    const year = viewContext(data, parseHash(""), TAB_TODAY).timeline.period;
+    const paid = 11 * 800000 + 5 * 15000;
+    expect(sub("", "Faste udgifter")).toBe(`${da.perMonth(kr(perMonth(paid, year) ?? 0))} · ${da.billCount(4)}`);
+    expect(sub("unit=2026-05-01", "Faste udgifter")).toBe(da.billCount(3));
+  });
+
+  it("with no payments and rows: ingen betalinger and the rows' count", () => {
+    expect(sub("period=lastMonth", "Bil")).toBe(da.noPaymentsCount(1));
+  });
+
+  it("with payments and no rows: the sum per month without stk., or nothing in a unit", () => {
+    const year = viewContext(data, parseHash(""), TAB_TODAY).timeline.period;
+    expect(sub("", "Medlemskaber")).toBe(da.perMonth(kr(perMonth(20000, year) ?? 0)));
+    expect(sub("unit=2026-10-01", "Medlemskaber")).toBe("");
+  });
+
+  it("with no payments and no rows: ingen betalinger", () => {
+    expect(sub("unit=2026-10-01", "Abonnementer")).toBe(da.noPayments);
   });
 });

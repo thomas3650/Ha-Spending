@@ -11,7 +11,9 @@ import { kr, percent, rangeText, unitName } from "../format";
 import { da } from "../i18n/da";
 import type { ViewState } from "../state/view";
 import { levelName, type ViewContext } from "./context";
+import { tabTime } from "./fixed";
 import { leftOverCard, MINUS } from "./left-over";
+import { ranIn, tabRows } from "./subscriptions";
 
 /** The line under a key number's value; `href` is the hash it opens, and the app handles the click itself. */
 export type KeyLink =
@@ -122,46 +124,54 @@ export function perMonth(sum: number, period: Period): number | null {
   return length < 28 ? null : sum / (length / MONTH_DAYS);
 }
 
-/** The object groups that a kept bill has or a shown posting in the period is linked to, unsorted. */
+/**
+ * The object groups of the bills that ran in the period's tab time, and of the shown postings in the period, unsorted.
+ * A kept bill that ended before the period adds none (fixed list tab spec §4.2).
+ */
 export function objectGroupNames(ctx: ViewContext): string[] {
+  const time = tabTime(ctx.data, { ...ctx.state, unit: null }, ctx.today);
+  const ran = ctx.data.subscriptions.filter((s) => ranIn(s, time)).map((s) => s.objectGroup);
   const inPeriod = within(ctx.shown, ctx.timeline.period).flatMap((p) =>
     p.subscription === null ? [] : [p.subscription.objectGroup],
   );
-  return [...new Set([...ctx.data.subscriptions.map((s) => s.objectGroup), ...inPeriod])];
+  return [...new Set([...ran, ...inPeriod])];
+}
+
+/** The card's line by whether the group has payments and rows (fixed list tab spec §5). */
+function objectGroupLine(hasPayments: boolean, rows: number, average: string | null): string {
+  if (!hasPayments) return rows === 0 ? da.noPayments : da.noPaymentsCount(rows);
+  if (rows === 0) return average ?? "";
+  return average === null ? da.billCount(rows) : `${average} · ${da.billCount(rows)}`;
 }
 
 /**
- * One card per object group that a kept bill has or a shown posting in the period is linked to; empty gives the
- * period's key numbers only (spec §4). The fetched range does not count. The set of groups is the period's; with a
- * chosen unit only the payments counted narrow to it. Each links to the fixed-expenses view on its own group, which
- * exists only when the answer has bills.
+ * One card per object group of `objectGroupNames`; empty gives the period's key numbers only (spec §4). The set of
+ * groups is the period's; with a chosen unit the payments and the count narrow to it. "X stk." is the Alle faste
+ * udgifter tab's rows for the group. Each links to the fixed-expenses view on its own group, which exists only when
+ * the answer has bills.
  */
 export function objectGroupCards(ctx: ViewContext, hrefFor: (group: string) => string): KeyCard[] {
   const period = ctx.timeline.period;
   const counted = ctx.chosen ?? period;
   const unit = ctx.chosen === null ? null : unitName(ctx.chosen, ctx.timeline.grouping, ctx.unitYear);
   const linked = within(ctx.shown, counted).flatMap((p) =>
-    p.subscription === null ? [] : [{ group: p.subscription.objectGroup, bill: p.subscription.name, amount: p.amount }],
+    p.subscription === null ? [] : [{ group: p.subscription.objectGroup, amount: p.amount }],
   );
+  const rows = tabRows({ ...ctx, state: { ...ctx.state, objectGroup: null } });
   const names = objectGroupNames(ctx);
   const withLink = ctx.data.subscriptions.length > 0;
   return names
     .sort((a, b) => a.localeCompare(b, "da"))
     .map((name) => {
       const payments = linked.filter((l) => l.group === name);
-      const bills = new Set(payments.map((l) => l.bill)).size;
+      const count = rows.filter((r) => r.subscription.objectGroup === name).length;
       const sum = payments.reduce((acc, l) => acc + l.amount, 0);
       const average = perMonth(sum, period);
-      const sub =
-        bills === 0
-          ? da.noPayments
-          : unit !== null || average === null
-            ? da.billCount(bills)
-            : `${da.perMonth(kr(average))} · ${da.billCount(bills)}`;
+      const perMonthText = unit !== null || average === null ? null : da.perMonth(kr(average));
       return {
         label: unit === null ? da.inPeriod(name) : da.levelInUnit(name, unit),
         value: kr(sum),
-        sub,
+        sub: objectGroupLine(payments.length > 0, count, perMonthText),
         link: withLink ? { kind: "subscriptions", objectGroup: name, href: hrefFor(name) } : undefined,
       };
     });
