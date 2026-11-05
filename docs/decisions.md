@@ -191,7 +191,7 @@ to set their status to `superseded by D<n>`, or to name a part a later decision 
 - **Source:** Claude, [page plan](superpowers/plans/2026-10-31-page.md)
 
 ### D20: The view state's hash
-- **Date:** 2026-10-31 · **Status:** active; key list superseded by D35, D42, D44, D60, D61, D66, D73 and D77
+- **Date:** 2026-10-31 · **Status:** active; key list superseded by D35, D42, D44, D60, D61, D66, D73, D77 and D78
 - **Decision:**
   - The keys are `period`, `from`, `to`, `by`, `accounts`, `group`, `category`, `unit`, `card`, `view`, `q`, `sort`,
     `min` and `max`, in a `URLSearchParams` string.
@@ -329,7 +329,7 @@ to set their status to `superseded by D<n>`, or to name a part a later decision 
   [the shop spec](superpowers/specs/2026-11-01-sorter-shop.md); the limits: Claude
 
 ### D33: Subscriptions on the overview
-- **Date:** 2026-11-01 · **Status:** active; the key number superseded by D41
+- **Date:** 2026-11-01 · **Status:** active; the key number superseded by D41; the tab on the overview superseded by D78
 - **Decision:** The overview shows Firefly III's subscriptions as a fourth key number (the cost per year) and a fourth
   choice on the right card, `card=subscriptions` in the hash ([D20](decisions.md)). A subscription's category, main
   group and account are those of its last payment, and a failed read of the subscriptions or of a payment's posting
@@ -401,7 +401,7 @@ to set their status to `superseded by D<n>`, or to name a part a later decision 
 - **Source:** Thomas, 2026-11-02, [the lists spec](superpowers/specs/2026-11-02-lists-period-postings.md) §1.2
 
 ### D40: Tables sort by their headers
-- **Date:** 2026-11-02 · **Status:** active; Alle posteringer's `sort` in the hash and the why that rests on D37 superseded by D60
+- **Date:** 2026-11-02 · **Status:** active; Alle posteringer's `sort` in the hash and the why that rests on D37 superseded by D60; the Faste udgifter tab's place superseded by D78
 - **Decision:** The postings tables and Faste udgifter sort by their column headers, and there is no sort dropdown.
   Alle posteringer keeps its sort in the hash as `sort`; the two cards' sort is held by the app and not in the hash.
 - **Why:** A header is where a reader looks to sort. A card's sort is a view setting, like full screen
@@ -409,7 +409,7 @@ to set their status to `superseded by D<n>`, or to name a part a later decision 
 - **Source:** Thomas, 2026-11-02, [the lists spec](superpowers/specs/2026-11-02-lists-period-postings.md) §2
 
 ### D41: Key numbers for the object groups, and a link to all postings
-- **Date:** 2026-11-02 · **Status:** active; the period's payments with the sum per month superseded by D56, the first key number's link to Alle posteringer by D60
+- **Date:** 2026-11-02 · **Status:** active; the period's payments with the sum per month superseded by D56, the first key number's link to Alle posteringer by D60, the count of bills by D78
 - **Decision:** There is one key number per Firefly III object group, showing the period's payments with the sum per
   month and the count of bills; they replace "Faste udgifter om året" ([D33](decisions.md)). The first key number links
   to Alle posteringer and clears the search and the chosen shop, an exception to [D31](decisions.md) and
@@ -442,7 +442,7 @@ to set their status to `superseded by D<n>`, or to name a part a later decision 
   route's shape and limits: Claude
 
 ### D44: The open detail is in the hash
-- **Date:** 2026-11-02 · **Status:** active; "on Alle posteringer" superseded by D60
+- **Date:** 2026-11-02 · **Status:** active; "on Alle posteringer" superseded by D60; where a subscription's detail opens superseded by D78
 - **Decision:** The detail of a fixed expense or a posting is the hash key `detail`, `s:<id>` or `p:<id>`, written last.
   It resolves on the overview's Posteringer and Faste udgifter cards and on Alle posteringer; anywhere else it is left
   out. Opening a detail adds a history entry, a click on another row replaces it, and closing goes back one entry only
@@ -584,7 +584,7 @@ to set their status to `superseded by D<n>`, or to name a part a later decision 
 - **Source:** Thomas, 2026-11-03 and 2026-11-04; [one filter spec](superpowers/specs/2026-11-04-one-filter.md) §1 and §3
 
 ### D56: The key-number cards follow the chosen unit and are not buttons
-- **Date:** 2026-11-04 · **Status:** active; "the card's link keeps the unit" superseded by D62
+- **Date:** 2026-11-04 · **Status:** active; "the card's link keeps the unit" superseded by D62; the bill count superseded by D78
 - **Decision:**
   - With a unit chosen, an object group's card shows the unit's payments and the bill count, labelled "<group> i
     <unit>". The set of cards stays the period's.
@@ -644,7 +644,7 @@ to set their status to `superseded by D<n>`, or to name a part a later decision 
   is Claude's call.
 
 ### D62: The object-group links open the Faste udgifter tab
-- **Date:** 2026-11-04 · **Status:** active; "opens the Faste udgifter tab in the normal card" superseded by D66
+- **Date:** 2026-11-04 · **Status:** active; "opens the Faste udgifter tab in the normal card" superseded by D66; the tab itself superseded by D78
 - **Decision:** The link under each object-group key number reads "Vis faste udgifter →" and opens the Faste udgifter
   tab in the normal card. The object-group filter (`og`) goes.
 - **Why:** Fixed payments are seen under their own tab, not as a filter of the postings.
@@ -759,7 +759,7 @@ to set their status to `superseded by D<n>`, or to name a part a later decision 
   rule for showing and the wording "Vis" are Claude's call.
 
 ### D73: The Til overs view and its hash
-- **Date:** 2026-11-04 · **Status:** active
+- **Date:** 2026-11-04 · **Status:** active; the trail superseded by D78
 - **Decision:**
   - `view=leftover` joins `view=full` and `view=fixed` in the hash ([D20](#d20-the-view-states-hash)). On open
     `unit` is removed; reading it drops `group`, `category` and `accounts`. `card`, `detail` and the quick filters
@@ -817,7 +817,7 @@ to set their status to `superseded by D<n>`, or to name a part a later decision 
 - **Source:** Claude, 2026-11-04, [Til overs spec](superpowers/specs/2026-11-04-left-over.md) §5 and §6.2.
 
 ### D77: Full screen in the fixed-expenses view, one-word statuses, and Forfalden in red
-- **Date:** 2026-11-04 · **Status:** active
+- **Date:** 2026-11-04 · **Status:** active; "Forfalden is red in the Faste udgifter tab" superseded by D78 (the tab is in the view)
 - **Decision:**
   - Each of the fixed-expenses view's two cards can fill the page; the hash has `full=bars|list` with `view=fixed`.
     It is a second full screen beside D60's, which it does not change.
@@ -831,3 +831,21 @@ to set their status to `superseded by D<n>`, or to name a part a later decision 
 - **Source:** Thomas, 2026-11-04, [fixed view full screen spec](superpowers/specs/2026-11-04-fixed-view-full-screen.md).
   The hash key, the red outline, the detail's red pill, the object group under "Alle", the tooltip's limit and how the
   list's columns give way are Claude's call.
+
+### D78: The fixed-expenses list is a tab of the view, follows the time, keeps ended bills, and one top bar
+
+- **Date:** 2026-11-05 · **Status:** active
+- **Decision:**
+  - The list of every fixed expense leaves the overview. It is the "Alle faste udgifter" tab of the fixed-expenses
+    view's right card (`tab=all`). It shows the bills that ran in the chosen time, with the status as it stood then.
+  - The server keeps a bill whose end date has passed, if the end date is on or after the asked range's start. It
+    still leaves out an inactive bill.
+  - The object-group key numbers' "X stk." counts the tab's rows.
+  - Every page has the same top bar. There is no ←. "Alt forbrug" is a link to the overview, and on Til overs the
+    parts that do not apply are greyed.
+- **Why:** in a walkthrough, Thomas wanted the fixed expenses in one place, and wanted to see which fixed expenses
+  he has and whether something is unpaid, month by month, with a stopped one gone after it stopped. He also wanted
+  one top bar.
+- **Source:** Thomas, 2026-11-05, [fixed list tab spec](superpowers/specs/2026-11-05-fixed-list-tab.md). The past
+  status rules, the sums leaving out ended bills, the count rule, the `tab` key, the old-hash landing and the greyed
+  texts are Claude's call.
