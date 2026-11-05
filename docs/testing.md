@@ -277,7 +277,7 @@ The page's list. Every screenshot is at 1440×960 with the console free of error
     spec](superpowers/specs/2026-11-05-fixed-list-tab.md) §7, [D78](decisions.md)), at 1200, 1440 and 1728 px.
     The overview has the tabs Søjler, Posteringer and Butikker, and no Faste udgifter.
     The view has two tabs. In "I år", click a month in the bars where the bill that ended is still there: the list shows
-    it. After its end month it is gone. A past month's statuses read Betalt with a date, Ikke set or Næste. The ended
+    it, and Avisabonnement, which is inactive, reads Sluttet like the active Tidsskrift. After its end month it is gone. A past month's statuses read Betalt with a date, Ikke set or Næste. The ended
     bills' Om året is greyed with its tooltip. A row's detail opens, and its ← goes back to the list. Full screen keeps
     the tab. Opening the view again starts on "Poster i perioden".
     The same bar on the overview, the view and Til overs. "Alt forbrug" leaves the view and Til overs, also from full
