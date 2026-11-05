@@ -7,7 +7,7 @@ import { kr, rangeText, unitName } from "../src/format";
 import { da } from "../src/i18n/da";
 import { barButtons, names } from "./bars-helpers";
 import { forgetCharts } from "./chart-mock";
-import { answerFor } from "./fixture";
+import { answerFor, withSubscriptions } from "./fixture";
 import { json, mount, settle, unmount } from "./mount";
 
 const TODAY = "2026-10-30";
@@ -158,6 +158,35 @@ describe("the trail is the overview's filter", () => {
     const list = getByRole(postings, "region", { name: da.postingsOf("Husleje") });
     expect(queryByRole(list, "button", { name: da.remove(JAN) })).toBeNull();
     expect(queryByRole(list, "button", { name: da.remove("Husleje") })).toBeNull();
+  });
+});
+
+describe("Alt forbrug (fixed-list-tab spec §6)", () => {
+  it("on the overview Alt forbrug is text with nothing chosen and a link with a level chosen", async () => {
+    const empty = await mount("");
+    expect(queryByRole(trail(empty.root), "link", { name: da.allSpending })).toBeNull();
+    expect(trailText(empty.root).startsWith(da.allSpending)).toBe(true);
+    unmount();
+    const { root } = await mount("group=Bolig");
+    expect(getByRole(trail(root), "link", { name: da.allSpending }).getAttribute("href")).toBe("#");
+  });
+
+  it("in the view, a level's × still clears the level, and the link leaves the view", async () => {
+    const { app, root } = await mount("group=Bolig&category=Husleje&view=fixed&og=Faste+udgifter", {
+      answer: (range) => json(withSubscriptions(answerFor(range))),
+    });
+    fireEvent.click(x(root, "Husleje"));
+    await settle(app);
+    expect(location.hash).toBe("#group=Bolig&view=fixed&og=Faste+udgifter");
+    fireEvent.click(x(root, "Bolig"));
+    await settle(app);
+    expect(location.hash).toBe("#view=fixed&og=Faste+udgifter");
+    const alt = getByRole(trail(root), "link", { name: da.allSpending });
+    expect(alt.getAttribute("href")).toBe("#");
+    fireEvent.click(alt);
+    await settle(app);
+    expect(location.hash).toBe("");
+    expect(queryByRole(trail(root), "link", { name: da.allSpending })).toBeNull();
   });
 });
 

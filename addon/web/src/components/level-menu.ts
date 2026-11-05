@@ -15,6 +15,7 @@ export class LevelMenu extends Dropdown {
     rows: { attribute: false },
     name: { attribute: false },
     heading: { attribute: false },
+    greyed: { attribute: false },
   };
 
   declare level: "mainGroup" | "category";
@@ -24,6 +25,8 @@ export class LevelMenu extends Dropdown {
   declare name: string | null;
   /** The last step is the page's heading. */
   declare heading: boolean;
+  /** Why the step does not open here; null where it works. */
+  declare greyed: string | null;
 
   constructor() {
     super();
@@ -31,9 +34,11 @@ export class LevelMenu extends Dropdown {
     this.rows = null;
     this.name = null;
     this.heading = false;
+    this.greyed = null;
   }
 
   private get disabled(): boolean {
+    if (this.greyed !== null) return false;
     return this.rows === null || this.rows.length === 0;
   }
 
@@ -62,8 +67,12 @@ export class LevelMenu extends Dropdown {
       class=${name === null ? "trail-add" : "trail-dd"}
       aria-label=${label}
       aria-expanded=${this.open ? "true" : "false"}
+      aria-disabled=${this.greyed === null ? nothing : "true"}
+      title=${this.greyed ?? nothing}
       ?disabled=${this.disabled}
-      @click=${() => this.toggle()}
+      @click=${() => {
+        if (this.greyed === null) this.toggle();
+      }}
     >
       ${name === null ? (mainGroup ? da.mainGroupStep : da.categoryStep) : html`${name}${CARET}`}
     </button>`;

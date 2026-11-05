@@ -26,19 +26,24 @@ export class UnitMenu extends Dropdown {
   static override properties: PropertyDeclarations = {
     step: { attribute: false },
     heading: { attribute: false },
+    greyed: { attribute: false },
   };
 
   declare step: UnitStep;
   /** The last step is the page's heading. */
   declare heading: boolean;
+  /** Why the step does not open here; null where it works. */
+  declare greyed: string | null;
 
   constructor() {
     super();
     this.step = { word: "month", rows: null, chosen: null };
     this.heading = false;
+    this.greyed = null;
   }
 
   private get disabled(): boolean {
+    if (this.greyed !== null) return false;
     return this.step.rows === null || this.step.rows.length === 0;
   }
 
@@ -61,8 +66,12 @@ export class UnitMenu extends Dropdown {
       class=${name === null ? "trail-add" : "trail-dd"}
       aria-label=${label}
       aria-expanded=${this.open ? "true" : "false"}
+      aria-disabled=${this.greyed === null ? nothing : "true"}
+      title=${this.greyed ?? nothing}
       ?disabled=${this.disabled}
-      @click=${() => this.toggle()}
+      @click=${() => {
+        if (this.greyed === null) this.toggle();
+      }}
     >
       ${name === null ? (month ? da.monthStep : da.yearStep) : html`${name}${CARET}`}
     </button>`;

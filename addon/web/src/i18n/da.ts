@@ -39,7 +39,6 @@ export const da = {
   all: "Alle",
   objectGroups: "Objektgrupper",
   billsInPeriod: (n: number, sum: string) => `${n} stk. · ${sum} i perioden`,
-  backToOverview: "Tilbage til overblikket",
 
   period: "Periode",
   presets: {
@@ -356,6 +355,8 @@ export const da = {
     table: "Til overs pr. måned",
     /** The cells carry no "kr.", so the table says it once. */
     note: "Alle beløb i kr.",
+    allAccountsNote: "Til overs regner på alle konti",
+    wholePeriodNote: "Til overs viser hele perioden måned for måned",
   },
   backTo: (title: string) => `Tilbage til ${title}`,
   close: "Luk",

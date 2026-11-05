@@ -150,7 +150,7 @@ describe("an old card=subscriptions link (spec §2.1)", () => {
     expect(pressedTab(root)).toEqual([da.allFixed]);
     getByRole(root, "button", { name: da.switchObjectGroup(da.allFixed) });
     getByRole(card(root, da.allFixed), "button", { name: "Husleje" });
-    fireEvent.click(getByRole(root, "button", { name: da.backToOverview }));
+    fireEvent.click(getByRole(getByRole(root, "navigation", { name: da.trail }), "link", { name: da.allSpending }));
     await settle(app);
     expect(location.hash).toBe("");
     const bars = getAllByRole(viewSwitch(root), "button").filter((b) => b.getAttribute("aria-pressed") === "true");
@@ -162,7 +162,8 @@ describe("an old card=subscriptions link (spec §2.1)", () => {
     const { root } = await mountWith("card=subscriptions", []);
     expect(location.hash).toBe("");
     card(root, da.per("month"));
-    expect(queryByRole(root, "button", { name: da.backToOverview })).toBeNull();
+    expect(queryByRole(getByRole(root, "navigation", { name: da.trail }), "link", { name: da.allSpending })).toBeNull();
+    expect(queryByRole(root, "button", { name: new RegExp(`^${da.switchObjectGroup("")}`) })).toBeNull();
   });
 });
 

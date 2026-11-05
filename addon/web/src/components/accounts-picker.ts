@@ -17,17 +17,21 @@ export class AccountsPicker extends Dropdown {
   static override properties: PropertyDeclarations = {
     accounts: { attribute: false },
     chosen: { attribute: false },
+    greyed: { attribute: false },
   };
 
   /** null until the first answer. */
   declare accounts: Account[] | null;
   /** null is every account. */
   declare chosen: string[] | null;
+  /** Why the field does not open here; null where it works. */
+  declare greyed: string | null;
 
   constructor() {
     super();
     this.accounts = null;
     this.chosen = null;
+    this.greyed = null;
   }
 
   private ticked(id: string): boolean {
@@ -53,12 +57,16 @@ export class AccountsPicker extends Dropdown {
         type="button"
         aria-expanded=${this.open ? "true" : "false"}
         aria-label=${`${da.accounts} ${closed}`}
-        ?disabled=${this.accounts === null}
-        @click=${() => this.toggle()}
+        aria-disabled=${this.greyed === null ? nothing : "true"}
+        title=${this.greyed ?? nothing}
+        ?disabled=${this.greyed === null && this.accounts === null}
+        @click=${() => {
+          if (this.greyed === null) this.toggle();
+        }}
       >
         <small>${da.accounts}</small><span>${closed}</span>
       </button>
-      ${this.open && this.accounts
+      ${this.open && this.greyed === null && this.accounts
         ? html`<div class="dd-menu dd-end" tabindex="-1" role="group" aria-label=${da.accounts}>
             <label class="dd-check"
               ><input

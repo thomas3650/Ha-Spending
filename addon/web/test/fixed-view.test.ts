@@ -139,8 +139,15 @@ function link(root: HTMLElement, card: string): HTMLElement {
   return getByRole(getByRole(root, "group", { name: card }), "link", { name: da.showSubscriptions });
 }
 
-function back(root: HTMLElement): HTMLElement {
-  return getByRole(root, "button", { name: da.backToOverview });
+/** The trail's "Alt forbrug", which in the view leaves it. */
+function leave(root: HTMLElement): HTMLElement {
+  return getByRole(getByRole(root, "navigation", { name: da.trail }), "link", { name: da.allSpending });
+}
+
+/** The view's list card, under either tab's name. */
+function notInView(root: HTMLElement): void {
+  expect(queryByRole(root, "region", { name: da.fixed.inPeriod })).toBeNull();
+  expect(queryByRole(root, "region", { name: da.allFixed })).toBeNull();
 }
 
 function barsRegion(root: HTMLElement, title = da.levelPer("Faste udgifter", "month")): HTMLElement {
@@ -172,11 +179,11 @@ async function openGroups(app: SpendingApp, root: HTMLElement, name: string): Pr
 
 function inOverview(root: HTMLElement, g: "month" | "day" = "month"): void {
   getByRole(root, "region", { name: da.per(g) });
-  expect(queryByRole(root, "button", { name: da.backToOverview })).toBeNull();
+  notInView(root);
 }
 
 function inView(root: HTMLElement): void {
-  back(root);
+  leave(root);
   expect(queryByRole(root, "region", { name: da.per("month") })).toBeNull();
 }
 
@@ -195,11 +202,11 @@ describe("the way in and out (spec §2)", () => {
     getByRole(root, "region", { name: da.levelPer("Bolig", "month") });
   });
 
-  it("← right after the open goes back, so Forward reopens the view", async () => {
+  it("the link right after the open goes back, so Forward reopens the page", async () => {
     const { app, root } = await open("");
     await click(app, link(root, FIXED_CARD));
     const length = history.length;
-    await click(app, back(root));
+    await click(app, leave(root));
     await hashBecomes(app, "");
     expect(history.length).toBe(length);
     inOverview(root);
@@ -208,25 +215,25 @@ describe("the way in and out (spec §2)", () => {
     inView(root);
   });
 
-  it("after ← goes back, a further Back goes on past the open and does not reopen the view", async () => {
+  it("after the link goes back, a further Back goes on past the open and does not reopen the view", async () => {
     const { app, root } = await open("");
     await click(app, getByRole(getByRole(root, "group", { name: da.view }), "button", { name: da.postings }));
     await click(app, link(root, FIXED_CARD));
     expect(location.hash).toBe("#card=postings&view=fixed&og=Faste+udgifter");
-    await click(app, back(root));
+    await click(app, leave(root));
     await hashBecomes(app, "#card=postings");
     history.back();
     await hashBecomes(app, "");
     inOverview(root);
   });
 
-  it("the open puts the focus on the bars' heading, and ← and Escape put it on the right card's heading", async () => {
+  it("the open puts the focus on the bars' heading, and the link and Escape put it on the right card's heading", async () => {
     const { app, root } = await open("");
     const active = () => app.shadowRoot?.activeElement;
     const right = () => getByRole(root, "heading", { level: 2, name: da.per("month") });
     await click(app, link(root, FIXED_CARD));
     expect(active()).toBe(getByRole(root, "heading", { level: 2, name: da.levelPer("Faste udgifter", "month") }));
-    await click(app, back(root));
+    await click(app, leave(root));
     await hashBecomes(app, "");
     expect(active()).toBe(right());
     await click(app, link(root, FIXED_CARD));
@@ -255,14 +262,14 @@ describe("the way in and out (spec §2)", () => {
     inView(root);
   });
 
-  it("← after choosing another object group replaces, and Back lands on the first view entry", async () => {
+  it("the link after another choice replaces, and Back lands on the first view entry", async () => {
     const { app, root } = await open("");
     await click(app, link(root, FIXED_CARD));
     const list = await openGroups(app, root, "Faste udgifter");
     await click(app, getByRole(list, "button", { name: /^Abonnementer,/ }));
     expect(location.hash).toBe("#view=fixed&og=Abonnementer");
     const length = history.length;
-    await click(app, back(root));
+    await click(app, leave(root));
     expect(location.hash).toBe("");
     expect(history.length).toBe(length);
     inOverview(root);
@@ -270,7 +277,7 @@ describe("the way in and out (spec §2)", () => {
     await hashBecomes(app, OPEN);
   });
 
-  it("← after choosing a unit from the trail's list replaces, and keeps a unit the overview has", async () => {
+  it("the link after choosing a unit from the trail's list replaces, and keeps a unit the overview has", async () => {
     const { app, root } = await open("");
     await click(app, link(root, FIXED_CARD));
     await click(app, getByRole(root, "button", { name: da.chooseMonth }));
@@ -278,7 +285,7 @@ describe("the way in and out (spec §2)", () => {
     await click(app, getByRole(units, "button", { name: new RegExp(`^${month("2026-10-01")},`) }));
     expect(location.hash).toBe("#unit=2026-10-01&view=fixed&og=Faste+udgifter");
     const length = history.length;
-    await click(app, back(root));
+    await click(app, leave(root));
     expect(location.hash).toBe("#unit=2026-10-01");
     expect(history.length).toBe(length);
     inOverview(root);
@@ -290,7 +297,7 @@ describe("the way in and out (spec §2)", () => {
     const length = history.length;
     const backNow = history.back.bind(history);
     vi.spyOn(history, "back").mockImplementation(() => void setTimeout(backNow));
-    fireEvent.click(back(root));
+    fireEvent.click(leave(root));
     await ticks();
     fireEvent.click(link(root, FIXED_CARD));
     await settle(app, 10);
@@ -316,15 +323,9 @@ describe("the way in and out (spec §2)", () => {
     await settle(app, 10);
     expect(location.hash).toBe("#card=postings");
     getByRole(root, "region", { name: da.postingsTitle });
-    expect(queryByRole(root, "button", { name: da.backToOverview })).toBeNull();
+    notInView(root);
   });
 
-  it("the ← sits outside the trail and has no text", async () => {
-    const { root } = await open(OPEN.slice(1));
-    expect(flat(back(root).textContent)).toBe("");
-    const nav = getByRole(root, "navigation", { name: da.trail });
-    expect(queryByRole(nav, "button", { name: da.backToOverview })).toBeNull();
-  });
 
   it("view=fixed with no subscriptions shows the overview, not in full screen", async () => {
     const { root } = await mount("view=fixed&og=Faste%20udgifter&full=list");
@@ -335,8 +336,97 @@ describe("the way in and out (spec §2)", () => {
   });
 });
 
+describe("the top bar (fixed-list-tab spec §6)", () => {
+  async function fromOverview(start = "") {
+    const opened = await open(start);
+    await click(opened.app, link(opened.root, FIXED_CARD));
+    return opened;
+  }
+
+  function postingsTab(root: HTMLElement): HTMLElement {
+    return getByRole(getByRole(root, "group", { name: da.view }), "button", { name: da.postings });
+  }
+
+  it("has no Tilbage til overblikket button and has an Alt forbrug link", async () => {
+    const { root } = await open(OPEN.slice(1));
+    expect(queryByRole(root, "button", { name: "Tilbage til overblikket" })).toBeNull();
+    expect(leave(root).tagName).toBe("A");
+  });
+
+  it("the link's href is the overview's hash", async () => {
+    const { root } = await open("group=Bolig&card=postings&view=fixed&og=Faste+udgifter&tab=all&full=list&detail=s%3Ab1");
+    expect(leave(root).getAttribute("href")).toBe("#group=Bolig&card=postings");
+    expect(fireEvent.click(leave(root), { ctrlKey: true })).toBe(true);
+    expect(fireEvent.click(leave(root), { button: 1 })).toBe(true);
+  });
+
+  it("the link with a detail open over full screen leaves the view in one click, and Back lands before the view", async () => {
+    const { app, root } = await open("");
+    await click(app, postingsTab(root));
+    await click(app, link(root, FIXED_CARD));
+    await click(app, getByRole(root, "button", { name: da.fullScreenOf(da.fixed.inPeriod) }));
+    await click(app, getByRole(getByRole(listRegion(root), "group", { name: da.view }), "button", { name: da.allFixed }));
+    await click(app, getByRole(listRegion(root, da.allFixed), "button", { name: "Husleje" }));
+    expect(location.hash).toBe("#card=postings&view=fixed&og=Faste+udgifter&tab=all&full=list&detail=s%3Ab1");
+    await click(app, leave(root));
+    await hashBecomes(app, "#card=postings");
+    getByRole(root, "region", { name: da.postingsTitle });
+    notInView(root);
+    history.back();
+    await hashBecomes(app, "");
+    inOverview(root);
+  });
+
+  it("the link with a detail open in the view leaves it in one click, and Back lands before the view", async () => {
+    const { app, root } = await open("");
+    await click(app, postingsTab(root));
+    await click(app, link(root, FIXED_CARD));
+    await click(app, getByRole(getByRole(listRegion(root), "group", { name: da.view }), "button", { name: da.allFixed }));
+    await click(app, getByRole(listRegion(root, da.allFixed), "button", { name: "Husleje" }));
+    expect(location.hash).toBe("#card=postings&view=fixed&og=Faste+udgifter&tab=all&detail=s%3Ab1");
+    await click(app, leave(root));
+    await hashBecomes(app, "#card=postings");
+    notInView(root);
+    history.back();
+    await hashBecomes(app, "");
+    inOverview(root);
+  });
+
+  it("after the link the focus is on the overview's heading, also with group=Bolig, where Alt forbrug stays a link", async () => {
+    for (const [start, title] of [
+      ["", da.per("month")],
+      ["group=Bolig", da.levelPer("Bolig", "month")],
+    ]) {
+      const { app, root } = await fromOverview(start);
+      const alt = leave(root);
+      alt.focus();
+      await click(app, alt);
+      await hashBecomes(app, start === "" ? "" : `#${start}`);
+      expect(app.shadowRoot?.activeElement).toBe(getByRole(root, "heading", { level: 2, name: title }));
+      if (start !== "") leave(root);
+      unmount();
+    }
+  });
+
+  it("the link works while loading and on an error", async () => {
+    for (const answer of [() => new Promise<Response>(() => {}), () => json({ error: "unreachable" }, 502)]) {
+      const { app, root } = await open(`period=lastYear&${OPEN.slice(1)}`, { answer });
+      const length = history.length;
+      const alt = leave(root);
+      alt.focus();
+      await click(app, alt);
+      expect(location.hash).toBe("#period=lastYear");
+      expect(history.length).toBe(length);
+      expect(app.shadowRoot?.activeElement).toBe(
+        getByRole(getByRole(root, "navigation", { name: da.trail }), "heading", { level: 1 }),
+      );
+      unmount();
+    }
+  });
+});
+
 describe("loading and errors (spec §8)", () => {
-  it("on an error shows the error line, and the period step and ← still work", async () => {
+  it("on an error shows the error line, and the period step and the link still work", async () => {
     const { app, root } = await open(OPEN.slice(1), { answer: () => json({ error: "unreachable" }, 502) });
     expect(getByRole(root, "alert").textContent).toContain(da.errors.unreachable);
     await click(app, getByRole(root, "button", { name: new RegExp(`^${da.period}`) }));
@@ -344,10 +434,10 @@ describe("loading and errors (spec §8)", () => {
     await click(app, getByRole(periods, "button", { name: da.presets.lastYear }));
     expect(location.hash).toBe("#period=lastYear&view=fixed&og=Faste+udgifter");
     getByRole(root, "alert");
-    await click(app, back(root));
+    await click(app, leave(root));
     expect(location.hash).toBe("#period=lastYear");
     getByRole(root, "alert");
-    expect(queryByRole(root, "button", { name: da.backToOverview })).toBeNull();
+    notInView(root);
   });
 });
 
@@ -430,7 +520,7 @@ describe("the trail (spec §3.1, §3.4)", () => {
   it("before the answer the view's dashed Måned is there but disabled, also in January", async () => {
     const { root } = await mount(OPEN.slice(1), { now: "2026-01-15T10:00:00Z", answer: () => new Promise(() => {}) });
     expect(getByRole(root, "button", { name: da.chooseMonth }).hasAttribute("disabled")).toBe(true);
-    back(root);
+    leave(root);
   });
 });
 
@@ -466,7 +556,7 @@ describe("the bars (spec §5)", () => {
     expect(names[11]).toBe(flat(da.fixed.barEstimate(month("2026-12-01"), kr(850000))));
   });
 
-  it("in January, December can be chosen, and ← drops it so the overview has no unit step", async () => {
+  it("in January, December can be chosen, and the link drops it so the overview has no unit step", async () => {
     const today = "2026-01-15";
     const { app, root } = await mount(OPEN.slice(1), { now: `${today}T10:00:00Z`, answer: answer({ today }) });
     const december = month("2026-12-01", today);
@@ -476,18 +566,18 @@ describe("the bars (spec §5)", () => {
     expect(location.hash).toBe("#unit=2026-12-01&view=fixed&og=Faste+udgifter");
     getByRole(root, "button", { name: da.switchMonth(december) });
     expect(barButtons(root)[11].getAttribute("aria-pressed")).toBe("true");
-    await click(app, back(root));
+    await click(app, leave(root));
     expect(location.hash).toBe("");
     inOverview(root, "day");
     expect(queryByRole(root, "button", { name: da.chooseMonth })).toBeNull();
     expect(queryByRole(root, "button", { name: new RegExp(`^${da.switchMonth("")}`) })).toBeNull();
   });
 
-  it("a December unit with I år is kept in the view and dropped when ← replaces", async () => {
+  it("a December unit with I år is kept in the view and dropped when the link replaces", async () => {
     const { app, root } = await open("unit=2026-12-01&view=fixed&og=Faste+udgifter");
     expect(location.hash).toBe("#unit=2026-12-01&view=fixed&og=Faste+udgifter");
     listRegion(root, month("2026-12-01"));
-    await click(app, back(root));
+    await click(app, leave(root));
     expect(location.hash).toBe("");
   });
 
@@ -866,16 +956,16 @@ describe("full screen (spec §3)", () => {
       expect(app.shadowRoot?.activeElement ?? null).toBeNull();
     });
 
-    it("leaving the view by ← drops full", async () => {
+    it("leaving the view by the link drops full", async () => {
       const { app, root } = await open(FULL_BARS.slice(1));
-      await click(app, back(root));
+      await click(app, leave(root));
       expect(location.hash).toBe("");
       inOverview(root);
       expect(getByRole(root, "button", { name: da.fullScreen }).getAttribute("aria-pressed")).toBe("false");
     });
   });
 
-  describe("history, Escape and ← (§3.5)", () => {
+  describe("history, Escape and the link (§3.5)", () => {
     it("open, then Back, closes full screen and stays in the view", async () => {
       const { app, root } = await open(OPEN.slice(1));
       await click(app, fullButton(root, BARS));
@@ -918,13 +1008,13 @@ describe("full screen (spec §3)", () => {
       listAlone(root);
     });
 
-    it("← right after the view's open and full screen's open leaves the view, and Back does not reopen it", async () => {
+    it("the link right after the view's open and full screen's open leaves the view, and Back does not reopen it", async () => {
       const { app, root } = await open("");
       await click(app, getByRole(getByRole(root, "group", { name: da.view }), "button", { name: da.postings }));
       await click(app, link(root, FIXED_CARD));
       await click(app, fullButton(root, BARS));
       expect(location.hash).toBe("#card=postings&view=fixed&og=Faste+udgifter&full=bars");
-      await click(app, back(root));
+      await click(app, leave(root));
       await hashBecomes(app, "#card=postings");
       getByRole(root, "region", { name: da.postingsTitle });
       history.back();
@@ -947,13 +1037,13 @@ describe("full screen (spec §3)", () => {
       barsAlone(root);
     });
 
-    it("a unit chosen in full screen, then ←: the overview; Back lands in full screen without it", async () => {
+    it("a unit chosen in full screen, then the link: the overview; Back lands in full screen without it", async () => {
       const { app, root } = await fromOverview();
       await click(app, fullButton(root, BARS));
       await click(app, barButtons(root)[9]);
-      await click(app, back(root));
+      await click(app, leave(root));
       expect(location.hash).toBe("#unit=2026-10-01");
-      expect(queryByRole(root, "button", { name: da.backToOverview })).toBeNull();
+      notInView(root);
       history.back();
       await hashBecomes(app, FULL_BARS);
       barsAlone(root);
