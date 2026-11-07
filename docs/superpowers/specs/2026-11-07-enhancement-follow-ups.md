@@ -81,8 +81,8 @@ The overview's "Gennemsnit pr. måned" card already has a rule for this, `averag
 **Claude's call:** the per-month figure of paid payments follows that rule's `"period"` branch, counted by month
 whatever the period's grouping. It never takes `averageUnits`' `"before"` branch, the 12 units before the period.
 
-- The months are the period's own months, filtered as that branch filters them: a month cut by the period's own start or end
-  counts, as D16 has it; the running month does not; a month that ends before `earliestPostingDate` does not
+- The months are the period's own months, filtered as that branch filters them: a month cut by the period's own
+  start or end counts, as D16 has it; the running month does not; a month that ends before `earliestPostingDate` does not
   (`hasData`).
 - The figure is the sum of the payments dated in those months, divided by their number, rounded to whole øre as
   `averageOf` does. `kr` writes it in whole kroner, as today.
@@ -102,7 +102,7 @@ whatever the period's grouping. It never takes `averageUnits`' `"before"` branch
   those in the counted months.
 
 This is a lasting rule, so it gets a decision entry, **D80**: "A per-month figure of paid payments averages the
-period's months as the Gennemsnit card counts them". It names the rule it replaces. Values move in several tests,
+period's own months with data, a cut month included and the running month left out". It names the rule it replaces. Values move in several tests,
 at least in `addon/web/test/key-numbers.test.ts`, `fixed-model.test.ts` and `fixed-view.test.ts`. Each is named in
 the build's report.
 
