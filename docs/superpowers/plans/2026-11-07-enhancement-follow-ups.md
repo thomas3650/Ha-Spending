@@ -37,7 +37,8 @@ Every task reads its sections there.
    (Task 3, spec §3.1).
 3. **"Alle faste udgifter" against one object group.** The §2.1 amount equals the overview card's when one group is
    chosen (Task 2).
-4. **No estimates left.** No card shows "ca." on an exact value, or "0 betalinger" (Tasks 2 and 5).
+4. **No estimates left.** No card shows "ca." on an exact value, and "Resterende udgifter" never reads
+   "0 betalinger" (Tasks 2 and 5).
 5. **Focus.** After every dashed-list choice, the focus is on a named button, never on the body (Task 4).
 
 ---
@@ -53,13 +54,15 @@ Model: sonnet · Review: yes
 - Modify `addon/web/src/model/key-numbers.ts`: drop `perMonth` and use the new function in `objectGroupCards`.
 - Modify `addon/web/src/model/fixed.ts`: use the new function in the default case of `fixedCards`.
 - Modify `docs/decisions.md`: add D80.
-- Tests: a shared money test (the existing shared test file for `keyNumbers`), `addon/web/test/key-numbers.test.ts`,
-  `fixed-model.test.ts` and `fixed-view.test.ts` where values move.
+- Tests: `addon/shared/test/money.test.ts`, `addon/web/test/key-numbers.test.ts`, and `fixed-model.test.ts` and
+  `fixed-view.test.ts` where values move.
 
 **Interfaces:**
 - Produces, exported from `@ha-spending/shared`:
-  `paidPerMonth(items: { date: string; amount: number }[], period: Period, today: string, earliest: string | null): { amount: number; months: number; count: number } | null`.
-  - The months are `unitsOf(period, "month", today).filter((u) => isWhole(u) && hasData(u, earliest))`.
+  `paidPerMonth(items: { date: string; amount: number }[], t: Pick<Timeline, "period" | "today" | "earliest">): { amount: number; months: number; count: number } | null`.
+  - Every caller passes `ctx.timeline`, so the overview's cards and the fixed view count the same months.
+  - `linked` in `objectGroupCards` gains each posting's `date`.
+  - The months are `unitsOf(t.period, "month", t.today).filter((u) => isWhole(u) && hasData(u, t.earliest))`.
   - `amount` is the sum of the items dated in those months, divided by `months` and rounded to whole øre as
     `averageOf` rounds.
   - `count` is the number of those items.
@@ -72,7 +75,13 @@ Model: sonnet · Review: yes
   - `leaves out a month that ends before the earliest posting date`;
   - `gives one past month's own sum`: period 2026-10-01..2026-10-31, today 2026-11-07 → `amount` is that month's
     sum and `months` is 1;
-  - `gives null when the period is only the running month`.
+  - `gives null when the period is only the running month`;
+  - `count leaves out the running month's items`.
+
+  Web tests (`key-numbers.test.ts` and `fixed-view.test.ts`):
+  - `the object-group card's per-month figure on Sidste måned is that month's own sum`;
+  - `the fixed view's Gennemsnit pr. måned on a custom period counts only the counted months' payments`, checking
+    its value and its "{n} betalinger".
 - [ ] **Step 2: Run them, and see them fail.**
 - [ ] **Step 3: Implement `paidPerMonth`, and call it from `objectGroupCards` and the default case of `fixedCards`.**
   - In the default case, the "Gennemsnit pr. måned" card's value is `amount`. Its sub-line is
@@ -100,11 +109,10 @@ Model: sonnet · Review: yes
 
 **Interfaces:**
 - Consumes `paidPerMonth` from Task 1.
-- Produces, in `da.fixed`:
-  - `perMonthEstimate: "Estimat pr. måned"`, which replaces `perMonthAverage`;
-  - `paidPerMonth: (amount: string) => \`betalt ${amount} pr. måned\``.
-- The sub-line is `[da.fixed.yearSplit(year), da.fixed.paidPerMonth(kr(x.amount))].join(" · ")`, and it is the first
-  part alone when `paidPerMonth` gives `null`.
+- Produces, in `da.fixed`: `perMonthEstimate: "Estimat pr. måned"`, which replaces `perMonthAverage`.
+- The sub-line is `[da.fixed.yearSplit(year), da.fixed.summaryPaid(da.perMonth(kr(x.amount)))].join(" · ")`, which
+  reads "hele 2026 delt med 12 · betalt 2.150 kr. pr. måned". It is the first part alone when `paidPerMonth` gives
+  `null`. The figure is `paidPerMonth` over the view's paid payments, with `ctx.timeline`.
 
 - [ ] **Step 1: Failing tests.**
   - `the I år per-month card is labelled as an estimate and names the paid per-month figure`: its label, a value
@@ -115,8 +123,14 @@ Model: sonnet · Review: yes
   - `with no estimate left, Estimat pr. måned and Estimat for hele … have no ca.`: cover "I år", and also "Denne
     måned" and "Alt" through `whole()`.
 - [ ] **Step 2: Run them, and see them fail.**
-- [ ] **Step 3: Implement.** `estimate: true` only when the view's `estimates` is non-empty. This applies to the
-  per-month card and to `whole()`.
+- [ ] **Step 3: Implement.** Each card's `estimate: true` follows the estimates that card itself sums.
+  - "Estimat pr. måned" and "I år"'s `whole()` use the view's estimates.
+  - On "Alt", `whole()` uses only the running unit's estimates (`estimates.filter(inRunning)`), so a due estimate
+    before the running unit does not mark it.
+  - The same rule applies to "Denne måned".
+  - Name this reading of spec §2.1 in the report.
+
+  Add a test: `on Alt a due estimate before the running unit does not mark Estimat for hele … with ca.`.
 - [ ] **Step 4: Run the gates, then commit.**
 
 ## Task 3: The fixed view's trail lists and the bars' title
@@ -128,33 +142,43 @@ Model: opus · Review: yes
 **Files:**
 - Modify `addon/web/src/model/fixed.ts`: export a function that builds the rows.
 - Modify `addon/web/src/app.ts` (`render`, `lists`): choose the fixed rows when `state.fixed`.
-- Modify `addon/web/src/components/level-menu.ts`: write a row's sum from its text.
-- Modify `addon/web/src/model/circle.ts`: `LevelRow` gains `sumText?: string`, or the fixed rows get their own type;
-  the builder picks one and names it in the report.
-- Modify `addon/web/src/screens/fixed.ts` (`bars()`) and `addon/web/src/app.ts` (`fixedScreen`), plus
-  `addon/web/src/i18n/da.ts`.
+- Modify `addon/web/src/components/level-menu.ts`: a row with a `sumText` writes it in both the visible sum and the
+  row's `aria-label` (in place of `kr(row.sum)` in `partLabel`), so the "ca." reaches the accessible name.
+- Modify `addon/web/src/model/circle.ts`: `LevelRow` gains `sumText?: string`. For a fixed row, `sum` holds paid
+  plus estimate, which the order uses.
+- Modify `addon/web/src/screens/fixed.ts` (`bars()`) and `addon/web/src/i18n/da.ts`.
 - Tests: `addon/web/test/fixed-view.test.ts`, `trail.test.ts` and `fixed-model.test.ts`.
 
 **Interfaces:**
 - Produces `fixedLevelRows(ctx: ViewContext, of: "mainGroup" | "category"): LevelRow[]` in `model/fixed.ts`.
-  - It works out the fixed payments for `{ ...ctx.state, level: { kind: "all" } }` (main groups), or
-    `{ ...ctx.state, level: { kind: "mainGroup", mainGroup } }` (categories), from a context built for that state.
-  - It groups the payments by part key: the main group, or the category.
-  - It keeps only parts with paid or estimate amount above 0, plus the chosen one with 0.
-  - It orders them by paid plus estimate, largest first, then by name.
-  - The colours come from `fixedColours` for that state.
-  - The text comes from `sumText`.
+  - Let `state'` be `{ ...ctx.state, level: { kind: "all" } }` for main groups, or
+    `{ ...ctx.state, level: { kind: "mainGroup", mainGroup } }` for categories. Let `view'` be
+    `fixedView(viewContext(ctx.data, state', ctx.today))`. Its payments stack by the main group (or the category),
+    so `p.part` is the row's key.
+  - The time is `tabTime(ctx.data, ctx.state, ctx.today)`: the chosen unit, or the view's span. Do not use
+    `ctx.chosen`, which is resolved against the overview's units and is null for a future month of "I år".
+  - It keeps `view'.payments` dated in that time whose kind is `paid` or `estimate`. Ikke set is left out by its
+    kind, not by its amount.
+  - A row is a key with at least one such payment. The chosen row is always kept, with `sum` 0 and
+    `sumText` `kr(0)`.
+  - Each row has `sum` = paid plus estimate and `sumText` = `sumText(paid, estimate, hasPaid, hasEstimate)`.
+  - Order: by `sum`, largest first, then by name with `localeCompare(…, "da")`.
+  - The colour comes from `view'.parts`, which are sized over the whole span, so a dot matches its part of the bars.
   - It returns `[]` for categories when no main group is chosen.
-- Produces `da.fixed.titleIn: (group: string, level: string) => \`${group} · ${level}\``. The bars' title is
-  `da.levelPer(da.fixed.titleIn(groupTitle, levelName(level)), grouping)` when a level is chosen. With none, it is
-  unchanged.
+- The bars' title, when a level is chosen, is
+  `da.levelPer(da.fixed.nameInGroup(groupTitle, levelName(level)), grouping)`, for example "Faste udgifter · Bolig
+  pr. måned". `nameInGroup` already joins with " · ". With no level chosen, it is unchanged.
 
 - [ ] **Step 1: Failing tests.** All of them run through the rendered trail menu and the headings:
   - `the fixed view's Hovedgruppe list sums the fixed expenses and leaves out main groups without any`;
   - `a main group with only an estimate is listed with ca.`;
   - `with a main group chosen the Hovedgruppe list still lists the other main groups with fixed expenses`;
   - `a chosen main group with no fixed expenses is listed with 0 kr.`;
-  - `the fixed view's Kategori list sums the chosen main group's fixed expenses`;
+  - `the fixed view's Kategori list sums the chosen main group's fixed expenses`, with a category with only an
+    estimate listed with ca., and a chosen category with nothing listed with 0 kr.;
+  - `with a month chosen, including a future month of I år, the lists sum only that month`;
+  - `a row's dot has the colour of its part of the bars`, checked through the rendered colour the components
+    already expose to tests, if there is one; otherwise through `fixedLevelRows` against `fixedView(...).parts`;
   - `the overview's Hovedgruppe list is unchanged`;
   - `with a main group chosen the bars' heading names it`, and the same with a category.
 - [ ] **Step 2: Run them, and see them fail.**
@@ -169,7 +193,11 @@ Model: sonnet · Review: yes
 
 **Files:**
 - Modify `addon/web/src/components/top-card.ts`, and `app.ts` if the focus has to wait for the new state's render.
-  Follow the app's existing focus pattern: a flag set on the choice, then a focus after `updateComplete`.
+  Follow the app's existing focus pattern: set a flag on the choice, then focus after `updateComplete`.
+  - `Dropdown.close(true)` awaits its own `updateComplete` before it focuses its ▾ button (`dropdown.ts:74-77`). So
+    the new step's focus must come after the app's next render and `hs-top-card`'s `updateComplete`. That way the
+    old button cannot take the focus back.
+  - The new step may be the child button of `hs-top-card h1`.
 - Tests: `addon/web/test/trail.test.ts`.
 
 **Interfaces:**
@@ -203,7 +231,10 @@ Model: sonnet · Review: yes
 - Produces, in `da.fixed`:
   - `ofWhichDue: (n: number, date: string) => \`heraf ${n} estimat, forfalden ${date}\``;
   - `noMoreUntil: (date: string) => \`ingen flere til ${date}\``;
-  - `emptyIn: (level: string, unit: string) => \`Ingen faste udgifter i ${level} i ${unit.toLowerCase()}\``.
+  - `emptyIn: (level: string, unit: string) => \`Ingen faste udgifter i ${da.levelInUnit(level, unit)}\``. It is
+    composed from `da.levelInUnit`, which lower-cases the unit, so "i Bolig i marts 2026". The unit is
+    `unitName(view.chosen, view.grouping, view.unitYear)`, as the unit step writes it. The test's text comes from
+    the same calls.
 - With `state.objectGroup === null` and the bars stacked by bill, the part key is `JSON.stringify([objectGroup, name])`.
   The part's name is `da.fixed.nameInGroup(name, objectGroup)` when that name is in more than one object group among
   the payments, and the name alone otherwise. With one object group chosen, the key stays the name.
@@ -249,6 +280,12 @@ Model: sonnet · Review: no
 - [ ] **Step 1: Merge the shared rules of `.unit-row`/`.level-row` and `.unit-sum`/`.level-sum`.**
   - Each menu keeps its own `grid-template-columns`.
   - Where `da.fixed.status` and `da.status` hold the same word, one refers to the other.
-  - Wrap any line over the formatter's width in the files this branch changed.
-- [ ] **Step 2: Add the spec and the plan to `docs/README.md`.**
+  - Wrap any code line over 120 columns in the files this branch changed.
+- [ ] **Step 2: Add the spec and the plan to `docs/README.md`. Add Chrome check step 56 to `docs/testing.md`,
+  `71-faste-udgifter-opfoelgning`, in the format of steps 52–55.** The step covers, on the fast loop:
+  - the "I år" per-month card's label and both sub-line parts;
+  - the fixed view's Hovedgruppe and Kategori lists, with fixed sums only;
+  - the bars' title with a main group chosen;
+  - the focus after a dashed-list choice;
+  - "Resterende udgifter" with no estimates.
 - [ ] **Step 3: Run the gates, unchanged tests included, and `node scripts/check-links.mjs`. Then commit.**
