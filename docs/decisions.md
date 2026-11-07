@@ -879,3 +879,10 @@ to set their status to `superseded by D<n>`, or to name a part a later decision 
 - **Why:** Thomas could not see in the pill when a payment is expected, and full screen has the room.
 - **Source:** Thomas, 2026-11-07, #189, [full-screen status dates spec](superpowers/specs/2026-11-07-full-screen-status-dates.md)
   §5. That every kind is dated, and that the status cell may be wider, are Claude's call.
+
+### D82: No install issue in the house repo after a release
+- **Date:** 2026-11-07 · **Status:** active
+- **Decision:** after a release Claude neither drafts nor opens an issue in `thomas3650/house`. A release ends once the
+  image is built and public.
+- **Why:** Thomas does not need the issue any more.
+- **Source:** Thomas, 2026-11-07 ("du behøver ikke lave issues i house mere").
