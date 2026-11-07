@@ -36,7 +36,8 @@ Goals, non-goals and anti-goals:
 - **Goal:** on "I år", the fixed view's per-month card says that it is an estimate. It also shows the paid-so-far
   per-month figure, the same one the overview's card shows.
 - **Goal:** in the fixed view, the trail's lists and the bars' title follow the fixed expenses.
-- **Non-goal:** any change to the overview's own lists, cards or titles beyond the shared per-month rule (§2.2).
+- **Non-goal:** any change to the overview's own lists, cards or titles beyond the shared per-month rule (§2.2) and
+  the focus after a trail list (§4.1).
 - **Non-goal:** a new layout for wide screens (§6).
 - **Anti-goal:** two per-month figures for the same payments that disagree on the same page, or one click apart.
 
@@ -44,8 +45,8 @@ Goals, non-goals and anti-goals:
 
 ### 2.1 The fixed view's card on "I år"
 
-Only the `thisYear` case of `fixedCards` changes (`addon/web/src/model/fixed.ts`). The other presets keep their
-cards.
+Only the `thisYear` case of `fixedCards` changes its cards (`addon/web/src/model/fixed.ts`). The other presets keep
+theirs, apart from the "ca." rule below for "Estimat for hele …".
 
 Thomas's ruling (2026-11-07): make it clearer that the card is an estimate, and also put the paid-so-far per-month
 figure in the box.
@@ -53,7 +54,8 @@ figure in the box.
 - **Label:** "Estimat pr. måned" (Claude's call on the words). It replaces "Pr. måned i snit".
 - **Value:** unchanged, the whole year's paid plus estimates divided by 12. It has the "ca." mark (`estimate: true`)
   when the view holds at least one estimate. With none left, the value is exact and has no "ca.". The same goes for
-  "Estimat for hele {year}" (Claude's call, as §4.4 does for "Resterende udgifter").
+  "Estimat for hele {name}" on every preset that has it ("I år", "Denne måned" and "Alt"), since one helper,
+  `whole()`, builds it (Claude's call, as §4.4 does for "Resterende udgifter").
 - **Sub-line:** two parts joined by " · ":
   - "hele {year} delt med 12", as today;
   - "betalt {amount} pr. måned", where the amount is §2.2's per-month figure of the paid payments in the view.
@@ -76,10 +78,10 @@ The overview's "Gennemsnit pr. måned" card already has a rule for this, `averag
 `addon/shared/src/money.ts`. It averages the period's units that `isWhole` and `hasData` accept
 (`addon/shared/src/units.ts`), and leaves out the running one.
 
-**Claude's call:** the per-month figure of paid payments follows that rule exactly, counted by month whatever the
-period's grouping.
+**Claude's call:** the per-month figure of paid payments follows that rule's `"period"` branch, counted by month
+whatever the period's grouping. It never takes `averageUnits`' `"before"` branch, the 12 units before the period.
 
-- The months are the period's months as `averageUnits` takes them: a month cut by the period's own start or end
+- The months are the period's own months, filtered as that branch filters them: a month cut by the period's own start or end
   counts, as D16 has it; the running month does not; a month that ends before `earliestPostingDate` does not
   (`hasData`).
 - The figure is the sum of the payments dated in those months, divided by their number, rounded to whole øre as
@@ -145,8 +147,8 @@ follows `da.fixed.nameInGroup`'s " · "). The full-screen button's name follows 
    button (`close(true)` in `dropdown.ts`). When the dashed step becomes a real step, that button is replaced, so
    the focus falls to the body. After a choice from the dashed "Måned", "Hovedgruppe" or "Kategori" list, in the
    fixed view and on the overview, the focus moves to the new step's button: for a month the button named
-   `da.switchMonth(name)` (or `da.switchYear` for a year), for a main group or a category the new step's button by
-   its accessible name. The test checks the focused element by its role and accessible name.
+   `da.switchMonth(name)` (or `da.switchYear` for a year), for a main group `da.switchMainGroup(name)`, for a
+   category `da.switchCategory(name)`. The test checks the focused element by its role and accessible name.
 2. **Two bills of the same name in two object groups.** With "Alle faste udgifter" chosen, at the category level
    (the bars stack by bill), two bills with one name merge into one part. With "Alle faste udgifter" chosen, the
    part's key is the object group and the name. It is named with `da.fixed.nameInGroup` ("{name} · {object group}")
@@ -201,7 +203,8 @@ made-up data:
   estimate card has "ca.".
 - §2.2: the shared function over a period with a running month leaves that month's payments out. It leaves out a
   month that ends before the earliest posting date. It counts a past month cut by the period's start. It gives null
-  when the period is only the running month. The object-group card's and the default case's figures follow it.
+  when the period is only the running month. A period of one past whole month ("Sidste måned") gives that month's
+  sum. The object-group card's and the default case's figures follow it.
 - §3.1: in the fixed view the Hovedgruppe list shows only main groups with fixed expenses, with their fixed sums. A
   main group with only an estimate is listed with "ca.". A chosen main group with nothing is listed with "0 kr.". The
   Kategori list does the same. The overview's lists are unchanged.
