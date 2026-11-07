@@ -54,6 +54,41 @@ async function back(app: SpendingApp): Promise<void> {
   await settle(app);
 }
 
+describe("the focus after a choice from a dashed trail list", () => {
+  async function choose(app: SpendingApp, root: HTMLElement, dashed: string, list: string, row: RegExp): Promise<void> {
+    fireEvent.click(getByRole(trail(root), "button", { name: dashed }));
+    await settle(app);
+    fireEvent.click(getByRole(getByRole(root, "group", { name: list }), "button", { name: row }));
+    await settle(app);
+  }
+
+  it("after choosing from the dashed Måned list the focus is on the new month step's button", async () => {
+    const { app, root } = await mount("");
+    await choose(app, root, da.chooseMonth, da.units, new RegExp(`^${JAN},`));
+    expect(focused(root)).toBe(getByRole(trail(root), "button", { name: da.switchMonth(JAN) }));
+  });
+
+  it("after choosing from the dashed År list the focus is on the new year step's button", async () => {
+    const { app, root } = await mount("period=all", {
+      answer: (range) => json({ ...answerFor(range), earliestPostingDate: "2024-03-01" }),
+    });
+    await choose(app, root, da.chooseYear, da.units, /^2025, /);
+    expect(focused(root)).toBe(getByRole(trail(root), "button", { name: da.switchYear("2025") }));
+  });
+
+  it("after choosing from the dashed Hovedgruppe list the focus is on the new step's button", async () => {
+    const { app, root } = await mount("");
+    await choose(app, root, da.chooseMainGroup, da.mainGroups, /^Bolig,/);
+    expect(focused(root)).toBe(getByRole(trail(root), "button", { name: da.switchMainGroup("Bolig") }));
+  });
+
+  it("after choosing from the dashed Kategori list the focus is on the new step's button", async () => {
+    const { app, root } = await mount("group=Bolig");
+    await choose(app, root, da.chooseCategory, da.categories, /^Husleje,/);
+    expect(focused(root)).toBe(getByRole(trail(root), "button", { name: da.switchCategory("Husleje") }));
+  });
+});
+
 describe("the trail is the overview's filter", () => {
   it("names the unit, the main group and the category in order", async () => {
     const { root } = await mount(ALL_THREE);

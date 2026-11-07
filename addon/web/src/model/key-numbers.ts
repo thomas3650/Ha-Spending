@@ -2,6 +2,7 @@ import {
   chosenUnitNumbers,
   keyNumbers,
   type LeftOverData,
+  paidPerMonth,
   type Period,
   share,
   type Unit,
@@ -111,19 +112,6 @@ export function leftOverKeyCard(ctx: ViewContext, data: LeftOverData | null, hre
   };
 }
 
-const DAY = 24 * 60 * 60 * 1000;
-const MONTH_DAYS = 365.25 / 12;
-
-function days(period: Period): number {
-  return (Date.parse(period.end) - Date.parse(period.start)) / DAY + 1;
-}
-
-/** A sum per month over the period, or null when it is shorter than 28 days. */
-export function perMonth(sum: number, period: Period): number | null {
-  const length = days(period);
-  return length < 28 ? null : sum / (length / MONTH_DAYS);
-}
-
 /**
  * The object groups of the bills that ran in the period's tab time, and of the shown postings in the period, unsorted.
  * A kept bill that ended before the period adds none (fixed list tab spec §4.2).
@@ -156,7 +144,7 @@ export function objectGroupCards(ctx: ViewContext, hrefFor: (group: string) => s
   const counted = ctx.chosen ?? period;
   const unit = ctx.chosen === null ? null : unitName(ctx.chosen, ctx.timeline.grouping, ctx.unitYear);
   const linked = within(ctx.shown, counted).flatMap((p) =>
-    p.subscription === null ? [] : [{ group: p.subscription.objectGroup, amount: p.amount }],
+    p.subscription === null ? [] : [{ group: p.subscription.objectGroup, amount: p.amount, date: p.date }],
   );
   const rows = tabRows({ ...ctx, state: { ...ctx.state, objectGroup: null } });
   const names = objectGroupNames(ctx);
@@ -167,8 +155,8 @@ export function objectGroupCards(ctx: ViewContext, hrefFor: (group: string) => s
       const payments = linked.filter((l) => l.group === name);
       const count = rows.filter((r) => r.subscription.objectGroup === name).length;
       const sum = payments.reduce((acc, l) => acc + l.amount, 0);
-      const average = perMonth(sum, period);
-      const perMonthText = unit !== null || average === null ? null : da.perMonth(kr(average));
+      const average = paidPerMonth(payments, ctx.timeline);
+      const perMonthText = unit !== null || average === null ? null : da.perMonth(kr(average.amount));
       return {
         label: unit === null ? da.inPeriod(name) : da.levelInUnit(name, unit),
         value: kr(sum),

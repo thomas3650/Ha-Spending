@@ -4,6 +4,7 @@ import {
   chosenUnitNumbers,
   classify,
   keyNumbers,
+  paidPerMonth,
   parts,
   select,
   share,
@@ -125,5 +126,60 @@ describe("money", () => {
       ["p7", "p8", "p9"],
       ["p10", "p11"],
     ]);
+  });
+});
+
+describe("paidPerMonth", () => {
+  const payment = (date: string, amount = 10000) => ({ date, amount });
+  const tl = (start: string, end: string, today: string, earliest: string | null = "2025-01-01") => ({
+    period: { start, end },
+    today,
+    earliest,
+  });
+  const monthly = (months: number[]) => months.map((m) => payment(`2026-${String(m).padStart(2, "0")}-02`));
+
+  it("leaves the running month's payments out", () => {
+    const items = [...monthly([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]), payment("2026-11-02", 990000)];
+    expect(paidPerMonth(items, tl("2026-01-01", "2026-11-07", "2026-11-07"))).toEqual({
+      amount: 10000,
+      months: 10,
+      count: 10,
+    });
+  });
+
+  it("counts a past month cut by the period's start", () => {
+    const items = [payment("2026-01-20", 30000), payment("2026-02-02"), payment("2026-03-02")];
+    expect(paidPerMonth(items, tl("2026-01-15", "2026-03-31", "2026-11-07"))).toEqual({
+      amount: 16667,
+      months: 3,
+      count: 3,
+    });
+  });
+
+  it("leaves out a month that ends before the earliest posting date", () => {
+    const items = monthly([2, 3]);
+    expect(paidPerMonth(items, tl("2026-01-01", "2026-03-31", "2026-11-07", "2026-02-10"))).toEqual({
+      amount: 10000,
+      months: 2,
+      count: 2,
+    });
+  });
+
+  it("gives one past month's own sum", () => {
+    const items = [payment("2026-09-30", 5000), payment("2026-10-03", 7000), payment("2026-10-20", 8000)];
+    expect(paidPerMonth(items, tl("2026-10-01", "2026-10-31", "2026-11-07"))).toEqual({
+      amount: 15000,
+      months: 1,
+      count: 2,
+    });
+  });
+
+  it("gives null when the period is only the running month", () => {
+    expect(paidPerMonth([payment("2026-11-02")], tl("2026-11-01", "2026-11-07", "2026-11-07"))).toBeNull();
+  });
+
+  it("count leaves out the running month's items", () => {
+    const items = [payment("2026-10-02"), payment("2026-11-02"), payment("2026-11-03")];
+    expect(paidPerMonth(items, tl("2026-10-01", "2026-11-07", "2026-11-07"))?.count).toBe(1);
   });
 });

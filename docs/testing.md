@@ -283,3 +283,12 @@ The page's list. Every screenshot is at 1440×960 with the console free of error
     The same bar on the overview, the view and Til overs. "Alt forbrug" leaves the view and Til overs, also from full
     screen and with a detail open. On Til overs, Konti, the unit word and Hovedgruppe are greyed and show their
     tooltips.
+56. `71-faste-udgifter-opfoelgning`: the fixed view's follow-ups ([enhancement follow-ups
+    spec](superpowers/specs/2026-11-07-enhancement-follow-ups.md) §2 to §4), at 1440 and 1728 px, in the fast loop's
+    data. At "I år" the per-month card reads "Estimat pr. måned" with "ca." on its value, and its sub-line reads "hele
+    {year} delt med 12 · betalt {amount} pr. måned". With one object group chosen, the amount is the one on the
+    overview's card for that group. The trail's Hovedgruppe and Kategori lists in the fixed view sum fixed expenses
+    only, a main group with only an estimate shows "ca.", and the bars' title names a chosen main group or category.
+    After a choice from a dashed Måned, Hovedgruppe or Kategori list the focus is on the new step's button. In a level
+    or object group with no estimates left, "Resterende udgifter" reads "0 kr." with no "ca." and "ingen flere til
+    {date}".

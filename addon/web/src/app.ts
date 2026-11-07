@@ -28,7 +28,7 @@ import { sortHeaderStyles } from "./components/sort-header";
 import { searchStyles } from "./components/search";
 import { shopsStyles } from "./components/shops";
 import { subscriptionsStyles } from "./components/subscriptions";
-import { type CategoryChoice, type LevelLists, topCardStyles } from "./components/top-card";
+import { type CategoryChoice, type LevelLists, type TopCard, topCardStyles } from "./components/top-card";
 import { type UnitStep, unitMenuStyles } from "./components/unit-menu";
 import { LoadError, type LoadErrorCode, loadData, loadHiddenShops, loadLeftOver, setHiddenShop } from "./data/api";
 import { unitName } from "./format";
@@ -36,7 +36,7 @@ import { da } from "./i18n/da";
 import type { AmountFilter } from "./model/amount";
 import { levelRows, unitRows } from "./model/circle";
 import { finerUnits, type ViewContext, viewContext } from "./model/context";
-import { type FixedView, fixedUnits, fixedView, objectGroupStep } from "./model/fixed";
+import { type FixedView, fixedLevelRows, fixedUnits, fixedView, objectGroupStep } from "./model/fixed";
 import { fixedList } from "./model/fixed-list";
 import { leftOverTable, monthsIn } from "./model/left-over";
 import {
@@ -1150,6 +1150,19 @@ export class SpendingApp extends LitElement {
     void this.focusHeading();
   }
 
+  /** A dashed list's button is replaced by the new step's, so the focus moves there once the trail is drawn. */
+  private chooseInTrail(next: ViewState, step: "unit" | "mainGroup" | "category"): void {
+    this.push(next);
+    void this.focusStep(step);
+  }
+
+  private async focusStep(step: "unit" | "mainGroup" | "category"): Promise<void> {
+    await this.updateComplete;
+    const top = this.renderRoot.querySelector<TopCard>("hs-top-card");
+    await top?.updateComplete;
+    top?.focusStep(step);
+  }
+
   private async focusHeading(): Promise<void> {
     await this.updateComplete;
     const top = this.renderRoot.querySelector<LitElement>("hs-top-card");
@@ -1205,8 +1218,9 @@ export class SpendingApp extends LitElement {
   override render() {
     const ctx = this.load.kind === "ready" ? viewContext(this.load.data, this.state, this.today) : null;
     const view = ctx !== null && this.state.fixed ? fixedView(ctx) : null;
+    const rows = this.state.fixed ? fixedLevelRows : levelRows;
     const lists: LevelLists | null =
-      ctx === null ? null : { mainGroup: levelRows(ctx, "mainGroup"), category: levelRows(ctx, "category") };
+      ctx === null ? null : { mainGroup: rows(ctx, "mainGroup"), category: rows(ctx, "category") };
     return html`<main class="page">
       <hs-top-card
         .state=${this.state}
@@ -1221,11 +1235,12 @@ export class SpendingApp extends LitElement {
         .objectGroupStep=${objectGroupStep(view?.groups ?? null, this.state.objectGroup)}
         @hs-period=${this.onPeriod}
         @hs-accounts=${this.onAccounts}
-        @set-main-group=${(e: CustomEvent<string | null>) => this.push(setMainGroup(this.state, e.detail))}
+        @set-main-group=${(e: CustomEvent<string | null>) =>
+          this.chooseInTrail(setMainGroup(this.state, e.detail), "mainGroup")}
         @set-category=${(e: CustomEvent<CategoryChoice>) =>
-          this.push(setCategory(this.state, e.detail.mainGroup, e.detail.category))}
+          this.chooseInTrail(setCategory(this.state, e.detail.mainGroup, e.detail.category), "category")}
         @set-unit=${(e: CustomEvent<string>) =>
-          this.push((this.state.fixed ? chooseFixedUnit : chooseUnit)(this.state, e.detail))}
+          this.chooseInTrail((this.state.fixed ? chooseFixedUnit : chooseUnit)(this.state, e.detail), "unit")}
         @set-object-group=${(e: CustomEvent<string | null>) => this.push(setObjectGroup(this.state, e.detail))}
         .leaveHref=${this.leaveHref()}
         @leave=${() => (this.state.leftOver ? this.closeLeftOver({ focus: true }) : this.closeFixed({ focus: true }))}

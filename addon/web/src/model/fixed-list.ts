@@ -126,7 +126,12 @@ function yearRows(payments: FixedPayment[], view: FixedView, colours: Colours, o
       const lines: string[] = namesGroup(opts) ? [latest.objectGroup] : [];
       if (count > 0) lines.push(da.fixed.payments(count));
       if (estimates.length > 0) {
-        lines.push(da.fixed.ofWhichEstimates(estimates.length, shortDate(estimates[0].date, view.today)));
+        const next = estimates.find((p) => p.date >= view.today);
+        lines.push(
+          next === undefined
+            ? da.fixed.ofWhichDue(estimates.length, shortDate(estimates[0].date, view.today))
+            : da.fixed.ofWhichEstimates(estimates.length, shortDate(next.date, view.today)),
+        );
       }
       if (notSeen > 0) lines.push(da.fixed.notSeenCount(notSeen));
       const row: FixedRow = {

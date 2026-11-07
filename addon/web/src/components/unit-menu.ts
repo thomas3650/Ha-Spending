@@ -103,25 +103,32 @@ export class UnitMenu extends Dropdown {
 }
 
 export const unitMenuStyles = css`
-  .dd-menu.unit-menu {
+  .dd-menu.unit-menu,
+  .dd-menu.level-menu {
     width: max-content;
   }
-  .unit-row {
+  .unit-row,
+  .level-row {
     display: grid;
-    grid-template-columns: 1fr auto;
     align-items: center;
     gap: 8px 10px;
   }
-  .unit-row[aria-current="true"] {
+  .unit-row {
+    grid-template-columns: 1fr auto;
+  }
+  .unit-row[aria-current="true"],
+  .level-row[aria-current="true"] {
     background: var(--hs-accent-soft);
     color: var(--hs-accent-text);
   }
-  .unit-sum {
+  .unit-sum,
+  .level-sum {
     padding-left: 16px;
     color: var(--hs-muted);
     font-variant-numeric: tabular-nums;
   }
-  .unit-row[aria-current="true"] .unit-sum {
+  .unit-row[aria-current="true"] .unit-sum,
+  .level-row[aria-current="true"] .level-sum {
     color: inherit;
   }
 `;

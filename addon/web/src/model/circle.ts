@@ -32,7 +32,10 @@ export interface LevelRow {
   key: string | null;
   name: string;
   colour: string;
+  /** Øre; the order's key. */
   sum: number;
+  /** The sum as the row writes it, in place of its kr; the fixed view's "ca." (enhancement follow-ups spec §3.1). */
+  sumText?: string;
   current: boolean;
 }
 
@@ -56,7 +59,7 @@ export function levelRows(ctx: ViewContext, of: "mainGroup" | "category"): Level
 }
 
 /** undefined when nothing is chosen at that level: null is Uden hovedgruppe or Uden kategori. */
-function chosenKey(level: Level, of: "mainGroup" | "category"): string | null | undefined {
+export function chosenKey(level: Level, of: "mainGroup" | "category"): string | null | undefined {
   if (of === "mainGroup") return level.kind === "all" ? undefined : level.mainGroup;
   return level.kind === "category" ? level.category : undefined;
 }
