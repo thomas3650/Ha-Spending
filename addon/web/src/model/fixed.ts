@@ -8,6 +8,7 @@ import {
   isRunning,
   type Level,
   NO_PIECE,
+  paidPerMonth,
   PALETTE,
   type Period,
   type SpendingData,
@@ -22,7 +23,7 @@ import { da } from "../i18n/da";
 import { type PeriodChoice, periodOf, type ViewState } from "../state/view";
 import { partColours } from "./circle";
 import { levelName, partName, type ViewContext } from "./context";
-import { type KeyCard, objectGroupNames, perMonth } from "./key-numbers";
+import { type KeyCard, objectGroupNames } from "./key-numbers";
 import { shown, tabRows } from "./subscriptions";
 
 export interface FixedUnits {
@@ -392,11 +393,11 @@ function fixedCards(ctx: ViewContext, f: FixedUnits, unitYear: boolean, payments
     }
     default: {
       const first: KeyCard = { label: da.fixed.paidInPeriod, value: kr(paid), sub: dated };
-      const average = perMonth(paid, period);
+      const average = paidPerMonth(paidPayments, ctx.timeline);
       if (average === null) return [first];
       return [
         first,
-        { label: da.fixed.averagePerMonth, value: kr(average), sub: da.fixed.payments(paidPayments.length) },
+        { label: da.fixed.averagePerMonth, value: kr(average.amount), sub: da.fixed.payments(average.count) },
       ];
     }
   }

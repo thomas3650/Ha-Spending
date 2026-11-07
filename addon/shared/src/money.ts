@@ -131,6 +131,18 @@ function averageUnits(t: Timeline, chosen: Unit | null): { units: Unit[]; basis:
   return { units, basis: "period" };
 }
 
+/** Paid items per past month with data of the period, whatever its grouping; the running month is left out. */
+export function paidPerMonth(
+  items: { date: string; amount: number }[],
+  t: Pick<Timeline, "period" | "today" | "earliest">,
+): { amount: number; months: number; count: number } | null {
+  const months = unitsOf(t.period, "month", t.today).filter((u) => isWhole(u) && hasData(u, t.earliest));
+  if (months.length === 0) return null;
+  const counted = items.filter((i) => months.some((u) => i.date >= u.start && i.date <= u.end));
+  const sum = counted.reduce((s, i) => s + i.amount, 0);
+  return { amount: Math.round(sum / months.length), months: months.length, count: counted.length };
+}
+
 function average(postings: ClassifiedPosting[], units: Unit[], basis: Average["basis"]): Average {
   return { amount: averageOf(unitTotals(postings, units)), units: units.length, basis };
 }

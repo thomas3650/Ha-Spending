@@ -545,6 +545,13 @@ describe("the cards (spec §4)", () => {
     expect(queryByRole(root, "group", { name: da.spendingInPeriod })).toBeNull();
     expect(queryByText(root, /Dyreste|Billigste/)).toBeNull();
   });
+
+  it("the Gennemsnit pr. måned on a custom period counts only the counted months' payments", async () => {
+    const { root } = await open(`period=custom&from=2026-08-01&to=2026-10-30&${OPEN.slice(1)}`);
+    const average = card(root, da.fixed.averagePerMonth);
+    expect(average.startsWith(flat(`${da.fixed.averagePerMonth} ${kr(800000)} ${da.fixed.payments(2)}`))).toBe(true);
+    expect(card(root, da.fixed.paidInPeriod).startsWith(flat(`${da.fixed.paidInPeriod} ${kr(2400000)} `))).toBe(true);
+  });
 });
 
 describe("the bars (spec §5)", () => {

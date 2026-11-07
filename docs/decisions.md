@@ -859,3 +859,14 @@ to set their status to `superseded by D<n>`, or to name a part a later decision 
 - **Source:** Thomas, 2026-11-05, #183; [inactive ended bills
   spec](superpowers/specs/2026-11-05-inactive-ended-bills.md). Leaving out an inactive bill whose end date is after
   today is Claude's call.
+
+### D80: A per-month figure of paid payments averages the period's own months with data, a cut month included and the running month left out
+- **Date:** 2026-11-07 · **Status:** active
+- **Decision:** `paidPerMonth` in `addon/shared/src/money.ts` divides the sum of the paid payments dated in the
+  period's months that are whole and have data by their number. A month cut by the period's start or end counts. The
+  running month does not. With no such month there is no figure. The object-group cards and the fixed view both call
+  it. It replaces the rule of the lists, period and postings spec, the period's days divided by 30.44.
+- **Why:** most fixed expenses are paid early in the month, so the running month's payments were in the sum while the
+  month counted as a fraction, and the figure came out too high.
+- **Source:** [enhancement follow-ups spec](superpowers/specs/2026-11-07-enhancement-follow-ups.md) §2.2; Claude's
+  call.
