@@ -777,6 +777,17 @@ describe("the bars (spec §5)", () => {
     for (const name of ["Husleje", "Avis", "Forsikring"]) getByText(region, name);
   });
 
+  it("with Alle two same-name bills in two object groups show as two legend items, each with its group", async () => {
+    const twin = bill("b9", "Forsikring", { ...FORSIKRING, id: "b9", objectGroup: "Abonnementer" });
+    const { root } = await open("group=Bolig&category=Husleje&view=fixed", {
+      answer: answer({ bills: [...BILLS, twin] }),
+    });
+    const region = barsRegion(root, da.levelPer(da.fixed.nameInGroup(da.allFixed, "Husleje"), "month"));
+    getByText(region, da.fixed.nameInGroup("Forsikring", "Faste udgifter"));
+    getByText(region, da.fixed.nameInGroup("Forsikring", "Abonnementer"));
+    expect(queryByText(region, /\[/)).toBeNull();
+  });
+
   it("a bar press chooses its unit, as the trail's step shows, and a second press removes it", async () => {
     const { app, root } = await open(OPEN.slice(1));
     const october = month("2026-10-01");

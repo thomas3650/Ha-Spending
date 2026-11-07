@@ -16,6 +16,7 @@ import { partColours } from "../src/model/circle";
 import { viewContext } from "../src/model/context";
 import { fixedColours, fixedLevelRows, fixedUnits, fixedView, type FixedView } from "../src/model/fixed";
 import { fixedList } from "../src/model/fixed-list";
+import { tooltipLines } from "../src/model/fixed-tooltip";
 import { objectGroupCards } from "../src/model/key-numbers";
 import { leaveFixed, normalise } from "../src/state/actions";
 import { DEFAULT_STATE, parseHash, type ViewState } from "../src/state/view";
@@ -715,6 +716,19 @@ describe("the follow-up fixes (spec §4.2 to §4.5)", () => {
     expect(names).toContain(da.fixed.nameInGroup("Forsikring", "Abonnementer"));
     expect(names).toContain("Mobil");
     expect(names).not.toContain("Forsikring");
+
+    const inFixed = view.parts.find((p) => p.name === da.fixed.nameInGroup("Forsikring", "Faste udgifter"));
+    const inSubs = view.parts.find((p) => p.name === da.fixed.nameInGroup("Forsikring", "Abonnementer"));
+    expect(inFixed?.key).not.toEqual(inSubs?.key);
+    expect(inFixed?.colour).not.toBe(inSubs?.colour);
+    const bar = view.bars.find((b) => b.unit.fullStart === "2026-11-01");
+    expect(bar?.estimate.get(inFixed?.key ?? null)).toBe(10000);
+    expect(bar?.estimate.get(inSubs?.key ?? null)).toBe(10000);
+    const lines = tooltipLines(bar as NonNullable<typeof bar>, view.parts).map((l) => l.text);
+    expect(lines.some((t) => t.startsWith(da.fixed.partLine(inFixed?.name ?? "", "")))).toBe(true);
+    expect(lines.some((t) => t.startsWith(da.fixed.partLine(inSubs?.name ?? "", "")))).toBe(true);
+    const rows = fixedList(view, null).rows.filter((r) => r.name === "Forsikring");
+    expect(new Set(rows.map((r) => r.colour))).toEqual(new Set([inFixed?.colour, inSubs?.colour]));
     const one = viewOf(`${IN_CATEGORY}&og=Abonnementer`, linked([here, there, alone]));
     expect(one.parts.map((p) => p.name)).toEqual(["Forsikring"]);
   });
@@ -749,6 +763,6 @@ describe("the follow-up fixes (spec §4.2 to §4.5)", () => {
     expect(view.chosen).not.toBeNull();
     const unit = unitName(view.chosen!, view.grouping, view.unitYear);
     expect(view.empty).toBe(da.fixed.emptyIn("Bil", unit));
-    expect(view.empty).toContain(unit.toLowerCase());
+    expect(view.empty).toBe(`${da.fixed.empty("Bil").replace(/ i perioden$/, "")} i ${unit.toLowerCase()}`);
   });
 });
