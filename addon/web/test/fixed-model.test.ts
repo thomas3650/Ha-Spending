@@ -10,7 +10,7 @@ import {
 } from "@ha-spending/shared";
 import { describe, expect, it } from "vitest";
 
-import { kr, rangeText } from "../src/format";
+import { kr, rangeText, shortDate, unitName } from "../src/format";
 import { da } from "../src/i18n/da";
 import { partColours } from "../src/model/circle";
 import { viewContext } from "../src/model/context";
@@ -692,5 +692,63 @@ describe("ended bills in the view", () => {
       ["Faste udgifter", 2],
       [null, 4],
     ]);
+  });
+});
+
+describe("the follow-up fixes (spec §4.2 to §4.5)", () => {
+  const IN_CATEGORY = "group=Bolig&category=Husleje&view=fixed";
+
+  function yearRowOf(view: FixedView, name: string) {
+    expect(view.grouping).toBe("year");
+    const row = fixedList(view, null).rows.find((r) => r.name === name);
+    if (row === undefined) throw new Error(name);
+    return row;
+  }
+
+  it("with Alle faste udgifter two bills of one name in two object groups are two parts, each named with its group", () => {
+    const here = bill("x1", "Forsikring", { lastPayment: paidOn("2026-09-30") });
+    const there = bill("x2", "Forsikring", { objectGroup: "Abonnementer", lastPayment: paidOn("2026-09-30") });
+    const alone = bill("x3", "Mobil", { lastPayment: paidOn("2026-09-30") });
+    const view = viewOf(IN_CATEGORY, linked([here, there, alone]));
+    const names = view.parts.map((p) => p.name);
+    expect(names).toContain(da.fixed.nameInGroup("Forsikring", "Faste udgifter"));
+    expect(names).toContain(da.fixed.nameInGroup("Forsikring", "Abonnementer"));
+    expect(names).toContain("Mobil");
+    expect(names).not.toContain("Forsikring");
+    const one = viewOf(`${IN_CATEGORY}&og=Abonnementer`, linked([here, there, alone]));
+    expect(one.parts.map((p) => p.name)).toEqual(["Forsikring"]);
+  });
+
+  it("a year row names the first estimate on or after today", () => {
+    const today = "2026-10-30";
+    const data = {
+      ...linked([bill("y1", "Mobil", { start: "2026-01-28", lastPayment: paidOn("2026-09-28") })]),
+      earliestPostingDate: "2023-05-01",
+    };
+    const row = yearRowOf(viewOf(`period=all&${FIXED}`, data, today), "Mobil");
+    expect(row.sub).toContain(da.fixed.ofWhichEstimates(3, shortDate("2026-11-28", today)));
+  });
+
+  it("a year row whose estimates are all overdue says forfalden with the first date", () => {
+    const today = "2026-10-30";
+    const ended = bill("y2", "Mobil", { start: "2026-01-28", end: "2026-10-30", lastPayment: paidOn("2026-09-28") });
+    const data = { ...linked([ended]), earliestPostingDate: "2023-05-01" };
+    const row = yearRowOf(viewOf(`period=all&${FIXED}`, data, today), "Mobil");
+    expect(row.sub).toContain(da.fixed.ofWhichDue(1, shortDate("2026-10-28", today)));
+  });
+
+  it("Resterende udgifter with no estimates reads 0 kr. without ca. and ingen flere til {date}", () => {
+    const ended = bill("z1", "Mobil", { start: "2026-01-30", end: "2026-09-30", lastPayment: paidOn("2026-08-30") });
+    const card = viewOf(FIXED, linked([ended])).cards[1];
+    expect(card).toMatchObject({ label: da.fixed.remaining, value: kr(0), sub: da.fixed.noMoreUntil("31. dec") });
+    expect(card.estimate).toBeFalsy();
+  });
+
+  it("with a unit chosen and nothing in it the empty text names the unit in lower case", () => {
+    const view = viewOf(`group=Bil&view=fixed&og=Faste+udgifter&unit=2026-03-01`);
+    expect(view.chosen).not.toBeNull();
+    const unit = unitName(view.chosen!, view.grouping, view.unitYear);
+    expect(view.empty).toBe(da.fixed.emptyIn("Bil", unit));
+    expect(view.empty).toContain(unit.toLowerCase());
   });
 });

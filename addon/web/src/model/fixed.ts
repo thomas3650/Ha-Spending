@@ -169,14 +169,20 @@ function stackOf(level: Level): Of {
   }
 }
 
-function partKey(of: Of, category: string | null, mainGroup: string | null, bill: string): string | null {
+function partKey(
+  state: ViewState,
+  of: Of,
+  category: string | null,
+  mainGroup: string | null,
+  bill: { name: string; objectGroup: string },
+): string | null {
   switch (of) {
     case "mainGroup":
       return mainGroup;
     case "category":
       return category;
     case "bill":
-      return bill;
+      return state.objectGroup === null ? JSON.stringify([bill.objectGroup, bill.name]) : bill.name;
   }
 }
 
@@ -200,7 +206,7 @@ function fixedPayments(ctx: ViewContext, f: FixedUnits, of: Of): FixedPayment[] 
             name: p.subscription.name,
             objectGroup: p.subscription.objectGroup,
             category: p.category,
-            part: partKey(of, p.category, p.mainGroup, p.subscription.name),
+            part: partKey(state, of, p.category, p.mainGroup, p.subscription),
             kind: "paid",
             amount: p.amount,
             due: false,
@@ -214,7 +220,7 @@ function fixedPayments(ctx: ViewContext, f: FixedUnits, of: Of): FixedPayment[] 
     const last = s.lastPayment?.category ?? null;
     const category = last !== null && mainGroups.has(last) ? last : null;
     const mainGroup = category === null ? null : (mainGroups.get(category) ?? null);
-    const base = { name: s.name, objectGroup: s.objectGroup, category, part: partKey(of, category, mainGroup, s.name) };
+    const base = { name: s.name, objectGroup: s.objectGroup, category, part: partKey(state, of, category, mainGroup, s) };
     const notSeen = status.kind === "notSeen" ? next : null;
     const dates = runsOn ? dueDatesUntil(s, today, f.span.end) : notSeen === null ? [] : [notSeen];
     for (const date of dates) {
@@ -260,7 +266,17 @@ function fixedParts(ctx: ViewContext, payments: FixedPayment[], of: Of): FixedPa
     ctx,
     [...sizes].map(([key, size]) => ({ key, size })),
   );
-  return [...colours].map(([key, colour]) => ({ key, name: of === "bill" ? (key ?? "") : partName(key, of), colour }));
+  const bills = new Map<string | null, FixedPayment>(payments.map((p) => [p.part, p]));
+  const groupsOf = new Map<string, Set<string>>();
+  for (const p of payments) groupsOf.set(p.name, (groupsOf.get(p.name) ?? new Set()).add(p.objectGroup));
+  const billName = (key: string | null): string => {
+    const p = bills.get(key);
+    if (p === undefined) return key ?? "";
+    return ctx.state.objectGroup === null && (groupsOf.get(p.name)?.size ?? 0) > 1
+      ? da.fixed.nameInGroup(p.name, p.objectGroup)
+      : p.name;
+  };
+  return [...colours].map(([key, colour]) => ({ key, name: of === "bill" ? billName(key) : partName(key, of), colour }));
 }
 
 /** §6.1's sum: "9.799 kr. + ca. 1.074 kr." when mixed. */
@@ -353,8 +369,11 @@ function fixedCards(ctx: ViewContext, f: FixedUnits, unitYear: boolean, payments
         {
           label: da.fixed.remaining,
           value: kr(estimate),
-          sub: da.fixed.paymentsUntil(da.fixed.payments(estimates.length), end),
-          estimate: true,
+          sub:
+            estimates.length === 0
+              ? da.fixed.noMoreUntil(end)
+              : da.fixed.paymentsUntil(da.fixed.payments(estimates.length), end),
+          estimate: estimates.length > 0,
         },
         whole(year, paid, estimates),
         {
@@ -475,7 +494,10 @@ export function fixedView(ctx: ViewContext): FixedView {
     groups: objectGroupRows(ctx),
     unitStep,
     showCategory: ctx.state.level.kind !== "category",
-    empty: da.fixed.empty(levelName(ctx.state.level)),
+    empty:
+      chosen === null
+        ? da.fixed.empty(levelName(ctx.state.level))
+        : da.fixed.emptyIn(levelName(ctx.state.level), unitName(chosen, g, unitYear)),
   };
 }
 

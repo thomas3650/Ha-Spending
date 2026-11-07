@@ -327,6 +327,9 @@ export const da = {
     },
     nameInGroup: (name: string, objectGroup: string) => `${name} · ${objectGroup}`,
     ofWhichEstimates: (n: number, next: string) => `heraf ${n} estimat, næste forventes ${next}`,
+    ofWhichDue: (n: number, date: string) => `heraf ${n} estimat, forfalden ${date}`,
+    noMoreUntil: (date: string) => `ingen flere til ${date}`,
+    emptyIn: (level: string, unit: string) => `Ingen faste udgifter i ${da.levelInUnit(level, unit)}`,
     empty: (level: string) => `Ingen faste udgifter i ${level} i perioden`,
   },
   leftOver: {
