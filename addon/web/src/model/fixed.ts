@@ -333,16 +333,21 @@ function fixedCards(ctx: ViewContext, f: FixedUnits, unitYear: boolean, payments
   const notSeen = payments.filter((p) => p.kind === "notSeen").length;
   const dated = notSeen === 0 ? rangeText(period) : `${rangeText(period)} · ${da.fixed.notSeenCount(notSeen)}`;
   const end = shortDate(f.span.end, today);
-  const whole = (name: string, paidPart: number, estimatePart: number): KeyCard => ({
-    label: da.fixed.estimateFor(name),
-    value: kr(paidPart + estimatePart),
-    sub: da.fixed.paidPlus(kr(estimatePart), end),
-    estimate: true,
-  });
+  const whole = (name: string, paidPart: number, estimateParts: FixedPayment[]): KeyCard => {
+    const estimatePart = sumOf(estimateParts);
+    return {
+      label: da.fixed.estimateFor(name),
+      value: kr(paidPart + estimatePart),
+      sub: da.fixed.paidPlus(kr(estimatePart), end),
+      estimate: estimateParts.length > 0,
+    };
+  };
 
   switch (ctx.state.period.preset) {
     case "thisYear": {
       const year = period.start.slice(0, 4);
+      const average = paidPerMonth(paidPayments, ctx.timeline);
+      const split = da.fixed.yearSplit(year);
       return [
         { label: da.fixed.paidThisYear, value: kr(paid), sub: dated },
         {
@@ -351,12 +356,12 @@ function fixedCards(ctx: ViewContext, f: FixedUnits, unitYear: boolean, payments
           sub: da.fixed.paymentsUntil(da.fixed.payments(estimates.length), end),
           estimate: true,
         },
-        whole(year, paid, estimate),
+        whole(year, paid, estimates),
         {
-          label: da.fixed.perMonthAverage,
+          label: da.fixed.perMonthEstimate,
           value: kr((paid + estimate) / 12),
-          sub: da.fixed.yearSplit(year),
-          estimate: true,
+          sub: average === null ? split : [split, da.fixed.summaryPaid(da.perMonth(kr(average.amount)))].join(" · "),
+          estimate: estimates.length > 0,
         },
       ];
     }
@@ -365,7 +370,7 @@ function fixedCards(ctx: ViewContext, f: FixedUnits, unitYear: boolean, payments
       const next = estimates.at(0);
       return [
         { label: da.fixed.paidIn(month), value: kr(paid), sub: dated },
-        whole(month, paid, estimate),
+        whole(month, paid, estimates),
         next === undefined
           ? { label: da.fixed.nextPayment, value: da.none, sub: da.fixed.noMoreIn(month) }
           : {
@@ -388,7 +393,7 @@ function fixedCards(ctx: ViewContext, f: FixedUnits, unitYear: boolean, payments
           value: kr(sumOf(paidPayments.filter(inRunning))),
           sub: rangeText({ start, end: period.end }),
         },
-        whole(name, sumOf(paidPayments.filter(inRunning)), sumOf(estimates.filter(inRunning))),
+        whole(name, sumOf(paidPayments.filter(inRunning)), estimates.filter(inRunning)),
       ];
     }
     default: {

@@ -541,7 +541,7 @@ describe("the cards (spec §4)", () => {
     starts(da.fixed.paidThisYear, kr(7200000));
     starts(da.fixed.remaining, `${da.fixed.about} ${kr(1750000)}`);
     starts(da.fixed.estimateFor("2026"), `${da.fixed.about} ${kr(8950000)}`);
-    starts(da.fixed.perMonthAverage, `${da.fixed.about} ${kr(8950000 / 12)}`);
+    starts(da.fixed.perMonthEstimate, `${da.fixed.about} ${kr(8950000 / 12)}`);
     expect(queryByRole(root, "group", { name: da.spendingInPeriod })).toBeNull();
     expect(queryByText(root, /Dyreste|Billigste/)).toBeNull();
   });

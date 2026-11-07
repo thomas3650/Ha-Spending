@@ -289,7 +289,7 @@ export const da = {
     paidIn: (name: string) => `Betalt i ${name}`,
     remaining: "Resterende udgifter",
     estimateFor: (name: string) => `Estimat for hele ${name}`,
-    perMonthAverage: "Pr. måned i snit",
+    perMonthEstimate: "Estimat pr. måned",
     averagePerMonth: "Gennemsnit pr. måned",
     nextPayment: "Næste betaling",
     notSeenCount: (n: number) => `${n} ikke set`,

@@ -238,12 +238,68 @@ describe("the view's key numbers", () => {
         estimate: true,
       },
       {
-        label: da.fixed.perMonthAverage,
+        label: da.fixed.perMonthEstimate,
         value: kr((paid + estimate) / 12),
-        sub: da.fixed.yearSplit("2026"),
+        sub: expect.stringMatching(new RegExp(`^${da.fixed.yearSplit("2026")} · `)),
         estimate: true,
       },
     ]);
+  });
+
+  /** The text of "betalt … pr. måned" in a card's sub-line, or null. */
+  function paidPart(sub: string): string | null {
+    const [, part] = sub.split(" · ");
+    return part === undefined ? null : part.replace(/^betalt /, "");
+  }
+
+  it("the I år per-month card is labelled as an estimate and names the paid per-month figure", () => {
+    const card = viewOf(FIXED).cards[3];
+    expect(card.label).toBe(da.fixed.perMonthEstimate);
+    expect(card.estimate).toBe(true);
+    const part = paidPart(card.sub);
+    expect(part).toMatch(/pr\. måned$/);
+    expect(card.sub).toBe(`${da.fixed.yearSplit("2026")} · ${da.fixed.summaryPaid(part ?? "")}`);
+  });
+
+  it("with one object group chosen, the card's paid per-month figure matches the overview card's", () => {
+    const data = linked();
+    const overview = objectGroupCards(viewContext(data, DEFAULT_STATE, TODAY), () => "#").find(
+      (c) => c.label === da.inPeriod("Faste udgifter"),
+    );
+    const part = paidPart(viewOf(FIXED, data).cards[3].sub);
+    expect(part).not.toBeNull();
+    expect(overview?.sub.split(" · ")[0]).toBe(part);
+  });
+
+  it("in January the per-month card has only the year line", () => {
+    const today = "2026-01-15";
+    const data = linked(SUBSCRIPTIONS, today, { start: "2025-01-01", end: today });
+    expect(viewOf(FIXED, data, today).cards[3].sub).toBe(da.fixed.yearSplit("2026"));
+  });
+
+  it("with no estimate left, Estimat pr. måned and Estimat for hele … have no ca.", () => {
+    const data = linked([]);
+    const thisYear = viewOf(FIXED, data);
+    expect(thisYear.payments.some((p) => p.kind === "estimate")).toBe(false);
+    expect(thisYear.cards[2].label).toBe(da.fixed.estimateFor("2026"));
+    expect(thisYear.cards[2].estimate).toBeFalsy();
+    expect(thisYear.cards[3].label).toBe(da.fixed.perMonthEstimate);
+    expect(thisYear.cards[3].estimate).toBeFalsy();
+    expect(viewOf(`period=thisMonth&${FIXED}`, data).cards[1].estimate).toBeFalsy();
+    expect(viewOf(`period=all&${FIXED}`, data).cards[2].estimate).toBeFalsy();
+  });
+
+  it("on Alt a due estimate before the running unit does not mark Estimat for hele … with ca.", () => {
+    const today = "2026-10-02";
+    const ended = bill("d1", "Mobil", { start: "2026-01-30", end: "2026-09-30", lastPayment: paidOn("2026-08-30") });
+    const data = linked([ended], today, { start: "2025-11-01", end: today });
+    const view = viewOf(`period=all&${FIXED}`, data, today);
+    expect(view.payments.filter((p) => p.kind === "estimate").map((p) => [p.date, p.due])).toEqual([
+      ["2026-09-30", true],
+    ]);
+    const whole = view.cards[2];
+    expect(whole.label).toBe(da.fixed.estimateFor("oktober 2026"));
+    expect(whole.estimate).toBeFalsy();
   });
 
   it("pays in I år what the overview's object-group card shows", () => {
