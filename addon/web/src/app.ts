@@ -36,7 +36,7 @@ import { da } from "./i18n/da";
 import type { AmountFilter } from "./model/amount";
 import { levelRows, unitRows } from "./model/circle";
 import { finerUnits, type ViewContext, viewContext } from "./model/context";
-import { type FixedView, fixedUnits, fixedView, objectGroupStep } from "./model/fixed";
+import { type FixedView, fixedLevelRows, fixedUnits, fixedView, objectGroupStep } from "./model/fixed";
 import { fixedList } from "./model/fixed-list";
 import { leftOverTable, monthsIn } from "./model/left-over";
 import {
@@ -1205,8 +1205,9 @@ export class SpendingApp extends LitElement {
   override render() {
     const ctx = this.load.kind === "ready" ? viewContext(this.load.data, this.state, this.today) : null;
     const view = ctx !== null && this.state.fixed ? fixedView(ctx) : null;
+    const rows = this.state.fixed ? fixedLevelRows : levelRows;
     const lists: LevelLists | null =
-      ctx === null ? null : { mainGroup: levelRows(ctx, "mainGroup"), category: levelRows(ctx, "category") };
+      ctx === null ? null : { mainGroup: rows(ctx, "mainGroup"), category: rows(ctx, "category") };
     return html`<main class="page">
       <hs-top-card
         .state=${this.state}

@@ -94,12 +94,12 @@ export class LevelMenu extends Dropdown {
                 html`<button
                   type="button"
                   class="dd-option level-row"
-                  aria-label=${partLabel(row.name, row.sum, null)}
+                  aria-label=${row.sumText === undefined ? partLabel(row.name, row.sum, null) : `${row.name}, ${row.sumText}`}
                   aria-current=${row.current ? "true" : nothing}
                   @click=${() => this.choose(row)}
                 >
                   <span class="level-dot" aria-hidden="true" style=${styleMap({ background: row.colour })}></span
-                  ><span>${row.name}</span><span class="level-sum">${kr(row.sum)}</span>
+                  ><span>${row.name}</span><span class="level-sum">${row.sumText ?? kr(row.sum)}</span>
                 </button>`,
             )}
           </div>`

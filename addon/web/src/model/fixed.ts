@@ -21,8 +21,8 @@ import type { UnitStep } from "../components/unit-menu";
 import { barKr, kr, rangeText, shortDate, unitName, withYear } from "../format";
 import { da } from "../i18n/da";
 import { type PeriodChoice, periodOf, type ViewState } from "../state/view";
-import { partColours } from "./circle";
-import { levelName, partName, type ViewContext } from "./context";
+import { chosenKey, type LevelRow, partColours } from "./circle";
+import { levelName, partName, type ViewContext, viewContext } from "./context";
 import { type KeyCard, objectGroupNames } from "./key-numbers";
 import { shown, tabRows } from "./subscriptions";
 
@@ -477,4 +477,46 @@ export function fixedView(ctx: ViewContext): FixedView {
     showCategory: ctx.state.level.kind !== "category",
     empty: da.fixed.empty(levelName(ctx.state.level)),
   };
+}
+
+/**
+ * The trail's main-group or category list in the view: the parts one level up from the chosen one, with their paid
+ * and estimated fixed expenses in the tab's time, plus the chosen one when it has none (enhancement follow-ups spec
+ * §3.1). The colours are the bars' at that level, sized over the whole span.
+ */
+export function fixedLevelRows(ctx: ViewContext, of: "mainGroup" | "category"): LevelRow[] {
+  const chosen = ctx.state.level;
+  if (of === "category" && chosen.kind === "all") return [];
+  const level: Level =
+    chosen.kind === "all" || of === "mainGroup" ? { kind: "all" } : { kind: "mainGroup", mainGroup: chosen.mainGroup };
+  const view = fixedView(viewContext(ctx.data, { ...ctx.state, level }, ctx.today));
+  const time = tabTime(ctx.data, ctx.state, ctx.today);
+  const sums = new Map<string | null, { paid: number; estimate: number; hasPaid: boolean; hasEstimate: boolean }>();
+  for (const p of view.payments) {
+    if (p.kind === "notSeen" || p.date < time.start || p.date > time.end) continue;
+    const sum = sums.get(p.part) ?? { paid: 0, estimate: 0, hasPaid: false, hasEstimate: false };
+    if (p.kind === "paid") {
+      sum.paid += p.amount;
+      sum.hasPaid = true;
+    } else {
+      sum.estimate += p.amount;
+      sum.hasEstimate = true;
+    }
+    sums.set(p.part, sum);
+  }
+  const current = chosenKey(chosen, of);
+  if (current !== undefined && !sums.has(current)) {
+    sums.set(current, { paid: 0, estimate: 0, hasPaid: false, hasEstimate: false });
+  }
+  const colours = new Map(view.parts.map((p) => [p.key, p.colour]));
+  return [...sums]
+    .map(([key, s]) => ({
+      key,
+      name: partName(key, of),
+      colour: colours.get(key) ?? NO_PIECE,
+      sum: s.paid + s.estimate,
+      sumText: sumText(s.paid, s.estimate, s.hasPaid, s.hasEstimate),
+      current: key === current,
+    }))
+    .sort((a, b) => b.sum - a.sum || a.name.localeCompare(b.name, "da"));
 }

@@ -121,11 +121,16 @@ export class Fixed extends LitElement {
     </div>`;
   }
 
+  private barsName(): string {
+    const level = this.level;
+    return level.kind === "all" ? this.groupTitle : da.fixed.nameInGroup(this.groupTitle, levelName(level));
+  }
+
   private bars() {
     const view = this.view;
     const fill = this.full === "bars" ? "fill" : "";
     return html`<section class="card half ${fill}" role="region" aria-labelledby=${BARS_TITLE}>
-      ${this.head(BARS_TITLE, da.levelPer(this.groupTitle, view.grouping), "bars")}
+      ${this.head(BARS_TITLE, da.levelPer(this.barsName(), view.grouping), "bars")}
       <hs-fixed-bars
         .bars=${view.bars}
         .parts=${view.parts}

@@ -526,6 +526,111 @@ describe("the trail (spec §3.1, §3.4)", () => {
   });
 });
 
+describe("the trail's lists and the bars' title (enhancement follow-ups spec §3)", () => {
+  /** In Bil, through Brændstof, with no payment linked: only estimates, on 15 November and 15 December. */
+  const VEJHJAELP = bill("b5", "Vejhjælp", {
+    start: "2026-01-15",
+    lastPayment: { date: "2026-10-15", amount: 10000, category: "Brændstof", account: "1" },
+  });
+  /** In Mad, through Dagligvarer: expected on 12 September and not seen. */
+  const GROENTKASSE = bill("b6", "Grøntkasse", {
+    start: "2026-01-12",
+    amountMin: 15000,
+    amountMax: 15000,
+    lastPayment: { date: "2026-08-12", amount: 15000, category: "Dagligvarer", account: "1" },
+  });
+  /** Husleje paid in nine months, and the three Bolig bills' estimates for the rest of I år. */
+  const BOLIG = da.fixed.sum(barKr(7200000), kr(1750000));
+  const BIL = da.fixed.estimated(kr(20000));
+
+  function openWith(hash: string, bills = [...BILLS, VEJHJAELP]) {
+    return open(hash, { answer: answer({ bills }) });
+  }
+
+  async function listLabels(app: SpendingApp, root: HTMLElement, button: string, list: string): Promise<string[]> {
+    await click(app, getByRole(root, "button", { name: button }));
+    return getAllByRole(getByRole(root, "group", { name: list }), "button").map((r) => r.getAttribute("aria-label") ?? "");
+  }
+
+  it("the fixed view's Hovedgruppe list sums the fixed expenses and leaves out main groups without any", async () => {
+    const { app, root } = await openWith(OPEN.slice(1));
+    expect(await listLabels(app, root, da.chooseMainGroup, da.mainGroups)).toEqual([`Bolig, ${BOLIG}`, `Bil, ${BIL}`]);
+  });
+
+  it("a main group with only an estimate is listed with ca.", async () => {
+    const { app, root } = await openWith(OPEN.slice(1));
+    await click(app, getByRole(root, "button", { name: da.chooseMainGroup }));
+    const row = getByRole(getByRole(root, "group", { name: da.mainGroups }), "button", { name: `Bil, ${BIL}` });
+    expect(flat(row.textContent)).toBe(flat(`Bil${BIL}`));
+  });
+
+  it("with a main group chosen the Hovedgruppe list still lists the other main groups with fixed expenses", async () => {
+    const { app, root } = await openWith("group=Bolig&view=fixed&og=Faste+udgifter");
+    await click(app, getByRole(root, "button", { name: da.switchMainGroup("Bolig") }));
+    const rows = getAllByRole(getByRole(root, "group", { name: da.mainGroups }), "button");
+    expect(rows.map((r) => r.getAttribute("aria-label"))).toEqual([`Bolig, ${BOLIG}`, `Bil, ${BIL}`]);
+    expect(rows.map((r) => r.getAttribute("aria-current"))).toEqual(["true", null]);
+  });
+
+  it("a chosen main group with no fixed expenses is listed with 0 kr.", async () => {
+    const { app, root } = await openWith("group=Mad&view=fixed&og=Faste+udgifter");
+    expect(await listLabels(app, root, da.switchMainGroup("Mad"), da.mainGroups)).toEqual([
+      `Bolig, ${BOLIG}`,
+      `Bil, ${BIL}`,
+      `Mad, ${kr(0)}`,
+    ]);
+  });
+
+  it("the fixed view's Kategori list sums the chosen main group's fixed expenses", async () => {
+    let { app, root } = await openWith("group=Bolig&view=fixed&og=Faste+udgifter");
+    expect(await listLabels(app, root, da.chooseCategory, da.categories)).toEqual([`Husleje, ${BOLIG}`]);
+    unmount();
+    ({ app, root } = await openWith("group=Bil&view=fixed&og=Faste+udgifter"));
+    expect(await listLabels(app, root, da.chooseCategory, da.categories)).toEqual([`Brændstof, ${BIL}`]);
+    unmount();
+    ({ app, root } = await openWith("group=Mad&category=Caf%C3%A9&view=fixed&og=Faste+udgifter"));
+    expect(await listLabels(app, root, da.switchCategory("Café"), da.categories)).toEqual([`Café, ${kr(0)}`]);
+  });
+
+  it("with a month chosen, including a future month of I år, the lists sum only that month", async () => {
+    let { app, root } = await openWith("unit=2026-10-01&view=fixed&og=Faste+udgifter");
+    expect(await listLabels(app, root, da.chooseMainGroup, da.mainGroups)).toEqual([
+      `Bolig, ${da.fixed.sum(barKr(800000), kr(50000))}`,
+    ]);
+    unmount();
+    ({ app, root } = await openWith("unit=2026-12-01&view=fixed&og=Faste+udgifter"));
+    expect(await listLabels(app, root, da.chooseMainGroup, da.mainGroups)).toEqual([
+      `Bolig, ${da.fixed.estimated(kr(850000))}`,
+      `Bil, ${da.fixed.estimated(kr(10000))}`,
+    ]);
+  });
+
+  it("a main group with only an Ikke set payment in the time is left out", async () => {
+    const { app, root } = await openWith("unit=2026-09-01&view=fixed&og=Faste+udgifter", [...BILLS, GROENTKASSE]);
+    expect(await listLabels(app, root, da.chooseMainGroup, da.mainGroups)).toEqual([`Bolig, ${barKr(800000)}`]);
+  });
+
+  it("the overview's Hovedgruppe list is unchanged", async () => {
+    const { app, root } = await openWith("");
+    const labels = await listLabels(app, root, da.chooseMainGroup, da.mainGroups);
+    expect(labels).toContain(`Bolig, ${kr(8000000)}`);
+    expect(labels.some((l) => l.startsWith("Mad, "))).toBe(true);
+  });
+
+  it("with a main group chosen the bars' heading names it", async () => {
+    const { root } = await openWith("group=Bolig&view=fixed&og=Faste+udgifter");
+    const title = da.levelPer(da.fixed.nameInGroup("Faste udgifter", "Bolig"), "month");
+    getByRole(barsRegion(root, title), "heading", { level: 2, name: title });
+    getByRole(barsRegion(root, title), "button", { name: da.fullScreenOf(title) });
+  });
+
+  it("with a category chosen the bars' heading names it", async () => {
+    const { root } = await openWith("group=Bolig&category=Husleje&view=fixed&og=Faste+udgifter");
+    const title = da.levelPer(da.fixed.nameInGroup("Faste udgifter", "Husleje"), "month");
+    getByRole(barsRegion(root, title), "heading", { level: 2, name: title });
+  });
+});
+
 describe("the cards (spec §4)", () => {
   /** The card's label and value, and the start of the line under it. */
   function card(root: HTMLElement, label: string): string {
@@ -630,12 +735,12 @@ describe("the bars (spec §5)", () => {
     getByText(region, da.fixed.hatched);
     unmount();
     ({ root } = await open("group=Bolig&view=fixed"));
-    region = barsRegion(root, da.levelPer(da.allFixed, "month"));
+    region = barsRegion(root, da.levelPer(da.fixed.nameInGroup(da.allFixed, "Bolig"), "month"));
     getByText(region, "Husleje");
     expect(queryByText(region, "Bolig")).toBeNull();
     unmount();
     ({ root } = await open("group=Bolig&category=Husleje&view=fixed"));
-    region = barsRegion(root, da.levelPer(da.allFixed, "month"));
+    region = barsRegion(root, da.levelPer(da.fixed.nameInGroup(da.allFixed, "Husleje"), "month"));
     for (const name of ["Husleje", "Avis", "Forsikring"]) getByText(region, name);
   });
 
@@ -924,7 +1029,7 @@ describe("full screen (spec §3)", () => {
     it("the buttons are there when the list shows its empty text", async () => {
       const { root } = await open("group=Bil&view=fixed&og=Faste+udgifter");
       getByText(listRegion(root), da.fixed.empty("Bil"));
-      fullButton(root, da.levelPer("Faste udgifter", "month"));
+      fullButton(root, da.levelPer(da.fixed.nameInGroup("Faste udgifter", "Bil"), "month"));
       fullButton(root, da.fixed.inPeriod);
     });
 
@@ -1220,15 +1325,15 @@ describe("the Alle faste udgifter tab (spec §3)", () => {
   it("the tab stays when the object group, the period, the unit or the level changes, and in full screen", async () => {
     const { app, root } = await fromOverview();
     await toAll(app, root);
-    const groups = await openGroups(app, root, "Faste udgifter");
-    await click(app, getByRole(groups, "button", { name: /^Abonnementer,/ }));
-    expect(location.hash).toBe("#view=fixed&og=Abonnementer&tab=all");
-    expect(pressedTab(root, da.allFixed)).toEqual([da.allFixed]);
-    await click(app, barButtons(root, da.levelPer("Abonnementer", "month"))[9]);
-    expect(location.hash).toBe("#unit=2026-10-01&view=fixed&og=Abonnementer&tab=all");
-    expect(pressedTab(root, da.allFixed)).toEqual([da.allFixed]);
     await click(app, getByRole(root, "button", { name: da.chooseMainGroup }));
     await click(app, getByRole(getByRole(root, "group", { name: da.mainGroups }), "button", { name: /^Bolig/ }));
+    expect(location.hash).toBe("#group=Bolig&view=fixed&og=Faste+udgifter&tab=all");
+    expect(pressedTab(root, da.allFixed)).toEqual([da.allFixed]);
+    const groups = await openGroups(app, root, "Faste udgifter");
+    await click(app, getByRole(groups, "button", { name: /^Abonnementer,/ }));
+    expect(location.hash).toBe("#group=Bolig&view=fixed&og=Abonnementer&tab=all");
+    expect(pressedTab(root, da.allFixed)).toEqual([da.allFixed]);
+    await click(app, barButtons(root, da.levelPer(da.fixed.nameInGroup("Abonnementer", "Bolig"), "month"))[9]);
     expect(location.hash).toBe("#group=Bolig&unit=2026-10-01&view=fixed&og=Abonnementer&tab=all");
     expect(pressedTab(root, da.allFixed)).toEqual([da.allFixed]);
     await click(app, getByRole(root, "button", { name: new RegExp(`^${da.accounts}`) }));

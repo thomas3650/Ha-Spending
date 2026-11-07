@@ -14,7 +14,7 @@ import { kr, rangeText } from "../src/format";
 import { da } from "../src/i18n/da";
 import { partColours } from "../src/model/circle";
 import { viewContext } from "../src/model/context";
-import { fixedColours, fixedUnits, fixedView, type FixedView } from "../src/model/fixed";
+import { fixedColours, fixedLevelRows, fixedUnits, fixedView, type FixedView } from "../src/model/fixed";
 import { fixedList } from "../src/model/fixed-list";
 import { objectGroupCards } from "../src/model/key-numbers";
 import { leaveFixed, normalise } from "../src/state/actions";
@@ -476,6 +476,31 @@ describe("the view's colours", () => {
       "Husleje",
       "Indboforsikring",
     ]);
+  });
+});
+
+describe("the view's trail lists", () => {
+  it("a row's dot has the colour of its part of the bars", () => {
+    const cases: [string, "mainGroup" | "category", string][] = [
+      [FIXED, "mainGroup", FIXED],
+      [`group=Bolig&${FIXED}`, "mainGroup", FIXED],
+      [`group=Bolig&category=Husleje&${FIXED}`, "category", `group=Bolig&${FIXED}`],
+    ];
+    for (const [hash, of, partsHash] of cases) {
+      const rows = fixedLevelRows(viewContext(linked(), parseHash(hash), TODAY), of);
+      const parts = new Map(viewOf(partsHash).parts.map((p) => [p.key, p.colour]));
+      expect(rows.length).toBeGreaterThan(0);
+      for (const row of rows) expect(row.colour).toBe(parts.get(row.key));
+    }
+  });
+
+  it("a chosen row with no part has no colour of its own", () => {
+    const rows = fixedLevelRows(viewContext(linked(), parseHash(`group=Mad&${FIXED}`), TODAY), "mainGroup");
+    expect(rows.find((r) => r.key === "Mad")?.colour).toBe(NO_PIECE);
+  });
+
+  it("has no Kategori list with no main group chosen", () => {
+    expect(fixedLevelRows(viewContext(linked(), parseHash(FIXED), TODAY), "category")).toEqual([]);
   });
 });
 
