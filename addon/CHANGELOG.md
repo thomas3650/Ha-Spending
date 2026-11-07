@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.22.0](https://github.com/thomas3650/Ha-Spending/compare/v0.21.0...v0.22.0) (2026-11-07)
+
+
+### Features
+
+* the date in the fixed list's status in full screen ([#190](https://github.com/thomas3650/Ha-Spending/issues/190)) ([bcaa76f](https://github.com/thomas3650/Ha-Spending/commit/bcaa76f0c8df4f44cec1e79ec12d2b259152c437))
+
 ## [0.21.0](https://github.com/thomas3650/Ha-Spending/compare/v0.20.1...v0.21.0) (2026-11-07)
 
 
