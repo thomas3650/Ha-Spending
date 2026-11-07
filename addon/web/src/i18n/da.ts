@@ -318,7 +318,7 @@ export const da = {
     summaryEstimate: (estimate: string) => `estimat ca. ${estimate}`,
     summaryTotal: (total: string) => `i alt ca. ${total}`,
     allEstimates: "estimat",
-    /** One word, the normal card's; full screen uses `da.status`, which names the date too (full-screen status dates spec §4). */
+    /** One word, the normal card's; full screen uses `da.status`, which names the date too (D81). */
     status: {
       paid: "Betalt",
       expected: "Forventes",

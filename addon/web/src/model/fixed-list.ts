@@ -61,7 +61,7 @@ function counted(payments: FixedPayment[]): FixedPayment[] {
   return payments.filter((p) => p.kind !== "notSeen");
 }
 
-/** Full screen has room for the date in the pill; the normal card keeps one word (spec §2). */
+/** Full screen has room for the date in the pill; the normal card keeps one word (D81). */
 function statusText(p: FixedPayment, date: string, full: boolean): string {
   switch (p.kind) {
     case "paid":
