@@ -109,8 +109,8 @@ end of the year, month or running unit, so they show the estimates; other period
 expense that was not seen on its date is listed with no amount and is left out of every sum. Press a bar to see only
 that month's payments. The right card has two tabs: "Poster i perioden", the payments, and "Alle faste udgifter". The overview's right card has the tabs Søjler, Posteringer and Butikker.
 
-In the payments list a status is one word: Betalt, Forventes, Forfalden or Ikke set, and the Dato column holds the
-date. Forfalden is red here and in the "Alle faste udgifter" tab. With one object group chosen the rows have no object-group
+In the payments list a status is one word in the normal card: Betalt, Forventes, Forfalden or Ikke set, and the Dato
+column holds the date. In full screen the status names its date, for example "Forventes 2. dec". Forfalden is red here and in the "Alle faste udgifter" tab. With one object group chosen the rows have no object-group
 badge. With "Alle" the group is in the tooltip of a fixed expense's name and at the start of a year row's line. In the
 bars a due estimate is its own hatched segment with a red outline, and the legend says "Skraveret: estimat" and "Rød
 kant: forfalden".

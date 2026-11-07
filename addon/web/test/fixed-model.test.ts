@@ -597,6 +597,38 @@ describe("the view's list", () => {
     });
   });
 
+  it("in full screen, dates the status of the four kinds", () => {
+    const full = { full: true, oneGroup: true };
+    const rows = fixedList(viewOf(FIXED), null, full).rows;
+    const status = (name: string, date: string) => rows.find((r) => r.name === name && r.date === date)?.status;
+    expect(status("Husleje", "1. jul")?.text).toBe(da.status.paid("1. jul"));
+    expect(status("Indboforsikring", "5. jul")?.text).toBe(da.status.notSeen("5. jul"));
+    expect(status("Husleje", "1. dec")?.text).toBe(da.status.expected("1. dec"));
+    expect(status("Husleje", "1. dec")?.text).toBe("Forventes 1. dec");
+
+    const due = bill("d1", "Forfalden", { start: "2026-01-28", lastPayment: paidOn("2026-09-28") });
+    const dueRow = fixedList(viewOf(FIXED, linked([due])), null, full).rows.find((r) => r.date === "28. okt");
+    expect(dueRow?.status).toEqual({ kind: "estimate", due: true, text: da.status.due("28. okt") });
+  });
+
+  it("in full screen, puts the year in the date and the pill outside the current year", () => {
+    const row = fixedList(viewOf(`period=lastYear&${FIXED}`), null, { full: true, oneGroup: true }).rows[0];
+    expect(row.date).toBe("1. dec 2025");
+    expect(row.status?.text).toBe("Betalt 1. dec 2025");
+  });
+
+  it("keeps the one word in the normal card and no status on a year unit's rows in full screen", () => {
+    const card = fixedList(viewOf(FIXED), null, { full: false, oneGroup: true }).rows;
+    expect(card.find((r) => r.date === "1. jul")?.status?.text).toBe(da.fixed.status.paid);
+    expect(card.find((r) => r.date === "1. dec")?.status?.text).toBe(da.fixed.status.expected);
+    const data = { ...linked(), earliestPostingDate: "2023-05-01" };
+    const year = fixedList(viewOf(`period=all&${FIXED}`, data), null, { full: true, oneGroup: true }).groups?.find(
+      (g) => g.name === "2026",
+    );
+    expect(year?.rows.length).toBeGreaterThan(0);
+    expect(year?.rows.every((r) => r.status === null)).toBe(true);
+  });
+
   it("shows only a chosen unit's rows, with no group line", () => {
     const view = viewOf(FIXED);
     const july = unitAt("2026-07-01", "month", TODAY);

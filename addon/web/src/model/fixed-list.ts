@@ -61,14 +61,16 @@ function counted(payments: FixedPayment[]): FixedPayment[] {
   return payments.filter((p) => p.kind !== "notSeen");
 }
 
-function statusText(p: FixedPayment): string {
+/** Full screen has room for the date in the pill; the normal card keeps one word (D81). */
+function statusText(p: FixedPayment, date: string, full: boolean): string {
   switch (p.kind) {
     case "paid":
-      return da.fixed.status.paid;
+      return full ? da.status.paid(date) : da.fixed.status.paid;
     case "notSeen":
-      return da.fixed.status.notSeen;
+      return full ? da.status.notSeen(date) : da.fixed.status.notSeen;
     case "estimate":
-      return p.due ? da.fixed.status.due : da.fixed.status.expected;
+      if (p.due) return full ? da.status.due(date) : da.fixed.status.due;
+      return full ? da.status.expected(date) : da.fixed.status.expected;
   }
 }
 
@@ -103,7 +105,7 @@ function paymentRows(payments: FixedPayment[], view: FixedView, colours: Colours
       category: p.category ?? da.noCategory,
       amount: amountText(p),
       estimate: p.kind === "estimate",
-      status: { kind: p.kind, due: p.due, text: statusText(p) },
+      status: { kind: p.kind, due: p.due, text: statusText(p, date, opts.full) },
       sub: null,
     };
   });

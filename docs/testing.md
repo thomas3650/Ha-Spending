@@ -270,6 +270,11 @@ The page's list. Every screenshot is at 1440×960 with the console free of error
     group and with "Alle". At 1100 px nothing is cut off or covered, and any sideways scroll stays inside the list.
     Each card's "Fuld skærm: …" button: the list's badges in full screen, and the bars reaching the bottom edge, or
     keeping 400 px and scrolling in the low window.
+    In full screen the list's statuses read "Betalt 1. nov", "Forventes 1. dec" and "Ikke set · ventet 7. okt" under
+    "I år", "Forfalden 5. nov" too with "Alle", and one word in the normal card ([full-screen status dates
+    spec](superpowers/specs/2026-11-07-full-screen-status-dates.md), [D81](decisions.md)). Check this at the step's
+    widths, and under "Sidste år" too: the longest dated status the fast loop shows there is "Betalt 1. dec 2025".
+    Dato, Beløb and Status are not cut, and there is no sideways scroll beyond what the step already allows.
     The tooltip on a mixed bar at Alt forbrug and in a main group. Forfalden red in the tab, in the detail's pill and
     in the list, and the red outline and the legend lines in the bars.
     Back, Escape twice, and "Alt forbrug" out of full screen.
