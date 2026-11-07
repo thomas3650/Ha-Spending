@@ -250,7 +250,8 @@ describe("the view's key numbers", () => {
   /** The text of "betalt … pr. måned" in a card's sub-line, or null. */
   function paidPart(sub: string): string | null {
     const [, part] = sub.split(" · ");
-    return part === undefined ? null : part.replace(/^betalt /, "");
+    const prefix = da.fixed.summaryPaid("");
+    return part === undefined ? null : part.replace(prefix, "");
   }
 
   it("the I år per-month card is labelled as an estimate and names the paid per-month figure", () => {
@@ -258,7 +259,7 @@ describe("the view's key numbers", () => {
     expect(card.label).toBe(da.fixed.perMonthEstimate);
     expect(card.estimate).toBe(true);
     const part = paidPart(card.sub);
-    expect(part).toMatch(/pr\. måned$/);
+    expect(part?.endsWith(da.perMonth(""))).toBe(true);
     expect(card.sub).toBe(`${da.fixed.yearSplit("2026")} · ${da.fixed.summaryPaid(part ?? "")}`);
   });
 
@@ -288,6 +289,15 @@ describe("the view's key numbers", () => {
     expect(thisYear.cards[3].estimate).toBeFalsy();
     expect(viewOf(`period=thisMonth&${FIXED}`, data).cards[1].estimate).toBeFalsy();
     expect(viewOf(`period=all&${FIXED}`, data).cards[2].estimate).toBeFalsy();
+  });
+
+  it("with no estimate left, the Estimat for hele … sub-line says no more are coming", () => {
+    const data = linked([]);
+    for (const [hash, index] of [[FIXED, 2], [`period=thisMonth&${FIXED}`, 1], [`period=all&${FIXED}`, 2]] as const) {
+      const view = viewOf(hash, data);
+      expect(view.cards[index].sub.startsWith(da.fixed.noMoreUntil(""))).toBe(true);
+      expect(view.cards[index].sub).not.toContain(da.fixed.about);
+    }
   });
 
   it("on Alt a due estimate before the running unit does not mark Estimat for hele … with ca.", () => {
@@ -500,6 +510,39 @@ describe("the view's trail lists", () => {
     expect(rows.find((r) => r.key === "Mad")?.colour).toBe(NO_PIECE);
   });
 
+  /** One fixed expense per main group, paid in a category of the same name. */
+  function sums(amounts: Record<string, number>): SpendingData {
+    const base = linked([]);
+    const names = Object.keys(amounts);
+    return {
+      ...base,
+      categories: names.map((name) => ({ name, mainGroup: name })),
+      mainGroups: names,
+      postings: names.map((name, i) => ({
+        ...base.postings[0],
+        id: `s${i}`,
+        groupId: `s${i}`,
+        category: name,
+        kind: amounts[name] < 0 ? ("refund" as const) : ("spending" as const),
+        amount: amounts[name],
+        date: "2026-05-05",
+        subscription: { id: "b9", name: "Bill", objectGroup: "Faste udgifter" },
+      })),
+    };
+  }
+
+  it("orders rows with equal sums by name with Danish collation", () => {
+    const ctx = viewContext(sums({ Åben: 5000, Øl: 5000, Bil: 5000 }), parseHash(FIXED), TODAY);
+    const rows = fixedLevelRows(ctx, "mainGroup");
+    expect(rows.map((r) => r.name)).toEqual(["Bil", "Øl", "Åben"]);
+  });
+
+  it("puts a row with a negative paid sum after the positive rows", () => {
+    const ctx = viewContext(sums({ Refund: -9000, Bil: 100, Mad: 5000 }), parseHash(FIXED), TODAY);
+    const rows = fixedLevelRows(ctx, "mainGroup");
+    expect(rows.map((r) => r.name)).toEqual(["Mad", "Bil", "Refund"]);
+  });
+
   it("has no Kategori list with no main group chosen", () => {
     expect(fixedLevelRows(viewContext(linked(), parseHash(FIXED), TODAY), "category")).toEqual([]);
   });
@@ -617,7 +660,7 @@ describe("the view's list", () => {
   it("says when a level has no fixed expenses", () => {
     const list = fixedList(viewOf(`group=Mad&category=Dagligvarer&${FIXED}`), null);
     expect(list.rows).toEqual([]);
-    expect(list.empty).toBe("Ingen faste udgifter i Dagligvarer i perioden");
+    expect(list.empty).toBe(da.fixed.empty("Dagligvarer"));
   });
 });
 
@@ -763,6 +806,6 @@ describe("the follow-up fixes (spec §4.2 to §4.5)", () => {
     expect(view.chosen).not.toBeNull();
     const unit = unitName(view.chosen!, view.grouping, view.unitYear);
     expect(view.empty).toBe(da.fixed.emptyIn("Bil", unit));
-    expect(view.empty).toBe(`${da.fixed.empty("Bil").replace(/ i perioden$/, "")} i ${unit.toLowerCase()}`);
+    expect(view.empty).toBe(`${da.fixed.empty("Bil").replace(da.inPeriod(""), "")} i ${unit.toLowerCase()}`);
   });
 });

@@ -68,6 +68,14 @@ describe("the focus after a choice from a dashed trail list", () => {
     expect(focused(root)).toBe(getByRole(trail(root), "button", { name: da.switchMonth(JAN) }));
   });
 
+  it("after choosing from the dashed År list the focus is on the new year step's button", async () => {
+    const { app, root } = await mount("period=all", {
+      answer: (range) => json({ ...answerFor(range), earliestPostingDate: "2024-03-01" }),
+    });
+    await choose(app, root, da.chooseYear, da.units, /^2025, /);
+    expect(focused(root)).toBe(getByRole(trail(root), "button", { name: da.switchYear("2025") }));
+  });
+
   it("after choosing from the dashed Hovedgruppe list the focus is on the new step's button", async () => {
     const { app, root } = await mount("");
     await choose(app, root, da.chooseMainGroup, da.mainGroups, /^Bolig,/);

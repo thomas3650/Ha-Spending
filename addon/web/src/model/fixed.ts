@@ -359,7 +359,7 @@ function fixedCards(ctx: ViewContext, f: FixedUnits, unitYear: boolean, payments
     return {
       label: da.fixed.estimateFor(name),
       value: kr(paidPart + estimatePart),
-      sub: da.fixed.paidPlus(kr(estimatePart), end),
+      sub: estimateParts.length === 0 ? da.fixed.noMoreUntil(end) : da.fixed.paidPlus(kr(estimatePart), end),
       estimate: estimateParts.length > 0,
     };
   };

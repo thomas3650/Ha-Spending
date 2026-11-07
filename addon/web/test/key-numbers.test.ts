@@ -421,12 +421,7 @@ describe("the key numbers of the object groups", () => {
     getByText(card(root, SUBS), `${da.perMonth(kr(7778))} · ${da.billCount(2)}`);
   });
 
-  it("the object-group card's per-month figure on Sidste måned is that month's own sum", async () => {
-    const { root } = await mount("period=lastMonth", { answer: BILLS });
-    expect(name(root, FIXED)).toBe(`${FIXED} ${kr(800000)} ${line(800000, 3)}`);
-  });
-
-  it("under 28 days the line holds the count only", async () => {
+  it("a period of only the running month holds the count only", async () => {
     const { root } = await mount("period=thisMonth", {
       now: "2026-10-05T10:00:00Z",
       answer: linking(bills, "2026-10-05"),

@@ -270,11 +270,11 @@ export const da = {
   subscriptionsFoot:
     "Fra Firefly III. Beløbet er midten af den faste udgifts beløbsinterval, eller den seneste betaling, når den er steget. Om året er det regnet om til et år.",
   status: {
-    notSeen: (date: string) => `Ikke set · ventet ${date}`,
+    notSeen: (date: string) => `${da.fixed.status.notSeen} · ventet ${date}`,
     risen: (max: string, paid: string) => `Steget · ${max} → ${paid} ${da.kr}`,
-    expected: (date: string | null) => (date === null ? "Forventes ikke" : `Forventes ${date}`),
-    paid: (date: string) => `Betalt ${date}`,
-    due: (date: string) => `Forfalden ${date}`,
+    expected: (date: string | null) => (date === null ? "Forventes ikke" : `${da.fixed.status.expected} ${date}`),
+    paid: (date: string) => `${da.fixed.status.paid} ${date}`,
+    due: (date: string) => `${da.fixed.status.due} ${date}`,
     next: (date: string) => `Næste ${date}`,
     ended: (date: string) => `Sluttet ${date}`,
   },
