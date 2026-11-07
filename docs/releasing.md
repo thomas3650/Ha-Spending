@@ -75,7 +75,6 @@ gh pr merge <n> --squash --subject "<PR title> (#<n>)"
 3. Check the result: `gh release list` shows the draft `vX.Y.Z`, and
    `gh run list --workflow addon-image.yml` shows a green run for it.
 4. Check that the package is public ([GHCR visibility](#ghcr-visibility)).
-5. Draft the house issue ([After a release](#after-a-release)).
 
 ### The release PR's CI
 
@@ -92,9 +91,8 @@ release PR's merge.
 
 ## After a release
 
-The house session installs a release on the Yellow (technical spec §8). Claude drafts an issue for it in
-`thomas3650/house` and opens it only at Thomas's yes. It holds the version, what changed (from the changelog) and the
-checks to run after installing. It holds nothing private: the repo is public, and the issue links to it.
+The house session installs a release on the Yellow (technical spec §8). Claude opens no issue for it in
+`thomas3650/house` ([D82](decisions.md)).
 
 ## GHCR visibility
 
