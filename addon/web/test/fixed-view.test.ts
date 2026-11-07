@@ -598,6 +598,11 @@ describe("the trail's lists and the bars' title (enhancement follow-ups spec §3
       `Bolig, ${da.fixed.sum(barKr(800000), kr(50000))}`,
     ]);
     unmount();
+    ({ app, root } = await openWith("group=Bolig&unit=2026-10-01&view=fixed&og=Faste+udgifter"));
+    expect(await listLabels(app, root, da.chooseCategory, da.categories)).toEqual([
+      `Husleje, ${da.fixed.sum(barKr(800000), kr(50000))}`,
+    ]);
+    unmount();
     ({ app, root } = await openWith("unit=2026-12-01&view=fixed&og=Faste+udgifter"));
     expect(await listLabels(app, root, da.chooseMainGroup, da.mainGroups)).toEqual([
       `Bolig, ${da.fixed.estimated(kr(850000))}`,
