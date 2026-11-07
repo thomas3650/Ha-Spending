@@ -817,7 +817,7 @@ to set their status to `superseded by D<n>`, or to name a part a later decision 
 - **Source:** Claude, 2026-11-04, [Til overs spec](superpowers/specs/2026-11-04-left-over.md) §5 and §6.2.
 
 ### D77: Full screen in the fixed-expenses view, one-word statuses, and Forfalden in red
-- **Date:** 2026-11-04 · **Status:** active; "Forfalden is red in the Faste udgifter tab" superseded by D78 (the tab is in the view)
+- **Date:** 2026-11-04 · **Status:** active; "Forfalden is red in the Faste udgifter tab" superseded by D78 (the tab is in the view); the one-word status in full screen superseded by D81
 - **Decision:**
   - Each of the fixed-expenses view's two cards can fill the page; the hash has `full=bars|list` with `view=fixed`.
     It is a second full screen beside D60's, which it does not change.
@@ -870,3 +870,12 @@ to set their status to `superseded by D<n>`, or to name a part a later decision 
   month counted as a fraction, and the figure came out too high.
 - **Source:** [enhancement follow-ups spec](superpowers/specs/2026-11-07-enhancement-follow-ups.md) §2.2; Claude's
   call.
+
+### D81: In full screen the fixed list's status carries the row's date
+- **Date:** 2026-11-07 · **Status:** active
+- **Decision:** in the fixed-expenses view's payments list in full screen, each status carries the row's date, in the
+  "Alle faste udgifter" tab's texts ("Betalt 1. nov", "Forventes 2. dec", "Forfalden 3. nov", "Ikke set · ventet 7.
+  okt"). The normal card keeps the one word.
+- **Why:** Thomas could not see in the pill when a payment is expected, and full screen has the room.
+- **Source:** Thomas, 2026-11-07, #189, [full-screen status dates spec](superpowers/specs/2026-11-07-full-screen-status-dates.md)
+  §5. That every kind is dated, and that the status cell may be wider, are Claude's call.
