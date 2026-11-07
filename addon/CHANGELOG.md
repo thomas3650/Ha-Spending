@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.21.0](https://github.com/thomas3650/Ha-Spending/compare/v0.20.1...v0.21.0) (2026-11-07)
+
+
+### Features
+
+* an estimate per month you can tell apart, fixed-only trail lists, and the fixed view's follow-ups ([#187](https://github.com/thomas3650/Ha-Spending/issues/187)) ([075868a](https://github.com/thomas3650/Ha-Spending/commit/075868a1f3dd9beb0c82f0d4b616f4575e294c8f))
+
 ## [0.20.1](https://github.com/thomas3650/Ha-Spending/compare/v0.20.0...v0.20.1) (2026-11-05)
 
 
