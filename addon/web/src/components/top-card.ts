@@ -8,10 +8,10 @@ import { clearChoices, keepDetail } from "../state/actions";
 import { toHash, type ViewState } from "../state/view";
 import { fire } from "./chip";
 import "./accounts-picker";
-import "./level-menu";
+import { LevelMenu } from "./level-menu";
 import "./object-group-menu";
 import "./period-picker";
-import type { UnitStep } from "./unit-menu";
+import { type UnitMenu, type UnitStep } from "./unit-menu";
 import "./unit-menu";
 
 /** What `set-category` fires: a category keeps its main group. */
@@ -97,6 +97,13 @@ export class TopCard extends LitElement {
     const steps = [...this.querySelectorAll<LitElement>("hs-period-picker, hs-object-group-menu, hs-unit-menu, hs-level-menu")];
     await Promise.all(steps.map((step) => step.updateComplete));
     return done;
+  }
+
+  /** Focuses the button of the step a choice from a dashed list has just made; it is a new element, not the list's own. */
+  focusStep(step: "unit" | "mainGroup" | "category"): void {
+    const menus = [...this.querySelectorAll<LevelMenu | UnitMenu>(step === "unit" ? "hs-unit-menu" : "hs-level-menu")];
+    const menu = menus.find((m) => !(m instanceof LevelMenu) || m.level === step);
+    menu?.querySelector<HTMLElement>("button.trail-dd")?.focus();
   }
 
   private period(heading: boolean) {

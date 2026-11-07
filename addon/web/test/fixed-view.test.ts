@@ -572,6 +572,34 @@ describe("the trail's lists and the bars' title (enhancement follow-ups spec §3
     expect(rows.map((r) => r.getAttribute("aria-current"))).toEqual(["true", null]);
   });
 
+  async function chooseFrom(app: SpendingApp, root: HTMLElement, dashed: string, list: string, row: RegExp) {
+    await click(app, getByRole(root, "button", { name: dashed }));
+    await click(app, getByRole(getByRole(root, "group", { name: list }), "button", { name: row }));
+  }
+
+  function focusedIs(root: HTMLElement, name: string): void {
+    const active = (root as unknown as ShadowRoot).activeElement;
+    expect(active).toBe(getByRole(getByRole(root, "navigation", { name: da.trail }), "button", { name }));
+  }
+
+  it("in the fixed view, after choosing from the dashed Måned list the focus is on the new month step's button", async () => {
+    const { app, root } = await openWith(OPEN.slice(1));
+    await chooseFrom(app, root, da.chooseMonth, da.units, new RegExp(`^${month("2026-10-01")},`));
+    focusedIs(root, da.switchMonth(month("2026-10-01")));
+  });
+
+  it("in the fixed view, after choosing from the dashed Hovedgruppe list the focus is on the new step's button", async () => {
+    const { app, root } = await openWith(OPEN.slice(1));
+    await chooseFrom(app, root, da.chooseMainGroup, da.mainGroups, /^Bolig,/);
+    focusedIs(root, da.switchMainGroup("Bolig"));
+  });
+
+  it("in the fixed view, after choosing from the dashed Kategori list the focus is on the new step's button", async () => {
+    const { app, root } = await openWith("group=Bolig&view=fixed&og=Faste+udgifter");
+    await chooseFrom(app, root, da.chooseCategory, da.categories, /^Husleje,/);
+    focusedIs(root, da.switchCategory("Husleje"));
+  });
+
   it("a chosen main group with no fixed expenses is listed with 0 kr.", async () => {
     const { app, root } = await openWith("group=Mad&view=fixed&og=Faste+udgifter");
     expect(await listLabels(app, root, da.switchMainGroup("Mad"), da.mainGroups)).toEqual([
