@@ -6,11 +6,12 @@ through the house session ([`releasing.md`](../../releasing.md#after-a-release))
 **Issues:** closes #143, #145, #170, #172 and #180. One branch, one PR (Thomas, 2026-11-07: "can we do all in one
 pr").
 
-**Approved:** by Claude, 2026-11-07, once `reviewer` rates it Ready. Thomas settled §2 and §6 in the brainstorm on
+**Approved:** by Claude, 2026-11-07, once `reviewer` rates it Ready. Thomas settled §2.1 and §6 in the brainstorm on
 2026-11-07, in Chrome on the page, and handed the rest of the flow to Claude ("you work alone until the issue is
-posed"). The rest holds only minor calls, marked "Claude's call".
+posed"). The rest holds only Claude's calls, marked "Claude's call"; §2.2 is the largest of them.
 
-Everything in the [fixed-expenses over time spec](2026-11-04-fixed-expenses-over-time.md), the
+Everything in the [lists, period and postings spec](2026-11-02-lists-period-postings.md), the
+[fixed-expenses over time spec](2026-11-04-fixed-expenses-over-time.md), the
 [fixed view full screen spec](2026-11-04-fixed-view-full-screen.md), the
 [fixed list tab spec](2026-11-05-fixed-list-tab.md) and the
 [inactive ended bills spec](2026-11-05-inactive-ended-bills.md) holds. Where they differ, this spec holds.
@@ -50,13 +51,14 @@ Thomas's ruling (2026-11-07): make it clearer that the card is an estimate, and 
 figure in the box.
 
 - **Label:** "Estimat pr. måned" (Claude's call on the words). It replaces "Pr. måned i snit".
-- **Value:** unchanged, the whole year's paid plus estimates divided by 12. It keeps the "ca." mark
-  (`estimate: true`).
+- **Value:** unchanged, the whole year's paid plus estimates divided by 12. It has the "ca." mark (`estimate: true`)
+  when the view holds at least one estimate. With none left, the value is exact and has no "ca.". The same goes for
+  "Estimat for hele {year}" (Claude's call, as §4.4 does for "Resterende udgifter").
 - **Sub-line:** two parts joined by " · ":
   - "hele {year} delt med 12", as today;
   - "betalt {amount} pr. måned", where the amount is §2.2's per-month figure of the paid payments in the view.
     Example: "hele 2026 delt med 12 · betalt 2.150 kr. pr. måned".
-- When §2.2 gives no figure (no whole month with data yet, for example in January), the sub-line is "hele {year}
+- When §2.2 gives no figure (in January, when the period is only the running month), the sub-line is "hele {year}
   delt med 12" alone.
 - The paid payments are the view's: the chosen object group, or every object group when "Alle faste udgifter" is
   chosen, and the chosen level. With one object group chosen and no level, the amount is the same as the overview
@@ -71,25 +73,36 @@ month, so November's payments are already in the sum while November counts as on
 out too high.
 
 The overview's "Gennemsnit pr. måned" card already has a rule for this, `averageUnits` in
-`addon/shared/src/money.ts`. It counts only the period's whole units that have data, and leaves out the running one.
+`addon/shared/src/money.ts`. It averages the period's units that `isWhole` and `hasData` accept
+(`addon/shared/src/units.ts`), and leaves out the running one.
 
-**Claude's call:** the per-month figure of paid payments follows that rule, counted by month.
+**Claude's call:** the per-month figure of paid payments follows that rule exactly, counted by month whatever the
+period's grouping.
 
-- The figure is the sum of the payments dated in the period's whole calendar months that have data (on or after
-  `earliestPostingDate`), divided by the number of those months. A running month is not whole. Payments in a
-  running or partial month are not counted.
-- No such month: no figure (null), as `perMonth` gives today for a period shorter than 28 days.
+- The months are the period's months as `averageUnits` takes them: a month cut by the period's own start or end
+  counts, as D16 has it; the running month does not; a month that ends before `earliestPostingDate` does not
+  (`hasData`).
+- The figure is the sum of the payments dated in those months, divided by their number, rounded to whole øre as
+  `averageOf` does. `kr` writes it in whole kroner, as today.
+- No such month (for example a period that is only the running month): no figure (null).
+- This replaces the rule of the [lists, period and postings spec](2026-11-02-lists-period-postings.md) for the
+  object-group cards' "{amount} pr. måned" (the period's days in months of 30.44 days). It also changes the
+  overview's figure, which the [fixed view full screen spec](2026-11-04-fixed-view-full-screen.md) kept as a
+  non-goal because no change had been agreed. Thomas's ruling in §2.1 needs one figure in both places, and this one
+  stops the running month from inflating it.
 - The rule lives in one function in `addon/shared/src/money.ts`, next to `averageUnits`, and the page's three users
   call it:
   - `objectGroupCards` (the overview's object-group cards, "{amount} pr. måned");
   - `fixedCards`' default case (the fixed view's "Gennemsnit pr. måned" on any other period);
   - §2.1's sub-line.
-- `perMonth` goes. Its one test helper use in `addon/web/test/key-numbers.test.ts` follows the new function.
+- `perMonth` goes. Its two uses in `addon/web/test/key-numbers.test.ts` follow the new function.
 - The default case's "Gennemsnit pr. måned" sub-line, "{n} betalinger", counts the payments the figure divides,
-  those in the whole months.
+  those in the counted months.
 
 This is a lasting rule, so it gets a decision entry, **D80**: "A per-month figure of paid payments averages the
-period's whole months with data". Every test whose value moves is named in the build's report.
+period's months as the Gennemsnit card counts them". It names the rule it replaces. Values move in several tests,
+at least in `addon/web/test/key-numbers.test.ts`, `fixed-model.test.ts` and `fixed-view.test.ts`. Each is named in
+the build's report.
 
 ## 3. The fixed view's trail and title (#172)
 
@@ -99,19 +112,24 @@ In the fixed-expenses view (`state.fixed`), the trail's lists come from the fixe
 (`addon/web/src/model/circle.ts`). `app.ts`' render picks one or the other on `state.fixed`. The overview's lists
 stay as they are.
 
-- **What a row sums:** the view's payments at that level: paid and estimates, as the bars and the "Måned" list count
-  them. A main group with only an estimate is listed. **Claude's call**, so that the trail, the bars and the "Måned"
-  list agree.
-- **Which payments:** the view's (`fixedPayments`): the chosen object group and the chosen unit when one is chosen,
-  else the view's span. The "Kategori" list keeps its rule of today, the categories of the chosen main group.
+- **What a row sums:** fixed payments, paid and estimates, as the bars and the "Måned" list count them. A main group
+  with only an estimate is listed. **Claude's call**, so that the trail, the bars and the "Måned" list agree.
+- **Which level the payments are taken at:** one level up, as `levelRows` does, whatever level is chosen. The
+  view's payments (`fixedPayments`) are already narrowed to the chosen level, through `ctx.shown` and `shown(ctx)`,
+  so the lists cannot reuse the view's own. They are worked out for the same state with another level:
+  - the Hovedgruppe list: the state with level `all`;
+  - the Kategori list: the state with the chosen main group as its level.
+- **Which payments otherwise:** the chosen object group, and the chosen unit when one is chosen, else the view's
+  span.
 - **Which rows:** only main groups (or categories) with at least one payment, paid or estimate. "Ikke set" has no
   amount and adds no row. The chosen row is always listed, with "0 kr.", as `levelRows` does today.
 - **The sum text:** as the "Måned" list writes it (`sumText`): "9.799 kr.", "9.799 kr. + ca. 1.074 kr." or "ca.
   1.074 kr.". `LevelRow` gains the text, or the fixed rows get their own type. That is the builder's choice.
 - **Order:** largest first, by paid plus estimate, then by name (Claude's call; the overview's list follows its
   circle).
-- **Colour:** the one `fixedColours` gives the part, so a row's dot matches its part of the bars. A main group's
-  colour comes from the parts at the "all" level. A category's comes from the parts at the main group's level.
+- **Colour:** the one `fixedColours` gives the part for the same state as above: for a main group, the state with
+  level `all`; for a category, the state with the chosen main group. So a row's dot matches its part of the bars
+  when that level is the one shown.
 - The **Kategori** list has the same bug and gets the same fix. The issue names only the Hovedgruppe list.
 
 ### 3.2 The bars' title
@@ -123,9 +141,12 @@ follows `da.fixed.nameInGroup`'s " · "). The full-screen button's name follows 
 
 ## 4. Small follow-ups (#170)
 
-1. **The focus after a trail list.** After a choice from the dashed "Måned" or "Kategori" list in the fixed view,
-   the focus falls to the body. Instead it moves to the new step, as the dashed "Hovedgruppe" list already does.
-   The test checks the focused element by its role and accessible name.
+1. **The focus after a trail list.** A choice from a dashed list closes its menu and focuses the menu's own ▾
+   button (`close(true)` in `dropdown.ts`). When the dashed step becomes a real step, that button is replaced, so
+   the focus falls to the body. After a choice from the dashed "Måned", "Hovedgruppe" or "Kategori" list, in the
+   fixed view and on the overview, the focus moves to the new step's button: for a month the button named
+   `da.switchMonth(name)` (or `da.switchYear` for a year), for a main group or a category the new step's button by
+   its accessible name. The test checks the focused element by its role and accessible name.
 2. **Two bills of the same name in two object groups.** With "Alle faste udgifter" chosen, at the category level
    (the bars stack by bill), two bills with one name merge into one part. With "Alle faste udgifter" chosen, the
    part's key is the object group and the name. It is named with `da.fixed.nameInGroup` ("{name} · {object group}")
@@ -138,13 +159,14 @@ follows `da.fixed.nameInGroup`'s " · "). The full-screen button's name follows 
    "0 kr." without "ca.", and its sub-line reads "ingen flere til {date}" (Claude's call), instead of "ca. 0 kr." and
    "0 betalinger til 31. dec".
 5. **The empty text with a unit chosen.** With a unit chosen and no payments in it, the list's empty text names the
-   unit, "Ingen faste udgifter i {level} i {unit}", not "i perioden".
+   unit in lower case, as `da.inUnit` writes it: "Ingen faste udgifter i {level} i marts 2026", not "i perioden".
 6. **Cleanup, with no change in behaviour:**
-   - `.unit-row` and `.unit-sum` (`unit-menu.ts`) copy `.level-row` and `.level-sum` (`level-menu.ts`). One set of
-     rules serves both.
+   - `.unit-row` and `.unit-sum` (`unit-menu.ts`) repeat most of `.level-row` and `.level-sum` (`level-menu.ts`).
+     One set of rules serves both. Each menu keeps its own `grid-template-columns`: the level list has a column for
+     the dot (`auto 1fr auto`), the unit list has none (`1fr auto`).
    - `da.fixed.status` repeats words from `da.status`. Where a text is the same word, one refers to the other. The two
      have different shapes (`da.status` takes dates), so only the shared words are joined.
-   - The few lines over the project's length in these files are wrapped.
+   - In the files this PR changes, lines over the formatter's width are wrapped.
 
 ## 5. The ended bill in the integration test (#180)
 
@@ -154,9 +176,12 @@ follows `da.fixed.nameInGroup`'s " · "). The full-screen button's name follows 
 
 One test is added, so the ended bills are named and not only compared:
 
-- Gammel forsikring is returned with `end: "2026-10-29"` and its last payment from the seed;
-- Fitness is returned with `end: "2026-10-30"`;
-- Husleje, an active bill with no end, is still returned.
+- Gammel forsikring is returned with `end: "2026-10-29"` and the last payment
+  `{ date: "2026-03-02", amount: 120000, category: "Husleje", account: <Konto A's id> }`
+  (`addon/dev/src/example.ts`);
+- Fitness is returned with `end: "2026-10-30"`.
+
+Husleje, an active bill with no end, is already checked by the test beside it.
 
 The test runs in `scripts/integration` and in CI's `integration` job.
 
@@ -172,10 +197,11 @@ made-up data:
 
 - §2.1: on "I år" the card's label is "Estimat pr. måned", its value is marked "ca.", and its sub-line holds both
   parts. With one object group chosen, the "betalt … pr. måned" amount equals the overview card's for that group. In
-  January, with no whole month yet, the sub-line has the first part only.
-- §2.2: the shared function over a period with a running month leaves that month's payments out. It counts only
-  months on or after the earliest posting date. It gives null with no whole month. The object-group card's and the
-  default case's figures follow it.
+  January, with only the running month, the sub-line has the first part only. With no estimate left, neither
+  estimate card has "ca.".
+- §2.2: the shared function over a period with a running month leaves that month's payments out. It leaves out a
+  month that ends before the earliest posting date. It counts a past month cut by the period's start. It gives null
+  when the period is only the running month. The object-group card's and the default case's figures follow it.
 - §3.1: in the fixed view the Hovedgruppe list shows only main groups with fixed expenses, with their fixed sums. A
   main group with only an estimate is listed with "ca.". A chosen main group with nothing is listed with "0 kr.". The
   Kategori list does the same. The overview's lists are unchanged.
