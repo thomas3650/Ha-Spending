@@ -706,7 +706,7 @@ describe("the follow-up fixes (spec §4.2 to §4.5)", () => {
     return row;
   }
 
-  it("with Alle faste udgifter two bills of one name in two object groups are two parts, each named with its group", () => {
+  it("with Alle faste udgifter two same-name bills in two object groups are two parts named with their group", () => {
     const here = bill("x1", "Forsikring", { lastPayment: paidOn("2026-09-30") });
     const there = bill("x2", "Forsikring", { objectGroup: "Abonnementer", lastPayment: paidOn("2026-09-30") });
     const alone = bill("x3", "Mobil", { lastPayment: paidOn("2026-09-30") });

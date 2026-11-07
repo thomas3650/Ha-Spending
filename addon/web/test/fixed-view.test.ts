@@ -549,7 +549,9 @@ describe("the trail's lists and the bars' title (enhancement follow-ups spec §3
 
   async function listLabels(app: SpendingApp, root: HTMLElement, button: string, list: string): Promise<string[]> {
     await click(app, getByRole(root, "button", { name: button }));
-    return getAllByRole(getByRole(root, "group", { name: list }), "button").map((r) => r.getAttribute("aria-label") ?? "");
+    return getAllByRole(getByRole(root, "group", { name: list }), "button").map(
+      (r) => r.getAttribute("aria-label") ?? "",
+    );
   }
 
   it("the fixed view's Hovedgruppe list sums the fixed expenses and leaves out main groups without any", async () => {
@@ -564,7 +566,7 @@ describe("the trail's lists and the bars' title (enhancement follow-ups spec §3
     expect(flat(row.textContent)).toBe(flat(`Bil${BIL}`));
   });
 
-  it("with a main group chosen the Hovedgruppe list still lists the other main groups with fixed expenses", async () => {
+  it("with a main group chosen the Hovedgruppe list still lists the other fixed main groups", async () => {
     const { app, root } = await openWith("group=Bolig&view=fixed&og=Faste+udgifter");
     await click(app, getByRole(root, "button", { name: da.switchMainGroup("Bolig") }));
     const rows = getAllByRole(getByRole(root, "group", { name: da.mainGroups }), "button");
@@ -582,19 +584,19 @@ describe("the trail's lists and the bars' title (enhancement follow-ups spec §3
     expect(active).toBe(getByRole(getByRole(root, "navigation", { name: da.trail }), "button", { name }));
   }
 
-  it("in the fixed view, after choosing from the dashed Måned list the focus is on the new month step's button", async () => {
+  it("in the fixed view, a choice from the dashed Måned list focuses the new month step's button", async () => {
     const { app, root } = await openWith(OPEN.slice(1));
     await chooseFrom(app, root, da.chooseMonth, da.units, new RegExp(`^${month("2026-10-01")},`));
     focusedIs(root, da.switchMonth(month("2026-10-01")));
   });
 
-  it("in the fixed view, after choosing from the dashed Hovedgruppe list the focus is on the new step's button", async () => {
+  it("in the fixed view, a choice from the dashed Hovedgruppe list focuses the new step's button", async () => {
     const { app, root } = await openWith(OPEN.slice(1));
     await chooseFrom(app, root, da.chooseMainGroup, da.mainGroups, /^Bolig,/);
     focusedIs(root, da.switchMainGroup("Bolig"));
   });
 
-  it("in the fixed view, after choosing from the dashed Kategori list the focus is on the new step's button", async () => {
+  it("in the fixed view, a choice from the dashed Kategori list focuses the new step's button", async () => {
     const { app, root } = await openWith("group=Bolig&view=fixed&og=Faste+udgifter");
     await chooseFrom(app, root, da.chooseCategory, da.categories, /^Husleje,/);
     focusedIs(root, da.switchCategory("Husleje"));

@@ -220,7 +220,8 @@ function fixedPayments(ctx: ViewContext, f: FixedUnits, of: Of): FixedPayment[] 
     const last = s.lastPayment?.category ?? null;
     const category = last !== null && mainGroups.has(last) ? last : null;
     const mainGroup = category === null ? null : (mainGroups.get(category) ?? null);
-    const base = { name: s.name, objectGroup: s.objectGroup, category, part: partKey(state, of, category, mainGroup, s) };
+    const part = partKey(state, of, category, mainGroup, s);
+    const base = { name: s.name, objectGroup: s.objectGroup, category, part };
     const notSeen = status.kind === "notSeen" ? next : null;
     const dates = runsOn ? dueDatesUntil(s, today, f.span.end) : notSeen === null ? [] : [notSeen];
     for (const date of dates) {
@@ -276,7 +277,11 @@ function fixedParts(ctx: ViewContext, payments: FixedPayment[], of: Of): FixedPa
       ? da.fixed.nameInGroup(p.name, p.objectGroup)
       : p.name;
   };
-  return [...colours].map(([key, colour]) => ({ key, name: of === "bill" ? billName(key) : partName(key, of), colour }));
+  return [...colours].map(([key, colour]) => ({
+    key,
+    name: of === "bill" ? billName(key) : partName(key, of),
+    colour,
+  }));
 }
 
 /** §6.1's sum: "9.799 kr. + ca. 1.074 kr." when mixed. */

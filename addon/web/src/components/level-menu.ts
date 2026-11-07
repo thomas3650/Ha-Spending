@@ -94,7 +94,9 @@ export class LevelMenu extends Dropdown {
                 html`<button
                   type="button"
                   class="dd-option level-row"
-                  aria-label=${row.sumText === undefined ? partLabel(row.name, row.sum, null) : `${row.name}, ${row.sumText}`}
+                  aria-label=${
+                    row.sumText === undefined ? partLabel(row.name, row.sum, null) : `${row.name}, ${row.sumText}`
+                  }
                   aria-current=${row.current ? "true" : nothing}
                   @click=${() => this.choose(row)}
                 >
@@ -109,31 +111,13 @@ export class LevelMenu extends Dropdown {
 }
 
 export const levelMenuStyles = css`
-  .dd-menu.level-menu {
-    width: max-content;
-  }
   .level-row {
-    display: grid;
     grid-template-columns: auto 1fr auto;
-    align-items: center;
-    gap: 8px 10px;
-  }
-  .level-row[aria-current="true"] {
-    background: var(--hs-accent-soft);
-    color: var(--hs-accent-text);
   }
   .level-dot {
     width: 10px;
     height: 10px;
     border-radius: 50%;
-  }
-  .level-sum {
-    padding-left: 16px;
-    color: var(--hs-muted);
-    font-variant-numeric: tabular-nums;
-  }
-  .level-row[aria-current="true"] .level-sum {
-    color: inherit;
   }
 `;
 

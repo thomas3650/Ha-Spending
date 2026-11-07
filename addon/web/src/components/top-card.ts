@@ -11,7 +11,7 @@ import "./accounts-picker";
 import { LevelMenu } from "./level-menu";
 import "./object-group-menu";
 import "./period-picker";
-import { type UnitMenu, type UnitStep } from "./unit-menu";
+import type { UnitMenu, UnitStep } from "./unit-menu";
 import "./unit-menu";
 
 /** What `set-category` fires: a category keeps its main group. */
@@ -99,7 +99,7 @@ export class TopCard extends LitElement {
     return done;
   }
 
-  /** Focuses the button of the step a choice from a dashed list has just made; it is a new element, not the list's own. */
+  /** Focuses the button of the given step. */
   focusStep(step: "unit" | "mainGroup" | "category"): void {
     const menus = [...this.querySelectorAll<LevelMenu | UnitMenu>(step === "unit" ? "hs-unit-menu" : "hs-level-menu")];
     const menu = menus.find((m) => !(m instanceof LevelMenu) || m.level === step);
