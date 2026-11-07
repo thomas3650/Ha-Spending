@@ -146,7 +146,7 @@ Model: opus · Review: yes
   row's `aria-label` (in place of `kr(row.sum)` in `partLabel`), so the "ca." reaches the accessible name.
 - Modify `addon/web/src/model/circle.ts`: `LevelRow` gains `sumText?: string`. For a fixed row, `sum` holds paid
   plus estimate, which the order uses.
-- Modify `addon/web/src/screens/fixed.ts` (`bars()`) and `addon/web/src/i18n/da.ts`.
+- Modify `addon/web/src/screens/fixed.ts` (`bars()`).
 - Tests: `addon/web/test/fixed-view.test.ts`, `trail.test.ts` and `fixed-model.test.ts`.
 
 **Interfaces:**
@@ -164,6 +164,7 @@ Model: opus · Review: yes
   - Each row has `sum` = paid plus estimate and `sumText` = `sumText(paid, estimate, hasPaid, hasEstimate)`.
   - Order: by `sum`, largest first, then by name with `localeCompare(…, "da")`.
   - The colour comes from `view'.parts`, which are sized over the whole span, so a dot matches its part of the bars.
+    A chosen row with no part gets `NO_PIECE`, as `levelRows` does.
   - It returns `[]` for categories when no main group is chosen.
 - The bars' title, when a level is chosen, is
   `da.levelPer(da.fixed.nameInGroup(groupTitle, levelName(level)), grouping)`, for example "Faste udgifter · Bolig
@@ -276,6 +277,7 @@ Model: sonnet · Review: no
 **Files:**
 - Modify `addon/web/src/components/unit-menu.ts`, `level-menu.ts` and `addon/web/src/i18n/da.ts`.
 - Modify `docs/README.md`: add this spec and this plan to their lists.
+- Modify `docs/testing.md`: add Chrome check step 56.
 
 - [ ] **Step 1: Merge the shared rules of `.unit-row`/`.level-row` and `.unit-sum`/`.level-sum`.**
   - Each menu keeps its own `grid-template-columns`.
