@@ -224,6 +224,15 @@ describe("a real Firefly III", () => {
       expect(d.subscriptions.map((s) => s.name)).not.toContain("Bilka");
     });
 
+    it("gives an ended bill, inactive or active, with its end date and last payment", async () => {
+      const d = await served();
+      const kontoA = d.accounts.find((a) => a.name === "Konto A")!.id;
+      const gammel = d.subscriptions.find((s) => s.name === "Gammel forsikring")!;
+      expect(gammel.end).toBe("2026-10-29");
+      expect(gammel.lastPayment).toEqual({ date: "2026-03-02", amount: 120000, category: "Husleje", account: kontoA });
+      expect(d.subscriptions.find((s) => s.name === "Fitness")!.end).toBe("2026-10-30");
+    });
+
     it("gives a bill paid by one split of a split group its last payment and its link", async () => {
       const d = await served();
       const kontoA = d.accounts.find((a) => a.name === "Konto A")!.id;
